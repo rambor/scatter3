@@ -1,11 +1,16 @@
+import version3.*;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by robertrambo on 17/12/2015.
@@ -52,13 +57,57 @@ public class Scatter {
     private static String OUTPUT_DIR_SUBTRACTION_NAME;
     private static String ATSAS_DIRECTORY;
 
+    private DefaultListModel<DataFileElement> dataFilesModel;
+    private DefaultListModel<DataFileElement> fitFilesModel;
+    private DefaultListModel<DataFileElement> complexFilesModel;
+
+    //public static ArrayList<Collection> collections;
+    private static HashMap collections;
+    private static Collection bufferCollections;
+    private static Collection sampleCollections;
+    private static Collection collectionSelected;
+    public static ArrayList<JRadioButton> collectionButtons;
+    public static ArrayList<Graph> miniPlots;
+    public static ArrayList<JPanel> minis;
+    private static int cpuCores;
+    public static int totalPanels;
 
     public Scatter() { // constructor
 
+        collections = new HashMap();
+        bufferCollections = new Collection();
+        sampleCollections = new Collection();
+
+        // Files Tab
+        dataFilesModel = new DefaultListModel<DataFileElement>();
+        dataFilesList.setCellRenderer(new DataFilesListRenderer());
+        dataFilesList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
         mainPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
+
+        minis = new ArrayList<JPanel>(){{add(mini1); add(mini2); add(mini3); add(mini4);}};
+        miniPlots = new ArrayList<Graph>();
+
+        collectionButtons = new ArrayList<JRadioButton>(){{add(radioButtonLoad1); add(radioButtonLoad2); add(radioButtonLoad3); add(radioButtonLoad4); }};
+        totalPanels = collectionButtons.size();
+
+        for (int i=0; i< totalPanels; i++){
+            collections.put(new Integer(i), new Collection()); // HashMap for new Collection
+            miniPlots.add(new Graph("Set " + Integer.toString(i+1)));
+            collectionButtons.get(i).setSelected(false);
+            miniPlots.get(i).plot((Collection) collections.get(i));
+            //miniPlots.get(i).frame.setSize(100, 100);
+        }
+
+        // Mini Collections for Drag-N-Drop on Files Tab
+        for (int i = 0; i < totalPanels; i++){
+            minis.get(i).setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
+            minis.get(i).add(miniPlots.get(i).frame.getChartPanel());
+        }
 
 
     }
+
 
     public static void main(String[] args) {
         //check from property file
@@ -99,9 +148,7 @@ public class Scatter {
         }
         //
         JFrame frame = new JFrame("ScÅtter: Software for SAXS Analysis");
-        //frame.setContentPane(new Scatter().panel1);
         final Scatter programInstance = new Scatter();
-
         frame.setContentPane(programInstance.panel1);
 
         // Drag-n-Drop listeners attached to SWING components here
@@ -139,7 +186,9 @@ public class Scatter {
         });
 
 
-
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.pack();
+        frame.setVisible(true);
 
 
     }
@@ -148,6 +197,11 @@ public class Scatter {
         return status;
     }
 
+    /**
+     * returns the panel from Files tab for drag-n-drop
+     * @param i
+     * @return
+     */
     private JPanel getLoadPanel(int i){
         JPanel jpanel = new JPanel();
         if (i == 1) {
@@ -162,6 +216,91 @@ public class Scatter {
         return jpanel;
     }
 
+
+    /**
+     * Creates LoadedFile from dropped file
+      * @param file
+     * @param status
+     * @param size
+     * @param toPlot
+     * @param convertNMtoAng
+     * @return
+     */
+    private static LoadedFile loadDroppedFile(File file, JLabel status, int size, int toPlot, boolean convertNMtoAng){
+        LoadedFile temp = null;
+        String filebase, ext;
+        // how to handle different file formats?
+        // get file base and extension
+        String[] currentFile;
+        currentFile = file.getName().split("\\.(?=[^\\.]+$)");
+        filebase = currentFile[0];
+        ext = (currentFile.length > 2) ? currentFile[2] : currentFile[1];
+
+        try {
+            if (ext.equals("brml")) {
+                status.setText("Bruker .brml  file detected ");
+                File tempFile;
+                tempFile = Bruker.makeTempDataFile(file, Scatter.WORKING_DIRECTORY_NAME);
+                temp = new LoadedFile(tempFile, status, size, toPlot, convertNMtoAng);
+
+            } else if (ext.equals("dat") || ext.equals("fit") || ext.equals("Adat")) {
+                temp = new LoadedFile(file, status, size, toPlot, convertNMtoAng);
+            } else {
+                // throw exception - incorrect file format
+                throw new Exception("Incorrect file format: Use either brml, dat, fit, Adat, or Bdat file formats: " + currentFile);
+            }
+        } catch (Exception ex) {
+            status.setText(ex.getMessage().toString());
+            Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        //add to collection
+        return temp;
+    }
+
+    /**
+     *
+     * @param collectionNumber
+     * @param tempFile
+     */
+    private static void addToCollection(int collectionNumber, LoadedFile tempFile){
+        // how to update results? Use a results object
+        // if new dataset is added, we will have to add a JLabel thing and rerender
+        // if updating, we could probably just change the value of the object which will automatically update value
+        if (collectionNumber < 69){
+
+            int newIndex = ((Collection)collections.get(collectionNumber)).getDatasets().size();
+
+            ((Collection)collections.get(collectionNumber)).addDataset(new Dataset(
+                    tempFile.allData,       //data
+                    tempFile.allDataError,  //original
+                    tempFile.filebase,
+                    newIndex ));
+
+            // update Analysis Tab
+            //analysisModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
+            //resultsModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
+
+        } else if (collectionNumber == 69 || collectionNumber == 96) {
+            // buffers
+            int newIndex = ((Collection)collections.get(collectionNumber)).getDatasets().size();
+
+            ((Collection)collections.get(collectionNumber)).addDataset(new Dataset(
+                    tempFile.allData,       //data
+                    tempFile.allDataError,  //original
+                    tempFile.filebase,
+                    newIndex ));
+        }
+    }
+
+
+    /**
+     * This is a static method, it is not an instance of the Scatter class
+     * @param files
+     * @param status
+     * @param main
+     * @param index 1 through 4 refers to panels on Files tab
+     * @param convertNMtoAng
+     */
     private static void receivedDroppedFiles(File[] files, JLabel status, Scatter main, int index, boolean convertNMtoAng){
 
         if (index <= 4){
@@ -169,34 +308,35 @@ public class Scatter {
             main.dataFilesModel.clear();
             main.dataFilesList.removeAll();
 
-            prModel.clear();
+//            prModel.clear();
 
-            analysisModel.datalist.clear();
-            analysisModel.clear();
+//            analysisModel.datalist.clear();
+//            analysisModel.clear();
 
-            resultsModel.datalist.clear();
-            resultsModel.clear();
+//            resultsModel.datalist.clear();
+//            resultsModel.clear();
 
             int total = files.length;
             for( int i = 0; i < total; i++ ) {
                 // call File loader function
                 // if true add loaded file object to collection
-                System.out.println("--------DROPPED FILE: " +files[i]);
-                LoadedFile temp = loadDroppedFile(files[i], status, ((Collection)main.collections.get(index)).getDatasets().size(), 1, convertNMtoAng);
+                System.out.println("PANEL => " + index + " -------- DROPPED FILE: " + files[i]);
+
+                LoadedFile temp = loadDroppedFile(files[i], status, ((Collection)Scatter.collections.get(index)).getDatasets().size(), 1, convertNMtoAng);
 
                 // load file into collection
                 if (temp !=null){
                     addToCollection(index, temp);
                 }
             }
+
             // update dataFilesList in dataFilesPanel (Files tab);
             // rebuild dataFilesPanel from collection.get(i)
-
             for(int i=0; i<((Collection)main.collections.get(index)).getDatasets().size(); i++){
                 String name = ((Collection)main.collections.get(index)).getDataset(i).getFileName();
                 main.dataFilesModel.addElement(new DataFileElement(name, i));
-                analysisModel.addDataset(((Collection) collections.get(index)).getDataset(i));
-                resultsModel.addDataset(((Collection) collections.get(index)).getDataset(i));
+               // analysisModel.addDataset(((Collection) collections.get(index)).getDataset(i));
+               // resultsModel.addDataset(((Collection) collections.get(index)).getDataset(i));
             }
 
             main.dataFilesList.setModel(main.dataFilesModel);
@@ -207,7 +347,7 @@ public class Scatter {
                 ((Collection) collections.get(index)).getDataset(h).setId(h);
             }
 
-            for(int i=0; i<totalPanels; i++){
+            for(int i=0; i < totalPanels; i++){
                 collectionButtons.get(i).setSelected(false);
             }
 
@@ -220,6 +360,7 @@ public class Scatter {
             miniPlots.get(index).plot((Collection)main.collections.get(index));
             minis.get(index).add(miniPlots.get(index).frame.getChartPanel());
             miniPlots.get(index).chart.setNotify(true);
+
         }  else if (index < 97) {
 /*
             if (index == 69){
@@ -316,4 +457,17 @@ public class Scatter {
 
     }
 
+}
+
+class DataFilesListRenderer extends JCheckBox implements ListCellRenderer {
+    Color setColor;
+    public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean hasFocus) {
+        setEnabled(list.isEnabled());
+        setSelected(((DataFileElement)value).isSelected());
+        setFont(list.getFont());
+        setBackground(list.getBackground());
+        setForeground(list.getForeground());
+        setText(value.toString());
+        return this;
+    }
 }
