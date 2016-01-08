@@ -51,6 +51,9 @@ public class Scatter {
     private JPanel mini4;
     private JPanel analysisPane;
     private JLabel status;
+    private JButton intensityPlotButton;
+    private JButton normalizedKratkyButton;
+    private JButton flexibilityPlotsButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -111,6 +114,12 @@ public class Scatter {
 
     public static void main(String[] args) {
         //check from property file
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
         File propertyFile = new File("scatter.config");
         WORKING_DIRECTORY_NAME = System.getProperty("user.dir");
         OUTPUT_DIR_SUBTRACTION_NAME = System.getProperty("user.dir");
@@ -186,10 +195,11 @@ public class Scatter {
         });
 
 
+
+
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
-
 
     }
 
