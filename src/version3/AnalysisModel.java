@@ -52,7 +52,7 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
 
     @Override
     public void setValueAt(Object obj, int row, int col){
-        Dataset dataset = (Dataset) datalist.get(row);
+        Dataset dataset = datalist.get(row);
 
         if (col == 12) {
             if (!isNumber((String) obj)) {
@@ -67,7 +67,7 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
 
         } else if (col == 3) {
             System.out.println("Copying " + dataset.getFileName()+ " to " + (String)obj);
-            //copyDataset((String)obj, dataset, Scatter.WORKING_DIRECTORY_NAME);
+            // copyDataset((String)obj, dataset, Scatter.WORKING_DIRECTORY_NAME);
         } else if (col == 4){
             dataset.setStart((Integer)obj);
         } else if (col == 5){
@@ -82,7 +82,6 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
         }
         fireTableCellUpdated(row, col);
     }
-
 
     @Override
     public Object getValueAt(int row, int col) {
@@ -132,6 +131,7 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
         fireTableRowsInserted(datalist.size()-1, datalist.size()-1);
         //fireTableDataChanged();
     }
+
     /*
      * JTable uses this method to determine the default renderer/
      * editor for each cell.  If we didn't implement this method,

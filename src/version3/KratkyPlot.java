@@ -28,15 +28,16 @@ public class KratkyPlot {
     static JFreeChart chart;
     static boolean crosshair= true;
 
-    private static Color titlePaint;
-    private static String workingDirectoryName;
+    private static Color titlePaint = Constants.SteelBlue;
 
     XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
 
     private static XYSeriesCollection collectionToPlot = new XYSeriesCollection();
 
-
     public static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 KRATKY PLOT", chart);
+
+    static JFrame jframe = new JFrame("SC\u212BTTER \u2263 KRATKY PLOT");
+
     private static XYLineAndShapeRenderer renderer1;
     private static double upper;
     private static ValueMarker yMarker = new ValueMarker(1.1);
@@ -49,32 +50,42 @@ public class KratkyPlot {
         chartTitle = "Kratky Plot";
     }
 
+
+
     /* Static 'instance' method */
     public static KratkyPlot getInstance() {
-//        workingDirectoryName = workingDirectory;
-//        titlePaint = paint;
         return singleton;
     }
 
-    protected static void plot(Collection collection, int positionX, int positionY, int width, int height, boolean normal) {
+    public static void plot(Collection collection, String workingDirectoryName) {
 
+
+        int totalSets = collection.getDatasetCount();
+
+        collectionToPlot.removeAllSeries();
         // create collection of series to plot
         int startAt, endAt;
-        for (int i = 0; i < collection.getDatasets().size(); i++){
+        for (int i = 0; i < totalSets; i++){
             Dataset temp = collection.getDataset(i);
-            XYDataItem tempData;
-            startAt = temp.getStart();
-            endAt = temp.getEnd();
-            //
-            // use q-values in active dataset
-            // that way the intensities are always already scaled and set is truncated
-            //
-            collectionToPlot.addSeries(new XYSeries(temp.getFileName()));
-            XYSeries tempSeries = collectionToPlot.getSeries(i);
+            temp.clearPlottedKratkyData();
+            if (temp.getInUse()){
+                collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());
+                XYDataItem tempData;
+                startAt = temp.getStart();
+                endAt = temp.getEnd();
+                double sf = temp.getScaleFactor();
+                //
+                // use q-values in active dataset
+                // that way the intensities are always already scaled and set is truncated
+                //
+                XYSeries tempSeries = collectionToPlot.getSeries(i);
 
-            for(int j = startAt; j < endAt; j++){
-                tempData = temp.getKratkyItem(j);
-                tempSeries.add(tempData.getX(), tempData.getYValue()*temp.getScaleFactor());
+                for(int j = startAt; j < endAt; j++){
+                    tempData = temp.getKratkyItem(j);
+                    tempSeries.add(tempData.getX(), tempData.getYValue()*sf);
+                }
+            } else {
+                collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());  // should add an empty Series
             }
         }
 
@@ -91,9 +102,9 @@ public class KratkyPlot {
 
         chart.setTitle("SC\u212BTTER \u2263 Kratky Plot");
 
-        if (normal){
-            chart.setTitle("SC\u212BTTER \u2263 " + chartTitle);
-        }
+        //if (normal){
+        //    chart.setTitle("SC\u212BTTER \u2263 " + chartTitle);
+       // }
 
         chart.getTitle().setFont(new java.awt.Font("Times", 1, 20));
         chart.getTitle().setPaint(titlePaint);
@@ -158,17 +169,17 @@ public class KratkyPlot {
         final NumberAxis domainAxis = new NumberAxis("q");
         final NumberAxis rangeAxis = new NumberAxis("I(q)*q^2");
         String quote = "q, \u212B \u207B\u00B9";
-        if (normal){
-            quote  = "q, \u212B \u207B\u00B9";
-            plot.addDomainMarker(xMarker);
-            plot.addRangeMarker(yMarker);
-        }
+        //if (normal){
+        //    quote  = "q, \u212B \u207B\u00B9";
+        //    plot.addDomainMarker(xMarker);
+        //    plot.addRangeMarker(yMarker);
+        //}
         domainAxis.setLabel(quote);
 
         quote = "q\u00B2 \u00D7 I(q)";
-        if (normal){
-            quote  = "q\u00B2 \u00D7 I(q)";
-        }
+        //if (normal){
+        //    quote  = "q\u00B2 \u00D7 I(q)";
+        //}
         rangeAxis.setLabel(quote);
 
         rangeAxis.setRange(0, upper + 0.1*upper);
@@ -198,16 +209,8 @@ public class KratkyPlot {
             renderer1.setSeriesOutlineStroke(i, temp.getStroke());
         }
 
-        if (positionX==0 && positionY==0){
-            positionX=50;
-            positionY=50;
-        }
-        frame.setLocation(positionX, positionY);
-        frame.getChartPanel().setSize(600, 500);
-
-        chartPanel.setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
-        frame.getContentPane().add(chartPanel);
-
+        //frame.getChartPanel().setSize(640, 480);
+        //frame.getContentPane().add(chartPanel);
 
         JPopupMenu popup = chartPanel.getPopupMenu();
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
@@ -227,19 +230,18 @@ public class KratkyPlot {
         }));
 
 
-        //frame.getChartPanel().setChart(chart);
-        //frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(Scatter.workingDirectoryName));
+        frame.getChartPanel().setChart(chartPanel.getChart());
+        frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.pack();
-        frame.setVisible(true);
-        if(width == 0) {
-            width = 688;
-            height = 454;
-        }
-        frame.setSize(width, height);
 
+        jframe.setMinimumSize(new Dimension(640,480));
+        Container content = jframe.getContentPane();
+        content.add(frame.getChartPanel());
+        jframe.setLocation(200,200);
+        jframe.setVisible(true);
     }
 
-    public static void rescale(int index, double scale) {
-
+    public boolean isVisible(){
+        return jframe.isVisible();
     }
 }

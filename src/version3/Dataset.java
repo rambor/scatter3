@@ -16,6 +16,7 @@ public class Dataset {
     private ArrayList<Fit> fitList;
     private XYSeries plottedData;   // plotted log10 data
     private XYSeries plottedError;  // plotted log10 data
+    private XYSeries plottedKratkyData;   // plotted log10 data
 
     private final XYSeries originalLog10Data;         // not to be modified
     private final XYSeries originalPositiveOnlyData;  // not to be modified
@@ -119,6 +120,7 @@ public class Dataset {
 
         plottedData = new XYSeries(tempName);  // actual log10 data that is plotted
         plottedError = new XYSeries(tempName); // actual log10 data that is plotted
+        plottedKratkyData = new XYSeries(tempName);
 
         originalPositiveOnlyData = new XYSeries(tempName);
         originalLog10Data = new XYSeries(tempName);
@@ -280,7 +282,7 @@ public class Dataset {
     }
 
     /**
-     * Returns XYSeries dataset used for plotting on log scale
+     * Returns XYSeries dataset used for plotting with y-axis on log10 scale
      * @return XYSeries of the dataset (plottedData)
      */
     public XYSeries getData(){
@@ -727,17 +729,75 @@ public class Dataset {
     public void setPorodExponentError(double porodExpError){
         porodExponentError=porodExpError;
     }
+
+
     /**
-     * Sets Scale Factor
-     *
+     * Sets ScaleFactor
+     * @param factor
      */
     public void setScaleFactor(double factor){
+        System.out.println("Factor " + factor + "  " + Math.log10(factor));
         log10ScaleFactor = Math.log10(factor);
         scaleFactor=factor;
+
+        // rescale plottedData
+        this.scalePlottedLog10IntensityData();
+
     }
+
+
+    public void clearPlottedKratkyData(){
+        plottedKratkyData.clear();
+    }
+
+
+    public XYSeries getPlottedKratkyDataSeries(){
+        return plottedKratkyData;
+    }
+
     /**
-     * Sets Scale Factor
+     * scales Kratky data if visible
+     */
+    public void scalePlottedKratkyData(){
+        plottedKratkyData.clear();
+        XYDataItem temp;
+
+        if (scaleFactor != 1){
+            for (int i = start; i<end; i++){
+                temp = kratkyData.getDataItem(i);
+                plottedKratkyData.add(temp.getX(), temp.getYValue()*scaleFactor);
+            }
+        } else {
+            for (int i = start; i<end; i++){
+                plottedKratkyData.add(kratkyData.getDataItem(i));
+            }
+        }
+    }
+
+
+    /**
      *
+     */
+    private void scalePlottedLog10IntensityData(){
+        plottedData.clear();
+        XYDataItem temp;
+
+        if (scaleFactor != 1){
+            for (int i = start; i<end; i++){
+                temp = originalLog10Data.getDataItem(i);
+                plottedData.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
+            }
+        } else {
+            for (int i = start; i<end; i++){
+                plottedData.add(originalLog10Data.getDataItem(i));
+            }
+        }
+    }
+
+
+    /**
+     * Sets more Coefficients
+     * @param aM
      */
     public void setAM(double[] aM){
         this.aM = aM;

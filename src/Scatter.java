@@ -6,9 +6,7 @@ import version3.Collection;
 
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.event.CellEditorListener;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
+import javax.swing.event.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -61,6 +59,7 @@ public class Scatter {
     private JButton normalizedKratkyButton;
     private JButton flexibilityPlotsButton;
     private JTabbedPane tabbedPane1;
+    private JButton kratkyPlotButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -85,6 +84,7 @@ public class Scatter {
     public static JTable analysisTable;
     public static AnalysisModel analysisModel;
 
+    public PlotDataSingleton log10IntensityPlot;
     public KratkyPlot kratky;
 
     public Scatter() { // constructor
@@ -232,14 +232,20 @@ public class Scatter {
         });
 
         analysisModel = (AnalysisModel) analysisTable.getModel();
-        /*
+
         analysisModel.addTableModelListener(new TableModelListener() {
             @Override
             public void tableChanged(TableModelEvent e) {
-                System.out.println("Listening " + e.getColumn());
+
+                if (e.getColumn() == 12){
+                    // go through each dataset in series and see if scale factor was changed?
+                    if (e.getFirstRow() == e.getLastRow()){
+                        mainRescaling(e.getFirstRow());
+                    }
+                }
             }
         });
-        */
+
         JTableHeader header = analysisTable.getTableHeader();
         header.setDefaultRenderer(new HeaderRenderer(analysisTable));
 
@@ -252,7 +258,19 @@ public class Scatter {
         intensityPlotButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                graphData();
+            }
+        });
 
+
+        // define Singleton plots
+        kratky = KratkyPlot.getInstance();
+        log10IntensityPlot = PlotDataSingleton.getInstance();
+
+        kratkyPlotButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createKratkyPlot();
             }
         });
     }
@@ -343,6 +361,20 @@ public class Scatter {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
+    }
+
+    private void graphData() {
+        // rebuild miniCollection using only visible data
+        //collectionSelected.getMiniCollection().removeAllSeries();
+        log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+    }
+
+    /**
+     * Creates Kratky plot from Singleton Class
+     */
+    private void createKratkyPlot(){
+        kratky = KratkyPlot.getInstance();
+        kratky.plot(collectionSelected, WORKING_DIRECTORY_NAME);
     }
 
     private JLabel getStatus() {
@@ -658,11 +690,8 @@ public class Scatter {
 
         double scaleFactor = collectionSelected.getDataset(fIndex).getScaleFactor();
         //update scale Factor in the Dataset
-        int location;
-        XYSeries tempXY = collectionSelected.getDataset(fIndex).getOriginalLog10Data();
-
-        if (kratky.frame.isVisible()) {
-            kratky.rescale(fIndex, scaleFactor);
+        if (kratky.isVisible()) {
+            collectionSelected.getDataset(fIndex).scalePlottedKratkyData();
         }
 
         /*
@@ -682,26 +711,27 @@ public class Scatter {
                 powerSeries.getSeries(fIndex).updateByIndex(i, y+Math.log10(scaleFactor));
             }
         }
-
-        if (datasetToPlot.f.isVisible()){
+*/
+        if (log10IntensityPlot.isVisible()){
             if (scaleFactor == 1.0){ //revert to original dataset
                 status.setText("Dataset "+(fIndex+1) + " at original intensities");
             }
+            //collectionSelected.getDataset(fIndex).scalePlottedLog10IntensityData();
         }
-*/
+
         //Update data and errors in data object
         //turn Notify off until the data has been rescaled
-        collectionSelected.getDataset(fIndex).getData().setNotify(false);
-        for (int i=0; i < collectionSelected.getDataset(fIndex).getData().getItemCount(); i++){
+       // collectionSelected.getDataset(fIndex).getData().setNotify(false);
+       // for (int i=0; i < collectionSelected.getDataset(fIndex).getData().getItemCount(); i++){
 
-            location = tempXY.indexOf(collectionSelected.getDataset(fIndex).getData().getX(i));
+       //     location = tempXY.indexOf(collectionSelected.getDataset(fIndex).getData().getX(i));
             //double x = tempXY.getX(location).doubleValue();
-            double y = tempXY.getY(location).doubleValue();
-            collectionSelected.getDataset(fIndex).getData().updateByIndex(i, Math.log10(y*scaleFactor));
+       //     double y = tempXY.getY(location).doubleValue();
+       //     collectionSelected.getDataset(fIndex).getData().updateByIndex(i, Math.log10(y*scaleFactor));
             // collectionSelected.getDataset(fIndex).setScaleFactor(scaleFactor);
             // might be better to do updateByIndex for error
-            collectionSelected.getDataset(fIndex).getError().addOrUpdate(collectionSelected.getDataset(fIndex).getError().getX(i), collectionSelected.getDataset(fIndex).getError().getY(i).doubleValue()*scaleFactor);
-        }
+       //     collectionSelected.getDataset(fIndex).getError().addOrUpdate(collectionSelected.getDataset(fIndex).getError().getX(i), collectionSelected.getDataset(fIndex).getError().getY(i).doubleValue()*scaleFactor);
+       // }
         collectionSelected.getDataset(fIndex).getData().setNotify(true);
     }
 

@@ -58,7 +58,8 @@ public class Collection {
         b = rand.nextFloat();
         dat.setColor(new Color(r,g,b));
         datasets.add(dat);
-        miniCollection.addSeries(dat.getData());
+
+        miniCollection.addSeries(dat.getData()); // log10 data
         // reset max and min values for collection
         if (dat.getMaxI() > this.maxI ) {
             this.maxI = dat.getMaxI();
@@ -146,6 +147,9 @@ public class Collection {
         maxq = 0.0;
         minq = 1.0;
         this.setNote("");
+
+        datasets = new ArrayList<>();
+        miniCollection = new XYSeriesCollection();
     }
 
     public void setNote(String text){
@@ -159,6 +163,10 @@ public class Collection {
     public Dataset getLast(){
         int last = this.datasets.size() - 1;
         return this.getDataset(last);
+    }
+
+    public int getDatasetCount(){
+        return datasets.size();
     }
 
     public double getMaxI(){
