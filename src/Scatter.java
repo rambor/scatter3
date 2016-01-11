@@ -1,14 +1,20 @@
+import org.jfree.chart.plot.Plot;
+import org.jfree.data.xy.XYDataItem;
+import org.jfree.data.xy.XYSeries;
 import version3.*;
+import version3.Collection;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.table.*;
 import java.awt.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Properties;
+import java.awt.event.*;
+import java.io.*;
+import java.text.DecimalFormat;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,9 +48,9 @@ public class Scatter {
     private JRadioButton radioButtonLoad2;
     private JRadioButton radioButtonLoad3;
     private JRadioButton radioButtonLoad4;
-    private JPanel miniIofQPanel;
-    private JPanel normalizedGuinierPanel;
-    private JPanel normalizedKratkyPanel;
+    private JPanel miniGuinierPanel;
+    private JPanel miniVcPanel;
+    private JPanel miniNormalizedKratkyPanel;
     private JPanel mini1;
     private JPanel mini2;
     private JPanel mini3;
@@ -54,6 +60,7 @@ public class Scatter {
     private JButton intensityPlotButton;
     private JButton normalizedKratkyButton;
     private JButton flexibilityPlotsButton;
+    private JTabbedPane tabbedPane1;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -74,6 +81,11 @@ public class Scatter {
     public static ArrayList<JPanel> minis;
     private static int cpuCores;
     public static int totalPanels;
+
+    public static JTable analysisTable;
+    public static AnalysisModel analysisModel;
+
+    public KratkyPlot kratky;
 
     public Scatter() { // constructor
 
@@ -108,7 +120,141 @@ public class Scatter {
             minis.get(i).add(miniPlots.get(i).frame.getChartPanel());
         }
 
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
+        DefaultTableCellRenderer leftRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment( JLabel.CENTER );
+        rightRenderer.setHorizontalAlignment( JLabel.RIGHT );
+        leftRenderer.setHorizontalAlignment( JLabel.LEFT );
 
+        //Analysis Table
+        analysisTable = new JTable(new AnalysisModel(status));
+        TableColumnModel tcm = analysisTable.getColumnModel();
+
+        TableColumn tc = tcm.getColumn(4);
+        tc.setCellEditor(new SpinnerEditor());
+
+        tc = tcm.getColumn(5);
+        tc.setCellEditor(new SpinnerEditor());
+
+        tc = tcm.getColumn(13);
+        tc.setCellEditor(new ButtonEditorRenderer());
+        tc.setCellRenderer(new ButtonEditorRenderer());
+
+        analysisTable.setRowHeight(30);
+        analysisTable.setBackground(Color.WHITE);
+        analysisTable.getColumnModel().getColumn(0).setPreferredWidth(10);
+        analysisTable.getColumnModel().getColumn(1).setPreferredWidth(30);
+        analysisTable.getColumnModel().getColumn(2).setPreferredWidth(35);
+        analysisTable.getColumnModel().getColumn(3).setPreferredWidth(200);
+        analysisTable.getColumnModel().getColumn(4).setPreferredWidth(80);
+        analysisTable.getColumnModel().getColumn(5).setPreferredWidth(100);
+        //analysisTable.getColumnModel().getColumn(6).setPreferredWidth(35);
+
+        tc = analysisTable.getColumnModel().getColumn(2);
+        //tc.setCellEditor(new CheckBoxCellEditorRenderer());
+        //tc.setCellRenderer(new CheckBoxCellEditorRenderer());
+
+//        tc = analysisTable.getColumnModel().getColumn(6);
+//        tc.setCellEditor(new CheckBoxCellEditorRenderer());
+//        tc.setCellRenderer(new CheckBoxCellEditorRenderer());
+
+        final Thread[] lowerBoundThread = new Thread[1];
+/*
+        class SetLowerBound implements Runnable {
+            double limit;
+            int upperlower;
+            public SetLowerBound(double limit, int uorl){
+                this.limit = limit;
+                this.upperlower=uorl;
+            }
+            @Override
+            public void run() {
+                //To change body of implemented methods use File | Settings | File Templates.
+                mainStatus.setValue(0);
+                mainStatus.setStringPainted(true);
+                task = new Task("bound");
+                task.setQValue(this.limit);
+                task.setUpperLower(this.upperlower);
+                task.execute();
+                task.done();
+            }
+        }
+*/
+        tc = analysisTable.getColumnModel().getColumn(0);
+        tc.setCellEditor(new ColorEditor());
+        tc.setCellRenderer(new ColorRenderer(true));
+
+        analysisTable.getColumnModel().getColumn(1).setCellRenderer( rightRenderer );
+        analysisTable.getColumnModel().getColumn(4).setCellRenderer( centerRenderer );
+        analysisTable.getColumnModel().getColumn(5).setCellRenderer( centerRenderer );
+        analysisTable.getColumnModel().getColumn(7).setCellRenderer( centerRenderer );
+        analysisTable.getColumnModel().getColumn(8).setCellRenderer( centerRenderer );
+        analysisTable.getColumnModel().getColumn(9).setCellRenderer( centerRenderer );
+        analysisTable.getColumnModel().getColumn(10).setCellRenderer( centerRenderer );
+        analysisTable.getColumnModel().getColumn(11).setCellRenderer( centerRenderer );
+        analysisTable.getColumnModel().getColumn(12).setCellRenderer(centerRenderer);
+
+        analysisTable.getTableHeader().addMouseListener(new MouseAdapter(){
+            @Override
+            public void mouseClicked(MouseEvent mouseEvent){
+                int index = analysisTable.columnAtPoint(mouseEvent.getPoint());
+                if (index == 2 ){
+                    int total = collectionSelected.getDatasets().size();
+                    for(int i=0; i<total; i++){
+                        collectionSelected.getDataset(i).setInUse(!collectionSelected.getDataset(i).getInUse());
+                    }
+                    analysisModel.fireTableDataChanged();
+                } else if (index == 4) {
+                    // add function to replot data given qmin or qmax when user selects columns 4 or 5
+                    // popup dialog box asking for qmin or qmax
+                    // JOptionPane.showInputDialog(Scatter)
+                    String inputValue = JOptionPane.showInputDialog("Please input a minimum q value");
+                    if (inputValue != null){
+                        if (isQValue(inputValue)){
+                            // launch new task
+                          //  lowerBoundThread[0] = new Thread(new SetLowerBound(Double.parseDouble(inputValue),4));
+                          //  lowerBoundThread[0].start();
+                        }
+                    }
+
+                } else if (index == 5) {
+                    String inputValue = JOptionPane.showInputDialog("Please input a maximum q value");
+                    if (inputValue != null){
+                        if (isQValue(inputValue)){
+                          //  lowerBoundThread[0] = new Thread(new SetLowerBound(Double.parseDouble(inputValue),5));
+                          //  lowerBoundThread[0].start();
+                        }
+                    }
+                }
+
+            }
+        });
+
+        analysisModel = (AnalysisModel) analysisTable.getModel();
+        /*
+        analysisModel.addTableModelListener(new TableModelListener() {
+            @Override
+            public void tableChanged(TableModelEvent e) {
+                System.out.println("Listening " + e.getColumn());
+            }
+        });
+        */
+        JTableHeader header = analysisTable.getTableHeader();
+        header.setDefaultRenderer(new HeaderRenderer(analysisTable));
+
+        JScrollPane analysisList = new JScrollPane(analysisTable);
+        analysisPane.add(analysisList);
+        analysisTable.setFillsViewportHeight(false);
+        analysisList.setOpaque(true);
+        analysisPane.setOpaque(true);
+
+        intensityPlotButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+            }
+        });
     }
 
 
@@ -194,13 +340,9 @@ public class Scatter {
             }
         });
 
-
-
-
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
-
     }
 
     private JLabel getStatus() {
@@ -209,8 +351,8 @@ public class Scatter {
 
     /**
      * returns the panel from Files tab for drag-n-drop
-     * @param i
-     * @return
+     * @param i is the panel on files tab
+     * @return JPanel of the selected panel
      */
     private JPanel getLoadPanel(int i){
         JPanel jpanel = new JPanel();
@@ -229,7 +371,7 @@ public class Scatter {
 
     /**
      * Creates LoadedFile from dropped file
-      * @param file
+     * @param file
      * @param status
      * @param size
      * @param toPlot
@@ -320,8 +462,7 @@ public class Scatter {
 
 //            prModel.clear();
 
-//            analysisModel.datalist.clear();
-//            analysisModel.clear();
+            analysisModel.clear();
 
 //            resultsModel.datalist.clear();
 //            resultsModel.clear();
@@ -345,7 +486,7 @@ public class Scatter {
             for(int i=0; i<((Collection)main.collections.get(index)).getDatasets().size(); i++){
                 String name = ((Collection)main.collections.get(index)).getDataset(i).getFileName();
                 main.dataFilesModel.addElement(new DataFileElement(name, i));
-               // analysisModel.addDataset(((Collection) collections.get(index)).getDataset(i));
+                analysisModel.addDataset(((Collection) collections.get(index)).getDataset(i));
                // resultsModel.addDataset(((Collection) collections.get(index)).getDataset(i));
             }
 
@@ -467,7 +608,647 @@ public class Scatter {
 
     }
 
-}
+    private static class HeaderRenderer implements TableCellRenderer {
+
+        DefaultTableCellRenderer renderer;
+
+        public HeaderRenderer(JTable table) {
+            renderer = (DefaultTableCellRenderer)
+                    table.getTableHeader().getDefaultRenderer();
+            renderer.setHorizontalAlignment(JLabel.CENTER);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int col) {
+            return renderer.getTableCellRendererComponent(
+                    table, value, isSelected, hasFocus, row, col);
+        }
+    }
+
+
+
+    public boolean isNumber( String input ) {
+        try {
+            Double.parseDouble(input);
+            return true;
+        }
+        catch( Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean isQValue(String str)
+    {
+        try {
+            double d = Double.parseDouble(str);
+            if ((d<0.0001) || (d>3)){
+                throw new NumberFormatException();
+            }
+        } catch(NumberFormatException nfe) {
+            System.out.println("Number is not a proper q-value: 0.0001 < q < 3");
+            return false;
+        }
+        return true;
+    }
+
+    private void mainRescaling(int fIndex){
+        //make sure user entered a number in Scale Factor Field
+
+        double scaleFactor = collectionSelected.getDataset(fIndex).getScaleFactor();
+        //update scale Factor in the Dataset
+        int location;
+        XYSeries tempXY = collectionSelected.getDataset(fIndex).getOriginalLog10Data();
+
+        if (kratky.frame.isVisible()) {
+            kratky.rescale(fIndex, scaleFactor);
+        }
+
+        /*
+        if (qIqPlot.frame.isVisible()) {
+
+            for (int i=0; i < qIqSeries.getSeries(fIndex).getItemCount(); i++){
+                location = tempXY.indexOf(qIqSeries.getSeries(fIndex).getX(i));
+                double y = tempXY.getX(location).doubleValue()*tempXY.getY(location).doubleValue();
+                qIqSeries.getSeries(fIndex).updateByIndex(i, y*scaleFactor);
+            }
+        }
+        if (powerLawPlot.frame.isVisible()) {
+            //fix this
+
+            for (int i=0; i < powerSeries.getSeries(fIndex).getItemCount(); i++){
+                double y = Math.log10(tempXY.getY(i).doubleValue());
+                powerSeries.getSeries(fIndex).updateByIndex(i, y+Math.log10(scaleFactor));
+            }
+        }
+
+        if (datasetToPlot.f.isVisible()){
+            if (scaleFactor == 1.0){ //revert to original dataset
+                status.setText("Dataset "+(fIndex+1) + " at original intensities");
+            }
+        }
+*/
+        //Update data and errors in data object
+        //turn Notify off until the data has been rescaled
+        collectionSelected.getDataset(fIndex).getData().setNotify(false);
+        for (int i=0; i < collectionSelected.getDataset(fIndex).getData().getItemCount(); i++){
+
+            location = tempXY.indexOf(collectionSelected.getDataset(fIndex).getData().getX(i));
+            //double x = tempXY.getX(location).doubleValue();
+            double y = tempXY.getY(location).doubleValue();
+            collectionSelected.getDataset(fIndex).getData().updateByIndex(i, Math.log10(y*scaleFactor));
+            // collectionSelected.getDataset(fIndex).setScaleFactor(scaleFactor);
+            // might be better to do updateByIndex for error
+            collectionSelected.getDataset(fIndex).getError().addOrUpdate(collectionSelected.getDataset(fIndex).getError().getX(i), collectionSelected.getDataset(fIndex).getError().getY(i).doubleValue()*scaleFactor);
+        }
+        collectionSelected.getDataset(fIndex).getData().setNotify(true);
+    }
+
+    /*
+        * ColorRenderer.java (compiles with releases 1.2, 1.3, and 1.4) is used by
+        * TableDialogEditDemo.java.
+        */
+    class ColorRenderer extends JLabel implements TableCellRenderer {
+        Border unselectedBorder = null;
+        Border selectedBorder = null;
+        boolean isBordered = true;
+
+        public ColorRenderer(boolean isBordered) {
+            this.isBordered = isBordered;
+            setOpaque(true); //MUST do this for background to show up.
+        }
+
+
+        public Component getTableCellRendererComponent(
+                JTable table, Object color,
+                boolean isSelected, boolean hasFocus,
+                int row, int column) {
+            Color newColor = (Color)color;
+            setBackground(newColor);
+            if (isBordered) {
+                if (isSelected) {
+                    if (selectedBorder == null) {
+                        selectedBorder = BorderFactory.createMatteBorder(2,5,2,5,
+                                table.getSelectionBackground());
+                    }
+                    setBorder(selectedBorder);
+                } else {
+                    if (unselectedBorder == null) {
+                        unselectedBorder = BorderFactory.createMatteBorder(2,5,2,5,
+                                table.getBackground());
+                    }
+                    setBorder(unselectedBorder);
+                }
+            }
+
+            setToolTipText("RGB value: " + newColor.getRed() + ", "
+                    + newColor.getGreen() + ", "
+                    + newColor.getBlue());
+            return this;
+        }
+    }
+
+    /*
+    * ColorEditor.java (compiles with releases 1.3 and 1.4) is used by
+    * TableDialogEditDemo.java.
+    */
+    /*
+    class Symbol {
+        private Color currentColor;
+        private float stroke;
+        private int pointSize;
+
+        public Symbol(Color selected, float weight, int size){
+            currentColor = selected;
+            stroke = weight;
+            pointSize = size;
+        }
+
+        public Color getColor(){
+            return currentColor;
+        }
+    }
+    */
+
+    //Analysis Spinners
+    public static class SpinnerEditor extends DefaultCellEditor implements ChangeListener {
+        private JSpinner spinner;
+        JSpinner.DefaultEditor editor;
+        JTextField textField;
+        boolean valueSet;
+        private int rowID;
+        private int colID;
+        private int priorValue;
+
+        // Initializes the spinner - Constructor.
+        public SpinnerEditor() {
+            super(new JTextField());
+            spinner = new JSpinner();
+            editor = ((JSpinner.DefaultEditor)spinner.getEditor());
+            textField = editor.getTextField();
+
+            textField.addFocusListener( new FocusListener() {
+                public void focusGained( FocusEvent fe ) {
+                    System.err.println("Got focus");
+
+                }
+                public void focusLost( FocusEvent fe ) {
+                    System.out.println("FocusLost " + collectionSelected.getDataset(rowID).getData().getX(0) + " | value " + spinner.getValue());
+                }
+            });
+            textField.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent ae ) {
+                    stopCellEditing();
+                }
+            });
+            spinner.addChangeListener((ChangeListener) this);
+        }
+
+        public void stateChanged(ChangeEvent e){
+            int temp = (Integer)this.spinner.getValue();
+            int current = (Integer) this.spinner.getValue() - 1;
+            int direction = temp - this.priorValue;
+            int limit;
+
+            if (this.colID == 4){
+                double test = collectionSelected.getDataset(rowID).getData().getMaxX();
+                double testSpinner = collectionSelected.getDataset(rowID).getOriginalLog10Data().getX(((Integer) this.spinner.getValue()).intValue()).doubleValue();
+                if (((Integer)this.spinner.getValue() < 1) || (testSpinner > test)){
+                    this.spinner.setValue(1);
+                    this.priorValue = 1;
+                } else {
+                    //moving up or down?
+                    if (direction > 0) {
+                        if (direction == 1) {
+                            collectionSelected.getDataset(rowID).getData().remove(0);
+                        } else {
+                            limit = (Integer) temp - this.priorValue;
+                            // keep removing first point
+
+                            //current is the last point
+                            XYSeries currentData = collectionSelected.getDataset(rowID).getData();
+                            //double startQValue = currentData.getMinX();
+
+                            //int start = collectionSelected.getDataset(rowID).getData().getMinX();
+
+                            //int stop = start + limit;
+                            // keep removing last point
+                            //collectionSelected.getDataset(rowID).getData().delete(stop, start);
+
+                            // delete from start to limit
+                            currentData.delete(0, limit);
+                            //for (int i = 0; i < limit; i++){
+                            //    collectionSelected.getDataset(rowID).getData().remove(0);
+                            // }
+                        }
+                        this.priorValue = temp;
+                    } else if (direction < 0){
+                        if (direction == -1) {
+                            XYDataItem tempXY = collectionSelected.getDataset(rowID).getOriginalLog10Data().getDataItem(current);
+                            double q = tempXY.getXValue();
+                            double lnI = Math.log10(tempXY.getYValue()*collectionSelected.getDataset(rowID).getScaleFactor());
+                            collectionSelected.getDataset(rowID).getData().add(q, lnI);
+                        } else {
+                            // keep adding points up until currentValue
+                            int start = current;
+                            XYSeries tempData = collectionSelected.getDataset(rowID).getData();
+                            XYSeries tempOriginalData = collectionSelected.getDataset(rowID).getOriginalLog10Data();
+                            double previousIntialValue = tempData.getMinX();
+                            int indexInOriginal = collectionSelected.getDataset(rowID).getOriginalLog10Data().indexOf(previousIntialValue);
+
+                            //double lastq = collectionSelected.getDataset(rowID).getData().getMaxX();
+                            //int last = collectionSelected.getDataset(rowID).getOriginalData().indexOf(lastq);
+                            double q, lnI;
+                            //int start = this.priorValue - 2;
+                            //collectionSelected.getDataset(rowID).getData().clear();
+                            //for(int i = start; i <= last; i++){
+                            //    XYDataItem tempXY = collectionSelected.getDataset(rowID).getOriginalData().getDataItem(i);
+                            //    q = tempXY.getXValue();
+                            //    lnI = Math.log10(tempXY.getYValue()*collectionSelected.getDataset(rowID).getScaleFactor());
+                            //    collectionSelected.getDataset(rowID).getData().add(q, lnI);
+                            //}
+                            double tempScaleFactor = collectionSelected.getDataset(rowID).getScaleFactor();
+                            for (int i = start; i<=indexInOriginal; i++){
+                                XYDataItem tempXY = tempOriginalData.getDataItem(i);
+                                q = tempXY.getXValue();
+                                lnI = Math.log10(tempXY.getYValue()*tempScaleFactor);
+                                tempData.add(q, lnI);
+                            }
+                        }
+                        this.priorValue = temp;
+                    }
+                }
+            } else if (colID == 5) {
+                limit = collectionSelected.getDataset(rowID).getOriginalLog10Data().getItemCount();
+                if ((Integer)this.spinner.getValue() > limit){
+                    this.spinner.setValue(limit);
+                    this.priorValue = limit;
+                } else {
+                    //moving up or down?
+                    if (direction < 0) {
+                        if (direction == -1) {
+                            //remove last point
+                            collectionSelected.getDataset(rowID).getData().remove(collectionSelected.getDataset(rowID).getData().getItemCount()-1);
+                        } else {
+                            limit = (Integer) temp - this.priorValue;
+                            //current is the last point
+                            int start = collectionSelected.getDataset(rowID).getData().getItemCount() - 1;
+                            int stop = start + limit;
+                            // keep removing last point
+                            collectionSelected.getDataset(rowID).getData().delete(stop, start);
+                            //for (int i = start; i > stop; i--){
+                            //    collectionSelected.getDataset(rowID).getData().remove(i);
+                            //}
+                        }
+
+                    } else if (direction > 0){
+                        if (direction == 1) {
+                            XYDataItem tempXY = collectionSelected.getDataset(rowID).getOriginalLog10Data().getDataItem(current);
+                            double q = tempXY.getXValue();
+                            double lnI = Math.log10(tempXY.getYValue()*collectionSelected.getDataset(rowID).getScaleFactor());
+                            collectionSelected.getDataset(rowID).getData().add(q, lnI);
+                        } else {
+                            // keep adding points up until currentValue
+                            Dataset tempDataset = collectionSelected.getDataset(rowID);
+                            XYSeries tempData = tempDataset.getData();
+
+                            int last = current;
+                            double lastPlottedValue = tempData.getMaxX();
+                            int indexOfLastPlottedValue = tempData.indexOf(lastPlottedValue);
+
+                            double startq = tempData.getX(0).doubleValue();
+                            //int start = collectionSelected.getDataset(rowID).getOriginalData().indexOf(startq);
+                            double q, lnI;
+                            // clear data and rebuild
+                            //collectionSelected.getDataset(rowID).getData().clear();
+                            double scaleFactor = tempDataset.getScaleFactor();
+                            XYSeries tempOriginal = tempDataset.getOriginalLog10Data();
+                            for(int i = indexOfLastPlottedValue; i <= last; i++){
+                                XYDataItem tempXY = tempOriginal.getDataItem(i);
+                                q = tempXY.getXValue();
+                                lnI = Math.log10(tempXY.getYValue()*scaleFactor);
+                                tempData.add(q, lnI);
+                            }
+                        }
+                    }
+                    this.priorValue = temp;
+                    //analysisModel.setValueAt(temp, rowID, colID);
+                }
+            }
+        }
+
+        @Override
+        public void addCellEditorListener(CellEditorListener l) {
+            super.addCellEditorListener(l);    //To change body of overridden methods use File | Settings | File Templates.
+        }
+
+        // Prepares the spinner component and returns it.
+        public Component getTableCellEditorComponent( JTable table, Object value, boolean isSelected, int row, int column) {
+
+            rowID = row;
+            colID = column;
+
+            if (colID == 4){
+                priorValue = collectionSelected.getDataset(rowID).getStart();
+            } else if (colID == 5){
+                priorValue = collectionSelected.getDataset(rowID).getEnd();
+            }
+
+            spinner.setValue(priorValue);
+
+            SwingUtilities.invokeLater( new Runnable() {
+                public void run() {
+                    textField.requestFocus();
+                }
+            });
+            return spinner;
+        }
+
+        public boolean isCellEditable( EventObject eo )
+        {
+            //System.err.println("isCellEditable");
+            if ( eo instanceof KeyEvent ) {
+                KeyEvent ke = (KeyEvent)eo;
+                System.err.println("key event: "+ke.getKeyChar());
+                textField.setText(String.valueOf(ke.getKeyChar()));
+                //textField.select(1,1);
+                //textField.setCaretPosition(1);
+                //textField.moveCaretPosition(1);
+                valueSet = true;
+            } else {
+                valueSet = false;
+            }
+            return true;
+        }
+
+        // Returns the spinners current value.
+        public Object getCellEditorValue() {
+            return spinner.getValue();
+        }
+
+        public boolean stopCellEditing() {
+            System.err.println("Stopping edit");
+            try {
+                editor.commitEdit();
+                spinner.commitEdit();
+
+            } catch ( java.text.ParseException e ) {
+                JOptionPane.showMessageDialog(null,
+                        "Invalid value, discarding.");
+            }
+            return super.stopCellEditing();
+        }
+
+    } // end of spinnerEditor
+
+    class ColorEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
+        Color currentColor;
+        JComboBox pointSizes;
+        JComboBox thickBox;
+        JButton button;
+        JColorChooser colorChooser;
+        JDialog dialog;
+        String tableModel;
+        int data_row;
+        protected static final String EDIT = "edit";
+
+        public ColorEditor() {
+            //Set up the editor (from the table's point of view),
+            //which is a button.
+            //This button brings up the color chooser dialog,
+            //which is the editor from the user's point of view.
+            button = new JButton();
+            button.setActionCommand(EDIT);
+            button.addActionListener(this);
+            button.setBorderPainted(false);
+
+            //Set up the dialog that the button brings up.
+            colorChooser = new JColorChooser();
+            dialog = JColorChooser.createDialog(button,
+                    "Pick a Color or Change Size",
+                    true,  //modal
+                    colorChooser,
+                    this,  //OK button handler
+                    null); //no CANCEL button handler
+        }
+
+        /**
+         * Handles events from the editor button and from
+         * the dialog's OK button.
+         */
+        public void actionPerformed(ActionEvent e) {
+            if (EDIT.equals(e.getActionCommand())) {
+                //The user has clicked the cell, so
+                //bring up the dialog.
+                button.setBackground(currentColor);
+                colorChooser.setColor(currentColor);
+                JPanel preview = new JPanel();
+
+                JLabel pointTitle = new JLabel("Point Size");
+                String[] sizes = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "15", "17", "19", "21"};
+                pointSizes = new JComboBox(sizes);
+                preview.add(pointTitle);
+
+                JLabel thicknessTitle = new JLabel(" | Line Stroke");
+                String[] thicknesses = {"0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0"};
+                thickBox = new JComboBox(thicknesses);
+                preview.add(thicknessTitle);
+
+                if (tableModel.contains("Analysis")){
+                    Dataset temp = collectionSelected.getDataset(data_row);
+                    int index=0;
+                    for (int i=0; i<sizes.length; i++){
+                        if (temp.getPointSize() == Integer.parseInt(sizes[i])){
+                            index = i;
+                        }
+                    }
+
+                    pointSizes.setSelectedIndex(index);
+                    preview.add(pointSizes);
+
+                    index=0;
+                    for (int i=0; i<thicknesses.length; i++){
+                        if (temp.getStroke().getLineWidth() == Float.parseFloat(thicknesses[i])){
+                            index = i;
+                        }
+                    }
+
+                    thickBox.setSelectedIndex(index);
+                    preview.add(thickBox);
+
+                } else if (tableModel.contains("Pr")){
+                    /*
+                    RealSpace temp = prModel.getDataset(data_row);
+                    int index=0;
+                    for (int i=0; i<sizes.length; i++){
+                        if (temp.getPointSize() == Integer.parseInt(sizes[i])){
+                            index = i;
+                        }
+                    }
+
+                    pointSizes.setSelectedIndex(index);
+                    preview.add(pointSizes);
+
+                    index=0;
+                    for (int i=0; i<thicknesses.length; i++){
+                        if (temp.getStroke().getLineWidth() == Float.parseFloat(thicknesses[i])){
+                            index = i;
+                        }
+                    }
+
+                    thickBox.setSelectedIndex(index);
+                    preview.add(thickBox);
+                    */
+                }
+
+                colorChooser.setPreviewPanel(preview);
+                dialog.setVisible(true);
+
+                //Make the renderer reappear.
+                fireEditingStopped();
+
+            } else { //User pressed dialog's "OK" button.
+                currentColor = colorChooser.getColor();
+            }
+        }
+
+        //Implement the one CellEditor method that AbstractCellEditor doesn't.
+        public Object getCellEditorValue() {
+            int thickIndex = thickBox.getSelectedIndex();
+            int pointIndex = pointSizes.getSelectedIndex();
+
+            float thickness;
+            int pointSize;
+
+            thickness = Float.parseFloat((String) thickBox.getSelectedItem());
+            pointSize = Integer.parseInt( (String)pointSizes.getSelectedItem());
+            Symbol newInfo = new Symbol(currentColor, thickness, pointSize);
+            return newInfo;
+            //return currentColor;
+        }
+
+        //Implement the one method defined by TableCellEditor.
+        public Component getTableCellEditorComponent(JTable table,
+                                                     Object value,
+                                                     boolean isSelected,
+                                                     int row,
+                                                     int column) {
+
+
+//            if (table.getModel().getClass() == AnalysisModel.class){
+//                System.out.println("Analysis Table Model" + table.getModel().getClass() + " | ");
+//            } else if (table.getModel().getClass() == PrModel.class){
+//                System.out.println("Pr Table Model" + table.getModel().getClass() + " | ");
+//            }
+
+            tableModel = table.getModel().getClass().toString();
+            currentColor = (Color)value;
+            data_row = row;
+            return button;
+        }
+    }
+
+
+    private void copyDataset(String obj, Dataset dataset, String workingDirectoryName) {
+
+        String base = obj.replaceAll("\\W","_");
+        FileWriter fstream = null;
+        try {
+            fstream = new FileWriter(workingDirectoryName+ "/" + base + ".dat");
+            BufferedWriter out = new BufferedWriter(fstream);
+            out.write("# REMARK\tFile renamed " + dataset.getFileName() + " => " + base + "\n");
+            out.write("# REMARK\tColumns: q, I(q), error \n");
+
+            int numberOfDigits;
+            XYSeries writeOut = dataset.getOriginalLog10Data();
+            XYSeries writeError = dataset.getOriginalPositiveOnlyError();
+
+            int totalItems = dataset.getOriginalLog10Data().getItemCount();
+            for (int i=0; i< totalItems; i++){
+                numberOfDigits = getDigits(writeOut.getX(i).doubleValue());
+       //         out.write( String.format("%s\t%s\t%s %n", formattedQ(writeOut.getX(i).doubleValue(), numberOfDigits), scientific1dot5e2.format(writeOut.getY(i).doubleValue()),scientific1dot5e2.format(writeError.getY(i).doubleValue())));
+            }
+
+            status.setText("Renamed(copied) original file");
+            dataset.setFileName(base);
+            //Close the output stream
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public class ButtonEditorRenderer extends AbstractCellEditor implements TableCellRenderer, TableCellEditor, ActionListener {
+        JButton button;
+        private int rowID;
+        private int colID;
+
+        public ButtonEditorRenderer(){
+            this.button = new JButton();
+            button.addActionListener(this);
+            button.setMaximumSize(new Dimension(10,10));
+            button.setPreferredSize(new Dimension(10,10));
+            button.setText("G");
+            button.setFont(new Font("Verdana", Font.BOLD, 12));
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            button.setSelected(Boolean.TRUE.equals(value));
+            this.button.setForeground(Color.BLACK);
+            return button;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+
+            button.setSelected(Boolean.TRUE.equals(value));
+            rowID = row;
+            colID = column;
+            return button;
+        }
+
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (this.colID == 13) {
+                this.button.setBackground(Color.WHITE);
+                this.button.setForeground(Color.GREEN);
+
+                //if (manualGuinierFrame instanceof JFrame){
+                //    manualGuinierPlot.dispose();
+                //    manualGuinierFrame.dispose();
+                //}
+
+                PlotManualGuinier manualGuinierPlot = new PlotManualGuinier("Guinier Plot", collectionSelected.getDataset(rowID), WORKING_DIRECTORY_NAME);
+                System.out.println("PLOTTING GUINIER");
+                manualGuinierPlot.plot(analysisModel);
+                //plotGuinierRg(collectionSelected.getDataset(rowID));
+            }
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return button.isSelected();
+        }
+    }
+
+    private int getDigits(double qvalue) {
+        String toText = Double.toString(qvalue);
+        int integerPlaces = toText.indexOf('.');
+        int decimalPlaces;
+
+        String[] temp = toText.split("\\.0*");
+        decimalPlaces = (temp.length == 2) ? temp[1].length() : (toText.length() - integerPlaces -1);
+
+        return decimalPlaces;
+    }
+
+
+
+
+} // end of Scatter class
 
 class DataFilesListRenderer extends JCheckBox implements ListCellRenderer {
     Color setColor;

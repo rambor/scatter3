@@ -7,8 +7,6 @@ import java.awt.*;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Created by robertrambo on 05/01/2016.
@@ -16,14 +14,23 @@ import java.util.logging.Logger;
 public class Dataset {
     private PropertyChangeSupport propChange = new PropertyChangeSupport(this);
     private ArrayList<Fit> fitList;
-    private XYSeries data;
-    private XYSeries error;
-    private XYSeries originalLog10Data;
-    private XYSeries originalNonNegativeData;
-    private XYSeries originalNonNegativeError;
+    private XYSeries plottedData;   // plotted log10 data
+    private XYSeries plottedError;  // plotted log10 data
 
-    private final XYSeries allData;
-    private final XYSeries allDataError;
+    private final XYSeries originalLog10Data;         // not to be modified
+    private final XYSeries originalPositiveOnlyData;  // not to be modified
+    private final XYSeries originalPositiveOnlyError; // not to be modified
+
+    private final XYSeries allData;      // not to be modified
+    private final XYSeries allDataError; // not to be modified
+
+    private XYSeries normalizedKratkyData;  // derived from allData
+    private XYSeries normalizedGuinierData; // derived from originalPositiveOnlyData
+    private XYSeries guinierData; // derived from originalPositiveOnlyData
+    private XYSeries kratkyData;            // derived from allData
+    private XYSeries qIqData;               // derived from allData
+    private XYSeries powerLawData;          // derived from originalPositiveOnlyData
+
     private XYSeries refinedData;
     private XYSeries refinedDataError;
 
@@ -46,6 +53,7 @@ public class Dataset {
     private double porodExponent;
     private double porodExponentError;
     private double scaleFactor;
+    private double log10ScaleFactor;
     private double averageR;
     private double averageRSigma;
     private int porodDebyeVolume;
@@ -109,13 +117,19 @@ public class Dataset {
         allData = new XYSeries(tempName);
         allDataError = new XYSeries(tempName);
 
-        data = new XYSeries(tempName);  // actual log10 data that is plotted
-        error = new XYSeries(tempName); // actual log10 data that is plotted
+        plottedData = new XYSeries(tempName);  // actual log10 data that is plotted
+        plottedError = new XYSeries(tempName); // actual log10 data that is plotted
 
-        originalNonNegativeData = new XYSeries(tempName);
+        originalPositiveOnlyData = new XYSeries(tempName);
         originalLog10Data = new XYSeries(tempName);
-        originalNonNegativeError = new XYSeries(tempName);
+        originalPositiveOnlyError = new XYSeries(tempName);
 
+        normalizedKratkyData = new XYSeries(tempName);  // derived from allData
+        normalizedGuinierData = new XYSeries(tempName); // derived from originalPositiveOnlyData
+        guinierData = new XYSeries(tempName); // derived from originalPositiveOnlyData
+        kratkyData = new XYSeries(tempName);            // derived from allData
+        qIqData = new XYSeries(tempName);               // derived from allData
+        powerLawData = new XYSeries(tempName);          // derived from originalPositiveOnlyData
 
         /*
          * make working copies of the data into non-negative, log10 and all
@@ -127,29 +141,45 @@ public class Dataset {
 
             allData.add(tempXY);
             allDataError.add(tempError);
+
+            double q = tempXY.getXValue();
+            double q2 = q*q;
             //
             if (tempXY.getYValue() > 0) {
-                // Non-Negative Data that is pared down based on sparse
-                originalNonNegativeData.add(tempXY);
+                // Positive only Data that is pared down based on sparse
+                double logy = Math.log(tempXY.getYValue());
+                originalPositiveOnlyData.add(tempXY);
                 originalLog10Data.add(tempXY.getX(), Math.log10(tempXY.getYValue()));
-                originalNonNegativeError.add(tempError);
+                originalPositiveOnlyError.add(tempError);
 
-                data.add(originalLog10Data.getDataItem(logCount));
-                error.add(originalNonNegativeError.getDataItem(logCount));
+                plottedData.add(originalLog10Data.getDataItem(logCount));
+                plottedError.add(originalPositiveOnlyError.getDataItem(logCount));
+
+                normalizedGuinierData.add(q2, logy);
+                guinierData.add(q2, logy);
+                powerLawData.add(Math.log(tempXY.getXValue()), logy);
                 logCount++;
             }
+            //kratky and q*I(q)
+            /*
+            private XYSeries normalizedKratky;  // derived from allData
+            private XYSeries kratky;            // derived from allData
+            private XYSeries qIq;               // derived from allData
+            */
+            normalizedKratkyData.add(q, q2*tempXY.getYValue());
+            kratkyData.add(q, q2*tempXY.getYValue());
+            qIqData.add(q, q*tempXY.getYValue());
         }
 
-        System.out.println("SUCCESS? " + data.getItemCount() + " <= " + allData.getItemCount());
 
-        fitList = new ArrayList<Fit>();
+        fitList = new ArrayList<>();
 
         filename=fileName;
         this.start=0;
-        this.end=originalNonNegativeData.getItemCount();
+        this.end= originalPositiveOnlyData.getItemCount();
 
         // if possible do preliminary analysis here
-        double[] izeroRg = Functions.calculateIzeroRg(this.originalNonNegativeData, this.originalNonNegativeError);
+        double[] izeroRg = Functions.calculateIzeroRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError);
 
         if (izeroRg[0] > 0){
             guinierIZero=izeroRg[0];
@@ -159,13 +189,14 @@ public class Dataset {
         }
 
         scaleFactor=1.000;
+        log10ScaleFactor = 0;
         invariantQ=0.0;
         fitFile = false;
         inUse = true;
-        maxI = this.data.getMaxY();  //log10 data
-        minI = this.data.getMinY();  //log10 data
-        maxq = this.data.getMaxX();  //
-        minq = this.data.getMinX();  //
+        maxI = this.plottedData.getMaxY();  //log10 data
+        minI = this.plottedData.getMinY();  //log10 data
+        maxq = this.plottedData.getMaxX();  //
+        minq = this.plottedData.getMinX();  //
         dMax = 0.0d;
 
         baseShapeFilled = false;
@@ -180,12 +211,12 @@ public class Dataset {
     public Dataset (Dataset aDataset){
         fitList = aDataset.fitList;
 
-        data=aDataset.data;
-        error=aDataset.error;
+        plottedData=aDataset.plottedData;
+        plottedError=aDataset.plottedError;
 
-        originalNonNegativeData = aDataset.originalNonNegativeData;
+        originalPositiveOnlyData = aDataset.originalPositiveOnlyData;
         originalLog10Data = aDataset.originalLog10Data;
-        originalNonNegativeError = aDataset.originalNonNegativeError;
+        originalPositiveOnlyError = aDataset.originalPositiveOnlyError;
 
         allData = aDataset.allData;
         allDataError = aDataset.allDataError;
@@ -199,6 +230,7 @@ public class Dataset {
         guinierIZero=aDataset.guinierIZero;
         guinierRg=aDataset.guinierRg;
         scaleFactor=aDataset.scaleFactor;
+        log10ScaleFactor = aDataset.log10ScaleFactor;
         invariantQ=aDataset.invariantQ;
 
         realSpace = aDataset.realSpace;
@@ -234,6 +266,13 @@ public class Dataset {
 
     /**
      * Returns full path file name
+     */
+    public void setFileName(String text){
+        this.filename = text;
+    }
+
+    /**
+     * Returns full path file name
      * @return full path of the file
      */
     public String getFileName(){
@@ -242,10 +281,10 @@ public class Dataset {
 
     /**
      * Returns XYSeries dataset used for plotting on log scale
-     * @return XYSeries of the dataset
+     * @return XYSeries of the dataset (plottedData)
      */
     public XYSeries getData(){
-        return data;
+        return plottedData;
     }
 
     /**
@@ -253,23 +292,43 @@ public class Dataset {
      * @return XYSeries sigma vs q
      */
     public XYSeries getError(){
-        return error;
+        return plottedError;
+    }
+
+
+    /**
+     * Returns unmodified XYSeries as q^2, ln[I(q)]
+     * @return XYSeries
+     */
+    public XYSeries getGuinierData(){
+        return guinierData;
+    }
+
+
+    /**
+     * Returns dataItem of log10Data that is scaled
+     * @return XYDataItem
+     */
+    public XYDataItem getScaledLog10DataItemAt(int index){
+        XYDataItem temp = originalLog10Data.getDataItem(index);
+        Number qvalue = temp.getX();
+        return new XYDataItem(qvalue, temp.getYValue() + this.log10ScaleFactor);
     }
 
     /**
      * Returns unmodified XYSeries dataset (q,log10(I))
      * @return XYSeries parsed from file
      */
-    public XYSeries getOriginalData(){
+    public XYSeries getOriginalLog10Data(){
         return originalLog10Data;
     }
 
     /**
-     * Returns original XYSeries error (q,sigma)
+     * Returns original XYSeries error (q,sigma) of positive only intensity data
      * @return Unmodified XYSeries with sigma vs q
      */
-    public XYSeries getOriginalError(){
-        return originalNonNegativeError;
+    public XYSeries getOriginalPositiveOnlyError(){
+        return originalPositiveOnlyError;
     }
 
     /**
@@ -286,6 +345,10 @@ public class Dataset {
      */
     public XYSeries getAllDataError(){
         return allDataError;
+    }
+
+    public XYDataItem getKratkyItem(int index){
+        return kratkyData.getDataItem(index);
     }
 
     /**
@@ -534,29 +597,6 @@ public class Dataset {
 
     //***************************************
 
-    /**
-     * Sets full path file name
-     *
-     */
-    public void setFileName(String name){
-        filename=name;
-    }
-
-    /**
-     * Sets XYSeries dataset (q,ln(I))
-     *
-     */
-    public void setData(XYSeries dat){
-        data=dat;
-    }
-    /**
-     * Sets XYSeries error (q,sigma)
-     *
-     */
-    public void setError(XYSeries err){
-        error=err;
-    }
-
     /*
      * Sets XYSeries refined dataset (q, I(q))
      */
@@ -692,6 +732,7 @@ public class Dataset {
      *
      */
     public void setScaleFactor(double factor){
+        log10ScaleFactor = Math.log10(factor);
         scaleFactor=factor;
     }
     /**

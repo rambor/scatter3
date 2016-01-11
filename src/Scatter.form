@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="Scatter">
   <grid id="27dc6" binding="panel1" default-binding="true" layout-manager="FormLayout">
-    <rowspec value="center:d:grow"/>
-    <rowspec value="top:3dlu:noGrow"/>
+    <rowspec value="center:m:grow"/>
+    <rowspec value="top:0dlu:noGrow"/>
     <rowspec value="center:d:noGrow"/>
     <colspec value="fill:d:grow"/>
     <constraints>
-      <xy x="20" y="20" width="800" height="800"/>
+      <xy x="20" y="20" width="935" height="800"/>
     </constraints>
     <properties>
       <minimumSize width="800" height="550"/>
@@ -22,6 +22,7 @@
           <forms defaultalign-vert="false"/>
         </constraints>
         <properties>
+          <preferredSize width="800" height="591"/>
           <tabLayoutPolicy value="0"/>
           <tabPlacement value="1"/>
         </properties>
@@ -285,7 +286,7 @@
             </properties>
             <border type="none"/>
             <children>
-              <grid id="e135d" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+              <grid id="e135d" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="0" vgap="-1">
                 <margin top="0" left="0" bottom="0" right="0"/>
                 <constraints>
                   <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -311,9 +312,7 @@
                     </properties>
                     <border type="none"/>
                     <children>
-                      <grid id="c0cec" binding="miniIofQPanel" layout-manager="FormLayout">
-                        <rowspec value="center:d:grow"/>
-                        <colspec value="fill:d:grow"/>
+                      <grid id="c0cec" binding="miniGuinierPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
                         <constraints>
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -321,9 +320,7 @@
                         <border type="etched"/>
                         <children/>
                       </grid>
-                      <grid id="64b04" binding="normalizedKratkyPanel" layout-manager="FormLayout">
-                        <rowspec value="center:d:grow"/>
-                        <colspec value="fill:d:grow"/>
+                      <grid id="64b04" binding="miniNormalizedKratkyPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
                         <constraints>
                           <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -331,9 +328,7 @@
                         <border type="etched"/>
                         <children/>
                       </grid>
-                      <grid id="55832" binding="normalizedGuinierPanel" layout-manager="FormLayout">
-                        <rowspec value="center:d:grow"/>
-                        <colspec value="fill:d:grow"/>
+                      <grid id="55832" binding="miniVcPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
                         <constraints>
                           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
@@ -343,22 +338,15 @@
                       </grid>
                     </children>
                   </grid>
-                  <grid id="1e4f8" layout-manager="FormLayout">
-                    <rowspec value="center:d:grow"/>
-                    <colspec value="fill:d:grow"/>
+                  <grid id="1e4f8" layout-manager="BorderLayout" hgap="0" vgap="0">
                     <constraints>
                       <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                     </constraints>
                     <properties/>
                     <border type="none"/>
                     <children>
-                      <grid id="b04d7" binding="analysisPane" layout-manager="FormLayout">
-                        <rowspec value="center:d:grow"/>
-                        <colspec value="fill:d:grow"/>
-                        <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                          <forms defaultalign-vert="false"/>
-                        </constraints>
+                      <grid id="b04d7" binding="analysisPane" layout-manager="BorderLayout" hgap="0" vgap="0">
+                        <constraints border-constraint="Center"/>
                         <properties/>
                         <border type="none"/>
                         <children/>
@@ -367,20 +355,425 @@
                   </grid>
                 </children>
               </grid>
-              <grid id="29296" binding="buttonPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                <margin top="0" left="0" bottom="0" right="0"/>
+              <grid id="29296" binding="buttonPanel" layout-manager="FormLayout">
+                <rowspec value="center:28px:noGrow"/>
+                <rowspec value="top:0dlu:noGrow"/>
+                <rowspec value="center:28px:noGrow"/>
+                <rowspec value="top:0dlu:noGrow"/>
+                <rowspec value="center:28px:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
+                <colspec value="left:0dlu:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
+                <colspec value="left:0dlu:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
+                <colspec value="left:0dlu:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
+                <colspec value="left:0dlu:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
+                <colspec value="left:0dlu:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
+                <colspec value="left:0dlu:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
+                <colspec value="left:0dlu:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
                 <constraints>
                   <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="2" fill="1" indent="0" use-parent-layout="false"/>
                   <forms defaultalign-vert="false"/>
                 </constraints>
                 <properties>
-                  <background color="-15995922"/>
+                  <background color="-1"/>
                   <maximumSize width="2147483647" height="90"/>
-                  <minimumSize width="0" height="90"/>
-                  <preferredSize width="0" height="90"/>
+                  <minimumSize width="-1" height="90"/>
+                  <preferredSize width="-1" height="90"/>
                 </properties>
                 <border type="etched"/>
-                <children/>
+                <children>
+                  <component id="c2d95" class="javax.swing.JButton" binding="intensityPlotButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <background color="-6178385"/>
+                      <borderPainted value="true"/>
+                      <font size="12" style="1"/>
+                      <foreground color="-15822098"/>
+                      <hideActionText value="true"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Intensity Plot"/>
+                    </properties>
+                  </component>
+                  <component id="f02a6" class="javax.swing.JButton" binding="normalizedKratkyButton" default-binding="true">
+                    <constraints>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-15822098"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Normalized Kratky"/>
+                    </properties>
+                  </component>
+                  <component id="4924c" class="javax.swing.JButton" binding="flexibilityPlotsButton" default-binding="true">
+                    <constraints>
+                      <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-15822098"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Flexibility Plots"/>
+                    </properties>
+                  </component>
+                  <component id="55363" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-15822098"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Volume"/>
+                    </properties>
+                  </component>
+                  <component id="a9285" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-15822098"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Vc Plot"/>
+                    </properties>
+                  </component>
+                  <component id="de0c" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-15822098"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Real Space"/>
+                    </properties>
+                  </component>
+                  <component id="360dd" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-760048"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Auto-Rg"/>
+                    </properties>
+                  </component>
+                  <component id="e282b" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="2" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-760048"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Kratky Plot"/>
+                    </properties>
+                  </component>
+                  <component id="af247" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="4" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-760048"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Power-law"/>
+                    </properties>
+                  </component>
+                  <component id="bd8b2" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-3919037"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Errors"/>
+                    </properties>
+                  </component>
+                  <component id="c3243" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="2" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-3919037"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Rc Plot"/>
+                    </properties>
+                  </component>
+                  <component id="4324" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="4" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-3919037"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="q*I(q) vs q"/>
+                    </properties>
+                  </component>
+                  <component id="b89f7" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="8" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-5361508"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Complex?"/>
+                    </properties>
+                  </component>
+                  <component id="f97e2" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="2" column="8" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-5361508"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Ratio"/>
+                    </properties>
+                  </component>
+                  <component id="416a1" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="4" column="8" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-5361508"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="I(0) : Rg Plot"/>
+                    </properties>
+                  </component>
+                  <component id="8d476" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="10" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-16735422"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Scale"/>
+                    </properties>
+                  </component>
+                  <component id="92ddb" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="2" column="10" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-13908400"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Scale to I(0)"/>
+                    </properties>
+                  </component>
+                  <component id="c6224" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="4" column="10" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-16735422"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="ScaleMerge"/>
+                    </properties>
+                  </component>
+                  <component id="f6bcf" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="12" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-15822098"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Average"/>
+                    </properties>
+                  </component>
+                  <component id="19a0" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="2" column="12" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-3919037"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Median"/>
+                    </properties>
+                  </component>
+                  <component id="56862" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="4" column="12" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-5361508"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Single"/>
+                    </properties>
+                  </component>
+                  <component id="45db5" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="0" column="14" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-13908400"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="PDF"/>
+                    </properties>
+                  </component>
+                  <component id="a3634" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="2" column="14" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-13908400"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Average"/>
+                    </properties>
+                  </component>
+                  <component id="cd0bb" class="javax.swing.JButton" default-binding="true">
+                    <constraints>
+                      <grid row="4" column="14" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="-1" height="29"/>
+                        <maximum-size width="-1" height="29"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <foreground color="-16777216"/>
+                      <iconTextGap value="0"/>
+                      <margin top="0" left="0" bottom="0" right="0"/>
+                      <text value="Save"/>
+                    </properties>
+                  </component>
+                </children>
               </grid>
             </children>
           </grid>
@@ -409,7 +802,49 @@
             </constraints>
             <properties/>
             <border type="none"/>
-            <children/>
+            <children>
+              <tabbedpane id="70f37" binding="tabbedPane1" default-binding="true">
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                    <preferred-size width="200" height="200"/>
+                  </grid>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <grid id="3de26" layout-manager="FormLayout">
+                    <rowspec value="center:d:grow"/>
+                    <colspec value="fill:d:grow"/>
+                    <constraints>
+                      <tabbedpane title="Sphere"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children/>
+                  </grid>
+                  <grid id="f0c7a" layout-manager="FormLayout">
+                    <rowspec value="center:d:grow"/>
+                    <colspec value="fill:d:grow"/>
+                    <constraints>
+                      <tabbedpane title="Ellipsoid"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children/>
+                  </grid>
+                  <grid id="5edc6" layout-manager="FormLayout">
+                    <rowspec value="center:d:grow"/>
+                    <colspec value="fill:d:grow"/>
+                    <constraints>
+                      <tabbedpane title="Core-Shell"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children/>
+                  </grid>
+                </children>
+              </tabbedpane>
+            </children>
           </grid>
           <grid id="56701" layout-manager="FormLayout">
             <rowspec value="center:d:grow"/>
