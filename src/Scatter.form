@@ -308,7 +308,8 @@
                       </grid>
                     </constraints>
                     <properties>
-                      <background color="-1162360"/>
+                      <autoscrolls value="false"/>
+                      <background color="-5710849"/>
                     </properties>
                     <border type="none"/>
                     <children>
@@ -422,7 +423,7 @@
                       <text value="Normalized Kratky"/>
                     </properties>
                   </component>
-                  <component id="4924c" class="javax.swing.JButton" binding="flexibilityPlotsButton" default-binding="true">
+                  <component id="4924c" class="javax.swing.JButton" binding="normalizedGuinierButton" default-binding="true">
                     <constraints>
                       <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>
@@ -434,7 +435,7 @@
                       <font size="12" style="1"/>
                       <foreground color="-15822098"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
-                      <text value="Flexibility Plots"/>
+                      <text value="Normalized Guinier"/>
                     </properties>
                   </component>
                   <component id="55363" class="javax.swing.JButton" default-binding="true">
@@ -495,10 +496,10 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-760048"/>
+                      <foreground color="-15822098"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
-                      <text value="Auto-Rg"/>
+                      <text value="Flexibility Plots"/>
                     </properties>
                   </component>
                   <component id="e282b" class="javax.swing.JButton" binding="kratkyPlotButton">
@@ -511,7 +512,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-760048"/>
+                      <foreground color="-16735422"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Kratky Plot"/>
@@ -565,7 +566,7 @@
                       <text value="Rc Plot"/>
                     </properties>
                   </component>
-                  <component id="4324" class="javax.swing.JButton" default-binding="true">
+                  <component id="4324" class="javax.swing.JButton" binding="qIqPlotButton">
                     <constraints>
                       <grid row="4" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>

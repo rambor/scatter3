@@ -35,7 +35,6 @@ public class KratkyPlot {
     private static XYSeriesCollection collectionToPlot = new XYSeriesCollection();
 
     public static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 KRATKY PLOT", chart);
-
     static JFrame jframe = new JFrame("SC\u212BTTER \u2263 KRATKY PLOT");
 
     private static XYLineAndShapeRenderer renderer1;
@@ -64,12 +63,14 @@ public class KratkyPlot {
 
         collectionToPlot.removeAllSeries();
         // create collection of series to plot
-        int startAt, endAt;
+
         for (int i = 0; i < totalSets; i++){
             Dataset temp = collection.getDataset(i);
             temp.clearPlottedKratkyData();
             if (temp.getInUse()){
                 collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());
+                temp.scalePlottedKratkyData();
+                /*
                 XYDataItem tempData;
                 startAt = temp.getStart();
                 endAt = temp.getEnd();
@@ -84,6 +85,7 @@ public class KratkyPlot {
                     tempData = temp.getKratkyItem(j);
                     tempSeries.add(tempData.getX(), tempData.getYValue()*sf);
                 }
+                */
             } else {
                 collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());  // should add an empty Series
             }
@@ -175,12 +177,15 @@ public class KratkyPlot {
         //    plot.addRangeMarker(yMarker);
         //}
         domainAxis.setLabel(quote);
-
+        domainAxis.setLabelFont(Constants.BOLD_16);
+        domainAxis.setTickLabelFont(Constants.FONT_12);
         quote = "q\u00B2 \u00D7 I(q)";
         //if (normal){
         //    quote  = "q\u00B2 \u00D7 I(q)";
         //}
         rangeAxis.setLabel(quote);
+        rangeAxis.setLabelFont(Constants.BOLD_16);
+        rangeAxis.setTickLabelFont(Constants.FONT_12);
 
         rangeAxis.setRange(0, upper + 0.1*upper);
         chart.getLegend().setVisible(false);
@@ -208,9 +213,6 @@ public class KratkyPlot {
             renderer1.setSeriesVisible(i, temp.getInUse());
             renderer1.setSeriesOutlineStroke(i, temp.getStroke());
         }
-
-        //frame.getChartPanel().setSize(640, 480);
-        //frame.getContentPane().add(chartPanel);
 
         JPopupMenu popup = chartPanel.getPopupMenu();
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
@@ -243,5 +245,10 @@ public class KratkyPlot {
 
     public boolean isVisible(){
         return jframe.isVisible();
+    }
+
+    public void clearAll(){
+        collectionToPlot.removeAllSeries();
+        frame.removeAll();
     }
 }

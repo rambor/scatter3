@@ -83,10 +83,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         // use Rg to create XYSeries dataset
         // add to newDatasetCollection
 
-        datasetInUse.setGuinierRg(guinierParameters[1]);
-        datasetInUse.setGuinierRG_sigma(guinierParameters[3]);
-        datasetInUse.setGuinierIzero(guinierParameters[0]);
-        datasetInUse.setGuinierIzeroSigma(guinierParameters[2]);
+        datasetInUse.setGuinierParameters(guinierParameters[0], guinierParameters[2], guinierParameters[1], guinierParameters[3]);
 
         int itemCount = datasetInUse.getGuinierData().getItemCount();
         plottedData = new XYSeries(datasetInUse.getFileName());
@@ -341,10 +338,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
 
         this.updateLimits(rg);
 
-        datasetInUse.setGuinierRg(rg);
-        datasetInUse.setGuinierRG_sigma(rgError);
-        datasetInUse.setGuinierIzero(i_zero);
-        datasetInUse.setGuinierIzeroSigma(izeroError);
+        datasetInUse.setGuinierParameters(i_zero, izeroError, rg, rgError);
         analysisModel.fireTableDataChanged();
         //resultsModel.fireTableDataChanged();
     }

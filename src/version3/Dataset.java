@@ -17,6 +17,7 @@ public class Dataset {
     private XYSeries plottedData;   // plotted log10 data
     private XYSeries plottedError;  // plotted log10 data
     private XYSeries plottedKratkyData;   // plotted log10 data
+    private XYSeries plottedqIqData;   // plotted log10 data
 
     private final XYSeries originalLog10Data;         // not to be modified
     private final XYSeries originalPositiveOnlyData;  // not to be modified
@@ -26,6 +27,8 @@ public class Dataset {
     private final XYSeries allDataError; // not to be modified
 
     private XYSeries normalizedKratkyData;  // derived from allData
+    private XYSeries normalizedKratkyReciprocalSpaceData;
+    private XYSeries normalizedKratkyRealSpaceData;
     private XYSeries normalizedGuinierData; // derived from originalPositiveOnlyData
     private XYSeries guinierData; // derived from originalPositiveOnlyData
     private XYSeries kratkyData;            // derived from allData
@@ -121,12 +124,15 @@ public class Dataset {
         plottedData = new XYSeries(tempName);  // actual log10 data that is plotted
         plottedError = new XYSeries(tempName); // actual log10 data that is plotted
         plottedKratkyData = new XYSeries(tempName);
+        plottedqIqData = new XYSeries(tempName);
 
         originalPositiveOnlyData = new XYSeries(tempName);
         originalLog10Data = new XYSeries(tempName);
         originalPositiveOnlyError = new XYSeries(tempName);
 
         normalizedKratkyData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyReciprocalSpaceData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyRealSpaceData = new XYSeries(tempName);  // derived from allData
         normalizedGuinierData = new XYSeries(tempName); // derived from originalPositiveOnlyData
         guinierData = new XYSeries(tempName); // derived from originalPositiveOnlyData
         kratkyData = new XYSeries(tempName);            // derived from allData
@@ -642,51 +648,27 @@ public class Dataset {
         guinierIZero=gIzero;
         this.updateMass();
     }
-    /**
-     * Sets standard error of guinier Izero
-     *
-     */
-    public void setGuinierIzeroSigma(double gIzeroSigma){
-        guinierIZero_sigma=gIzeroSigma;
-    }
-    /**
-     * Sets guinier Rg of the series
-     *
-     */
-    public void setGuinierRg(double rg){
-        guinierRg=rg;
+
+    public void setGuinierParameters(double izero, double izeroError, double rg, double rgError){
+        this.guinierIZero = izero;
+        this.guinierIZero_sigma = izeroError;
+        this.guinierRg = rg;
+        this.guinierRG_sigma = rgError;
+
+        // update normalized Kratky and Guinier plot
+
         this.updateMass();
     }
-    /**
-     * Sets guinier Izero of the series calculated from P(r)
-     *
-     */
-    public void setRealIzero(double rIzero){
-        realIZero=rIzero;
-        this.updateMass();
+
+
+    public void setRealIzeroRgParameters(double izero, double izeroError, double rg, double rgError){
+        this.realIZero = izero;
+        this.realIZero_sigma = izeroError;
+        this.realRg = rg;
+        this.realRg_sigma = rgError;
     }
-    /**
-     * Sets standard error of guinier Izero calculated from P(r)
-     *
-     */
-    public void setRealIzeroSigma(double rIzeroSigma){
-        realIZero_sigma=rIzeroSigma;
-    }
-    /**
-     * Sets real Rg of the series calculated from P(r)
-     *
-     */
-    public void setRealRg(double rRg){
-        realRg=rRg;
-        this.updateMass();
-    }
-    /**
-     * Sets standard error of real rg calculated from P(r)
-     *
-     */
-    public void setRealRgSigma(double realRgS){
-        realRg_sigma=realRgS;
-    }
+
+
     /**
      * Sets average r calculated from P(r)
      *
@@ -755,6 +737,11 @@ public class Dataset {
         return plottedKratkyData;
     }
 
+
+    public XYSeries getPlottedQIQDataSeries(){
+        return plottedqIqData;
+    }
+
     /**
      * scales Kratky data if visible
      */
@@ -770,6 +757,31 @@ public class Dataset {
         } else {
             for (int i = start; i<end; i++){
                 plottedKratkyData.add(kratkyData.getDataItem(i));
+            }
+        }
+    }
+
+
+    public void clearPlottedQIQData(){
+        plottedqIqData.clear();
+    }
+
+
+    /**
+     * scales Kratky data if visible
+     */
+    public void scalePlottedQIQData(){
+        plottedqIqData.clear();
+        XYDataItem temp;
+
+        if (scaleFactor != 1){
+            for (int i = start; i<end; i++){
+                temp = qIqData.getDataItem(i);
+                plottedqIqData.add(temp.getX(), temp.getYValue()*scaleFactor);
+            }
+        } else {
+            for (int i = start; i<end; i++){
+                plottedqIqData.add(qIqData.getDataItem(i));
             }
         }
     }
@@ -1020,10 +1032,14 @@ public class Dataset {
         return baseShapeFilled;
     }
 
+    /**
+     *
+     * @param dataset
+     */
     public void updateMainDataset(RealSpace dataset){
         this.setAverageR(dataset.getRaverage());
-        this.setRealIzero(dataset.getIzero()/dataset.getAnalysisToPrScaleFactor());
-        this.setRealRg(dataset.getRg());
+        this.realIZero= dataset.getIzero()/dataset.getAnalysisToPrScaleFactor();
+        this.realRg = dataset.getRg();
         this.setAM(dataset.getMooreCoefficients());
         this.setDmax((double)dataset.getDmax());
         // update Vc

@@ -198,12 +198,15 @@ public class PlotDataSingleton {
         final NumberAxis domainAxis = new NumberAxis("q");
         final NumberAxis rangeAxis = new NumberAxis("Log Intensity");
         String quote = "q (\u212B\u207B\u00B9)";
+        domainAxis.setLabelFont(Constants.BOLD_16);
+        domainAxis.setTickLabelFont(Constants.FONT_12);
         domainAxis.setLabel(quote);
         quote = "log[I(q)]";
 
         rangeAxis.setLabel(quote);
         rangeAxis.setAutoRange(false);
-
+        rangeAxis.setLabelFont(Constants.BOLD_16);
+        rangeAxis.setTickLabelFont(Constants.FONT_12);
         rangeAxis.setRange(lower-lower*0.03, upper+0.1*upper);
         rangeAxis.setAutoRangeStickyZero(false);
 

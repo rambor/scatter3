@@ -297,9 +297,9 @@ public class RealSpace {
         this.rg = temp.get(1);
         this.raverage = temp.get(2);
 
-        tempData.setRealIzero(this.izero);
-        tempData.setRealRg(this.rg);
-        tempData.setAverageR(this.raverage);
+     //   tempData.setRealIzero(this.izero);
+     //   tempData.setRealRg(this.rg);
+     //   tempData.setAverageR(this.raverage);
     }
 
     public void setRealVariants(){

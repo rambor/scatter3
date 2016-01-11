@@ -57,9 +57,10 @@ public class Scatter {
     private JLabel status;
     private JButton intensityPlotButton;
     private JButton normalizedKratkyButton;
-    private JButton flexibilityPlotsButton;
+    private JButton normalizedGuinierButton;
     private JTabbedPane tabbedPane1;
     private JButton kratkyPlotButton;
+    private JButton qIqPlotButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -86,6 +87,7 @@ public class Scatter {
 
     public PlotDataSingleton log10IntensityPlot;
     public KratkyPlot kratky;
+    public QIQPlot qIqPlot;
 
     public Scatter() { // constructor
 
@@ -255,6 +257,12 @@ public class Scatter {
         analysisList.setOpaque(true);
         analysisPane.setOpaque(true);
 
+        // define Singleton plots
+        kratky = KratkyPlot.getInstance();
+        log10IntensityPlot = PlotDataSingleton.getInstance();
+        qIqPlot = QIQPlot.getInstance();
+
+
         intensityPlotButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -263,14 +271,26 @@ public class Scatter {
         });
 
 
-        // define Singleton plots
-        kratky = KratkyPlot.getInstance();
-        log10IntensityPlot = PlotDataSingleton.getInstance();
-
         kratkyPlotButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                kratky.clearAll();
                 createKratkyPlot();
+            }
+        });
+
+        qIqPlotButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                qIqPlot.clearAll();
+                createQIQPlot();
+            }
+        });
+
+        normalizedKratkyButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
             }
         });
     }
@@ -375,6 +395,13 @@ public class Scatter {
     private void createKratkyPlot(){
         kratky = KratkyPlot.getInstance();
         kratky.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+    }
+
+    /**
+     * Creates Kratky plot from Singleton Class
+     */
+    private void createQIQPlot(){
+        qIqPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
     }
 
     private JLabel getStatus() {
