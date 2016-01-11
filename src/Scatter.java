@@ -290,7 +290,7 @@ public class Scatter {
         normalizedKratkyButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                createNormalizedKratkyPlot();
             }
         });
     }
@@ -402,6 +402,10 @@ public class Scatter {
      */
     private void createQIQPlot(){
         qIqPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+    }
+
+    private void createNormalizedKratkyPlot(){
+
     }
 
     private JLabel getStatus() {
