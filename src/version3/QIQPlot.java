@@ -27,6 +27,7 @@ public class QIQPlot {
     static JFreeChart chart;
     XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
     private XYSeriesCollection plottedDatasets = new XYSeriesCollection();
+    private Collection inUseCollection;
 
     public static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 q \u00D7 I(q) vs q PLOT", chart);
     static JFrame jframe = new JFrame("SC\u212BTTER \u2263 q × I(q) vs q PLOT");
@@ -65,6 +66,7 @@ public class QIQPlot {
 
     public void plot(Collection collection, String workingDirectoryName) {
 
+        inUseCollection = collection;
         int totalSets = collection.getDatasetCount();
         plottedDatasets = new XYSeriesCollection();  // spinners will always modify the plottedDataset series
 
@@ -213,5 +215,19 @@ public class QIQPlot {
     public void clearAll(){
         plottedDatasets.removeAllSeries();
         frame.removeAll();
+    }
+
+    public void changeVisibleSeries(int index, boolean flag){
+
+        boolean isVisible = renderer1.isSeriesVisible(index);
+
+        if (isVisible){
+            renderer1.setSeriesVisible(index, flag);
+        } else {
+            Dataset temp = inUseCollection.getDataset(index);
+            temp.clearPlottedQIQData();
+            temp.scalePlottedQIQData();
+            renderer1.setSeriesVisible(index, flag);
+        }
     }
 }

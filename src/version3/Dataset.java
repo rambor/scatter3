@@ -1,7 +1,7 @@
 package version3;
 
-import org.jfree.data.xy.XYDataItem;
-import org.jfree.data.xy.XYSeries;
+import org.jfree.data.ComparableObjectItem;
+import org.jfree.data.xy.*;
 
 import java.awt.*;
 import java.beans.PropertyChangeListener;
@@ -14,21 +14,26 @@ import java.util.ArrayList;
 public class Dataset {
     private PropertyChangeSupport propChange = new PropertyChangeSupport(this);
     private ArrayList<Fit> fitList;
-    private XYSeries plottedData;   // plotted log10 data
-    private XYSeries plottedError;  // plotted log10 data
-    private XYSeries plottedKratkyData;   // plotted log10 data
-    private XYSeries plottedqIqData;   // plotted log10 data
+    private XYSeries plottedData;         // plotted log10 data
+    private XYSeries plottedError;        // plotted log10 data
+    private XYSeries plottedKratkyData;   // plotted Kratky data
+    private XYSeries plottedqIqData;      // plotted qIq data
+    private YIntervalSeries plottedLogErrors;    // plotted log10 errors data
 
     private final XYSeries originalLog10Data;         // not to be modified
     private final XYSeries originalPositiveOnlyData;  // not to be modified
     private final XYSeries originalPositiveOnlyError; // not to be modified
+    private YIntervalSeries positiveOnlyIntensityError; //
 
     private final XYSeries allData;      // not to be modified
     private final XYSeries allDataError; // not to be modified
+    private YIntervalSeries allDataYError; // not to be modified
 
-    private XYSeries normalizedKratkyData;  // derived from allData
-    private XYSeries normalizedKratkyReciprocalSpaceData;
-    private XYSeries normalizedKratkyRealSpaceData;
+    private XYSeries normalizedKratkyReciprocalSpaceRgData;
+    private XYSeries normalizedKratkyRealSpaceRgData;
+    private XYSeries normalizedKratkyReciprocalSpaceVcData;
+    private XYSeries normalizedKratkyRealSpaceVcData;
+
     private XYSeries normalizedGuinierData; // derived from originalPositiveOnlyData
     private XYSeries guinierData; // derived from originalPositiveOnlyData
     private XYSeries kratkyData;            // derived from allData
@@ -120,19 +125,24 @@ public class Dataset {
         String tempName = fileName + "-" + id;
         allData = new XYSeries(tempName);
         allDataError = new XYSeries(tempName);
+        allDataYError = new YIntervalSeries(tempName);
 
         plottedData = new XYSeries(tempName);  // actual log10 data that is plotted
         plottedError = new XYSeries(tempName); // actual log10 data that is plotted
         plottedKratkyData = new XYSeries(tempName);
         plottedqIqData = new XYSeries(tempName);
+        plottedLogErrors = new YIntervalSeries(tempName);
 
         originalPositiveOnlyData = new XYSeries(tempName);
         originalLog10Data = new XYSeries(tempName);
         originalPositiveOnlyError = new XYSeries(tempName);
+        positiveOnlyIntensityError = new YIntervalSeries(tempName);
 
-        normalizedKratkyData = new XYSeries(tempName);  // derived from allData
-        normalizedKratkyReciprocalSpaceData = new XYSeries(tempName);  // derived from allData
-        normalizedKratkyRealSpaceData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyReciprocalSpaceRgData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyRealSpaceRgData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyReciprocalSpaceVcData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyRealSpaceVcData = new XYSeries(tempName);  // derived from allData
+
         normalizedGuinierData = new XYSeries(tempName); // derived from originalPositiveOnlyData
         guinierData = new XYSeries(tempName); // derived from originalPositiveOnlyData
         kratkyData = new XYSeries(tempName);            // derived from allData
@@ -150,6 +160,9 @@ public class Dataset {
             allData.add(tempXY);
             allDataError.add(tempError);
 
+            double yvalue = tempXY.getYValue();
+            allDataYError.add(tempXY.getXValue(), yvalue, yvalue-tempError.getYValue(), yvalue+tempError.getYValue());
+
             double q = tempXY.getXValue();
             double q2 = q*q;
             //
@@ -163,6 +176,15 @@ public class Dataset {
                 plottedData.add(originalLog10Data.getDataItem(logCount));
                 plottedError.add(originalPositiveOnlyError.getDataItem(logCount));
 
+
+                double delta = yvalue-tempError.getYValue();
+                if (delta > 0){
+                    delta = Math.log10(delta);
+                } else {
+                    delta = 0;
+                }
+                positiveOnlyIntensityError.add(q, Math.log10(tempXY.getYValue()), delta, Math.log10(yvalue+tempError.getYValue()));
+
                 normalizedGuinierData.add(q2, logy);
                 guinierData.add(q2, logy);
                 powerLawData.add(Math.log(tempXY.getXValue()), logy);
@@ -174,8 +196,7 @@ public class Dataset {
             private XYSeries kratky;            // derived from allData
             private XYSeries qIq;               // derived from allData
             */
-            normalizedKratkyData.add(q, q2*tempXY.getYValue());
-            kratkyData.add(q, q2*tempXY.getYValue());
+            kratkyData.add(q, q2*tempXY.getYValue());  // should not be modified
             qIqData.add(q, q*tempXY.getYValue());
         }
 
@@ -183,7 +204,7 @@ public class Dataset {
         fitList = new ArrayList<>();
 
         filename=fileName;
-        this.start=0;
+        this.start=1;
         this.end= originalPositiveOnlyData.getItemCount();
 
         // if possible do preliminary analysis here
@@ -632,6 +653,7 @@ public class Dataset {
      */
     public void setStart(int st){
         start=st;
+        System.out.println("Start value " + st);
     }
     /**
      * Sets end point of the series
@@ -742,20 +764,74 @@ public class Dataset {
         return plottedqIqData;
     }
 
+    // Normalized Kratky Plots
+
+    public void clearNormalizedKratkyReciRgData(){
+        normalizedKratkyReciprocalSpaceRgData.clear();
+    }
+
+    /**
+     * Reciprocal Space Dimensionless Kratky Plot
+     * @return XYSeries for normalized Kratky plot
+     */
+    public XYSeries getNormalizedKratkyReciRgData(){
+        return normalizedKratkyReciprocalSpaceRgData;
+    }
+
+    public void createNormalizedKratkyReciRgData(){
+        XYDataItem temp;
+        double rg2 = guinierRg*guinierRg/guinierIZero;
+        int startAt = start - 1;
+
+        for (int i = startAt; i < end; i++){
+            temp = kratkyData.getDataItem(i);
+            normalizedKratkyReciprocalSpaceRgData.add(temp.getXValue()*guinierRg, temp.getYValue()*rg2);
+        }
+    }
+
+    /**
+     * clears dataset for normalized kratky plot
+     */
+    public void clearNormalizedKratkyRealRgData(){
+        normalizedKratkyRealSpaceRgData.clear();
+    }
+
+    /**
+     * Real Space Dimensionless Kratky Plot
+     * @return XYSeries for normalized Kratky plot
+     */
+    public XYSeries getNormalizedKratkyRealRgData(){
+        return normalizedKratkyRealSpaceRgData;
+    }
+
+    public void createNormalizedKratkyRealRgData(){
+        XYDataItem temp;
+        double rg2 = realRg*realRg/realIZero;
+
+        int startAt = start - 1;
+        for (int i = startAt; i < end; i++){
+            temp = kratkyData.getDataItem(i);
+            normalizedKratkyRealSpaceRgData.add(temp.getXValue()*realRg, temp.getYValue()*rg2);
+        }
+    }
+
+
+
     /**
      * scales Kratky data if visible
      */
     public void scalePlottedKratkyData(){
         plottedKratkyData.clear();
         XYDataItem temp;
+        int startAt = start - 1;
 
         if (scaleFactor != 1){
-            for (int i = start; i<end; i++){
+            for (int i = startAt; i<end; i++){
                 temp = kratkyData.getDataItem(i);
                 plottedKratkyData.add(temp.getX(), temp.getYValue()*scaleFactor);
             }
         } else {
-            for (int i = start; i<end; i++){
+            for (int i = startAt; i<end; i++){
                 plottedKratkyData.add(kratkyData.getDataItem(i));
             }
         }
@@ -773,19 +849,48 @@ public class Dataset {
     public void scalePlottedQIQData(){
         plottedqIqData.clear();
         XYDataItem temp;
+        int startAt = start - 1;
 
         if (scaleFactor != 1){
-            for (int i = start; i<end; i++){
+            for (int i = startAt; i<end; i++){
                 temp = qIqData.getDataItem(i);
                 plottedqIqData.add(temp.getX(), temp.getYValue()*scaleFactor);
             }
         } else {
-            for (int i = start; i<end; i++){
+            for (int i = startAt; i<end; i++){
                 plottedqIqData.add(qIqData.getDataItem(i));
             }
         }
     }
 
+    public YIntervalSeries getPlottedLog10ErrorData(){
+        return plottedLogErrors;
+    }
+
+    public void clearPlottedLog10ErrorData(){
+        plottedLogErrors.clear();
+    }
+
+    /**
+     * scales Kratky data if visible
+     */
+    public void scalePlottedLogErrorData(){
+        this.clearPlottedLog10ErrorData();
+        YIntervalDataItem temp;
+
+        int startAt = start - 1;
+
+        if (scaleFactor != 1){
+            for (int i = startAt; i < end; i++){
+                temp = (YIntervalDataItem) positiveOnlyIntensityError.getDataItem(i);
+                plottedLogErrors.add(temp.getX(), temp.getYValue()+log10ScaleFactor, temp.getYLowValue()+log10ScaleFactor, temp.getYHighValue()+log10ScaleFactor);
+            }
+        } else {
+            for (int i = startAt; i < end; i++){
+                plottedLogErrors.add((YIntervalDataItem) positiveOnlyIntensityError.getDataItem(i), false );
+            }
+        }
+    }
 
     /**
      *
@@ -793,14 +898,15 @@ public class Dataset {
     private void scalePlottedLog10IntensityData(){
         plottedData.clear();
         XYDataItem temp;
+        int startAt = start - 1;
 
         if (scaleFactor != 1){
-            for (int i = start; i<end; i++){
+            for (int i = startAt; i<end; i++){
                 temp = originalLog10Data.getDataItem(i);
                 plottedData.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
             }
         } else {
-            for (int i = start; i<end; i++){
+            for (int i = startAt; i<end; i++){
                 plottedData.add(originalLog10Data.getDataItem(i));
             }
         }

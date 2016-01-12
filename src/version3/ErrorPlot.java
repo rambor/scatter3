@@ -8,10 +8,8 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.CustomXYToolTipGenerator;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.data.xy.XYDataItem;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.chart.renderer.xy.XYErrorRenderer;
+import org.jfree.data.xy.YIntervalSeriesCollection;
 import org.jfree.ui.HorizontalAlignment;
 
 import javax.swing.*;
@@ -21,36 +19,36 @@ import java.awt.geom.Ellipse2D;
 import java.io.File;
 
 /**
- * Created by robertrambo on 11/01/2016.
+ * Created by robertrambo on 12/01/2016.
  */
-public class PlotDataSingleton {
+public class ErrorPlot {
 
-    private static JFreeChart chart;
+    static JFreeChart chart;
     private static XYPlot plot;
-    private static XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
-    private static XYLineAndShapeRenderer mergedRenderer = new XYLineAndShapeRenderer();
-    //public XYSeriesCollection newDataset = new XYSeriesCollection();
-    private static XYSeriesCollection plottedDatasets = new XYSeriesCollection();
-    private static XYSeriesCollection mergedDataset = new XYSeriesCollection();
-    private static Collection inUseCollection;
-    private static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT", chart);
-    private static JFrame jframe = new JFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT");
 
-    private static XYLineAndShapeRenderer renderer1;
-    private static boolean crosshair = true;
+    private static YIntervalSeriesCollection plottedDatasets;
+
+    private static Collection inUseCollection;
+    static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT WITH ERROR", chart);
+    static JFrame jframe = new JFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT WITH ERROR");
+
+    private static XYErrorRenderer renderer;
+    boolean crosshair = true;
 
     private static Shape elipse6 = new Ellipse2D.Double(-3, -3, 6, 6);
 
     CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
-    private static double upper, dupper;
-    private static double lower, dlower;
+    private static double upper;
+    private static double dupper;
+    private static double lower;
+    private static double dlower;
 
-    private static PlotDataSingleton singleton = new PlotDataSingleton( );
+    private static ErrorPlot singleton = new ErrorPlot( );
 
     /* A private Constructor prevents any other
      * class from instantiating.
      */
-    private PlotDataSingleton(){
+    private ErrorPlot(){
 
         JPopupMenu popup = frame.getChartPanel().getPopupMenu();
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
@@ -71,13 +69,8 @@ public class PlotDataSingleton {
     }
 
     /* Static 'instance' method */
-    public static PlotDataSingleton getInstance( ) {
+    public static ErrorPlot getInstance( ) {
         return singleton;
-    }
-
-    /* Other methods protected by singleton-ness */
-    protected static void demoMethod( ) {
-        System.out.println("demoMethod for singleton");
     }
 
     public static void plot(Collection collection, String workingDirectoryName) {
@@ -93,11 +86,13 @@ public class PlotDataSingleton {
 
         inUseCollection = collection;
         int totalSets = collection.getDatasetCount();
-        plottedDatasets = new XYSeriesCollection();  // spinners will always modify the plottedDataset series
-        for (int i=0; i<totalSets; i++){
-                plottedDatasets.addSeries(collection.getDataset(i).getData());
-        }
 
+        plottedDatasets = new YIntervalSeriesCollection();
+
+        for (int i=0; i<totalSets; i++){
+            collection.getDataset(i).scalePlottedLogErrorData();
+            plottedDatasets.addSeries(collection.getDataset(i).getPlottedLog10ErrorData());
+        }
 
         chart = ChartFactory.createXYLineChart(
                 "Main Plot",                     // chart title
@@ -221,31 +216,28 @@ public class PlotDataSingleton {
         //make crosshair visible
         plot.setDomainCrosshairVisible(true);
         plot.setRangeCrosshairVisible(true);
-        renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
-        renderer1.setBaseShapesVisible(true);
 
-        mergedRenderer.setBaseShapesVisible(true);
-        mergedRenderer.setBasePaint(Color.RED);
-        mergedRenderer.setBaseShape(elipse6);
-        mergedRenderer.setBaseLinesVisible(false);
+        renderer = new XYErrorRenderer();
+        renderer.setBaseLinesVisible(false);
+        renderer.setBaseShapesVisible(true);
+        renderer.setErrorPaint(new GradientPaint(1.0f, 2.0f, Constants.RedGray, 3.0f, 4.0f,
+                Constants.RedGray));
 
-//        plot.setDataset(1,newDataset);
-        plot.setDataset(1,plottedDatasets);
-        plot.setRenderer(1,renderer1);
-        plot.setDataset(0, mergedDataset);
-        plot.setRenderer(0, mergedRenderer);       //render as a line
+        plot.setDataset(plottedDatasets);
+        plot.setRenderer(renderer);
 
         //set dot size for all series
         double offset;
         for (int i=0; i < collection.getDatasets().size(); i++){
             Dataset tempData = collection.getDataset(i);
             offset = -0.5*tempData.getPointSize();
-            renderer1.setSeriesShape(i, new Ellipse2D.Double(offset, offset, tempData.getPointSize(), tempData.getPointSize()));
-            renderer1.setSeriesLinesVisible(i, false);
-            renderer1.setSeriesPaint(i, tempData.getColor());
-            renderer1.setSeriesShapesFilled(i, tempData.getBaseShapeFilled());
-            renderer1.setSeriesVisible(i, tempData.getInUse());
-            renderer1.setSeriesOutlineStroke(i, tempData.getStroke());
+            renderer.setSeriesShape(i, new Ellipse2D.Double(offset, offset, tempData.getPointSize(), tempData.getPointSize()));
+            renderer.setSeriesLinesVisible(i, false);
+            renderer.setSeriesPaint(i, tempData.getColor());
+            renderer.setSeriesShapesFilled(i, true);
+            renderer.setSeriesVisible(i, tempData.getInUse());
+            renderer.setSeriesOutlineStroke(i, tempData.getStroke());
+            renderer.setSeriesStroke(i, tempData.getStroke());
         }
         plot.setDomainZeroBaselineVisible(false);
 
@@ -261,12 +253,11 @@ public class PlotDataSingleton {
         jframe.setVisible(true);
     }
 
-
-    public boolean isVisible(){
+    protected static boolean isVisible(){
         return jframe.isVisible();
     }
 
-    public void changeVisibleSeries(int index, boolean flag){
-        renderer1.setSeriesVisible(index, flag);
+    protected static void changeVisibleSeries(int index, boolean flag){
+        renderer.setSeriesVisible(index, flag);
     }
 }

@@ -14,6 +14,7 @@ public final class Constants {
     public static final Color DodgerBlue = new Color(30,144,255);
     public static final Color DarkGray = new Color(72,72,72);
     public static final Color MediumRed = new Color(255, 102, 102);
+    public static final Color RedGray = new Color(202, 184, 188);
 
     public static final double INV_PI = 1.0/Math.PI;
 

@@ -63,7 +63,6 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
             }
 
             dataset.setScaleFactor(Double.parseDouble((String) obj)); // what should this trigger?
-            //mainRescaling(dataset.getId());
 
         } else if (col == 3) {
             System.out.println("Copying " + dataset.getFileName()+ " to " + (String)obj);

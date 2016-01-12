@@ -29,6 +29,7 @@ public class KratkyPlot {
     static boolean crosshair= true;
 
     private static Color titlePaint = Constants.SteelBlue;
+    private static Collection inUseCollection;
 
     XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
 
@@ -58,7 +59,7 @@ public class KratkyPlot {
 
     public static void plot(Collection collection, String workingDirectoryName) {
 
-
+        inUseCollection = collection;
         int totalSets = collection.getDatasetCount();
 
         collectionToPlot.removeAllSeries();
@@ -70,22 +71,6 @@ public class KratkyPlot {
             if (temp.getInUse()){
                 collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());
                 temp.scalePlottedKratkyData();
-                /*
-                XYDataItem tempData;
-                startAt = temp.getStart();
-                endAt = temp.getEnd();
-                double sf = temp.getScaleFactor();
-                //
-                // use q-values in active dataset
-                // that way the intensities are always already scaled and set is truncated
-                //
-                XYSeries tempSeries = collectionToPlot.getSeries(i);
-
-                for(int j = startAt; j < endAt; j++){
-                    tempData = temp.getKratkyItem(j);
-                    tempSeries.add(tempData.getX(), tempData.getYValue()*sf);
-                }
-                */
             } else {
                 collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());  // should add an empty Series
             }
@@ -250,5 +235,19 @@ public class KratkyPlot {
     public void clearAll(){
         collectionToPlot.removeAllSeries();
         frame.removeAll();
+    }
+
+    public void changeVisibleSeries(int index, boolean flag){
+
+        boolean isVisible = renderer1.isSeriesVisible(index);
+
+        if (isVisible){
+            renderer1.setSeriesVisible(index, flag);
+        } else {
+            Dataset temp = inUseCollection.getDataset(index);
+            temp.clearPlottedKratkyData();
+            temp.scalePlottedKratkyData();
+            renderer1.setSeriesVisible(index, flag);
+        }
     }
 }
