@@ -19,6 +19,7 @@ public class Dataset {
     private XYSeries plottedKratkyData;   // plotted Kratky data
     private XYSeries plottedqIqData;      // plotted qIq data
     private YIntervalSeries plottedLogErrors;    // plotted log10 errors data
+    private XYSeries plottedPowerLaw;    // plotted log10 errors data
 
     private final XYSeries originalLog10Data;         // not to be modified
     private final XYSeries originalPositiveOnlyData;  // not to be modified
@@ -132,6 +133,7 @@ public class Dataset {
         plottedKratkyData = new XYSeries(tempName);
         plottedqIqData = new XYSeries(tempName);
         plottedLogErrors = new YIntervalSeries(tempName);
+        plottedPowerLaw = new XYSeries(tempName);
 
         originalPositiveOnlyData = new XYSeries(tempName);
         originalLog10Data = new XYSeries(tempName);
@@ -187,7 +189,7 @@ public class Dataset {
 
                 normalizedGuinierData.add(q2, logy);
                 guinierData.add(q2, logy);
-                powerLawData.add(Math.log(tempXY.getXValue()), logy);
+                powerLawData.add(Math.log10(q), Math.log10(tempXY.getYValue()));
                 logCount++;
             }
             //kratky and q*I(q)
@@ -863,9 +865,41 @@ public class Dataset {
         }
     }
 
+    public XYSeries getPlottedPowerLaw(){
+        return plottedPowerLaw;
+    }
+
+    public void clearPlottedPowerLaw(){
+        plottedPowerLaw.clear();
+    }
+
+    /**
+     * rescales the data using natural logarithm
+     */
+    public void scalePlottedPowerLaw(){
+        this.clearPlottedPowerLaw();
+        XYDataItem temp;
+
+        int startAt = start - 1;
+
+        if (scaleFactor != 1){
+            for (int i = startAt; i < end; i++){
+                temp = powerLawData.getDataItem(i);
+                plottedPowerLaw.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
+            }
+        } else {
+            for (int i = startAt; i < end; i++){
+                plottedPowerLaw.add(powerLawData.getDataItem(i));
+            }
+        }
+
+    }
+
     public YIntervalSeries getPlottedLog10ErrorData(){
         return plottedLogErrors;
     }
+
+
 
     public void clearPlottedLog10ErrorData(){
         plottedLogErrors.clear();

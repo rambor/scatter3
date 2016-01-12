@@ -64,6 +64,7 @@ public class Scatter {
     private JButton qIqPlotButton;
     private JTabbedPane tabbedPane2;
     private JButton errorPlotButton;
+    private JButton powerLawPlotButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -92,6 +93,8 @@ public class Scatter {
     public KratkyPlot kratky;
     public QIQPlot qIqPlot;
     public ErrorPlot errorPlot;
+    public PowerLawPlot powerLawPlot;
+
     public NormalizedKratkyPlot normalKratkyRg;
     public NormalizedKratkyPlot normalKratkyRgReal;
     public NormalizedKratkyPlot normalKratkyVc;
@@ -271,6 +274,7 @@ public class Scatter {
         log10IntensityPlot = PlotDataSingleton.getInstance();
         qIqPlot = QIQPlot.getInstance();
         errorPlot = ErrorPlot.getInstance();
+        powerLawPlot = PowerLawPlot.getInstance();
 
         normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
         normalKratkyRgReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (Real space)");
@@ -311,10 +315,18 @@ public class Scatter {
                 createNormalizedKratkyPlot();
             }
         });
+
         errorPlotButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 createErrorPlot();
+            }
+        });
+
+        powerLawPlotButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createPowerLawPlot();
             }
         });
     }
@@ -450,6 +462,11 @@ public class Scatter {
     private void createErrorPlot(){
         errorPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
     }
+
+    private void createPowerLawPlot(){
+        powerLawPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+    }
+
 
     private JLabel getStatus() {
         return status;
@@ -1101,6 +1118,13 @@ public class Scatter {
                         qIqPlot.changeVisibleSeries(row, collectionSelected.getDataset(row).getInUse());
                     }
 
+                    if (errorPlot.isVisible()){
+                        errorPlot.changeVisibleSeries(row, collectionSelected.getDataset(row).getInUse());
+                    }
+
+                    if (powerLawPlot.isVisible()){
+                        powerLawPlot.changeVisibleSeries(row, collectionSelected.getDataset(row).getInUse());
+                    }
 
 /*
                     if (errorPlot.frame.isVisible()){

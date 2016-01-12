@@ -253,11 +253,11 @@ public class ErrorPlot {
         jframe.setVisible(true);
     }
 
-    protected static boolean isVisible(){
+    public static boolean isVisible(){
         return jframe.isVisible();
     }
 
-    protected static void changeVisibleSeries(int index, boolean flag){
+    public static void changeVisibleSeries(int index, boolean flag){
         renderer.setSeriesVisible(index, flag);
     }
 }
