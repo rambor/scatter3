@@ -91,11 +91,9 @@ public class PowerLawPlot {
             Dataset temp = inUseCollection.getDataset(i);
             temp.clearPlottedPowerLaw();
             if (temp.getInUse()){
-                plottedDatasets.addSeries(temp.getPlottedPowerLaw());
                 temp.scalePlottedPowerLaw();
-            } else {
-                plottedDatasets.addSeries(temp.getPlottedPowerLaw());  // should add an empty Series
             }
+            plottedDatasets.addSeries(temp.getPlottedPowerLaw());  // should add an empty Series
         }
 
         chart = ChartFactory.createXYLineChart(

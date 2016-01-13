@@ -62,11 +62,9 @@ public class NormalizedKratkyPlot {
                 Dataset temp = collectionSelected.getDataset(i);
                 temp.clearNormalizedKratkyReciRgData();
                 if (temp.getInUse()){
-                    plottedData.addSeries(temp.getNormalizedKratkyReciRgData());
                     temp.createNormalizedKratkyReciRgData();
-                } else {
-                    plottedData.addSeries(temp.getNormalizedKratkyReciRgData());  // should add an empty Series
                 }
+                plottedData.addSeries(temp.getNormalizedKratkyReciRgData());
             }
             horizontalDisplacement += 50;
         } else if (type.equals("RECIVC")) {
@@ -76,11 +74,9 @@ public class NormalizedKratkyPlot {
                 Dataset temp = collectionSelected.getDataset(i);
                 temp.clearNormalizedKratkyRealRgData();
                 if (temp.getInUse()){
-                    plottedData.addSeries(temp.getNormalizedKratkyRealRgData());
                     temp.createNormalizedKratkyRealRgData();
-                } else {
-                    plottedData.addSeries(temp.getNormalizedKratkyRealRgData());  // should add an empty Series
                 }
+                plottedData.addSeries(temp.getNormalizedKratkyRealRgData());  // should add an empty Series
             }
             horizontalDisplacement += 100;
         } else if (type.equals("REALVC")) {

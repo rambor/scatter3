@@ -1,13 +1,24 @@
 package version3;
 
 import java.awt.*;
+import java.awt.geom.Ellipse2D;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 /**
  * Created by robertrambo on 11/01/2016.
  */
 public final class Constants {
+
+
+    public static final DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.US);
+
     private Constants(){
+        otherSymbols.setDecimalSeparator('.');
+        otherSymbols.setGroupingSeparator(',');
     }
+
 
     public static final Color SteelBlue = new Color(110,123,139);
     public static final Color IndianRed = new Color(255,106,106);
@@ -17,6 +28,7 @@ public final class Constants {
     public static final Color RedGray = new Color(202, 184, 188);
 
     public static final double INV_PI = 1.0/Math.PI;
+    public static final double TWO_PI_2 = (float)(2.0*Math.PI*Math.PI);
 
     //FONTS
     public static final Font BOLD_12 = new Font("Dialog", Font.BOLD, 12);
@@ -28,4 +40,17 @@ public final class Constants {
     public static final Font FONT_BOLD_20 = new Font("Dialog", Font.BOLD, 20);
     public static final Font BOLD_20 = new Font("Dialog", Font.PLAIN, 20);
 
+    public static final DecimalFormat OneDecPlace = new DecimalFormat("0.0", otherSymbols); // = new DecimalFormat("0.0");
+    public static final DecimalFormat TwoDecPlace = new DecimalFormat("0.00", otherSymbols);
+    public static final DecimalFormat ThreeDecPlace = new DecimalFormat("0.000", otherSymbols);
+    public static final DecimalFormat FourDecPlace = new DecimalFormat("0.0000", otherSymbols);
+    public static final DecimalFormat Scientific1 = new DecimalFormat("0.#E0", otherSymbols);
+    public static final DecimalFormat Scientific2 = new DecimalFormat("0.00E0", otherSymbols);
+    public static final DecimalFormat Scientific1dot5e2 = new DecimalFormat("0.00000E00", otherSymbols);
+    public static final DecimalFormat Scientific1dot3e1 = new DecimalFormat("0.000E0", otherSymbols);
+    public static final DecimalFormat Scientific1dot2e1 = new DecimalFormat("0.00E0", otherSymbols);
+
+    public static final DecimalFormat df = new DecimalFormat("000.0000", otherSymbols);
+
+    public static final Shape Ellipse4 = new Ellipse2D.Double(-4.0, -4.0, 4.0, 4.0);
 }

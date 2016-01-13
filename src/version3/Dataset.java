@@ -178,7 +178,6 @@ public class Dataset {
                 plottedData.add(originalLog10Data.getDataItem(logCount));
                 plottedError.add(originalPositiveOnlyError.getDataItem(logCount));
 
-
                 double delta = yvalue-tempError.getYValue();
                 if (delta > 0){
                     delta = Math.log10(delta);
@@ -895,11 +894,18 @@ public class Dataset {
 
     }
 
+
+    public XYSeries getOriginalPositiveOnlyData(){
+        return originalPositiveOnlyData;
+    }
+
+    public XYDataItem getOriginalPositiveOnlyDataItem(int index){
+        return originalPositiveOnlyData.getDataItem(index);
+    }
+
     public YIntervalSeries getPlottedLog10ErrorData(){
         return plottedLogErrors;
     }
-
-
 
     public void clearPlottedLog10ErrorData(){
         plottedLogErrors.clear();

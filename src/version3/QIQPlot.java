@@ -74,11 +74,9 @@ public class QIQPlot {
             Dataset temp = collection.getDataset(i);
             temp.clearPlottedQIQData();
             if (temp.getInUse()){
-                plottedDatasets.addSeries(temp.getPlottedQIQDataSeries());
                 temp.scalePlottedQIQData();
-            } else {
-                plottedDatasets.addSeries(temp.getPlottedQIQDataSeries());
             }
+            plottedDatasets.addSeries(temp.getPlottedQIQDataSeries());
         }
 
         chart = ChartFactory.createXYLineChart(
@@ -158,17 +156,20 @@ public class QIQPlot {
         domainAxis.setLabelFont(Constants.BOLD_16);
         domainAxis.setTickLabelFont(Constants.FONT_12);
 
+        //domainAxis.setAxisLineStroke(new BasicStroke(16));
+        //domainAxis.setAxisLinePaint(Color.BLACK);
+        //domainAxis.setAxisLineVisible(true);
+
         quote = "q \u00D7 I(q)";
         rangeAxis.setLabel(quote);
         rangeAxis.setAutoRangeStickyZero(true);
         rangeAxis.setLabelFont(Constants.BOLD_16);
         rangeAxis.setTickLabelFont(Constants.FONT_12);
-
+        //rangeAxis.setAxisLineVisible(false);
         //rangeAxis.setRange(0, dataset.getRangeUpperBound(true) + 0.1*dataset.getRangeUpperBound(true));
         chart.getLegend().setVisible(false);
         plot.setDomainAxis(domainAxis);
         plot.setRangeAxis(rangeAxis);
-
 
         //make crosshair visible
         plot.setDomainCrosshairVisible(true);
@@ -178,20 +179,17 @@ public class QIQPlot {
         renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
         renderer1.setBaseShapesVisible(true);
 
-        int locale = 0;
         double negativePointSize;
         for (int i=0; i < collection.getDatasets().size(); i++){
             Dataset temp = collection.getDataset(i);
             negativePointSize = -0.5*temp.getPointSize();
-            renderer1.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
-            //renderer.setSeriesShape(locale, rectangle);
-            renderer1.setSeriesShapesFilled(locale, temp.getBaseShapeFilled());
-            renderer1.setSeriesLinesVisible(locale, false);
-            renderer1.setSeriesVisible(locale, temp.getInUse());
-            renderer1.setSeriesPaint(locale, temp.getColor());
-            renderer1.setSeriesOutlinePaint(locale, temp.getColor());
+            renderer1.setSeriesShape(i, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
+            renderer1.setSeriesShapesFilled(i, temp.getBaseShapeFilled());
+            renderer1.setSeriesLinesVisible(i, false);
+            renderer1.setSeriesVisible(i, temp.getInUse());
+            renderer1.setSeriesPaint(i, temp.getColor());
+            renderer1.setSeriesOutlinePaint(i, temp.getColor());
             renderer1.setSeriesOutlineStroke(i, temp.getStroke());
-            locale++;
         }
 
         frame.setLocation(350, 350);

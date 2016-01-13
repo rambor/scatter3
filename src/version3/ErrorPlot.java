@@ -89,9 +89,13 @@ public class ErrorPlot {
 
         plottedDatasets = new YIntervalSeriesCollection();
 
-        for (int i=0; i<totalSets; i++){
-            collection.getDataset(i).scalePlottedLogErrorData();
-            plottedDatasets.addSeries(collection.getDataset(i).getPlottedLog10ErrorData());
+        for (int i = 0; i < totalSets; i++){
+            Dataset temp = inUseCollection.getDataset(i);
+            temp.clearPlottedLog10ErrorData();
+            if (temp.getInUse()){
+                temp.scalePlottedLogErrorData();
+            }
+            plottedDatasets.addSeries(temp.getPlottedLog10ErrorData());
         }
 
         chart = ChartFactory.createXYLineChart(
@@ -228,8 +232,8 @@ public class ErrorPlot {
 
         //set dot size for all series
         double offset;
-        for (int i=0; i < collection.getDatasets().size(); i++){
-            Dataset tempData = collection.getDataset(i);
+        for (int i=0; i < totalSets; i++){
+            Dataset tempData = inUseCollection.getDataset(i);
             offset = -0.5*tempData.getPointSize();
             renderer.setSeriesShape(i, new Ellipse2D.Double(offset, offset, tempData.getPointSize(), tempData.getPointSize()));
             renderer.setSeriesLinesVisible(i, false);
@@ -239,6 +243,7 @@ public class ErrorPlot {
             renderer.setSeriesOutlineStroke(i, tempData.getStroke());
             renderer.setSeriesStroke(i, tempData.getStroke());
         }
+
         plot.setDomainZeroBaselineVisible(false);
 
         frame.getChartPanel().setChart(chartPanel.getChart());
@@ -258,6 +263,15 @@ public class ErrorPlot {
     }
 
     public static void changeVisibleSeries(int index, boolean flag){
-        renderer.setSeriesVisible(index, flag);
+
+        boolean isVisible = renderer.isSeriesVisible(index);
+
+        if (isVisible){
+            renderer.setSeriesVisible(index, flag);
+        } else {
+            Dataset temp = inUseCollection.getDataset(index);
+            temp.scalePlottedLogErrorData();
+            renderer.setSeriesVisible(index, flag);
+        }
     }
 }

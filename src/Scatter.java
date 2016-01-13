@@ -65,6 +65,7 @@ public class Scatter {
     private JTabbedPane tabbedPane2;
     private JButton errorPlotButton;
     private JButton powerLawPlotButton;
+    private JButton volumeButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -329,6 +330,27 @@ public class Scatter {
                 createPowerLawPlot();
             }
         });
+
+        volumeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selected=0;
+                int id=0;
+                for(int i=0; i<collectionSelected.getDatasets().size(); i++){
+                    if (collectionSelected.getDataset(i).getInUse()){
+                        selected++;
+                        id = i;
+                    }
+                }
+
+                if (selected != 1){
+                    status.setText("Please select only one dataset");
+                    return;
+                }
+
+                createVolumePlot(collectionSelected.getDataset(id).getId());
+            }
+        });
     }
 
 
@@ -431,6 +453,11 @@ public class Scatter {
     private void createKratkyPlot(){
         kratky = KratkyPlot.getInstance();
         kratky.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+    }
+
+    private void createVolumePlot(int id){
+        VolumePlot tempPlot = new VolumePlot(collectionSelected.getDataset(id), WORKING_DIRECTORY_NAME);
+        tempPlot.plot();
     }
 
     /**

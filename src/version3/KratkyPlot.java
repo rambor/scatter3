@@ -69,11 +69,9 @@ public class KratkyPlot {
             Dataset temp = collection.getDataset(i);
             temp.clearPlottedKratkyData();
             if (temp.getInUse()){
-                collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());
                 temp.scalePlottedKratkyData();
-            } else {
-                collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());  // should add an empty Series
             }
+            collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());  // should add an empty Series
         }
 
         chart = ChartFactory.createXYLineChart(
