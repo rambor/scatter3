@@ -37,11 +37,10 @@ public class FlexPlots implements ChangeListener {
     private JFreeChart kratkyDebyeChart;
     private JFreeChart sibylsChart;
 
-    Collection inUse;
+    private double delta_q;
+    private Collection inUse;
 
     JFrame jframe = new JFrame("SC\u212BTTER \u2263 Flexibility Plots");
-
-
 
     public FlexPlots(Collection collection, String dir){
 
@@ -71,7 +70,7 @@ public class FlexPlots implements ChangeListener {
         XYDataItem tempData;
         int sizeOf=0;
         int count = 0;
-        double delta_q = 0.0;
+        delta_q = 0.0;
         double q, q2, q3, q4, i_of_q, q4_i_of_q;
         double delta_q_sum;
         delta_q_sum = 0.0;
@@ -147,7 +146,77 @@ public class FlexPlots implements ChangeListener {
 
     @Override
     public void stateChanged(ChangeEvent e) {
+//Slider StateChanged
+        JSlider source = (JSlider)e.getSource();
 
+        double currentQ = delta_q*source.getValue();
+        // on initialization, currentQ is not set and zoomSlider.getValue() returns 10
+        if (currentQ <= 0.0) {
+            currentQ = delta_q * 5;
+        }
+
+        double ymax = 0.0;
+        double ymaxKratky=0.0;
+        double ymaxSibyls=0.0;
+        double currentY;
+        int currCount;
+        int seriesSize;
+        int ymaxIndex = 0;
+        int ymaxSeries = 0;
+
+        // go through each series and determine ymax within the range
+        int dataSetCount = porodSeries.getSeriesCount();
+
+        for (int i=0; i < dataSetCount; i++){
+            // iterate over values until
+            currCount = 1;
+
+            seriesSize = porodSeries.getSeries(i).getItemCount();
+            while ((currCount <  seriesSize)&&(porodSeries.getSeries(i).getX(currCount).doubleValue() < currentQ)){
+                currentY = porodSeries.getSeries(i).getY(currCount).doubleValue();
+                //currentY = porodChart.getXYPlot().getDataset(i).getYValue(i, currCount);
+                if (ymax < currentY){
+                    ymax = currentY;
+                    ymaxSeries = i;        // determine which series contains max Y value
+                    ymaxIndex = currCount; // determine index of max Y value
+                }
+                currCount++;
+            }
+            // determine max value in kratky
+            for (int k = 0; k < currCount; k++){
+                currentY = kratkyDebyeSeries.getSeries(i).getY(k).doubleValue();
+                //currentY = kratkyDebyeChart.getXYPlot().getDataset(i).getYValue(i,k);
+                if (ymaxKratky < currentY){
+                    ymaxKratky = currentY;
+                }
+            }
+
+            for (int k = 0; k < currCount; k++){
+                currentY = sibylsSeries.getSeries(i).getY(k).doubleValue();
+                //currentY = sibylsChart.getXYPlot().getDataset(i).getYValue(i,k);
+                if (ymaxSibyls < currentY){
+                    ymaxSibyls = currentY;
+                }
+            }
+        }
+        float porodMax = (float)porodSeries.getSeries(ymaxSeries).getY(ymaxIndex).doubleValue();
+        float porodDebyeMax = (float)porodDebyeSeries.getSeries(ymaxSeries).getY(ymaxIndex).doubleValue();
+
+        float qmax2 = (float)(currentQ*currentQ);
+        float qmax4 = qmax2*qmax2;
+
+
+        porodChart.getXYPlot().getDomainAxis().setUpperBound(currentQ);
+        porodChart.getXYPlot().getRangeAxis().setUpperBound(porodMax + 0.1*porodMax);
+
+        porodDebyeChart.getXYPlot().getDomainAxis().setUpperBound(qmax4);
+        porodDebyeChart.getXYPlot().getRangeAxis().setUpperBound(porodDebyeMax + 0.1*porodDebyeMax);
+
+        kratkyDebyeChart.getXYPlot().getDomainAxis().setUpperBound(qmax2);
+        kratkyDebyeChart.getXYPlot().getRangeAxis().setUpperBound(ymaxKratky + 0.1*ymaxKratky);
+
+        sibylsChart.getXYPlot().getDomainAxis().setUpperBound(qmax2 * currentQ);
+        sibylsChart.getXYPlot().getRangeAxis().setUpperBound(ymaxSibyls + 0.1 * ymaxSibyls);
     }
 
     public ChartFrame plotPorod(XYSeriesCollection dataset) {
