@@ -68,6 +68,7 @@ public class Scatter {
     private JButton volumeButton;
     private JButton vcPlotButton;
     private JButton flexibilityPlotsButton;
+    private JButton ratioPlotButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -336,16 +337,9 @@ public class Scatter {
         volumeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int selected=0;
-                int id=0;
-                for(int i=0; i<collectionSelected.getDatasets().size(); i++){
-                    if (collectionSelected.getDataset(i).getInUse()){
-                        selected++;
-                        id = i;
-                    }
-                }
 
-                if (selected != 1){
+                int id = collectionSelected.getSelected();
+                if (id < 0){
                     status.setText("Please select only one dataset");
                     return;
                 }
@@ -366,6 +360,16 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 createFlexPlots();
+            }
+        });
+        ratioPlotButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (collectionSelected.getTotalSelected() != 2){
+                    status.setText("Please select only two datasets");
+                    return;
+                }
+                createRatioPlot();
             }
         });
     }
@@ -472,6 +476,11 @@ public class Scatter {
         kratky.plot(collectionSelected, WORKING_DIRECTORY_NAME);
     }
 
+    private void createRatioPlot(){
+
+        RatioPlot ratioPlot = new RatioPlot(collectionSelected, WORKING_DIRECTORY_NAME);
+        ratioPlot.plot();
+    }
 
     private void createFlexPlots(){
         FlexPlots flexplot = new FlexPlots(collectionSelected, WORKING_DIRECTORY_NAME);

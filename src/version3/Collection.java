@@ -185,5 +185,28 @@ public class Collection {
         return minq;
     }
 
+    public int getTotalSelected(){
+        int selected=0;
+        for(int i=0; i<this.getDatasets().size(); i++){
+            if (this.getDataset(i).getInUse()){
+                selected++;
+            }
+        }
+        return selected;
+    }
+
+    public int getSelected(){
+        int selected = -1;
+        if (this.getTotalSelected() == 1){
+            for(int i=0; i<this.getDatasets().size(); i++){
+                if (this.getDataset(i).getInUse()){
+                    selected = i;
+                    break;
+                }
+            }
+        }
+        return selected;
+    }
+
 
 }
