@@ -66,6 +66,8 @@ public class Scatter {
     private JButton errorPlotButton;
     private JButton powerLawPlotButton;
     private JButton volumeButton;
+    private JButton vcPlotButton;
+    private JButton flexibilityPlotsButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -351,6 +353,21 @@ public class Scatter {
                 createVolumePlot(collectionSelected.getDataset(id).getId());
             }
         });
+
+
+        vcPlotButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createVcPlot();
+            }
+        });
+
+        flexibilityPlotsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createFlexPlots();
+            }
+        });
     }
 
 
@@ -454,6 +471,18 @@ public class Scatter {
         kratky = KratkyPlot.getInstance();
         kratky.plot(collectionSelected, WORKING_DIRECTORY_NAME);
     }
+
+
+    private void createFlexPlots(){
+        FlexPlots flexplot = new FlexPlots(collectionSelected, WORKING_DIRECTORY_NAME);
+        flexplot.plot();
+    }
+
+    private void createVcPlot(){
+        VcPlot tempPlot = new VcPlot(collectionSelected, WORKING_DIRECTORY_NAME);
+        tempPlot.plot(status);
+    }
+
 
     private void createVolumePlot(int id){
         VolumePlot tempPlot = new VolumePlot(collectionSelected.getDataset(id), WORKING_DIRECTORY_NAME);
