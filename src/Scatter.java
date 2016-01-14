@@ -399,7 +399,7 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 // make a class instance of ComplexPlot
                 // create and show comboBox
-
+                ComplexPlot complexation = new ComplexPlot(collectionSelected, WORKING_DIRECTORY_NAME, status);
             }
         });
     }

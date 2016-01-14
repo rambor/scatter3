@@ -188,6 +188,10 @@ public class Collection {
         return minq;
     }
 
+    /**
+     *
+     * @return the number of selected datasets in use
+     */
     public int getTotalSelected(){
         int selected=0;
 
@@ -199,6 +203,10 @@ public class Collection {
         return selected;
     }
 
+    /**
+     *
+     * @return returns datalist ID of singly selected dataset
+     */
     public int getSelected(){
         int selected = -1;
 

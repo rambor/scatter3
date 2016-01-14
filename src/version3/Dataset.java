@@ -63,8 +63,10 @@ public class Dataset {
     private double dMax;
     private double porodExponent;
     private double porodExponentError;
+
     private double scaleFactor;
     private double log10ScaleFactor;
+
     private double averageR;
     private double averageRSigma;
     private int porodDebyeVolume;
@@ -113,6 +115,9 @@ public class Dataset {
     private double prScaleFactor;
 
     private RealSpace realSpace;
+
+    private String experimentalNotes;
+    private String bufferComposition;
 
     /**
      *
@@ -193,15 +198,9 @@ public class Dataset {
                 logCount++;
             }
             //kratky and q*I(q)
-            /*
-            private XYSeries normalizedKratky;  // derived from allData
-            private XYSeries kratky;            // derived from allData
-            private XYSeries qIq;               // derived from allData
-            */
             kratkyData.add(q, q2*tempXY.getYValue());  // should not be modified
-            qIqData.add(q, q*tempXY.getYValue());
+            qIqData.add(q, q*tempXY.getYValue());      // should not be modified
         }
-
 
         fitList = new ArrayList<>();
 
