@@ -58,7 +58,7 @@ public class Scatter {
     private JLabel status;
     private JButton intensityPlotButton;
     private JButton normalizedKratkyButton;
-    private JButton normalizedGuinierButton;
+    private JButton guinierPeakAnalysisButton;
     private JTabbedPane tabbedPane1;
     private JButton kratkyPlotButton;
     private JButton qIqPlotButton;
@@ -362,14 +362,35 @@ public class Scatter {
                 createFlexPlots();
             }
         });
+
         ratioPlotButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
                 if (collectionSelected.getTotalSelected() != 2){
                     status.setText("Please select only two datasets");
                     return;
                 }
                 createRatioPlot();
+            }
+        });
+
+        guinierPeakAnalysisButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int id = collectionSelected.getSelected();
+
+                if (id < 0){
+                    status.setText("Please select only one dataset");
+                    return;
+                }
+
+                if (collectionSelected.getDataset(id).getGuinierRg() <= 0 && collectionSelected.getDataset(id).getGuinierIzero() <= 0){
+                    status.setText("Perform Manual Guinier first, auto-Rg failed");
+                    return;
+                }
+
+                createGPAPlot(id);
             }
         });
     }
@@ -474,6 +495,13 @@ public class Scatter {
     private void createKratkyPlot(){
         kratky = KratkyPlot.getInstance();
         kratky.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+    }
+
+    private void createGPAPlot(int id){
+
+        GPAPlot gpaPlot = new GPAPlot("SC\u212BTTER \u2263 GUINIER PEAK ANALYSIS ", collectionSelected.getDataset(id), WORKING_DIRECTORY_NAME);
+        gpaPlot.makePlot(analysisModel);
+
     }
 
     private void createRatioPlot(){
@@ -1169,6 +1197,7 @@ public class Scatter {
             if (table.getModel().toString().contains("Analysis")){
 
                 if (column == 2) {
+
                     collectionSelected.getDataset(row).setInUse(!(Boolean)value);
 
                     if (log10IntensityPlot.isVisible()){

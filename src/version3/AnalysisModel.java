@@ -84,8 +84,8 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
 
     @Override
     public Object getValueAt(int row, int col) {
+
         Dataset dataset = (Dataset) datalist.get(row);
-        double q;
         int index;
         // anytime row is clicked, this method is executed
         switch (col){

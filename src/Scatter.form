@@ -405,7 +405,7 @@
                       <hideActionText value="true"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
-                      <text value="Intensity Plot"/>
+                      <text value="Log10 Intensity Plot"/>
                     </properties>
                   </component>
                   <component id="f02a6" class="javax.swing.JButton" binding="normalizedKratkyButton" default-binding="true">
@@ -423,7 +423,7 @@
                       <text value="Normalized Kratky"/>
                     </properties>
                   </component>
-                  <component id="4924c" class="javax.swing.JButton" binding="normalizedGuinierButton" default-binding="true">
+                  <component id="4924c" class="javax.swing.JButton" binding="guinierPeakAnalysisButton" default-binding="true">
                     <constraints>
                       <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>
@@ -435,7 +435,7 @@
                       <font size="12" style="1"/>
                       <foreground color="-15822098"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
-                      <text value="Normalized Guinier"/>
+                      <text value="Guinier Peak Analysis"/>
                     </properties>
                   </component>
                   <component id="55363" class="javax.swing.JButton" binding="volumeButton">
@@ -755,7 +755,7 @@
                       <foreground color="-13908400"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
-                      <text value="Average"/>
+                      <text value="PackageIt"/>
                     </properties>
                   </component>
                   <component id="cd0bb" class="javax.swing.JButton" default-binding="true">

@@ -28,7 +28,7 @@ import java.util.Locale;
  */
 public class PlotManualGuinier extends ApplicationFrame implements ChartMouseListener, ActionListener {
 
-    public JFreeChart chart;
+    private JFreeChart chart;
     public JFreeChart residualsChart;
     public JFreeChart combChart;
     public int selectedID;
@@ -42,17 +42,15 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
     private XYSeries plottedResiduals;
     private XYSeries yIsZero;
     CombinedDomainXYPlot combinedPlot;
-   // ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 Guinier Plot", chart);
 
     JButton button = new JButton("Save");
 
     JPanel buttonPanel = new JPanel();
-    XYLineAndShapeRenderer renderer1;
-    XYLineAndShapeRenderer renderer2;
+    private XYLineAndShapeRenderer renderer1;
+    private XYLineAndShapeRenderer renderer2;
 
     DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.US);
     DecimalFormat df = new DecimalFormat("000.0000", otherSymbols);;
-
 
     public PlotManualGuinier(final String title, Dataset dataset, String workingDirectoryName) {
         super(title);
@@ -69,7 +67,6 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
 
         otherSymbols.setDecimalSeparator('.');
         otherSymbols.setGroupingSeparator(',');
-
     }
 
 
@@ -78,12 +75,20 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         this.analysisModel = analysisModel;
         XYSeries datasetData = datasetInUse.getGuinierData();
         XYSeries datasetError = datasetInUse.getOriginalPositiveOnlyError();
-        double guinierParameters[] = Functions.autoRg(datasetData, datasetError, 2, datasetInUse.getStart());
+
+        double rg, izero;
+        rg = datasetInUse.getGuinierRg();
+        izero = datasetInUse.getGuinierIzero();
+
+        if (datasetInUse.getGuinierRg() <= 0 && datasetInUse.getGuinierIzero() <= 0){
+            double guinierParameters[] = Functions.autoRg(datasetData, datasetError, datasetInUse.getStart());
+            datasetInUse.setGuinierParameters(guinierParameters[0], guinierParameters[2], guinierParameters[1], guinierParameters[3]);
+            rg = datasetInUse.getGuinierRg();
+            izero = datasetInUse.getGuinierIzero();
+        }
 
         // use Rg to create XYSeries dataset
         // add to newDatasetCollection
-
-        datasetInUse.setGuinierParameters(guinierParameters[0], guinierParameters[2], guinierParameters[1], guinierParameters[3]);
 
         int itemCount = datasetInUse.getGuinierData().getItemCount();
         plottedData = new XYSeries(datasetInUse.getFileName());
@@ -91,13 +96,14 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         yIsZero = new XYSeries("Y-axis at zero");
 
         XYDataItem tempData;
-        double slope = guinierParameters[1]*guinierParameters[1]/(-3.0);
-        double intercept = Math.log(guinierParameters[0]);
+        double slope = rg*rg/(-3.0);
+        double intercept = Math.log(izero);
 
         int length=0;
-        for(int i=datasetInUse.getStart(); i<itemCount; i++){
+        int startAt = datasetInUse.getStart()-1;
+        for(int i=startAt; i<itemCount; i++){
             tempData = datasetError.getDataItem(i);
-            if (tempData.getXValue()*guinierParameters[1] <= 1.3){
+            if (tempData.getXValue()*rg <= 1.3){
                 tempData = datasetData.getDataItem(i); // q^2, ln[q]
                 plottedData.add(tempData);
                 plottedResiduals.add(tempData.getX(), tempData.getYValue() - (slope*tempData.getXValue()+intercept));
@@ -107,7 +113,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
                 break;
             }
         }
-        System.out.println("Length : " + length);
+
         guinierCollection.addSeries(new XYSeries("GUINIER MODEL LINE"));
         // create residual series and line fits
 
@@ -131,8 +137,6 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
                 true,
                 false
         );
-
-
 
         residualsChart = ChartFactory.createXYLineChart(
                 "Residuals",                // chart title
@@ -251,7 +255,8 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         manualGuinierPanel.add(manualFile);
 
         manualLimits = new JLabel();
-        this.updateLimits(guinierParameters[1]);
+
+        this.updateLimits(rg);
 
         manualGuinierPanel.add(manualLimits);
         manualGuinierPanel.add(spinnerPanel);
@@ -344,7 +349,6 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
     }
 
 
-
     public void guinierSpinnerLChanged(ScatterSpinner tempSpinner){
         int rowID = tempSpinner.getID();
         int current = (Integer) tempSpinner.getValue() - 1;
@@ -352,20 +356,19 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         if (current < 0){
             tempSpinner.setValue(1);
             tempSpinner.setPriorIndex(1);
+
         } else {
             // add or remove values to guinierDataset
             int direction = (Integer) tempSpinner.getValue() - tempSpinner.getPriorIndex();
             int itemCount = 0;
             // if direction is negative, add point to start of GuinierSeries
-            if (direction < 0){
+            if (direction <= 0){
                 if (direction == -1) {
                     itemCount = guinierCollection.getSeries(1).getItemCount() + 1;
-                    XYDataItem tempXY = datasetInUse.getGuinierData().getDataItem(current);
                     guinierCollection.getSeries(1).add(datasetInUse.getGuinierData().getDataItem(current));
                     // for updating on Analysis table
                     // add Data
                     datasetInUse.getData().add(datasetInUse.getScaledLog10DataItemAt(current));
-
                 } else {
                     // keep adding points until currentValue
                     int start = tempSpinner.getPriorIndex() - 2;
@@ -404,9 +407,8 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
             //analysisModel
             //
             tempSpinner.setPriorIndex((Integer) tempSpinner.getValue());
-
             analysisModel.setValueAt((Integer) tempSpinner.getValue() ,rowID, 4);
-            analysisModel.fireTableCellUpdated(tempSpinner.getID(),4);
+            //analysisModel.fireTableCellUpdated(tempSpinner.getID(),4);
             analysisModel.fireTableDataChanged();
 
             this.replotGuinier(itemCount);
@@ -417,6 +419,8 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
     public void guinierSpinnerHChanged(ScatterSpinner tempSpinner){
 
         int current = (Integer) tempSpinner.getValue() - 1;
+        datasetInUse.setIndexOfUpperGuinierFit((Integer) tempSpinner.getValue());
+
         int totalValues = datasetInUse.getGuinierData().getItemCount();
 
         if (current+1 >= totalValues){
@@ -428,7 +432,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         int direction = (Integer) tempSpinner.getValue() - tempSpinner.getPriorIndex();
         int itemCount;
         // if direction is positive, add point to Guinier Series
-        if (direction < 0){
+        if (direction <= 0){
             // recalculate slope and intercept
             if (direction == -1){
                 guinierCollection.getSeries(1).remove(guinierCollection.getSeries(1).getItemCount() - 1 );
@@ -466,9 +470,21 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
 
         }
 
+
         itemCount = guinierCollection.getSeries(1).getItemCount();
         tempSpinner.setPriorIndex((Integer) tempSpinner.getValue());
         replotGuinier(itemCount);
     }
+
+    public Dataset getDatasetInUse(){
+        return datasetInUse;
+    }
+
+    public String getWorkingDirectoryName(){
+        return this.workingDirectoryName;
+    }
+    // create GPA plot ?
+
+
 
 }

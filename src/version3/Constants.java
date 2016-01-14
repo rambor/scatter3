@@ -26,6 +26,7 @@ public final class Constants {
     public static final Color DarkGray = new Color(72,72,72);
     public static final Color MediumRed = new Color(255, 102, 102);
     public static final Color RedGray = new Color(202, 184, 188);
+    //public static final Color RedGray = new Color(202, 184, 188);
 
     public static final double INV_PI = 1.0/Math.PI;
     public static final double TWO_PI_2 = (float)(2.0*Math.PI*Math.PI);

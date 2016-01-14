@@ -1532,10 +1532,9 @@ public class Functions {
      * AutoRg algorithm for calculating I(zero) and Rg
      * @param data - XYSeries must be nonNegative as q^2, ln[I(q)]
      * @param errors - associated errors as XYSeries
-     * @param exponent refers to the order of q - q^2 or q^1
      * @return array of doubles
      */
-    public static double[] autoRg(XYSeries data, XYSeries errors, int exponent, int startAt) {
+    public static double[] autoRg(XYSeries data, XYSeries errors, int startAt) {
 
         int first = startAt;
         int last = data.getItemCount()-1;
@@ -1632,7 +1631,7 @@ public class Functions {
 
         //rg = Math.sqrt(-3.0*slope);
         double rg2 = rg*rg;
-        System.out.println("Prelim : " + rg);
+
         double i_zero = 0.0;
         double square_of_1p3 = 1.3*1.3;
         sizeOfArray = 0;
@@ -1678,7 +1677,7 @@ public class Functions {
                     break getDataLoop;
                 }
             }
-            System.out.println("ARRAY SIZE " + arrayIndex);
+
             int trial = 0, randomIndex, random_length, subsample;
 
             residuals3 = new double[arrayIndex];
@@ -1845,7 +1844,7 @@ public class Functions {
             parameters[4]=r2_coeff;
             parameters[5]=(arrayIndex - count)/(double)arrayIndex; // percent rejected
         }
-        System.out.println("Rg " + rg);
+
         return parameters;
     }
 

@@ -13,6 +13,7 @@ public class Collection {
     //collection of datasets
     private ArrayList<Dataset> datasets;
     private XYSeriesCollection miniCollection;
+    private int totalDatasets=0;
     private String note;
     private double maxI;
     private double minI;
@@ -58,6 +59,7 @@ public class Collection {
         b = rand.nextFloat();
         dat.setColor(new Color(r,g,b));
         datasets.add(dat);
+        totalDatasets = datasets.size();
 
         miniCollection.addSeries(dat.getData()); // log10 data
         // reset max and min values for collection
@@ -73,6 +75,7 @@ public class Collection {
         if (dat.getMinq() < this.minq ) {
             this.minq = dat.getMinq();
         }
+
     }
 
     public void recalculateMinMaxQ(){
@@ -187,6 +190,7 @@ public class Collection {
 
     public int getTotalSelected(){
         int selected=0;
+
         for(int i=0; i<this.getDatasets().size(); i++){
             if (this.getDataset(i).getInUse()){
                 selected++;
@@ -197,8 +201,9 @@ public class Collection {
 
     public int getSelected(){
         int selected = -1;
+
         if (this.getTotalSelected() == 1){
-            for(int i=0; i<this.getDatasets().size(); i++){
+            for(int i=0; i < totalDatasets; i++){
                 if (this.getDataset(i).getInUse()){
                     selected = i;
                     break;
@@ -207,6 +212,5 @@ public class Collection {
         }
         return selected;
     }
-
 
 }

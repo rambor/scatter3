@@ -50,6 +50,7 @@ public class Dataset {
     private int totalCountInAllData;
     private int start;  // start of the nonNegativeData
     private int end;    // end of the nonNegativeData
+    private int indexOfUpperGuinierFit; //belongs to positiveOnlyData
 
     // below are properties of a subtracted dataset
     private double guinierIZero;
@@ -654,7 +655,6 @@ public class Dataset {
      */
     public void setStart(int st){
         start=st;
-        System.out.println("Start value " + st);
     }
     /**
      * Sets end point of the series
@@ -1205,6 +1205,14 @@ public class Dataset {
 
     public double getPrScaleFactor(){
         return prScaleFactor;
+    }
+
+    public void setIndexOfUpperGuinierFit(int index){
+        this.indexOfUpperGuinierFit = index;
+    }
+
+    public int getIndexOfUpperGuinierFit(){
+        return this.indexOfUpperGuinierFit;
     }
 
 }
