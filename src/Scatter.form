@@ -560,7 +560,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-3919037"/>
+                      <foreground color="-673024"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Rc Plot"/>
