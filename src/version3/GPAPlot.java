@@ -109,7 +109,6 @@ public class GPAPlot extends PlotManualGuinier {
             }
         });
 
-
         super.plot(analysisModel);
 
         // create the plot and have the new plot updated

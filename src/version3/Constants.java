@@ -32,6 +32,8 @@ public final class Constants {
     public static final double TWO_PI_2 = (float)(2.0*Math.PI*Math.PI);
 
     //FONTS
+    public static final BasicStroke stroke3 = new BasicStroke(3.0f);
+
     public static final Font BOLD_12 = new Font("Dialog", Font.BOLD, 12);
     public static final Font FONT_12 = new Font("Dialog", Font.PLAIN, 12);
     public static final Font BOLD_16 = new Font("Dialog", Font.BOLD, 16);

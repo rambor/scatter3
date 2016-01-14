@@ -20,17 +20,14 @@ import java.awt.geom.Ellipse2D;
 public class Graph extends ApplicationFrame {
 
     public JFreeChart chart;
-    XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
     private XYSeriesCollection newDataset = new XYSeriesCollection();
     public ChartFrame frame = new ChartFrame("", chart);
-    JFrame f = new JFrame("");
 
     public double markerStart = 0.0;
     public double markerEnd = 0.0;
     public boolean markerReady = false;
     public boolean markerStartSet = false;
     public boolean markerEndSet = false;
-    Container content = f.getContentPane();
 
     public Graph(final String title) {
         super(title);
@@ -90,9 +87,7 @@ public class Graph extends ApplicationFrame {
         this.frame.getContentPane().setBackground(null);
 
         this.frame.getChartPanel().setChart(this.chart);
-        //frame.getChartPanel().setSize(100,100);
         this.frame.pack();
 
-        //content.add(frame.getChartPanel());
     }
 }

@@ -69,6 +69,7 @@ public class Scatter {
     private JButton vcPlotButton;
     private JButton flexibilityPlotsButton;
     private JButton ratioPlotButton;
+    private JButton complexButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -129,7 +130,6 @@ public class Scatter {
             miniPlots.add(new Graph("Set " + Integer.toString(i+1)));
             collectionButtons.get(i).setSelected(false);
             miniPlots.get(i).plot((Collection) collections.get(i));
-            //miniPlots.get(i).frame.setSize(100, 100);
         }
 
         // Mini Collections for Drag-N-Drop on Files Tab
@@ -391,6 +391,15 @@ public class Scatter {
                 }
 
                 createGPAPlot(id);
+            }
+        });
+
+        complexButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // make a class instance of ComplexPlot
+                // create and show comboBox
+
             }
         });
     }
