@@ -1177,6 +1177,22 @@ public class Dataset {
         return baseShapeFilled;
     }
 
+    public void setExperimentalNotes(String text){
+        this.experimentalNotes = text;
+    }
+
+    public String getExperimentalNotes(){
+        return this.experimentalNotes;
+    }
+
+    public void setBufferComposition(String text){
+        this.bufferComposition = text;
+    }
+
+    public String getBufferComposition(){
+        return this.bufferComposition;
+    }
+
     /**
      *
      * @param dataset

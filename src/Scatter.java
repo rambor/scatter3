@@ -106,6 +106,8 @@ public class Scatter {
     public NormalizedKratkyPlot normalKratkyVc;
     public NormalizedKratkyPlot normalKratkyVcReal;
 
+    private boolean isCtrlC = false;
+    private boolean isCtrlB = false;
 
     public Scatter() { // constructor
 
@@ -214,6 +216,74 @@ public class Scatter {
         analysisTable.getColumnModel().getColumn(11).setCellRenderer( centerRenderer );
         analysisTable.getColumnModel().getColumn(12).setCellRenderer(centerRenderer);
 
+        analysisTable.addKeyListener(new KeyListener() {
+
+            @Override
+            public void keyTyped(KeyEvent e) {
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if ((e.getKeyCode() == KeyEvent.VK_C) && ((e.getModifiers() & KeyEvent.CTRL_MASK) != 0)) {
+                    isCtrlC = true;
+                }
+
+                if ((e.getKeyCode() == KeyEvent.VK_B) && ((e.getModifiers() & KeyEvent.CTRL_MASK) != 0)) {
+                    isCtrlB = true;
+                }
+
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                isCtrlC = false;
+                isCtrlB = false;
+            }
+        });
+
+        analysisTable.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+
+                if (isCtrlC){
+                    int row = analysisTable.rowAtPoint(e.getPoint());
+                    Notes temp = new Notes(collectionSelected.getDataset(row));
+                    temp.pack();
+                    temp.setVisible(true);
+                    isCtrlC = false;
+                }
+
+                if (isCtrlB){
+                    int row = analysisTable.rowAtPoint(e.getPoint());
+                    BufferInfo tempInfo = new BufferInfo(collectionSelected.getDataset(row));
+                    tempInfo.pack();
+                    tempInfo.setVisible(true);
+                    isCtrlB = false;
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
+            }
+        });
+
+
         analysisTable.getTableHeader().addMouseListener(new MouseAdapter(){
             @Override
             public void mouseClicked(MouseEvent mouseEvent){
@@ -246,6 +316,8 @@ public class Scatter {
                         }
                     }
                 }
+
+                // check if key is depresed
 
             }
         });
@@ -517,6 +589,7 @@ public class Scatter {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
+        //System.exit(0);
     }
 
     private void graphData() {
