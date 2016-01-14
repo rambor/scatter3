@@ -70,6 +70,7 @@ public class Scatter {
     private JButton flexibilityPlotsButton;
     private JButton ratioPlotButton;
     private JButton complexButton;
+    private JButton rcXSectionalButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -402,6 +403,32 @@ public class Scatter {
                 ComplexPlot complexation = new ComplexPlot(collectionSelected, WORKING_DIRECTORY_NAME, status);
             }
         });
+
+        rcXSectionalButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // if more than one file selected send warning and return
+                int filesSelected=0, selected = 0;
+                int limit = collectionSelected.getDatasets().size();
+
+                Dataset temp;
+
+                for (int i=0; i<limit; i++){
+                    if (collectionSelected.getDataset(i).getInUse()){
+                        filesSelected++;
+                        selected = i;
+                    }
+                }
+
+                if (filesSelected != 1){
+                    status.setText("Select only 1(one) file for Rc (x-section) determination");
+                    return;
+                } else {
+                    temp = collectionSelected.getDataset(selected);
+                    //plotGuinierRc(temp);
+                }
+            }
+        });
     }
 
 
@@ -599,11 +626,10 @@ public class Scatter {
      * @param file
      * @param status
      * @param size
-     * @param toPlot
      * @param convertNMtoAng
      * @return
      */
-    private static LoadedFile loadDroppedFile(File file, JLabel status, int size, int toPlot, boolean convertNMtoAng){
+    private static LoadedFile loadDroppedFile(File file, JLabel status, int size, boolean convertNMtoAng){
         LoadedFile temp = null;
         String filebase, ext;
         // how to handle different file formats?
@@ -618,10 +644,10 @@ public class Scatter {
                 status.setText("Bruker .brml  file detected ");
                 File tempFile;
                 tempFile = Bruker.makeTempDataFile(file, Scatter.WORKING_DIRECTORY_NAME);
-                temp = new LoadedFile(tempFile, status, size, toPlot, convertNMtoAng);
+                temp = new LoadedFile(tempFile, status, size, convertNMtoAng);
 
             } else if (ext.equals("dat") || ext.equals("fit") || ext.equals("Adat")) {
-                temp = new LoadedFile(file, status, size, toPlot, convertNMtoAng);
+                temp = new LoadedFile(file, status, size, convertNMtoAng);
             } else {
                 // throw exception - incorrect file format
                 throw new Exception("Incorrect file format: Use either brml, dat, fit, Adat, or Bdat file formats: " + currentFile);
@@ -645,7 +671,7 @@ public class Scatter {
         // if updating, we could probably just change the value of the object which will automatically update value
         if (collectionNumber < 69){
 
-            int newIndex = ((Collection)collections.get(collectionNumber)).getDatasets().size();
+            int newIndex = ((Collection)collections.get(collectionNumber)).getDatasetCount();
 
             ((Collection)collections.get(collectionNumber)).addDataset(new Dataset(
                     tempFile.allData,       //data
@@ -659,7 +685,7 @@ public class Scatter {
 
         } else if (collectionNumber == 69 || collectionNumber == 96) {
             // buffers
-            int newIndex = ((Collection)collections.get(collectionNumber)).getDatasets().size();
+            int newIndex = ((Collection)collections.get(collectionNumber)).getDatasetCount();
 
             ((Collection)collections.get(collectionNumber)).addDataset(new Dataset(
                     tempFile.allData,       //data
@@ -692,13 +718,15 @@ public class Scatter {
 //            resultsModel.datalist.clear();
 //            resultsModel.clear();
 
+            // multithreading will add in quasi random order
+
             int total = files.length;
             for( int i = 0; i < total; i++ ) {
                 // call File loader function
                 // if true add loaded file object to collection
                 System.out.println("PANEL => " + index + " -------- DROPPED FILE: " + files[i]);
 
-                LoadedFile temp = loadDroppedFile(files[i], status, ((Collection)Scatter.collections.get(index)).getDatasets().size(), 1, convertNMtoAng);
+                LoadedFile temp = loadDroppedFile(files[i], status, ((Collection)Scatter.collections.get(index)).getDatasetCount(), convertNMtoAng);
 
                 // load file into collection
                 if (temp !=null){
@@ -708,7 +736,7 @@ public class Scatter {
 
             // update dataFilesList in dataFilesPanel (Files tab);
             // rebuild dataFilesPanel from collection.get(i)
-            for(int i=0; i<((Collection)main.collections.get(index)).getDatasets().size(); i++){
+            for(int i=0; i<((Collection)main.collections.get(index)).getDatasetCount(); i++){
                 String name = ((Collection)main.collections.get(index)).getDataset(i).getFileName();
                 main.dataFilesModel.addElement(new DataFileElement(name, i));
                 analysisModel.addDataset(((Collection) collections.get(index)).getDataset(i));
@@ -718,7 +746,7 @@ public class Scatter {
             main.dataFilesList.setModel(main.dataFilesModel);
 
             //update collection ids
-            total = ((Collection)collections.get(index)).getDatasets().size();
+            total = ((Collection)collections.get(index)).getDatasetCount();
             for(int h=0; h<total; h++){
                 ((Collection) collections.get(index)).getDataset(h).setId(h);
             }

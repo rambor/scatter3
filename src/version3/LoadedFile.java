@@ -40,7 +40,7 @@ public class LoadedFile {
     // REMARK   INFO
 
     //Constructor
-    public LoadedFile(File file, JLabel jLabel, int ssize, int sparse, boolean convert) throws Exception{
+    public LoadedFile(File file, JLabel jLabel, int ssize, boolean convert) throws Exception{
 
         if (loc.toString().equals("en_GB") || loc.toString().equals("en_US")){
             isUSUK = true;

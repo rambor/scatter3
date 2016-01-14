@@ -75,7 +75,6 @@ public class Collection {
         if (dat.getMinq() < this.minq ) {
             this.minq = dat.getMinq();
         }
-
     }
 
     public void recalculateMinMaxQ(){
@@ -169,7 +168,7 @@ public class Collection {
     }
 
     public int getDatasetCount(){
-        return datasets.size();
+        return totalDatasets;
     }
 
     public double getMaxI(){

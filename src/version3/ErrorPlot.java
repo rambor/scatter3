@@ -258,7 +258,7 @@ public class ErrorPlot {
         jframe.setVisible(true);
     }
 
-    public static boolean isVisible(){
+    public boolean isVisible(){
         return jframe.isVisible();
     }
 

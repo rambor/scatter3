@@ -550,7 +550,7 @@
                       <text value="Errors"/>
                     </properties>
                   </component>
-                  <component id="c3243" class="javax.swing.JButton" default-binding="true">
+                  <component id="c3243" class="javax.swing.JButton" binding="rcXSectionalButton">
                     <constraints>
                       <grid row="2" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>
