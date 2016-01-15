@@ -630,7 +630,7 @@
                       <text value="I(0) : Rg Plot"/>
                     </properties>
                   </component>
-                  <component id="8d476" class="javax.swing.JButton" default-binding="true">
+                  <component id="8d476" class="javax.swing.JButton" binding="scaleButton">
                     <constraints>
                       <grid row="0" column="10" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>

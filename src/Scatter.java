@@ -71,6 +71,7 @@ public class Scatter {
     private JButton ratioPlotButton;
     private JButton complexButton;
     private JButton rcXSectionalButton;
+    private JButton scaleButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -501,6 +502,26 @@ public class Scatter {
 
 
                 }
+            }
+        });
+
+        scaleButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                new Thread(){
+                    public void run() {
+                        // int numberOfCPUs, Collection collection, double lower, double upper, JProgressBar bar, JLabel label){
+                        //Integer.valueOf(cpuBox.getSelectedItem().toString())
+                        ScaleManager scaling = new ScaleManager(
+                                4,
+                                collectionSelected,
+                                progressBar1,
+                                status);
+
+                        scaling.scaleNow(0,0);
+                    }
+                }.start();
             }
         });
     }
@@ -1123,11 +1144,13 @@ public class Scatter {
                     System.out.println("FocusLost " + collectionSelected.getDataset(rowID).getData().getX(0) + " | value " + spinner.getValue());
                 }
             });
+
             textField.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent ae ) {
                     stopCellEditing();
                 }
             });
+
             spinner.addChangeListener((ChangeListener) this);
         }
 
@@ -1136,48 +1159,50 @@ public class Scatter {
             int current = (Integer) this.spinner.getValue() - 1;
             int direction = temp - this.priorValue;
             int limit;
+            Dataset dataset = collectionSelected.getDataset(rowID);
 
             if (this.colID == 4){
-                double test = collectionSelected.getDataset(rowID).getData().getMaxX();
-                double testSpinner = collectionSelected.getDataset(rowID).getOriginalLog10Data().getX(((Integer) this.spinner.getValue()).intValue()).doubleValue();
-                if (((Integer)this.spinner.getValue() < 1) || (testSpinner > test)){
+
+                double test = dataset.getData().getMaxX(); // plotted data
+                int valueOfSpinner = (Integer)this.spinner.getValue();
+                //
+                if ((valueOfSpinner < 1) || valueOfSpinner > dataset.getData().getItemCount() || ( dataset.getOriginalLog10Data().getX( valueOfSpinner ).doubleValue() >= test)){
                     this.spinner.setValue(1);
                     this.priorValue = 1;
                 } else {
                     //moving up or down?
                     if (direction > 0) {
                         if (direction == 1) {
-                            collectionSelected.getDataset(rowID).getData().remove(0);
+                            dataset.getData().remove(0);
                             // check other plots and update
                         } else {
                             limit = (Integer) temp - this.priorValue;
                             // keep removing first point
                             // current is the last point
-                            XYSeries currentData = collectionSelected.getDataset(rowID).getData();
+                            XYSeries currentData = dataset.getData();
                             currentData.delete(0, limit);
                         }
                         this.priorValue = temp;
                     } else if (direction < 0){
                         if (direction == -1) {
-                            collectionSelected.getDataset(rowID).getData().add(collectionSelected.getDataset(rowID).getScaledLog10DataItemAt(current));
+                            dataset.getData().add(dataset.getScaledLog10DataItemAt(current));
                         } else {
                             // keep adding points up until currentValue
                             int start = current;
-                            XYSeries tempData = collectionSelected.getDataset(rowID).getData();
+                            XYSeries tempData = dataset.getData();
                             double previousIntialValue = tempData.getMinX();
-                            int indexInOriginal = collectionSelected.getDataset(rowID).getOriginalLog10Data().indexOf(previousIntialValue);
+                            int indexInOriginal = dataset.getOriginalLog10Data().indexOf(previousIntialValue);
 
                             for (int i = start; i<=indexInOriginal; i++){
-                                tempData.add(collectionSelected.getDataset(rowID).getScaledLog10DataItemAt(i));
+                                tempData.add(dataset.getScaledLog10DataItemAt(i));
                             }
                         }
                         this.priorValue = temp;
                     }
                 }
-
-                collectionSelected.getDataset(rowID).setStart((Integer)this.getCellEditorValue());
+                dataset.setStart((Integer)this.getCellEditorValue());
             } else if (colID == 5) {
-                limit = collectionSelected.getDataset(rowID).getOriginalLog10Data().getItemCount();
+                limit = dataset.getOriginalLog10Data().getItemCount();
                 if ((Integer)this.spinner.getValue() > limit){
                     this.spinner.setValue(limit);
                     this.priorValue = limit;
@@ -1186,19 +1211,19 @@ public class Scatter {
                     if (direction < 0) {
                         if (direction == -1) {
                             //remove last point
-                            collectionSelected.getDataset(rowID).getData().remove(collectionSelected.getDataset(rowID).getData().getItemCount()-1);
+                            dataset.getData().remove(dataset.getData().getItemCount()-1);
                         } else {
                             limit = (Integer) temp - this.priorValue;
                             //current is the last point
-                            int start = collectionSelected.getDataset(rowID).getData().getItemCount() - 1;
+                            int start = dataset.getData().getItemCount() - 1;
                             int stop = start + limit;
                             // keep removing last point
-                            collectionSelected.getDataset(rowID).getData().delete(stop, start);
+                            dataset.getData().delete(stop, start);
                         }
 
                     } else if (direction > 0){
                         if (direction == 1) {
-                            collectionSelected.getDataset(rowID).getData().add(collectionSelected.getDataset(rowID).getScaledLog10DataItemAt(current));
+                            dataset.getData().add(dataset.getScaledLog10DataItemAt(current));
                         } else {
                             // keep adding points up until currentValue
                             Dataset tempDataset = collectionSelected.getDataset(rowID);
@@ -1209,13 +1234,14 @@ public class Scatter {
                             int indexOfLastPlottedValue = tempData.indexOf(lastPlottedValue);
 
                             for(int i = indexOfLastPlottedValue; i <= last; i++){
-                                tempData.add(collectionSelected.getDataset(rowID).getScaledLog10DataItemAt(i));
+                                tempData.add(dataset.getScaledLog10DataItemAt(i));
                             }
                         }
                     }
                     this.priorValue = temp;
                 }
-                collectionSelected.getDataset(rowID).setStart((Integer)this.getCellEditorValue());
+
+                dataset.setEnd((Integer)this.getCellEditorValue());
             }
         }
 
@@ -1272,8 +1298,7 @@ public class Scatter {
             System.err.println("Stopping edit");
             try {
                 editor.commitEdit();
-                spinner.commitEdit();
-
+                //spinner.commitEdit();
             } catch ( java.text.ParseException e ) {
                 JOptionPane.showMessageDialog(null,
                         "Invalid value, discarding.");

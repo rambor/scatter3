@@ -653,6 +653,7 @@ public class Dataset {
      *
      */
     public void setStart(int st){
+        System.out.println("From Start " + start);
         start=st;
     }
     /**
@@ -825,14 +826,14 @@ public class Dataset {
         XYDataItem temp;
         int startAt = start - 1;
 
-        if (scaleFactor != 1){
+        if (scaleFactor == 1){
             for (int i = startAt; i<end; i++){
-                temp = kratkyData.getDataItem(i);
-                plottedKratkyData.add(temp.getX(), temp.getYValue()*scaleFactor);
+                plottedKratkyData.add(kratkyData.getDataItem(i));
             }
         } else {
             for (int i = startAt; i<end; i++){
-                plottedKratkyData.add(kratkyData.getDataItem(i));
+                temp = kratkyData.getDataItem(i);
+                plottedKratkyData.add(temp.getX(), temp.getYValue()*scaleFactor);
             }
         }
     }
