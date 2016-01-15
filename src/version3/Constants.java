@@ -53,7 +53,7 @@ public final class Constants {
     public static final DecimalFormat Scientific1dot3e1 = new DecimalFormat("0.000E0", otherSymbols);
     public static final DecimalFormat Scientific1dot2e1 = new DecimalFormat("0.00E0", otherSymbols);
 
-    public static final DecimalFormat df = new DecimalFormat("000.0000", otherSymbols);
+    public static final DecimalFormat df = new DecimalFormat("0.0000", otherSymbols);
 
     public static final Shape Ellipse4 = new Ellipse2D.Double(-4.0, -4.0, 4.0, 4.0);
 }

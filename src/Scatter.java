@@ -481,9 +481,7 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 // if more than one file selected send warning and return
                 int filesSelected=0, selected = 0;
-                int limit = collectionSelected.getDatasets().size();
-
-                Dataset temp;
+                int limit = collectionSelected.getDatasetCount();
 
                 for (int i=0; i<limit; i++){
                     if (collectionSelected.getDataset(i).getInUse()){
@@ -496,8 +494,12 @@ public class Scatter {
                     status.setText("Select only 1(one) file for Rc (x-section) determination");
                     return;
                 } else {
-                    temp = collectionSelected.getDataset(selected);
                     //plotGuinierRc(temp);
+
+                    RcXSectionalPlot tempPlot = new RcXSectionalPlot(collectionSelected.getDataset(selected), WORKING_DIRECTORY_NAME);
+                    tempPlot.createPlots();
+
+
                 }
             }
         });

@@ -203,6 +203,7 @@ public class QIQPlot {
         content.add(frame.getChartPanel());
         jframe.setLocation(200,200);
         jframe.setVisible(true);
+        jframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
     }
 

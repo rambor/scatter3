@@ -224,6 +224,7 @@ public class KratkyPlot {
         content.add(frame.getChartPanel());
         jframe.setLocation(200,200);
         jframe.setVisible(true);
+        jframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
     public boolean isVisible(){

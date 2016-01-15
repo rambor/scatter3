@@ -688,7 +688,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-15822098"/>
+                      <foreground color="-15648368"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Average"/>
@@ -704,7 +704,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-3919037"/>
+                      <foreground color="-13135918"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Median"/>
@@ -720,7 +720,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-5361508"/>
+                      <foreground color="-3917525"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Single"/>
@@ -752,7 +752,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-3195849"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="PackageIt"/>
@@ -768,7 +768,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-404179"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Save"/>
@@ -952,7 +952,7 @@
           <forms defaultalign-vert="false"/>
         </constraints>
         <properties/>
-        <border type="none"/>
+        <border type="etched"/>
         <children>
           <component id="5281a" class="javax.swing.JProgressBar" binding="progressBar1" default-binding="true">
             <constraints>
