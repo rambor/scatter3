@@ -278,4 +278,13 @@ public class ErrorPlot {
             renderer.setSeriesVisible(index, flag);
         }
     }
+
+    public void changeColor(int id, Color newColor, float thickness, int pointsize){
+        renderer.setSeriesPaint(id, newColor);
+
+        double offset = -0.5*pointsize;
+        renderer.setSeriesShape(id, new Ellipse2D.Double(offset, offset, pointsize, pointsize));
+        renderer.setSeriesOutlineStroke(id, new BasicStroke(thickness));
+    }
+
 }

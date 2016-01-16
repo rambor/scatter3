@@ -277,4 +277,14 @@ public class KratkyPlot {
     public void setNotify(boolean state){
         frame.getChartPanel().getChart().setNotify(state);
     }
+
+    public void changeColor(int id, Color newColor, float thickness, int pointsize){
+        renderer1.setSeriesPaint(id, newColor);
+
+        double offset = -0.5*pointsize;
+        renderer1.setSeriesShape(id, new Ellipse2D.Double(offset, offset, pointsize, pointsize));
+        renderer1.setSeriesOutlineStroke(id, new BasicStroke(thickness));
+
+    }
+
 }

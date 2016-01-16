@@ -532,7 +532,6 @@ public class Scatter {
                     }
                 }.start();
 
-
             }
         });
 
@@ -1457,13 +1456,7 @@ public class Scatter {
                     }
 
 /*
-                    if (errorPlot.frame.isVisible()){
-                        errorPlot.chart.getXYPlot().getRenderer().setSeriesVisible(row, collectionSelected.getDataset(row).getInUse());
-                    }
 
-                    if (powerLawPlot.frame.isVisible()){
-                        powerLawPlot.chart.getXYPlot().getRenderer().setSeriesVisible(row, collectionSelected.getDataset(row).getInUse());
-                    }
 
                     if (normalKratkyRg.frame.isVisible()){
                         int old = normalKratkyRg.newDataset.getSeriesCount();
@@ -1887,6 +1880,7 @@ public class Scatter {
             thickness = Float.parseFloat((String) thickBox.getSelectedItem());
             pointSize = Integer.parseInt( (String)pointSizes.getSelectedItem());
             Symbol newInfo = new Symbol(currentColor, thickness, pointSize);
+            reColorPlots(data_row, currentColor, thickness, pointSize);
             return newInfo;
             //return currentColor;
         }
@@ -1910,6 +1904,31 @@ public class Scatter {
             data_row = row;
             return button;
         }
+    }
+
+    private void reColorPlots(int row, Color newColor, float thickness, int pointsize) {
+
+        if (log10IntensityPlot.isVisible()){
+            log10IntensityPlot.changeColor(row, newColor, thickness, pointsize);
+        }
+
+        if (kratky.isVisible()){
+            kratky.changeColor(row, newColor, thickness, pointsize);
+        }
+
+        if (qIqPlot.isVisible()){
+            qIqPlot.changeColor(row, newColor, thickness, pointsize);
+        }
+
+        if (errorPlot.isVisible()){
+            errorPlot.changeColor(row, newColor, thickness, pointsize);
+        }
+
+        if (powerLawPlot.isVisible()){
+            powerLawPlot.changeColor(row, newColor, thickness, pointsize);
+        }
+
+        // add Normalized KratkyPlots
     }
 
 
