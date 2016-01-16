@@ -261,6 +261,45 @@ public class PlotDataSingleton {
         jframe.setVisible(true);
     }
 
+    /**
+     *
+     * @param addme
+     * @return index of added dataset
+     */
+    public int addToMerged(XYSeries addme){
+
+        mergedDataset.addSeries(addme);
+        int mergedCount = mergedDataset.getSeriesCount();
+        System.out.println("ADDED Merged " + mergedCount);
+
+        mergedRenderer.setSeriesPaint(mergedCount-1, Color.RED);
+        mergedRenderer.setBaseLinesVisible(false);
+        mergedRenderer.setSeriesShape(mergedCount-1, new Ellipse2D.Double(-4.5,-4.5,9,9));
+        mergedRenderer.setSeriesVisible(mergedCount-1, true);
+
+        return mergedCount-1;
+    }
+
+
+    public void addToBase(Dataset tempData){
+
+        int count = plottedDatasets.getSeriesCount();
+        plottedDatasets.addSeries(tempData.getData());
+
+        double offset = -0.5*tempData.getPointSize();
+
+        renderer1.setSeriesShape(count, new Ellipse2D.Double(offset, offset, tempData.getPointSize(), tempData.getPointSize()));
+        renderer1.setSeriesLinesVisible(count, false);
+        renderer1.setSeriesPaint(count, tempData.getColor());
+        renderer1.setSeriesShapesFilled(count, tempData.getBaseShapeFilled());
+        renderer1.setSeriesVisible(count, tempData.getInUse());
+        renderer1.setSeriesOutlineStroke(count, tempData.getStroke());
+    }
+
+    public void removeFromMerged(int index){
+        mergedDataset.removeSeries(index);
+    }
+
     public void setNotify(boolean state){
         frame.getChartPanel().getChart().setNotify(state);
     }

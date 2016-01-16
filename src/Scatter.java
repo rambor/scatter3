@@ -16,6 +16,8 @@ import java.text.DecimalFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by robertrambo on 17/12/2015.
@@ -527,9 +529,6 @@ public class Scatter {
                             log10IntensityPlot.setNotify(true);
                         }
                         scaleButton.setEnabled(true);
-                        //for (int i=0; i<collectionSelected.getDatasetCount(); i++){
-                        //    System.out.println(i + " => scale factor : " + collectionSelected.getDataset(i).getScaleFactor());
-                        //}
                     }
                 }.start();
 
@@ -540,6 +539,64 @@ public class Scatter {
         averageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
+                if (collectionSelected.getTotalSelected() < 2){
+                    status.setText("Select at least two datasets for averaging");
+                    return;
+                } else {
+                    averageButton.setEnabled(false);
+                    Averager tempAverage = new Averager(collectionSelected, WORKING_DIRECTORY_NAME);
+
+                    JFileChooser fc = new JFileChooser(WORKING_DIRECTORY_NAME);
+                    int option = fc.showSaveDialog(panel1);
+                    //set directory to default directory from Settings tab
+                    Dataset tempDataset = new Dataset(tempAverage.getAveraged(), tempAverage.getAveragedError(), "averaged", collectionSelected.getDatasetCount());
+
+                    int mergedIndex = log10IntensityPlot.addToMerged(tempAverage.getAveraged());
+
+                    if(option == JFileChooser.CANCEL_OPTION) {
+                        log10IntensityPlot.removeFromMerged(mergedIndex);
+                        return;
+                    }
+
+                    if(option == JFileChooser.APPROVE_OPTION){
+                        // remove dataset and write to file
+                        log10IntensityPlot.removeFromMerged(mergedIndex);
+                        // make merged data show on top of other datasets
+                        File theFileToSave = fc.getSelectedFile();
+
+                        String cleaned = cleanUpFileName(fc.getSelectedFile().getName());
+
+                        if(fc.getSelectedFile()!=null){
+
+                            WORKING_DIRECTORY_NAME = fc.getCurrentDirectory().toString();
+
+                            FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                            dataToWrite.writeSAXSFile(cleaned, tempDataset);
+
+                            //close the output stream
+                            status.setText(cleaned + ".dat written to "+fc.getCurrentDirectory());
+
+
+                            collectionSelected.addDataset(tempDataset);
+                            collectionSelected.getLast().setColor(Color.red);
+                            collectionSelected.getLast().setFileName(cleaned);
+                            log10IntensityPlot.addToBase(collectionSelected.getLast());
+
+                            analysisModel.addDataset(collectionSelected.getLast());
+                            //resultsModel.addDataset(collectionSelected.getLast());
+
+
+                            int location = dataFilesModel.getSize();
+                            dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
+                            analysisModel.fireTableDataChanged();
+                            //resultsModel.fireTableDataChanged();
+
+                            //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                    averageButton.setEnabled(true);
+                }
 
             }
         });
@@ -632,6 +689,24 @@ public class Scatter {
         frame.pack();
         frame.setVisible(true);
         //System.exit(0);
+    }
+
+
+    private String cleanUpFileName(String fileName){
+        String name;
+        // remove the dot
+        Pattern dot = Pattern.compile(".");
+        Matcher expression = dot.matcher(fileName);
+
+        if (expression.find()){
+            String[] elements;
+            elements = fileName.split("\\.");
+            name = elements[0];
+        } else {
+            name = fileName;
+        }
+
+        return name;
     }
 
     private void graphData() {
