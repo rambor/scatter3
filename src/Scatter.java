@@ -72,6 +72,7 @@ public class Scatter {
     private JButton complexButton;
     private JButton rcXSectionalButton;
     private JButton scaleButton;
+    private JButton averageButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -96,6 +97,7 @@ public class Scatter {
     public static JTable analysisTable;
     public static AnalysisModel analysisModel;
 
+    // singleton plots
     public PlotDataSingleton log10IntensityPlot;
     public KratkyPlot kratky;
     public QIQPlot qIqPlot;
@@ -495,12 +497,9 @@ public class Scatter {
                     status.setText("Select only 1(one) file for Rc (x-section) determination");
                     return;
                 } else {
-                    //plotGuinierRc(temp);
 
                     RcXSectionalPlot tempPlot = new RcXSectionalPlot(collectionSelected.getDataset(selected), WORKING_DIRECTORY_NAME);
                     tempPlot.createPlots();
-
-
                 }
             }
         });
@@ -513,15 +512,35 @@ public class Scatter {
                     public void run() {
                         // int numberOfCPUs, Collection collection, double lower, double upper, JProgressBar bar, JLabel label){
                         //Integer.valueOf(cpuBox.getSelectedItem().toString())
+                        scaleButton.setEnabled(false);
+                        if (log10IntensityPlot.isVisible()){
+                            log10IntensityPlot.setNotify(false);
+                        }
                         ScaleManager scaling = new ScaleManager(
-                                4,
+                                2,
                                 collectionSelected,
                                 progressBar1,
                                 status);
 
                         scaling.scaleNow(0,0);
+                        if (log10IntensityPlot.isVisible()){
+                            log10IntensityPlot.setNotify(true);
+                        }
+                        scaleButton.setEnabled(true);
+                        //for (int i=0; i<collectionSelected.getDatasetCount(); i++){
+                        //    System.out.println(i + " => scale factor : " + collectionSelected.getDataset(i).getScaleFactor());
+                        //}
                     }
                 }.start();
+
+
+            }
+        });
+
+        averageButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
             }
         });
     }
@@ -1006,29 +1025,25 @@ public class Scatter {
         //make sure user entered a number in Scale Factor Field
 
         double scaleFactor = collectionSelected.getDataset(fIndex).getScaleFactor();
-        //update scale Factor in the Dataset
+        //update scale Factor in the Dataset;
+
         if (kratky.isVisible()) {
+            kratky.setNotify(false);
             collectionSelected.getDataset(fIndex).scalePlottedKratkyData();
+            kratky.setNotify(true);
         }
 
-        /*
-        if (qIqPlot.frame.isVisible()) {
-
-            for (int i=0; i < qIqSeries.getSeries(fIndex).getItemCount(); i++){
-                location = tempXY.indexOf(qIqSeries.getSeries(fIndex).getX(i));
-                double y = tempXY.getX(location).doubleValue()*tempXY.getY(location).doubleValue();
-                qIqSeries.getSeries(fIndex).updateByIndex(i, y*scaleFactor);
-            }
+        if (qIqPlot.isVisible()) {
+            qIqPlot.setNotify(false);
+            collectionSelected.getDataset(fIndex).scalePlottedQIQData();
+            qIqPlot.setNotify(true);
         }
-        if (powerLawPlot.frame.isVisible()) {
-            //fix this
-
-            for (int i=0; i < powerSeries.getSeries(fIndex).getItemCount(); i++){
-                double y = Math.log10(tempXY.getY(i).doubleValue());
-                powerSeries.getSeries(fIndex).updateByIndex(i, y+Math.log10(scaleFactor));
-            }
+        if (powerLawPlot.isVisible()) {
+            powerLawPlot.setNotify(false);
+            collectionSelected.getDataset(fIndex).scalePlottedPowerLaw();
+            powerLawPlot.setNotify(true);
         }
-*/
+
         if (log10IntensityPlot.isVisible()){
             if (scaleFactor == 1.0){ //revert to original dataset
                 status.setText("Dataset "+(fIndex+1) + " at original intensities");
@@ -1036,20 +1051,11 @@ public class Scatter {
             //collectionSelected.getDataset(fIndex).scalePlottedLog10IntensityData();
         }
 
-        //Update data and errors in data object
-        //turn Notify off until the data has been rescaled
-       // collectionSelected.getDataset(fIndex).getData().setNotify(false);
-       // for (int i=0; i < collectionSelected.getDataset(fIndex).getData().getItemCount(); i++){
+        if (errorPlot.isVisible()){
+            collectionSelected.getDataset(fIndex).scalePlottedLogErrorData();
+        }
 
-       //     location = tempXY.indexOf(collectionSelected.getDataset(fIndex).getData().getX(i));
-            //double x = tempXY.getX(location).doubleValue();
-       //     double y = tempXY.getY(location).doubleValue();
-       //     collectionSelected.getDataset(fIndex).getData().updateByIndex(i, Math.log10(y*scaleFactor));
-            // collectionSelected.getDataset(fIndex).setScaleFactor(scaleFactor);
-            // might be better to do updateByIndex for error
-       //     collectionSelected.getDataset(fIndex).getError().addOrUpdate(collectionSelected.getDataset(fIndex).getError().getX(i), collectionSelected.getDataset(fIndex).getError().getY(i).doubleValue()*scaleFactor);
-       // }
-        collectionSelected.getDataset(fIndex).getData().setNotify(true);
+        //collectionSelected.getDataset(fIndex).getData().setNotify(true);
     }
 
     /*
@@ -1117,6 +1123,19 @@ public class Scatter {
         }
     }
     */
+
+    public void update_plots(int id){
+/*
+        public PlotDataSingleton log10IntensityPlot;
+        public KratkyPlot kratky;
+        public QIQPlot qIqPlot;
+        public ErrorPlot errorPlot;
+        public PowerLawPlot powerLawPlot;
+*/
+        if (KratkyPlot.frame.isVisible()){
+
+        }
+    }
 
     //Analysis Spinners
     public static class SpinnerEditor extends DefaultCellEditor implements ChangeListener {
@@ -1200,7 +1219,9 @@ public class Scatter {
                         this.priorValue = temp;
                     }
                 }
+
                 dataset.setStart((Integer)this.getCellEditorValue());
+
             } else if (colID == 5) {
                 limit = dataset.getOriginalLog10Data().getItemCount();
                 if ((Integer)this.spinner.getValue() > limit){
@@ -1226,9 +1247,9 @@ public class Scatter {
                             dataset.getData().add(dataset.getScaledLog10DataItemAt(current));
                         } else {
                             // keep adding points up until currentValue
-                            Dataset tempDataset = collectionSelected.getDataset(rowID);
-                            XYSeries tempData = tempDataset.getData();
-
+                            //Dataset tempDataset = collectionSelected.getDataset(rowID);
+                            //XYSeries tempData = tempDataset.getData();
+                            XYSeries tempData = dataset.getData();
                             int last = current;
                             double lastPlottedValue = tempData.getMaxX();
                             int indexOfLastPlottedValue = tempData.indexOf(lastPlottedValue);
@@ -1242,7 +1263,10 @@ public class Scatter {
                 }
 
                 dataset.setEnd((Integer)this.getCellEditorValue());
+
             }
+            // update plots
+            // update_plots(rowID);
         }
 
         @Override

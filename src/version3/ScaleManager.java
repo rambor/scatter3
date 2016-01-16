@@ -21,7 +21,6 @@ public class ScaleManager {
         this.numberOfCPUs = numberOfCPUs;
         this.collection = collection;
         this.bar = bar;
-
         // determine reference ID
         // determine number of sets to scale
         totalToScale = collection.getTotalSelected() - 1;
@@ -44,10 +43,10 @@ public class ScaleManager {
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
 
         for (int i=0; i < collection.getDatasetCount(); i++) {
-            // create DAMMIN/F runs
+            // create
             if (collection.getDataset(i).getInUse() && i != reference_ID){
                 System.out.println("Scaling set " + i);
-                Runnable scaler = new Scaler(collection.getDataset(reference_ID), collection.getDataset(i), lower, upper, i);
+                Runnable scaler = new Scaler(new Dataset(collection.getDataset(reference_ID)), collection.getDataset(i), lower, upper, i);
                 executor.execute(scaler);
             }
         }

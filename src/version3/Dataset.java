@@ -239,17 +239,41 @@ public class Dataset {
      * copy constructor
      */
     public Dataset (Dataset aDataset){
-        fitList = aDataset.fitList;
 
-        plottedData=aDataset.plottedData;
-        plottedError=aDataset.plottedError;
+        totalCountInAllData = aDataset.getAllData().getItemCount();
+
+        String tempName = aDataset.getFileName() + "-" + id;
+        allData = aDataset.allData;
+        allDataError = aDataset.allDataError;
+        allDataYError = aDataset.allDataYError;
+
+        plottedData = aDataset.plottedData;
+        plottedError = aDataset.plottedError;
+        plottedKratkyData = aDataset.plottedKratkyData;
+        plottedqIqData = aDataset.plottedqIqData;
+        plottedLogErrors = aDataset.plottedLogErrors;
+        plottedPowerLaw = aDataset.plottedPowerLaw;
 
         originalPositiveOnlyData = aDataset.originalPositiveOnlyData;
         originalLog10Data = aDataset.originalLog10Data;
         originalPositiveOnlyError = aDataset.originalPositiveOnlyError;
+        positiveOnlyIntensityError = aDataset.positiveOnlyIntensityError;
 
-        allData = aDataset.allData;
-        allDataError = aDataset.allDataError;
+        normalizedKratkyReciprocalSpaceRgData = aDataset.normalizedKratkyReciprocalSpaceRgData;
+        normalizedKratkyRealSpaceRgData = aDataset.normalizedKratkyReciprocalSpaceRgData;
+        normalizedKratkyReciprocalSpaceVcData = aDataset.normalizedKratkyReciprocalSpaceVcData;
+        normalizedKratkyRealSpaceVcData = aDataset.normalizedKratkyRealSpaceVcData;
+
+        normalizedGuinierData = aDataset.normalizedGuinierData;
+        guinierData = aDataset.guinierData;
+        kratkyData = aDataset.kratkyData;
+        qIqData = aDataset.qIqData;
+        powerLawData = aDataset.powerLawData;
+
+        // old
+        fitList = aDataset.fitList;
+
+
         refinedData = aDataset.refinedData;
         refinedDataError = aDataset.refinedDataError;
 
@@ -262,6 +286,19 @@ public class Dataset {
         scaleFactor=aDataset.scaleFactor;
         log10ScaleFactor = aDataset.log10ScaleFactor;
         invariantQ=aDataset.invariantQ;
+
+        fitFile = aDataset.fitFile;
+        inUse = true;
+        maxI = aDataset.maxI;  //log10 data
+        minI = aDataset.minI;
+        maxq = aDataset.maxq;
+        minq = aDataset.minq;
+        dMax = aDataset.dMax;
+
+        baseShapeFilled = false;
+        pointSize = 6;
+        stroke = aDataset.stroke;
+        id = aDataset.id;
 
         realSpace = aDataset.realSpace;
     }
@@ -653,7 +690,6 @@ public class Dataset {
      *
      */
     public void setStart(int st){
-        System.out.println("From Start " + start);
         start=st;
     }
     /**
@@ -741,13 +777,13 @@ public class Dataset {
      * @param factor
      */
     public void setScaleFactor(double factor){
-        System.out.println("Factor " + factor + "  " + Math.log10(factor));
+        System.out.println(this.id + " Factor " + factor + "  " + Math.log10(factor));
+        System.out.println(plottedData.getItemCount());
+
         log10ScaleFactor = Math.log10(factor);
         scaleFactor=factor;
-
         // rescale plottedData
         this.scalePlottedLog10IntensityData();
-
     }
 
 
@@ -938,15 +974,15 @@ public class Dataset {
     private void scalePlottedLog10IntensityData(){
         plottedData.clear();
         XYDataItem temp;
-        int startAt = start - 1;
-
+        int startAt = this.start - 1;
+        System.out.println(id + " Starting at " + startAt + " " + this.end);
         if (scaleFactor != 1){
-            for (int i = startAt; i<end; i++){
+            for (int i = startAt; i< this.end; i++){
                 temp = originalLog10Data.getDataItem(i);
                 plottedData.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
             }
         } else {
-            for (int i = startAt; i<end; i++){
+            for (int i = startAt; i< this.end; i++){
                 plottedData.add(originalLog10Data.getDataItem(i));
             }
         }

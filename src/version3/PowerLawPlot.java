@@ -238,6 +238,9 @@ public class PowerLawPlot {
         jframe.setVisible(true);
     }
 
+    public void setNotify(boolean state){
+        frame.getChartPanel().getChart().setNotify(state);
+    }
 
     public boolean isVisible(){
         return jframe.isVisible();

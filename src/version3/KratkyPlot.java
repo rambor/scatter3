@@ -17,6 +17,8 @@ import org.jfree.ui.HorizontalAlignment;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 
@@ -48,6 +50,16 @@ public class KratkyPlot {
 
     private KratkyPlot() {
         chartTitle = "Kratky Plot";
+
+        jframe.addWindowListener(new WindowAdapter()
+        {
+            public void windowClosing(WindowEvent e)
+            {
+                System.out.println("Kratky Plot closed");
+            }
+        });
+
+
     }
 
 
@@ -214,7 +226,6 @@ public class KratkyPlot {
             }
         }));
 
-
         frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.pack();
@@ -248,5 +259,22 @@ public class KratkyPlot {
             temp.scalePlottedKratkyData();
             renderer1.setSeriesVisible(index, flag);
         }
+    }
+
+    private void setPlotStatus(){
+        int totalSets = inUseCollection.getDatasetCount();
+
+        for (int i = 0; i < totalSets; i++){
+            Dataset temp = inUseCollection.getDataset(i);
+            temp.clearPlottedKratkyData();
+            if (temp.getInUse()){
+                temp.scalePlottedKratkyData();
+            }
+            collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());  // should add an empty Series
+        }
+    }
+
+    public void setNotify(boolean state){
+        frame.getChartPanel().getChart().setNotify(state);
     }
 }

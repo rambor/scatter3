@@ -44,6 +44,7 @@ public class Scaler implements Runnable {
         if (lower != upper && lower < upper && lower > 0 && upper > 0){
             useRange = true;
         }
+        System.out.println("SCALER lower " + lower + " < " + upper);
         this.targetID = targetID;
     }
 
@@ -61,6 +62,8 @@ public class Scaler implements Runnable {
 
         double startRefq = reference.getOriginalPositiveOnlyData().getX(startRef).doubleValue();
         double endRefq = reference.getOriginalPositiveOnlyData().getX(endRef).doubleValue();
+
+        System.out.println(reference.getId() + " reference START Q " + startRefq + " < " + endRefq);
 
         // if range is specified, need to truncate data
         double startTargetq = target.getOriginalPositiveOnlyData().getX(target.getStart()-1).doubleValue();
@@ -104,8 +107,8 @@ public class Scaler implements Runnable {
                         /*
                          * interpolateOriginal does not requires log10 data
                          */
-                        Double[] results =  Functions.interpolateOriginal(targetSet, targetErrorSet, refXValue, 1);
-                        Double[] sigmaResults = Functions.interpolateSigma(targetErrorSet, refXValue);
+                        Double[] results =  interpolateOriginal(targetSet, targetErrorSet, refXValue, 1);
+                        Double[] sigmaResults = interpolateSigma(targetErrorSet, refXValue);
 
                         if (!results[1].isNaN()){
                             scaleRef.add(refItem);
@@ -116,7 +119,6 @@ public class Scaler implements Runnable {
                 }
             }
         }
-
 
         double scale = scaleData(scaleTemp, scaleError, scaleRef); //scale uses
 
@@ -156,8 +158,7 @@ public class Scaler implements Runnable {
         int min = (int)Math.round(ref.getItemCount()*0.045);   //minimum points 6.5% of total
         int size = ref.getItemCount();
         int[] randomNumbers;
-        double startRef = ref.getX(0).doubleValue();
-        double endRef = ref.getY(ref.getItemCount()-1).doubleValue();
+
         double scaleFactor = 1.0;
         double medianValue=0;
         float tempScale;
@@ -165,7 +166,6 @@ public class Scaler implements Runnable {
         /*
          * For each round, pick a random set of integers from size of ref dataset
          */
-
         for (int i = 0; i < samplingRounds; i++) {
             //pick random integer
             samplingLimit = min + (int)(Math.random()*((size - min) + 1));
@@ -173,28 +173,29 @@ public class Scaler implements Runnable {
 
             tempRef.reshape(samplingLimit, 1);
             tempTarget.reshape(samplingLimit, 1);
+
             try {
                 for (int j = 0; j < samplingLimit; j++) {
 
                     // make sure selected Index is not the first 3 or last 3 in ref
-
                     tempRef.set(j, 0, ref.getY(randomNumbers[j]).doubleValue());
 
                     // determine if current q value is present in Target, is so add it, if not interpolate
-                    if (target.indexOf(ref.getX(randomNumbers[j])) > -1) {
-                        tempTarget.set(j, 0, target.getY(target.indexOf(ref.getX(randomNumbers[j]))).doubleValue());
-                    } else { // do the interpolation
-                        Double[] interpolated =  Functions.interpolateOriginal(target, errorTarget, ref.getX(randomNumbers[j]).doubleValue(), 1);
-                        if (!interpolated[1].isNaN()){
-                            tempTarget.set(j, 0, interpolated[1]);
-                        } else {
-                            tempTarget.set(j, 0, target.getY((int)Math.random()*(target.getItemCount()-1)).doubleValue());
-                        }
-                    }
+                   // if (target.indexOf(ref.getX(randomNumbers[j])) > -1) {
+                    tempTarget.set(j, 0, target.getY(target.indexOf(ref.getX(randomNumbers[j]))).doubleValue());
+                   // } else { // do the interpolation
+                   //     Double[] interpolated =  interpolateOriginal(target, errorTarget, ref.getX(randomNumbers[j]).doubleValue(), 1);
+                   //     if (!interpolated[1].isNaN()){
+                   //         tempTarget.set(j, 0, interpolated[1]);
+                   //     } else {
+                   //         tempTarget.set(j, 0, target.getY((int)Math.random()*(target.getItemCount()-1)).doubleValue());
+                   //     }
+                   // }
                 }
             } catch (Exception e) {
 
             }
+
             // Need an exception handler for the solver, get NaN or Inf sometimes
             // For Ax=b
             // A.solve(b) => ref*scale = target
@@ -229,7 +230,7 @@ public class Scaler implements Runnable {
     private int[] randomArray(int limit, int max){
         List<Integer> sequence = new ArrayList<Integer>();
         int[] values;
-        //sequence.clear();
+
         //create ArrayList of integers upto max value
         for (int i = 0; i < max; i++){
             sequence.add(i);
@@ -245,6 +246,154 @@ public class Scaler implements Runnable {
         }
         Arrays.sort(values);
         return values;
+    }
+
+
+    /**
+     *
+     * @param data
+     * @param error
+     * @param point
+     * @param scaleFactor
+     * @return
+     */
+    private Double[] interpolateOriginal(XYSeries data, XYSeries error, double point, double scaleFactor){
+        //Kriging interpolation, use input log10 data
+        SimpleMatrix one = new SimpleMatrix(6, 1);
+        int [] z = new int[6];
+        int index=0;
+        //loop over data to find the smalllest q rather than than point
+
+        for (int i=0; i< data.getItemCount()-1; i++) {
+            if (data.getX(i).doubleValue() > point){
+                index = i;
+                break;
+            }
+        }
+
+        if (index <=1){
+            for (int k=0; k<6; k++){
+                z[k]=index+k;
+            }
+        } else if (index >= data.getItemCount()-3){
+            z[0]=data.getItemCount()-6;
+            z[1]=data.getItemCount()-5;
+            z[2]=data.getItemCount()-4;
+            z[3]=data.getItemCount()-3;
+            z[4]=data.getItemCount()-2;
+            z[5]=data.getItemCount()-1;
+        } else { //Decrement index by -2 to have at least two points before the interpolated q value
+            for (int k=-2; k<4; k++){
+                z[k+2]=index+k;
+            }
+        }
+
+        double scale = data.getX(z[5]).doubleValue() - data.getX(z[0]).doubleValue();
+
+        SimpleMatrix c_m = new SimpleMatrix(6,6);
+        //this might be (1,6)
+        SimpleMatrix z_m = new SimpleMatrix(6,1);
+        for (int m=0; m<6; m++){
+            one.set(m, 0, 1);
+            double anchor = data.getX(z[m]).doubleValue();
+            //Use anti-log data
+            z_m.set(m, 0, data.getY(z[m]).doubleValue());
+            for (int n=0; n<6; n++){
+                c_m.set(m, n, 0.96*Math.exp(-1*(Math.pow(( (anchor - data.getX(z[n]).doubleValue())/scale),2))));
+            }
+        }
+        SimpleMatrix d_m = new SimpleMatrix(6,1);
+        for (int m=0; m < 6; m++){
+            d_m.set(m, 0, 0.96*Math.exp( -1*(Math.pow(((point-data.getX(z[m]).doubleValue())/scale),2))));
+        }
+
+        double mu = ((one.transpose().mult(c_m.invert())).mult(z_m).get(0))/(one.transpose().mult(c_m.invert().mult(one))).get(0);
+
+        Double[] resultS = new Double[3];
+        resultS[0]=point;
+        resultS[1]=mu+(d_m.transpose().mult(c_m.invert()).mult(z_m.minus(one.scale(mu)))).get(0);
+
+        double sigma_2 = ((z_m.minus(one.scale(resultS[1]))).transpose().mult(c_m.invert()).mult(z_m.minus(one.scale(resultS[1])))).get(0)/6;
+        double sigma_d = ((d_m.transpose().mult(c_m.invert())).mult(d_m)).get(0);
+        double tmp1 = sigma_2*(1-sigma_d);
+        resultS[2]=Math.sqrt(tmp1);
+
+        return resultS;
+
+    }
+
+
+    /**
+     *
+     * @param data
+     * @param point
+     * @return
+     */
+    public static Double[] interpolateSigma(XYSeries data, double point){
+        //Kriging interpolation,
+        SimpleMatrix one = new SimpleMatrix(6, 1);
+        int [] z = new int[6];
+        int index=0;
+        //loop over data to find the smallles q grather than than point
+
+        for (int i=0; i< data.getItemCount()-1; i++) {
+            if (data.getX(i).doubleValue()>point){
+                index = i;
+                break;
+            }
+        }
+
+        if (index <=1){
+            for (int k=0; k<6; k++){
+                z[k]=index+k;
+            }
+        } else if (index>=data.getItemCount()-3){
+            z[0]=data.getItemCount()-6;
+            z[1]=data.getItemCount()-5;
+            z[2]=data.getItemCount()-4;
+            z[3]=data.getItemCount()-3;
+            z[4]=data.getItemCount()-2;
+            z[5]=data.getItemCount()-1;
+        } else {
+            for (int k=-2; k<4; k++){
+                z[k+2]=index+k;
+            }
+        }
+
+        double scale = data.getX(z[5]).doubleValue()-data.getX(z[0]).doubleValue();
+
+        SimpleMatrix c_m = new SimpleMatrix(6,6);
+        //this might be (1,6)
+        SimpleMatrix z_m = new SimpleMatrix(6,1);
+        for (int m=0; m<6; m++){
+            one.set(m, 0, 1);
+            double anchor = data.getX(z[m]).doubleValue();
+            //delog data
+            z_m.set(m, 0, data.getY(z[m]).doubleValue());
+            for (int n=0; n<6; n++){
+                c_m.set(m, n, 0.96*Math.exp(-1*(Math.pow(((anchor-data.getX(z[n]).doubleValue())/scale),2))));
+
+            }
+        }
+
+        SimpleMatrix d_m = new SimpleMatrix(6,1);
+        for (int m=0; m < 6; m++){
+            d_m.set(m, 0, 0.96*Math.exp( -1*(Math.pow(((point-data.getX(z[m]).doubleValue())/scale),2))));
+        }
+
+        double mu = ((one.transpose().mult(c_m.invert())).mult(z_m).get(0))/(one.transpose().mult(c_m.invert().mult(one))).get(0);
+
+        Double[] resultD = new Double[3];
+        resultD[0]=point;
+        resultD[1]=mu+(d_m.transpose().mult(c_m.invert()).mult(z_m.minus(one.scale(mu)))).get(0);
+
+        double sigma_2 = ((z_m.minus(one.scale(resultD[1]))).transpose().mult(c_m.invert()).mult(z_m.minus(one.scale(resultD[1])))).get(0)/6;
+        double sigma_d = ((d_m.transpose().mult(c_m.invert())).mult(d_m)).get(0);
+        double tmp1 = sigma_2*(1-sigma_d);
+        resultD[2]=Math.sqrt(tmp1);
+
+        return resultD;
+
     }
 
 }

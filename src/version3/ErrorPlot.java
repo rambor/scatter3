@@ -258,6 +258,10 @@ public class ErrorPlot {
         jframe.setVisible(true);
     }
 
+    public void setNotify(boolean status){
+        frame.getChartPanel().getChart().setNotify(status);
+    }
+
     public boolean isVisible(){
         return jframe.isVisible();
     }
