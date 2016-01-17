@@ -109,6 +109,8 @@ public class Scatter {
     private JButton button1;
     private JCheckBox autoRgCheckBox;
     private JButton medianButton;
+    private JButton singleButton;
+    private JButton scaleToIZeroButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -585,7 +587,7 @@ public class Scatter {
                     JFileChooser fc = new JFileChooser(WORKING_DIRECTORY_NAME);
                     int option = fc.showSaveDialog(panel1);
                     //set directory to default directory from Settings tab
-                    Dataset tempDataset = new Dataset(tempAverage.getAveraged(), tempAverage.getAveragedError(), "averaged", collectionSelected.getDatasetCount());
+                    Dataset tempDataset = new Dataset(tempAverage.getAveraged(), tempAverage.getAveragedError(), "averaged", collectionSelected.getDatasetCount(), false);
 
                     // update notes info
 
@@ -653,7 +655,7 @@ public class Scatter {
                     JFileChooser fc = new JFileChooser(WORKING_DIRECTORY_NAME);
                     int option = fc.showSaveDialog(panel1);
                     //set directory to default directory from Settings tab
-                    Dataset tempDataset = new Dataset(tempMedian.getMedianSet(), tempMedian.getMedianSetError(), "median", collectionSelected.getDatasetCount());
+                    Dataset tempDataset = new Dataset(tempMedian.getMedianSet(), tempMedian.getMedianSetError(), "median", collectionSelected.getDatasetCount(), false);
 
                     // update notes info
 
@@ -670,7 +672,7 @@ public class Scatter {
                         // remove dataset and write to file
                         log10IntensityPlot.removeFromMerged(mergedIndex);
                         // make merged data show on top of other datasets
-                        File theFileToSave = fc.getSelectedFile();
+                        //File theFileToSave = fc.getSelectedFile();
 
                         String cleaned = cleanUpFileName(fc.getSelectedFile().getName());
 
@@ -703,6 +705,58 @@ public class Scatter {
                     }
                     medianButton.setEnabled(true);
                 }
+            }
+        });
+
+        singleButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (collectionSelected.getTotalSelected() > 1){
+                    status.setText("Select only one file!");
+                    return;
+                }
+
+                Dataset tempData = collectionSelected.getDataset(collectionSelected.getSelected());
+
+                singleButton.setEnabled(false);
+
+                JFileChooser fc = new JFileChooser(WORKING_DIRECTORY_NAME);
+                int option = fc.showSaveDialog(panel1);
+                //set directory to default directory from Settings tab
+
+                if(option == JFileChooser.CANCEL_OPTION) {
+                    return;
+                }
+
+                if(option == JFileChooser.APPROVE_OPTION){
+                    // remove dataset and write to file
+                    // make merged data show on top of other datasets
+                    File theFileToSave = fc.getSelectedFile();
+
+                    String cleaned = cleanUpFileName(fc.getSelectedFile().getName());
+
+                    if(fc.getSelectedFile()!=null){
+
+                        WORKING_DIRECTORY_NAME = fc.getCurrentDirectory().toString();
+                        System.out.println("WORKING DIRECTORY SET TO : " + WORKING_DIRECTORY_NAME);
+
+                        FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                        dataToWrite.writeSingleSAXSFile(cleaned, tempData);
+
+                        //close the output stream
+                        status.setText(cleaned + ".dat written to " + fc.getCurrentDirectory());
+
+                        //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                singleButton.setEnabled(true);
+            }
+        });
+
+        scaleToIZeroButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
             }
         });
     }
@@ -764,7 +818,7 @@ public class Scatter {
             @Override
             public void filesDropped(File[] files) {
                 // add the new file to the collection
-                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 0, programInstance.convertNmToAngstromCheckBox.isSelected());
+                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 0, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected());
             }
         });
 
@@ -772,21 +826,21 @@ public class Scatter {
         new FileDrop( programInstance.getLoadPanel(2), new FileDrop.Listener() {
             @Override
             public void filesDropped(File[] files) {
-                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 1, programInstance.convertNmToAngstromCheckBox.isSelected());
+                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 1, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected());
             }
         });
         // Load Files from Files Tab Panel 3
         new FileDrop( programInstance.getLoadPanel(3), new FileDrop.Listener() {
             @Override
             public void filesDropped(File[] files) {
-                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 2, programInstance.convertNmToAngstromCheckBox.isSelected());
+                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 2, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected());
             }
         });
         // Load Files from Files Tab Panel 4
         new FileDrop( programInstance.getLoadPanel(4), new FileDrop.Listener() {
             @Override
             public void filesDropped(File[] files) {
-                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 3, programInstance.convertNmToAngstromCheckBox.isSelected());
+                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 3, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected());
             }
         });
 
@@ -960,7 +1014,7 @@ public class Scatter {
      * @param collectionNumber
      * @param tempFile
      */
-    private static void addToCollection(int collectionNumber, LoadedFile tempFile){
+    private static void addToCollection(int collectionNumber, LoadedFile tempFile, boolean doGuinier){
         // how to update results? Use a results object
         // if new dataset is added, we will have to add a JLabel thing and rerender
         // if updating, we could probably just change the value of the object which will automatically update value
@@ -972,7 +1026,7 @@ public class Scatter {
                     tempFile.allData,       //data
                     tempFile.allDataError,  //original
                     tempFile.filebase,
-                    newIndex ));
+                    newIndex, doGuinier ));
 
             // update Analysis Tab
             //analysisModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
@@ -986,7 +1040,7 @@ public class Scatter {
                     tempFile.allData,       //data
                     tempFile.allDataError,  //original
                     tempFile.filebase,
-                    newIndex ));
+                    newIndex, false ));
         }
     }
 
@@ -999,7 +1053,7 @@ public class Scatter {
      * @param index 1 through 4 refers to panels on Files tab
      * @param convertNMtoAng
      */
-    private static void receivedDroppedFiles(File[] files, JLabel status, Scatter main, int index, boolean convertNMtoAng){
+    private static void receivedDroppedFiles(File[] files, JLabel status, Scatter main, int index, boolean convertNMtoAng, boolean doGuinier){
 
         if (index <= 4){
 
@@ -1025,7 +1079,7 @@ public class Scatter {
 
                 // load file into collection
                 if (temp !=null){
-                    addToCollection(index, temp);
+                    addToCollection(index, temp, doGuinier);
                 }
             }
 

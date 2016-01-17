@@ -125,7 +125,7 @@ public class Dataset {
      * @param err sigma series
      * @param fileName name of the file
      */
-    public Dataset(XYSeries dat, XYSeries err, String fileName, int id){
+    public Dataset(XYSeries dat, XYSeries err, String fileName, int id, boolean doGuinier){
 
         totalCountInAllData = dat.getItemCount();
 
@@ -212,13 +212,20 @@ public class Dataset {
         this.end= originalPositiveOnlyData.getItemCount();
 
         // if possible do preliminary analysis here
-        double[] izeroRg = Functions.calculateIzeroRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError);
+        if (doGuinier){
+            double[] izeroRg = Functions.calculateIzeroRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError);
 
-        if (izeroRg[0] > 0){
-            guinierIZero=izeroRg[0];
-            guinierIZero_sigma = izeroRg[2];
-            guinierRg=izeroRg[1];
-            guinierRG_sigma = izeroRg[3];
+            if (izeroRg[0] > 0){
+                guinierIZero=izeroRg[0];
+                guinierIZero_sigma = izeroRg[2];
+                guinierRg=izeroRg[1];
+                guinierRG_sigma = izeroRg[3];
+            }
+        } else {
+            guinierIZero=0;
+            guinierIZero_sigma = 0;
+            guinierRg=0;
+            guinierRG_sigma = 0;
         }
 
         scaleFactor=1.000;
@@ -1274,32 +1281,28 @@ public class Dataset {
     }
 
     public void setAverageInfo(Collection collection){
-        //int totalSelected = collection.getTotalSelected();
+
         int totalCollection = collection.getDatasetCount();
         this.experimentalNotes += "AVERAGED FROM\n";
         int count=0;
         for (int i=0; i < totalCollection; i++){
             if (collection.getDataset(i).getInUse()){
                 count++;
-                //this.experimentalNotes += "\tFILE "+ count + " " + collection.getDataset(i).getFileName() + " \n";
                 this.experimentalNotes += String.format("\tFILE %4d : %s%n", count, collection.getDataset(i).getFileName());
             }
         }
-        //out.write( String.format("%s\t%s\t%s %n", formattedQ(refData.getX(n).doubleValue(), numberOfDigits), Constants.Scientific1dot5e2.format(refData.getY(n).doubleValue()),Constants.Scientific1dot5e2.format(errorValues.getY(n).doubleValue()) ));
     }
 
     public void setMedianInfo(Collection collection){
-        //int totalSelected = collection.getTotalSelected();
+
         int totalCollection = collection.getDatasetCount();
         this.experimentalNotes += "MEDIAN DERIVED FROM\n";
         int count=0;
         for (int i=0; i < totalCollection; i++){
             if (collection.getDataset(i).getInUse()){
                 count++;
-                //this.experimentalNotes += "\tFILE "+ count + " " + collection.getDataset(i).getFileName() + " \n";
                 this.experimentalNotes += String.format("\tFILE %4d : %s%n", count, collection.getDataset(i).getFileName());
             }
         }
-        //out.write( String.format("%s\t%s\t%s %n", formattedQ(refData.getX(n).doubleValue(), numberOfDigits), Constants.Scientific1dot5e2.format(refData.getY(n).doubleValue()),Constants.Scientific1dot5e2.format(errorValues.getY(n).doubleValue()) ));
     }
 }
