@@ -130,6 +130,9 @@ public class Dataset {
         totalCountInAllData = dat.getItemCount();
 
         String tempName = fileName + "-" + id;
+        experimentalNotes ="";
+        bufferComposition ="";
+
         allData = new XYSeries(tempName);
         allDataError = new XYSeries(tempName);
         allDataYError = new YIntervalSeries(tempName);
@@ -294,6 +297,9 @@ public class Dataset {
         maxq = aDataset.maxq;
         minq = aDataset.minq;
         dMax = aDataset.dMax;
+
+        experimentalNotes = aDataset.experimentalNotes;
+        bufferComposition = aDataset.bufferComposition;
 
         baseShapeFilled = false;
         pointSize = 6;
@@ -1267,4 +1273,33 @@ public class Dataset {
         return this.indexOfUpperGuinierFit;
     }
 
+    public void setAverageInfo(Collection collection){
+        //int totalSelected = collection.getTotalSelected();
+        int totalCollection = collection.getDatasetCount();
+        this.experimentalNotes += "AVERAGED FROM\n";
+        int count=0;
+        for (int i=0; i < totalCollection; i++){
+            if (collection.getDataset(i).getInUse()){
+                count++;
+                //this.experimentalNotes += "\tFILE "+ count + " " + collection.getDataset(i).getFileName() + " \n";
+                this.experimentalNotes += String.format("\tFILE %4d : %s%n", count, collection.getDataset(i).getFileName());
+            }
+        }
+        //out.write( String.format("%s\t%s\t%s %n", formattedQ(refData.getX(n).doubleValue(), numberOfDigits), Constants.Scientific1dot5e2.format(refData.getY(n).doubleValue()),Constants.Scientific1dot5e2.format(errorValues.getY(n).doubleValue()) ));
+    }
+
+    public void setMedianInfo(Collection collection){
+        //int totalSelected = collection.getTotalSelected();
+        int totalCollection = collection.getDatasetCount();
+        this.experimentalNotes += "MEDIAN DERIVED FROM\n";
+        int count=0;
+        for (int i=0; i < totalCollection; i++){
+            if (collection.getDataset(i).getInUse()){
+                count++;
+                //this.experimentalNotes += "\tFILE "+ count + " " + collection.getDataset(i).getFileName() + " \n";
+                this.experimentalNotes += String.format("\tFILE %4d : %s%n", count, collection.getDataset(i).getFileName());
+            }
+        }
+        //out.write( String.format("%s\t%s\t%s %n", formattedQ(refData.getX(n).doubleValue(), numberOfDigits), Constants.Scientific1dot5e2.format(refData.getY(n).doubleValue()),Constants.Scientific1dot5e2.format(errorValues.getY(n).doubleValue()) ));
+    }
 }

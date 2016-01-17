@@ -75,6 +75,40 @@ public class Scatter {
     private JButton rcXSectionalButton;
     private JButton scaleButton;
     private JButton averageButton;
+    private JButton plotMedianAndAverageSampleButton;
+    private JButton clearSamplesButton;
+    private JButton signalPlotButton;
+    private JButton plotLog10AverageSampleButton;
+    private JButton fromMedianBufferButton;
+    private JButton fromAverageBufferButton;
+    private JButton fromSingleBufferButton;
+    private JTextField qminSubtractionField;
+    private JTextField qmaxSubtractionField;
+    private JComboBox comboBoxBins;
+    private JCheckBox averageSampleFileCheckBox;
+    private JCheckBox SVDAverageFilesCheckBox;
+    private JCheckBox subtractFromMedianCheckBox;
+    private JCheckBox scaleThenMergeCheckBox;
+    private JCheckBox addRgToSignalCheckBox;
+    private JComboBox setReferenceBox;
+    private JPanel rightSubtractionPanel;
+    private JPanel centerPanel;
+    private JComboBox subtractionCutoff;
+    private JPanel leftSubtractionPanel;
+    private JScrollPane samples;
+    private JScrollPane buffers;
+    private JLabel samplesSubtractionLabel;
+    private JTextField textField1;
+    private JPanel covPlotPanel;
+    private JPanel covDetailsPanel;
+    private JScrollPane covFilesScrollPanel;
+    private JPanel covResetPanel;
+    private JPanel covRightPanel;
+    private JPanel covLeftPanel;
+    private JButton clearButton;
+    private JButton button1;
+    private JCheckBox autoRgCheckBox;
+    private JButton medianButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -477,7 +511,9 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 // make a class instance of ComplexPlot
                 // create and show comboBox
+                complexButton.setEnabled(false);
                 ComplexPlot complexation = new ComplexPlot(collectionSelected, WORKING_DIRECTORY_NAME, status);
+                complexButton.setEnabled(true);
             }
         });
 
@@ -544,12 +580,16 @@ public class Scatter {
                     return;
                 } else {
                     averageButton.setEnabled(false);
-                    Averager tempAverage = new Averager(collectionSelected, WORKING_DIRECTORY_NAME);
+                    Averager tempAverage = new Averager(collectionSelected);
 
                     JFileChooser fc = new JFileChooser(WORKING_DIRECTORY_NAME);
                     int option = fc.showSaveDialog(panel1);
                     //set directory to default directory from Settings tab
                     Dataset tempDataset = new Dataset(tempAverage.getAveraged(), tempAverage.getAveragedError(), "averaged", collectionSelected.getDatasetCount());
+
+                    // update notes info
+
+                    tempDataset.setAverageInfo(collectionSelected);
 
                     int mergedIndex = log10IntensityPlot.addToMerged(tempAverage.getAveraged());
 
@@ -597,6 +637,72 @@ public class Scatter {
                     averageButton.setEnabled(true);
                 }
 
+            }
+        });
+
+        medianButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (collectionSelected.getTotalSelected() < 3){
+                    status.setText("Select at least three datasets for median");
+                    return;
+                } else {
+                    medianButton.setEnabled(false);
+                    Medianer tempMedian = new Medianer(collectionSelected);
+
+                    JFileChooser fc = new JFileChooser(WORKING_DIRECTORY_NAME);
+                    int option = fc.showSaveDialog(panel1);
+                    //set directory to default directory from Settings tab
+                    Dataset tempDataset = new Dataset(tempMedian.getMedianSet(), tempMedian.getMedianSetError(), "median", collectionSelected.getDatasetCount());
+
+                    // update notes info
+
+                    tempDataset.setMedianInfo(collectionSelected);
+
+                    int mergedIndex = log10IntensityPlot.addToMerged(tempMedian.getMedianSet());
+
+                    if(option == JFileChooser.CANCEL_OPTION) {
+                        log10IntensityPlot.removeFromMerged(mergedIndex);
+                        return;
+                    }
+
+                    if(option == JFileChooser.APPROVE_OPTION){
+                        // remove dataset and write to file
+                        log10IntensityPlot.removeFromMerged(mergedIndex);
+                        // make merged data show on top of other datasets
+                        File theFileToSave = fc.getSelectedFile();
+
+                        String cleaned = cleanUpFileName(fc.getSelectedFile().getName());
+
+                        if(fc.getSelectedFile()!=null){
+
+                            WORKING_DIRECTORY_NAME = fc.getCurrentDirectory().toString();
+
+                            FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                            dataToWrite.writeSAXSFile(cleaned, tempDataset);
+
+                            //close the output stream
+                            status.setText(cleaned + ".dat written to "+fc.getCurrentDirectory());
+
+
+                            collectionSelected.addDataset(tempDataset);
+                            collectionSelected.getLast().setColor(Color.red);
+                            collectionSelected.getLast().setFileName(cleaned);
+                            log10IntensityPlot.addToBase(collectionSelected.getLast());
+
+                            analysisModel.addDataset(collectionSelected.getLast());
+                            //resultsModel.addDataset(collectionSelected.getLast());
+
+                            int location = dataFilesModel.getSize();
+                            dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
+                            analysisModel.fireTableDataChanged();
+                            //resultsModel.fireTableDataChanged();
+
+                            //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                    medianButton.setEnabled(true);
+                }
             }
         });
     }

@@ -14,7 +14,7 @@ public class Averager {
     private XYSeries averaged;
     private XYSeries averagedError;
 
-    public Averager(Collection collection, String workingDirectoryName){
+    public Averager(Collection collection){
         this.collectionInUse = collection;
 
         ArrayList<XYSeries> results = StatMethods.weightedAverageDatasets(this.collectionInUse);

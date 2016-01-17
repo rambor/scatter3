@@ -9,8 +9,8 @@
       <xy x="20" y="20" width="935" height="800"/>
     </constraints>
     <properties>
-      <minimumSize width="800" height="550"/>
-      <preferredSize width="800" height="550"/>
+      <minimumSize width="800" height="630"/>
+      <preferredSize width="800" height="630"/>
     </properties>
     <border type="none"/>
     <children>
@@ -22,6 +22,7 @@
           <forms defaultalign-vert="false"/>
         </constraints>
         <properties>
+          <font style="1"/>
           <preferredSize width="800" height="591"/>
           <tabLayoutPolicy value="0"/>
           <tabPlacement value="1"/>
@@ -75,6 +76,8 @@
                   </grid>
                   <grid id="3acd9" layout-manager="FormLayout">
                     <rowspec value="center:d:grow"/>
+                    <rowspec value="top:3dlu:noGrow"/>
+                    <rowspec value="center:max(d;4px):noGrow"/>
                     <colspec value="left:d:noGrow"/>
                     <colspec value="left:4dlu:noGrow"/>
                     <colspec value="fill:233px:noGrow"/>
@@ -102,6 +105,16 @@
                         </constraints>
                         <properties>
                           <text value="&lt;html&gt;convert nm&lt;sup&gt;-1&lt;/sup&gt; to Angstrom&lt;sup&gt;-1&lt;/sup&gt;&lt;/html&gt;"/>
+                        </properties>
+                      </component>
+                      <component id="98f44" class="javax.swing.JCheckBox" binding="autoRgCheckBox" default-binding="true">
+                        <constraints>
+                          <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                          <forms/>
+                        </constraints>
+                        <properties>
+                          <selected value="true"/>
+                          <text value="autoRg?"/>
                         </properties>
                       </component>
                     </children>
@@ -694,7 +707,7 @@
                       <text value="Average"/>
                     </properties>
                   </component>
-                  <component id="19a0" class="javax.swing.JButton" default-binding="true">
+                  <component id="19a0" class="javax.swing.JButton" binding="medianButton">
                     <constraints>
                       <grid row="2" column="12" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>
@@ -794,7 +807,443 @@
             </constraints>
             <properties/>
             <border type="none"/>
-            <children/>
+            <children>
+              <grid id="a983b" layout-manager="FormLayout">
+                <rowspec value="center:max(d;4px):noGrow"/>
+                <rowspec value="top:3dlu:noGrow"/>
+                <rowspec value="center:d:grow"/>
+                <rowspec value="top:3dlu:noGrow"/>
+                <rowspec value="center:max(d;4px):noGrow"/>
+                <colspec value="fill:d:grow"/>
+                <colspec value="left:4dlu:noGrow"/>
+                <colspec value="fill:max(d;4px):noGrow"/>
+                <colspec value="left:4dlu:noGrow"/>
+                <colspec value="fill:d:grow"/>
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <grid id="fde5b" binding="leftSubtractionPanel" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="0" row-span="3" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="24" height="607"/>
+                      </grid>
+                      <forms defaultalign-horz="false" defaultalign-vert="false"/>
+                    </constraints>
+                    <properties>
+                      <background color="-7876609"/>
+                    </properties>
+                    <border type="etched"/>
+                    <children>
+                      <scrollpane id="e9832" binding="samples">
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children/>
+                      </scrollpane>
+                      <component id="4e0e9" class="javax.swing.JLabel" binding="samplesSubtractionLabel">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <font size="14" style="1"/>
+                          <foreground color="-1"/>
+                          <text value="Drop SAMPLES SAXS files below"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="33aca" binding="rightSubtractionPanel" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="4" row-span="3" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="24" height="607"/>
+                      </grid>
+                      <forms defaultalign-vert="false"/>
+                    </constraints>
+                    <properties>
+                      <background color="-22519"/>
+                    </properties>
+                    <border type="etched"/>
+                    <children>
+                      <scrollpane id="e06ef" binding="buffers">
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children/>
+                      </scrollpane>
+                      <component id="272b1" class="javax.swing.JLabel">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <font size="14" style="1"/>
+                          <foreground color="-1"/>
+                          <text value="Drop BACKGROUND files below"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="11d4f" binding="centerPanel" layout-manager="GridLayoutManager" row-count="8" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                      <forms/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="c0d6" class="javax.swing.JButton" binding="fromMedianBufferButton" default-binding="true">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="1" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                            <preferred-size width="249" height="29"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <foreground color="-16777216"/>
+                          <text value="from Median Buffer"/>
+                        </properties>
+                      </component>
+                      <component id="b5d92" class="javax.swing.JButton" binding="fromAverageBufferButton" default-binding="true">
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                            <preferred-size width="249" height="29"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <foreground color="-15648368"/>
+                          <text value="from Average Buffer"/>
+                        </properties>
+                      </component>
+                      <component id="e31af" class="javax.swing.JButton" binding="fromSingleBufferButton" default-binding="true">
+                        <constraints>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false">
+                            <preferred-size width="249" height="29"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <foreground color="-5361508"/>
+                          <text value="from Single Buffer"/>
+                        </properties>
+                      </component>
+                      <grid id="9546b" layout-manager="GridLayoutManager" row-count="1" column-count="5" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                            <preferred-size width="249" height="30"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="786a7" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="qmin"/>
+                            </properties>
+                          </component>
+                          <hspacer id="5d518">
+                            <constraints>
+                              <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                          </hspacer>
+                          <component id="aa832" class="javax.swing.JTextField" binding="qminSubtractionField">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                                <preferred-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties>
+                              <text value="0.01"/>
+                            </properties>
+                          </component>
+                          <component id="79fec" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="qmax"/>
+                            </properties>
+                          </component>
+                          <component id="a7419" class="javax.swing.JTextField" binding="qmaxSubtractionField">
+                            <constraints>
+                              <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                                <preferred-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties>
+                              <text value="0.18"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </grid>
+                      <grid id="32b44" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="7" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                            <preferred-size width="249" height="24"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="e0e36" class="javax.swing.JTextField" binding="textField1" default-binding="true">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                                <preferred-size width="150" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                          </component>
+                          <component id="aa7cb" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="filename:"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </grid>
+                      <grid id="caaf8" layout-manager="GridLayoutManager" row-count="6" column-count="5" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                            <preferred-size width="249" height="179"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="2553d" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <font style="1"/>
+                              <text value="MERGING"/>
+                            </properties>
+                          </component>
+                          <component id="6e7e3" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="bins:"/>
+                            </properties>
+                          </component>
+                          <component id="a6070" class="javax.swing.JComboBox" binding="comboBoxBins">
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <model>
+                                <item value="50"/>
+                                <item value="70"/>
+                                <item value="85"/>
+                                <item value="90"/>
+                                <item value="95"/>
+                              </model>
+                            </properties>
+                          </component>
+                          <component id="8fd88" class="javax.swing.JCheckBox" binding="averageSampleFileCheckBox" default-binding="true">
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="Average Sample File"/>
+                            </properties>
+                          </component>
+                          <component id="b795a" class="javax.swing.JCheckBox" binding="SVDAverageFilesCheckBox" default-binding="true">
+                            <constraints>
+                              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="SVD Average Files"/>
+                            </properties>
+                          </component>
+                          <component id="6e2e7" class="javax.swing.JCheckBox" binding="subtractFromMedianCheckBox" default-binding="true">
+                            <constraints>
+                              <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="Subtract from Median"/>
+                            </properties>
+                          </component>
+                          <component id="e9bf9" class="javax.swing.JCheckBox" binding="scaleThenMergeCheckBox" default-binding="true">
+                            <constraints>
+                              <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="Scale then Merge"/>
+                            </properties>
+                          </component>
+                          <component id="a3a7e" class="javax.swing.JCheckBox" binding="addRgToSignalCheckBox" default-binding="true">
+                            <constraints>
+                              <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="Add Rg to Signal Plot"/>
+                            </properties>
+                          </component>
+                          <component id="c3ca1" class="javax.swing.JComboBox" binding="setReferenceBox">
+                            <constraints>
+                              <grid row="3" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties/>
+                          </component>
+                          <component id="8c7bf" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="cutoff:"/>
+                            </properties>
+                          </component>
+                          <component id="45809" class="javax.swing.JComboBox" binding="subtractionCutoff">
+                            <constraints>
+                              <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties/>
+                          </component>
+                        </children>
+                      </grid>
+                      <component id="3362a" class="javax.swing.JLabel">
+                        <constraints>
+                          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <text value="Specify q-range used for scaling, useful for noisy data"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="b299d" layout-manager="GridBagLayout">
+                    <constraints>
+                      <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <minimum-size width="-1" height="120"/>
+                        <preferred-size width="-1" height="120"/>
+                        <maximum-size width="-1" height="120"/>
+                      </grid>
+                      <forms/>
+                    </constraints>
+                    <properties>
+                      <background color="-7876609"/>
+                    </properties>
+                    <border type="etched"/>
+                    <children>
+                      <component id="12658" class="javax.swing.JButton" binding="plotMedianAndAverageSampleButton">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                          <gridbag weightx="1.0" weighty="1.0"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <text value="Average and Median"/>
+                        </properties>
+                      </component>
+                      <component id="b12b3" class="javax.swing.JButton" binding="clearSamplesButton">
+                        <constraints>
+                          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                          <gridbag weightx="1.0" weighty="1.0"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <foreground color="-3195849"/>
+                          <text value="Clear"/>
+                        </properties>
+                      </component>
+                      <component id="fbbb7" class="javax.swing.JButton" binding="signalPlotButton">
+                        <constraints>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                          <gridbag weightx="1.0" weighty="1.0"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <text value="Signal Plot"/>
+                        </properties>
+                      </component>
+                      <component id="9fdb2" class="javax.swing.JButton" binding="plotLog10AverageSampleButton">
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                          <gridbag weightx="1.0" weighty="1.0"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <text value="Log 10 Average and Median"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="5e302" layout-manager="GridBagLayout">
+                    <constraints>
+                      <grid row="4" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                      <forms defaultalign-vert="false"/>
+                    </constraints>
+                    <properties>
+                      <background color="-22519"/>
+                    </properties>
+                    <border type="etched"/>
+                    <children>
+                      <component id="692dc" class="javax.swing.JButton" default-binding="true">
+                        <constraints>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                          <gridbag weightx="1.0" weighty="1.0"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <foreground color="-3195849"/>
+                          <text value="Clear"/>
+                        </properties>
+                      </component>
+                      <component id="3f06c" class="javax.swing.JButton" default-binding="true">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                          <gridbag weightx="1.0" weighty="1.0"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <text value="Average and Median"/>
+                        </properties>
+                      </component>
+                      <component id="9c4c3" class="javax.swing.JButton" default-binding="true">
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                          <gridbag weightx="1.0" weighty="1.0"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <text value="Log 10 Average and Median"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <component id="4a814" class="javax.swing.JLabel">
+                    <constraints>
+                      <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+                      <forms defaultalign-horz="false"/>
+                    </constraints>
+                    <properties>
+                      <font name="BlairMdITC TT" style="1"/>
+                      <text value="&lt;html&gt;&lt;p align=&quot;Center&quot;&gt;Merging Exposures or SEC HPLC SAXS Data&lt;/p&gt;&lt;p align=&quot;Center&quot;&gt;(SUBTRACTION)&lt;/p&gt;&lt;/html&gt;"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+            </children>
           </grid>
           <grid id="8df4d" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
             <margin top="0" left="0" bottom="0" right="0"/>
@@ -847,15 +1296,131 @@
               </tabbedpane>
             </children>
           </grid>
-          <grid id="56701" layout-manager="FormLayout">
-            <rowspec value="center:d:grow"/>
-            <colspec value="fill:d:grow"/>
+          <grid id="56701" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
             <constraints>
-              <tabbedpane title="Special"/>
+              <tabbedpane title="Similarity"/>
             </constraints>
             <properties/>
             <border type="none"/>
-            <children/>
+            <children>
+              <grid id="cd4c" binding="covLeftPanel" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="2" indent="0" use-parent-layout="false">
+                    <preferred-size width="200" height="-1"/>
+                  </grid>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <scrollpane id="e0e85" binding="covFilesScrollPanel">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="300" height="0"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children/>
+                  </scrollpane>
+                  <grid id="f8a17" binding="covResetPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="296" height="33"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="3d106" class="javax.swing.JButton" binding="clearButton" default-binding="true">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Clear"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                </children>
+              </grid>
+              <grid id="b1a1b" binding="covRightPanel" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <grid id="9f5ae" binding="covPlotPanel" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="124" height="28"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="etched"/>
+                    <children>
+                      <grid id="69e1d" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="2" fill="1" indent="0" use-parent-layout="false">
+                            <minimum-size width="500" height="150"/>
+                            <preferred-size width="-1" height="150"/>
+                            <maximum-size width="-1" height="150"/>
+                          </grid>
+                        </constraints>
+                        <properties/>
+                        <border type="etched"/>
+                        <children/>
+                      </grid>
+                      <grid id="6415b" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children/>
+                      </grid>
+                    </children>
+                  </grid>
+                  <grid id="d1cfe" binding="covDetailsPanel" layout-manager="GridLayoutManager" row-count="2" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                        <preferred-size width="124" height="24"/>
+                      </grid>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="14c06" class="javax.swing.JButton" binding="button1" default-binding="true">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Button"/>
+                        </properties>
+                      </component>
+                      <hspacer id="cb0ec">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                      </hspacer>
+                      <vspacer id="1914">
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                      </vspacer>
+                    </children>
+                  </grid>
+                </children>
+              </grid>
+            </children>
           </grid>
           <grid id="6645c" layout-manager="FormLayout">
             <rowspec value="center:d:grow"/>

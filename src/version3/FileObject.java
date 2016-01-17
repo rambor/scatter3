@@ -15,6 +15,8 @@ import java.util.Locale;
 public class FileObject {
 
     private File directoryInfo;
+    private String note;
+    private String buffer;
 
     public FileObject(File directory){
         this.directoryInfo = directory;
@@ -29,6 +31,12 @@ public class FileObject {
             FileWriter fw = new FileWriter(directoryInfo +"/"+name+".dat");
             BufferedWriter out = new BufferedWriter(fw);
 
+            out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
+            out.write(this.createNotesRemark(data));
+            out.write(this.createBufferRemark(data));
+            out.write(String.format("REMARK\t  COLUMNS : q, I(q), error%n"));
+            out.write(String.format("REMARK\t  q : defined in inverse Angstroms%n"));
+
             int numberOfDigits;
             for (int n=0; n < total; n++) {
 
@@ -40,7 +48,6 @@ public class FileObject {
             e.printStackTrace();
         }
     }
-
 
 
     public void writePRFile(String name){
@@ -82,4 +89,47 @@ public class FileObject {
         }
         return numberToPrint;
     }
+
+    private String createNotesRemark(Dataset data){
+        String temp = data.getExperimentalNotes();
+        // split at carriage return
+        // add REMARK
+
+        String newLines ="";
+        String[] arrayOfLines = temp.replaceAll("\r\n", "\n").split("\n");
+        if (arrayOfLines.length > 0){
+            newLines += String.format("REMARK 265%n");
+
+            int total = arrayOfLines.length;
+            for(int i=0;i<total;i++){
+                newLines += String.format("REMARK 265  %s %n", arrayOfLines[i].trim());
+            }
+            newLines += String.format("REMARK 265%n");
+        }
+        return newLines;
+    }
+
+    private String createBufferRemark(Dataset data){
+        String temp = data.getBufferComposition();
+        // split at carriage return
+        // add REMARK
+        String newLines="";
+        String[] arrayOfLines = temp.replaceAll("\r\n", "\n").split("\n");
+
+        if (arrayOfLines.length > 0){
+
+            newLines = String.format("REMARK 265 BUFFER COMPOSITION %n");
+            newLines += String.format("REMARK 265%n");
+
+            int total = arrayOfLines.length;
+            for(int i=0;i<total;i++){
+                newLines += String.format("REMARK 265  %s %n", arrayOfLines[i].trim());
+            }
+            newLines += String.format("REMARK 265%n");
+        }
+
+        return newLines;
+    }
+
+
 }
