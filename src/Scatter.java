@@ -111,6 +111,7 @@ public class Scatter {
     private JButton medianButton;
     private JButton singleButton;
     private JButton scaleToIZeroButton;
+    private JButton scaleMergeButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -756,7 +757,86 @@ public class Scatter {
         scaleToIZeroButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                scaleToIZeroButton.setEnabled(false);
 
+                scaleToIZeroButton.setEnabled(true);
+            }
+        });
+
+        scaleMergeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                scaleMergeButton.setEnabled(false);
+
+                // scale the data, then merge
+                if (log10IntensityPlot.isVisible()){
+                    log10IntensityPlot.setNotify(false);
+                }
+                ScaleManager scaling = new ScaleManager(
+                        2,
+                        collectionSelected,
+                        progressBar1,
+                        status);
+
+                scaling.scaleNow(0.01,0.15);
+                if (log10IntensityPlot.isVisible()){
+                    log10IntensityPlot.setNotify(true);
+                }
+
+                // merge by averaging?
+                Averager tempAverage = new Averager(collectionSelected);
+
+                JFileChooser fc = new JFileChooser(WORKING_DIRECTORY_NAME);
+                int option = fc.showSaveDialog(panel1);
+                //set directory to default directory from Settings tab
+                Dataset tempDataset = new Dataset(tempAverage.getAveraged(), tempAverage.getAveragedError(), "averaged", collectionSelected.getDatasetCount(), false);
+
+                // update notes info
+
+                tempDataset.setAverageInfo(collectionSelected);
+
+                int mergedIndex = log10IntensityPlot.addToMerged(tempAverage.getAveraged());
+
+                if(option == JFileChooser.CANCEL_OPTION) {
+                    log10IntensityPlot.removeFromMerged(mergedIndex);
+                    return;
+                }
+
+                if(option == JFileChooser.APPROVE_OPTION){
+                    // remove dataset and write to file
+                    log10IntensityPlot.removeFromMerged(mergedIndex);
+                    // make merged data show on top of other datasets
+                    File theFileToSave = fc.getSelectedFile();
+
+                    String cleaned = cleanUpFileName(fc.getSelectedFile().getName());
+
+                    if(fc.getSelectedFile()!=null){
+
+                        WORKING_DIRECTORY_NAME = fc.getCurrentDirectory().toString();
+
+                        FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                        dataToWrite.writeSAXSFile(cleaned, tempDataset);
+
+                        //close the output stream
+                        status.setText(cleaned + ".dat written to "+fc.getCurrentDirectory());
+
+                        collectionSelected.addDataset(tempDataset);
+                        collectionSelected.getLast().setColor(Color.red);
+                        collectionSelected.getLast().setFileName(cleaned);
+                        log10IntensityPlot.addToBase(collectionSelected.getLast());
+
+                        analysisModel.addDataset(collectionSelected.getLast());
+                        //resultsModel.addDataset(collectionSelected.getLast());
+
+                        int location = dataFilesModel.getSize();
+                        dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
+                        analysisModel.fireTableDataChanged();
+                        //resultsModel.fireTableDataChanged();
+
+                        //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                scaleMergeButton.setEnabled(true);
             }
         });
     }

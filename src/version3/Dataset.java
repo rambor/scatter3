@@ -48,8 +48,8 @@ public class Dataset {
     private String filename;
 
     private int totalCountInAllData;
-    private int start;  // start of the nonNegativeData
-    private int end;    // end of the nonNegativeData
+    private int startAt;  // start of the nonNegativeData
+    private int endAt;    // end of the nonNegativeData
     private int indexOfUpperGuinierFit; //belongs to positiveOnlyData
 
     // below are properties of a subtracted dataset
@@ -208,8 +208,8 @@ public class Dataset {
         fitList = new ArrayList<>();
 
         filename=fileName;
-        this.start=1;
-        this.end= originalPositiveOnlyData.getItemCount();
+        this.startAt=1;
+        this.endAt = originalPositiveOnlyData.getItemCount();
 
         // if possible do preliminary analysis here
         if (doGuinier){
@@ -288,8 +288,8 @@ public class Dataset {
         refinedDataError = aDataset.refinedDataError;
 
         filename=aDataset.filename;
-        start=aDataset.start;
-        end=aDataset.end;
+        startAt=aDataset.startAt;
+        endAt=aDataset.endAt;
 
         guinierIZero=aDataset.guinierIZero;
         guinierRg=aDataset.guinierRg;
@@ -452,7 +452,7 @@ public class Dataset {
      * @return Start point
      */
     public int getStart(){
-        return start;
+        return startAt;
     }
 
     /**
@@ -460,7 +460,7 @@ public class Dataset {
      * @return end point
      */
     public int getEnd(){
-        return end;
+        return endAt;
     }
 
     /**
@@ -703,14 +703,14 @@ public class Dataset {
      *
      */
     public void setStart(int st){
-        start=st;
+        startAt=st;
     }
     /**
      * Sets end point of the series
      *
      */
     public void setEnd(int en){
-        end=en;
+        endAt=en;
     }
     /**
      * Sets guinier Izero of the series
@@ -791,7 +791,7 @@ public class Dataset {
      */
     public void setScaleFactor(double factor){
         System.out.println(this.id + " Factor " + factor + "  " + Math.log10(factor));
-        System.out.println(plottedData.getItemCount());
+        System.out.println(this.id + " PLOTTED SIZE : " + plottedData.getItemCount());
 
         log10ScaleFactor = Math.log10(factor);
         scaleFactor=factor;
@@ -831,9 +831,9 @@ public class Dataset {
     public void createNormalizedKratkyReciRgData(){
         XYDataItem temp;
         double rg2 = guinierRg*guinierRg/guinierIZero;
-        int startAt = start - 1;
+        int startHere = startAt - 1;
 
-        for (int i = startAt; i < end; i++){
+        for (int i = startHere; i < endAt; i++){
             temp = kratkyData.getDataItem(i);
             normalizedKratkyReciprocalSpaceRgData.add(temp.getXValue()*guinierRg, temp.getYValue()*rg2);
         }
@@ -858,8 +858,8 @@ public class Dataset {
         XYDataItem temp;
         double rg2 = realRg*realRg/realIZero;
 
-        int startAt = start - 1;
-        for (int i = startAt; i < end; i++){
+        int startHere = startAt - 1;
+        for (int i = startHere; i < endAt; i++){
             temp = kratkyData.getDataItem(i);
             normalizedKratkyRealSpaceRgData.add(temp.getXValue()*realRg, temp.getYValue()*rg2);
         }
@@ -873,14 +873,14 @@ public class Dataset {
     public void scalePlottedKratkyData(){
         plottedKratkyData.clear();
         XYDataItem temp;
-        int startAt = start - 1;
+        int startHere = startAt - 1;
 
         if (scaleFactor == 1){
-            for (int i = startAt; i<end; i++){
+            for (int i = startHere; i<endAt; i++){
                 plottedKratkyData.add(kratkyData.getDataItem(i));
             }
         } else {
-            for (int i = startAt; i<end; i++){
+            for (int i = startHere; i<endAt; i++){
                 temp = kratkyData.getDataItem(i);
                 plottedKratkyData.add(temp.getX(), temp.getYValue()*scaleFactor);
             }
@@ -899,15 +899,15 @@ public class Dataset {
     public void scalePlottedQIQData(){
         plottedqIqData.clear();
         XYDataItem temp;
-        int startAt = start - 1;
+        int startHere = startAt - 1;
 
         if (scaleFactor != 1){
-            for (int i = startAt; i<end; i++){
+            for (int i = startHere; i<endAt; i++){
                 temp = qIqData.getDataItem(i);
                 plottedqIqData.add(temp.getX(), temp.getYValue()*scaleFactor);
             }
         } else {
-            for (int i = startAt; i<end; i++){
+            for (int i = startHere; i<endAt; i++){
                 plottedqIqData.add(qIqData.getDataItem(i));
             }
         }
@@ -928,15 +928,15 @@ public class Dataset {
         this.clearPlottedPowerLaw();
         XYDataItem temp;
 
-        int startAt = start - 1;
+        int startHere = startAt - 1;
 
         if (scaleFactor != 1){
-            for (int i = startAt; i < end; i++){
+            for (int i = startHere; i < endAt; i++){
                 temp = powerLawData.getDataItem(i);
                 plottedPowerLaw.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
             }
         } else {
-            for (int i = startAt; i < end; i++){
+            for (int i = startHere; i < endAt; i++){
                 plottedPowerLaw.add(powerLawData.getDataItem(i));
             }
         }
@@ -967,15 +967,15 @@ public class Dataset {
         this.clearPlottedLog10ErrorData();
         YIntervalDataItem temp;
 
-        int startAt = start - 1;
+        int startHere = startAt - 1;
 
         if (scaleFactor != 1){
-            for (int i = startAt; i < end; i++){
+            for (int i = startHere; i < endAt; i++){
                 temp = (YIntervalDataItem) positiveOnlyIntensityError.getDataItem(i);
                 plottedLogErrors.add(temp.getX(), temp.getYValue()+log10ScaleFactor, temp.getYLowValue()+log10ScaleFactor, temp.getYHighValue()+log10ScaleFactor);
             }
         } else {
-            for (int i = startAt; i < end; i++){
+            for (int i = startHere; i < endAt; i++){
                 plottedLogErrors.add((YIntervalDataItem) positiveOnlyIntensityError.getDataItem(i), false );
             }
         }
@@ -987,18 +987,19 @@ public class Dataset {
     private void scalePlottedLog10IntensityData(){
         plottedData.clear();
         XYDataItem temp;
-        int startAt = this.start - 1;
-        System.out.println(id + " Starting at " + startAt + " " + this.end);
+        int startHere = this.startAt - 1;
+        System.out.println(id + " Before ScalePlottedLog10IntensityData " + id + " Starting at " + startAt + " " + this.endAt);
         if (scaleFactor != 1){
-            for (int i = startAt; i< this.end; i++){
+            for (int i = startHere; i< this.endAt; i++){
                 temp = originalLog10Data.getDataItem(i);
                 plottedData.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
             }
         } else {
-            for (int i = startAt; i< this.end; i++){
+            for (int i = startHere; i< this.endAt; i++){
                 plottedData.add(originalLog10Data.getDataItem(i));
             }
         }
+        System.out.println(id + " After ScalePlottedLog10IntensityData " + id + " Starting at " + startAt + " " + this.endAt + " => " + plottedData.getItemCount());
     }
 
 

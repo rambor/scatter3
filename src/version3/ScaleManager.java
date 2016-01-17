@@ -52,9 +52,14 @@ public class ScaleManager {
         }
 
         executor.shutdown();
-        while (!executor.isTerminated()) {
-        }
+        //while (!executor.isTerminated()) {
+        //}
 
+        try {
+            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            setStatus("Failed scaling, exceeded thread time");
+        }
         setStatus("Finished all Models");
     }
 
