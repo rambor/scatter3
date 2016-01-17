@@ -790,8 +790,6 @@ public class Dataset {
      * @param factor
      */
     public void setScaleFactor(double factor){
-        System.out.println(this.id + " Factor " + factor + "  " + Math.log10(factor));
-        System.out.println(this.id + " PLOTTED SIZE : " + plottedData.getItemCount());
 
         log10ScaleFactor = Math.log10(factor);
         scaleFactor=factor;
@@ -984,11 +982,11 @@ public class Dataset {
     /**
      *
      */
-    private void scalePlottedLog10IntensityData(){
+    public void scalePlottedLog10IntensityData(){
         plottedData.clear();
         XYDataItem temp;
         int startHere = this.startAt - 1;
-        System.out.println(id + " Before ScalePlottedLog10IntensityData " + id + " Starting at " + startAt + " " + this.endAt);
+
         if (scaleFactor != 1){
             for (int i = startHere; i< this.endAt; i++){
                 temp = originalLog10Data.getDataItem(i);
@@ -999,7 +997,7 @@ public class Dataset {
                 plottedData.add(originalLog10Data.getDataItem(i));
             }
         }
-        System.out.println(id + " After ScalePlottedLog10IntensityData " + id + " Starting at " + startAt + " " + this.endAt + " => " + plottedData.getItemCount());
+
     }
 
 

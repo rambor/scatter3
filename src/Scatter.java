@@ -98,7 +98,7 @@ public class Scatter {
     private JScrollPane samples;
     private JScrollPane buffers;
     private JLabel samplesSubtractionLabel;
-    private JTextField textField1;
+    private JTextField subtractionFileNameField;
     private JPanel covPlotPanel;
     private JPanel covDetailsPanel;
     private JScrollPane covFilesScrollPanel;
@@ -112,6 +112,9 @@ public class Scatter {
     private JButton singleButton;
     private JButton scaleToIZeroButton;
     private JButton scaleMergeButton;
+    private JPanel resultsPanel;
+    private JButton exportButton;
+    private JPanel headerPanel;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -135,6 +138,7 @@ public class Scatter {
 
     public static JTable analysisTable;
     public static AnalysisModel analysisModel;
+    public static ResultsModel resultsModel;
 
     // singleton plots
     public PlotDataSingleton log10IntensityPlot;
@@ -388,6 +392,39 @@ public class Scatter {
         analysisList.setOpaque(true);
         analysisPane.setOpaque(true);
 
+        // Results Tab
+        JTable resultsTable;
+        resultsTable = new JTable(new ResultsModel()); // create table
+        JTableHeader resultsHeader = resultsTable.getTableHeader(); // create header and render
+        resultsHeader.setDefaultRenderer(new HeaderRenderer(resultsTable));
+        resultsModel = (ResultsModel) resultsTable.getModel(); // make resultsModel from Table
+
+        resultsTable.setRowHeight(30);
+        resultsTable.setBackground(Color.WHITE);
+        resultsTable.getColumnModel().getColumn(0).setPreferredWidth(10); // file row
+        resultsTable.getColumnModel().getColumn(1).setPreferredWidth(250); // filename
+        resultsTable.getColumnModel().getColumn(1).setCellRenderer( leftRenderer );
+        resultsTable.getColumnModel().getColumn(2).setCellRenderer( centerRenderer );
+        resultsTable.getColumnModel().getColumn(3).setCellRenderer( centerRenderer );
+        resultsTable.getColumnModel().getColumn(4).setCellRenderer( centerRenderer );
+        resultsTable.getColumnModel().getColumn(5).setCellRenderer( centerRenderer );
+        resultsTable.getColumnModel().getColumn(6).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(7).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(8).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(9).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(10).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(11).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(12).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(13).setCellRenderer(centerRenderer);
+
+
+        JScrollPane resultsList = new JScrollPane(resultsTable);
+        resultsPanel.add(resultsList);
+        resultsTable.setFillsViewportHeight(false);
+        resultsList.setOpaque(true);
+        resultsPanel.setOpaque(true);
+
+
         // define Singleton plots
         kratky = KratkyPlot.getInstance();
         log10IntensityPlot = PlotDataSingleton.getInstance();
@@ -626,13 +663,13 @@ public class Scatter {
                             log10IntensityPlot.addToBase(collectionSelected.getLast());
 
                             analysisModel.addDataset(collectionSelected.getLast());
-                            //resultsModel.addDataset(collectionSelected.getLast());
+                            resultsModel.addDataset(collectionSelected.getLast());
 
 
                             int location = dataFilesModel.getSize();
                             dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
                             analysisModel.fireTableDataChanged();
-                            //resultsModel.fireTableDataChanged();
+                            resultsModel.fireTableDataChanged();
 
                             //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -694,12 +731,12 @@ public class Scatter {
                             log10IntensityPlot.addToBase(collectionSelected.getLast());
 
                             analysisModel.addDataset(collectionSelected.getLast());
-                            //resultsModel.addDataset(collectionSelected.getLast());
+                            resultsModel.addDataset(collectionSelected.getLast());
 
                             int location = dataFilesModel.getSize();
                             dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
                             analysisModel.fireTableDataChanged();
-                            //resultsModel.fireTableDataChanged();
+                            resultsModel.fireTableDataChanged();
 
                             //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
                         }
@@ -758,6 +795,31 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 scaleToIZeroButton.setEnabled(false);
+                if (collectionSelected.getTotalSelected() < 2){
+                    status.setText("Select more than one file!");
+                    return;
+                }
+
+                int ref=0;
+                for(int i=0; i<collectionSelected.getDatasets().size(); i++){
+                    if (collectionSelected.getDataset(i).getInUse()){
+                        ref = i;
+                    }
+                }
+
+                collectionSelected.getDataset(ref).setScaleFactor(1.00d);
+                mainRescaling(ref);
+
+                double referenceScale = collectionSelected.getDataset(ref).getGuinierIzero();
+                double newScale;
+                for(int i=0; i<collectionSelected.getDatasetCount(); i++){
+                    Dataset tempData = collectionSelected.getDataset(i);
+                    if (tempData.getInUse() && i != ref){
+                        newScale = referenceScale/tempData.getGuinierIzero();
+                        tempData.setScaleFactor(newScale);
+                        mainRescaling(i);
+                    }
+                }
 
                 scaleToIZeroButton.setEnabled(true);
             }
@@ -826,12 +888,12 @@ public class Scatter {
                         log10IntensityPlot.addToBase(collectionSelected.getLast());
 
                         analysisModel.addDataset(collectionSelected.getLast());
-                        //resultsModel.addDataset(collectionSelected.getLast());
+                        resultsModel.addDataset(collectionSelected.getLast());
 
                         int location = dataFilesModel.getSize();
                         dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
                         analysisModel.fireTableDataChanged();
-                        //resultsModel.fireTableDataChanged();
+                        resultsModel.fireTableDataChanged();
 
                         //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -1060,12 +1122,12 @@ public class Scatter {
      */
     private static LoadedFile loadDroppedFile(File file, JLabel status, int size, boolean convertNMtoAng){
         LoadedFile temp = null;
-        String filebase, ext;
+        String ext;
         // how to handle different file formats?
         // get file base and extension
         String[] currentFile;
         currentFile = file.getName().split("\\.(?=[^\\.]+$)");
-        filebase = currentFile[0];
+
         ext = (currentFile.length > 2) ? currentFile[2] : currentFile[1];
 
         try {
@@ -1144,8 +1206,8 @@ public class Scatter {
 
             analysisModel.clear();
 
-//            resultsModel.datalist.clear();
-//            resultsModel.clear();
+            resultsModel.datalist.clear();
+            resultsModel.clear();
 
             // multithreading will add in quasi random order
 
@@ -1165,11 +1227,11 @@ public class Scatter {
 
             // update dataFilesList in dataFilesPanel (Files tab);
             // rebuild dataFilesPanel from collection.get(i)
-            for(int i=0; i<((Collection)main.collections.get(index)).getDatasetCount(); i++){
+            for(int i=0; i< ((Collection)main.collections.get(index)).getDatasetCount(); i++){
                 String name = ((Collection)main.collections.get(index)).getDataset(i).getFileName();
                 main.dataFilesModel.addElement(new DataFileElement(name, i));
                 analysisModel.addDataset(((Collection) collections.get(index)).getDataset(i));
-               // resultsModel.addDataset(((Collection) collections.get(index)).getDataset(i));
+                 resultsModel.addDataset(((Collection) collections.get(index)).getDataset(i));
             }
 
             main.dataFilesList.setModel(main.dataFilesModel);
@@ -1340,6 +1402,12 @@ public class Scatter {
 
         double scaleFactor = collectionSelected.getDataset(fIndex).getScaleFactor();
         //update scale Factor in the Dataset;
+
+        if (log10IntensityPlot.isVisible()){
+            log10IntensityPlot.setNotify(false);
+            collectionSelected.getDataset(fIndex).scalePlottedLogErrorData();
+            log10IntensityPlot.setNotify(true);
+        }
 
         if (kratky.isVisible()) {
             kratky.setNotify(false);
@@ -1672,7 +1740,7 @@ public class Scatter {
             if (table.getModel().toString().contains("Analysis")){
 
                 if (column == 2) {
-
+                    System.out.println("CheckBox row " + row);
                     collectionSelected.getDataset(row).setInUse(!(Boolean)value);
 
                     if (log10IntensityPlot.isVisible()){
@@ -2265,6 +2333,112 @@ public class Scatter {
         decimalPlaces = (temp.length == 2) ? temp[1].length() : (toText.length() - integerPlaces -1);
 
         return decimalPlaces;
+    }
+
+    public class ResultsModel extends AbstractTableModel {
+
+        private final LinkedList<Dataset> datalist;
+        //DecimalFormat oneDecPlac = new DecimalFormat("0.0");
+        //DecimalFormat twoDecPlac = new DecimalFormat("0.00");
+        //DecimalFormat fourDecPlac = new DecimalFormat("0.0000");
+        //DecimalFormat scientific = new DecimalFormat("0.00E0");
+        //DecimalFormat twoOneFormat = new DecimalFormat("00.0");
+
+        private String[] columnNames = new String[]{"", "", "I(0)", "real", "<html>R<sub>g</sub></html>", "real", "<html>V<sub>c</sub></html>", "Volume", "Protein", "RNA", "r", "<html>d<sub>max</sub></html>", "<html>R<sub>c</sub></html>", "<html>P<sub>x</sub></html>"};
+
+        public ResultsModel(){
+            datalist = new LinkedList<Dataset>();
+        }
+
+        public int getRowCount() {
+            return datalist.size();
+        }
+
+        public void remove(int row){
+            datalist.remove(row);
+            this.fireTableRowsDeleted(row, row);
+        }
+
+        public void clear(){
+            datalist.clear();
+            this.fireTableDataChanged();
+        }
+
+        @Override
+        public String getColumnName(int col) {
+            return columnNames[col];
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columnNames.length;  //To change body of implemented methods use File | Settings | File Templates.
+        }
+
+
+        @Override
+        public Object getValueAt(int row, int col) {
+            Dataset dataset = (Dataset) datalist.get(row);
+            double q;
+            int index;
+            // anytime row is clicked, this method is executed
+            switch (col){
+                case 0:
+                    return row+1;
+                case 1:
+                    return dataset.getFileName();
+                case 2:
+                    return Constants.Scientific1.format(dataset.getGuinierIzero());
+                case 3:
+                    return Constants.Scientific1.format(dataset.getRealIzero());
+                case 4: //spinner
+                    return Constants.TwoDecPlace.format(dataset.getGuinierRg());
+                case 5: //spinner
+                    return Constants.TwoDecPlace.format(dataset.getRealRg());
+                case 6: //Fit file - rendered as a checkbox
+                    return Constants.OneDecPlace.format(dataset.getVC());
+                case 7:
+                    String vol = "<html><p><b>" + Constants.Scientific1.format(dataset.getPorodVolume()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getPorodVolumeReal()) + "</p></html>";
+                    return vol;
+                //return (int)dataset.getPorodVolume();
+                case 8:
+                    String massP = "<html><p><b>" + Constants.Scientific1.format(dataset.getMassProtein()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getMassProteinReal()) + "</p></html>";
+                    //return scientific.format(dataset.getMassProtein());
+                    return massP;
+                case 9:
+                    String massR = "<html><p><b>" + Constants.Scientific1.format(dataset.getMassRna()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getMassRnaReal()) + "</p></html>";
+                    return massR;
+                case 10:
+                    return Constants.OneDecPlace.format(dataset.getAverageR());
+                case 11:
+                    return (int)dataset.getDmax();
+                case 12:
+                    return Constants.TwoDecPlace.format(dataset.getRc());
+                case 13:
+                    return Constants.OneDecPlace.format(dataset.getPorodExponent());
+                default:
+                    return null;
+            }
+
+        }
+
+        public void addDataset(Dataset dataset){
+            datalist.add(dataset);
+            fireTableRowsInserted(datalist.size()-1, datalist.size()-1);
+            //fireTableDataChanged();
+        }
+
+        /*
+         * JTable uses this method to determine the default renderer/
+         * editor for each cell.  If we didn't implement this method,
+         * then the last column would contain text ("true"/"false"),
+         * rather than a check box.
+         */
+        public boolean isCellEditable(int row, int col) {
+            //Note that the data/cell address is constant,
+            //no matter where the cell appears onscreen.
+            //editable 0,2,4,5,6,13,14
+            return false;
+        }
     }
 
 

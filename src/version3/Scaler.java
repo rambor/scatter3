@@ -63,8 +63,6 @@ public class Scaler implements Runnable {
         double startRefq = reference.getOriginalPositiveOnlyData().getX(startRef).doubleValue();
         double endRefq = reference.getOriginalPositiveOnlyData().getX(endRef).doubleValue();
 
-        System.out.println(reference.getId() + " reference START Q " + startRefq + " < " + endRefq);
-
         // if range is specified, need to truncate data
         double startTargetq = target.getOriginalPositiveOnlyData().getX(target.getStart()-1).doubleValue();
         double endTargetq = target.getOriginalPositiveOnlyData().getX(target.getEnd()-1).doubleValue();
@@ -137,6 +135,7 @@ public class Scaler implements Runnable {
         }
 
         target.setScaleFactor(1.0/scale);
+        target.scalePlottedLog10IntensityData();
     }
 
     public String getStatustext(){return statustext;}
