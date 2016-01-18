@@ -1,5 +1,5 @@
-import org.jfree.chart.plot.Plot;
-import org.jfree.data.xy.XYDataItem;
+import net.iharder.dnd.FileDrop;
+import org.apache.commons.io.comparator.NameFileComparator;
 import org.jfree.data.xy.XYSeries;
 import version3.*;
 import version3.Collection;
@@ -10,9 +10,7 @@ import javax.swing.event.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.Ellipse2D;
 import java.io.*;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,7 +26,7 @@ public class Scatter {
     private JPanel filesPanel;
     private JPanel analysisPanel;
     private JPanel statusPanel;
-    private JProgressBar progressBar1;
+    private JProgressBar mainProgressBar;
     private JPanel buttonPanel;
     private JPanel chartsPanel;
     private JButton removeButton;
@@ -93,7 +91,7 @@ public class Scatter {
     private JComboBox setReferenceBox;
     private JPanel rightSubtractionPanel;
     private JPanel centerPanel;
-    private JComboBox subtractionCutoff;
+    private JComboBox subtractionCutOff;
     private JPanel leftSubtractionPanel;
     private JScrollPane samples;
     private JScrollPane buffers;
@@ -115,15 +113,25 @@ public class Scatter {
     private JPanel resultsPanel;
     private JButton exportButton;
     private JPanel headerPanel;
+    private JButton izeroRgPlot;
+    private JButton setOutputDirectoryButton;
+    private JLabel subtractInfoLabel;
+    private JLabel subtractOutPutDirectoryLabel;
+    private JButton buffersClearButton;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
     private static String OUTPUT_DIR_SUBTRACTION_NAME;
     private static String ATSAS_DIRECTORY;
 
-    private DefaultListModel<DataFileElement> dataFilesModel;
+    private static DefaultListModel<DataFileElement> dataFilesModel;
     private DefaultListModel<DataFileElement> fitFilesModel;
     private DefaultListModel<DataFileElement> complexFilesModel;
+    public DefaultListModel<SampleBufferElement> bufferFilesModel;
+    public DefaultListModel<SampleBufferElement> sampleFilesModel;
+    private DefaultListModel<String> chiFilesModel;
+    private DefaultListModel<String> damminfModelsModel;
+
 
     //public static ArrayList<Collection> collections;
     private static HashMap collections;
@@ -139,6 +147,14 @@ public class Scatter {
     public static JTable analysisTable;
     public static AnalysisModel analysisModel;
     public static ResultsModel resultsModel;
+
+    public JList buffersList;
+    public JList samplesList;
+    public JList fitFilesList;
+
+    private String outPutDirSubtractionName="";
+
+
 
     // singleton plots
     public PlotDataSingleton log10IntensityPlot;
@@ -161,10 +177,54 @@ public class Scatter {
         bufferCollections = new Collection();
         sampleCollections = new Collection();
 
+
         // Files Tab
         dataFilesModel = new DefaultListModel<DataFileElement>();
         dataFilesList.setCellRenderer(new DataFilesListRenderer());
         dataFilesList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+        buffersList = new JList();
+        samplesList = new JList();
+        //fitFilesList = new JList();
+
+        bufferFilesModel = new DefaultListModel<SampleBufferElement>();
+        sampleFilesModel = new DefaultListModel<SampleBufferElement>();
+
+        //fitFilesModel = new DefaultListModel<DataFileElement>();
+        //chiFilesModel = new DefaultListModel<String>();
+        //damminfModelsModel = new DefaultListModel<String>();
+
+        buffersList.setModel(bufferFilesModel);
+        samplesList.setModel(sampleFilesModel);
+        //fitFilesList.setModel(fitFilesModel);
+        //chiValuesList.setModel(chiFilesModel);
+        //completedDamminList.setModel(damminfModelsModel);
+
+        buffersList.setCellRenderer(new SampleBufferListRenderer());
+        buffersList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        buffersList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);    //To change body of overridden methods use File | Settings | File Templates.
+                int index = buffersList.locationToIndex(e.getPoint());
+                SampleBufferElement item = (SampleBufferElement)buffersList.getModel().getElementAt(index);
+            }
+        });
+
+        samplesList.setCellRenderer(new SampleBufferListRenderer());
+        samplesList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+        //Add to JScrollPane from GUI
+        buffers.setViewportView(buffersList);
+        samples.setViewportView(samplesList);
+        // Subtraction Tab
+        String[] rejections ={"1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5"};
+        for (String i:rejections){
+            subtractionCutOff.addItem(i);
+        }
+
+        subtractionCutOff.setSelectedIndex(3);
+        comboBoxBins.setSelectedIndex(2);
 
         mainPane.setTabLayoutPolicy(JTabbedPane.WRAP_TAB_LAYOUT);
 
@@ -180,6 +240,9 @@ public class Scatter {
             collectionButtons.get(i).setSelected(false);
             miniPlots.get(i).plot((Collection) collections.get(i));
         }
+
+        collections.put(69, bufferCollections);
+        collections.put(96, sampleCollections);
 
         // Mini Collections for Drag-N-Drop on Files Tab
         for (int i = 0; i < totalPanels; i++){
@@ -222,32 +285,7 @@ public class Scatter {
         tc.setCellEditor(new CheckBoxCellEditorRenderer());
         tc.setCellRenderer(new CheckBoxCellEditorRenderer());
 
-//        tc = analysisTable.getColumnModel().getColumn(6);
-//        tc.setCellEditor(new CheckBoxCellEditorRenderer());
-//        tc.setCellRenderer(new CheckBoxCellEditorRenderer());
 
-        final Thread[] lowerBoundThread = new Thread[1];
-/*
-        class SetLowerBound implements Runnable {
-            double limit;
-            int upperlower;
-            public SetLowerBound(double limit, int uorl){
-                this.limit = limit;
-                this.upperlower=uorl;
-            }
-            @Override
-            public void run() {
-                //To change body of implemented methods use File | Settings | File Templates.
-                mainStatus.setValue(0);
-                mainStatus.setStringPainted(true);
-                task = new Task("bound");
-                task.setQValue(this.limit);
-                task.setUpperLower(this.upperlower);
-                task.execute();
-                task.done();
-            }
-        }
-*/
         tc = analysisTable.getColumnModel().getColumn(0);
         tc.setCellEditor(new ColorEditor());
         tc.setCellRenderer(new ColorRenderer(true));
@@ -342,29 +380,58 @@ public class Scatter {
                     analysisModel.fireTableDataChanged();
                 } else if (index == 4) {
                     // add function to replot data given qmin or qmax when user selects columns 4 or 5
-                    // popup dialog box asking for qmin or qmax
-                    // JOptionPane.showInputDialog(Scatter)
-                    String inputValue = JOptionPane.showInputDialog("Please input a minimum q value");
-                    if (inputValue != null){
-                        if (isQValue(inputValue)){
-                            // launch new task
-                          //  lowerBoundThread[0] = new Thread(new SetLowerBound(Double.parseDouble(inputValue),4));
-                          //  lowerBoundThread[0].start();
-                        }
+                    final String inputValue = JOptionPane.showInputDialog("Please input a minimum q value");
+
+                    if (inputValue != null && isQValue(inputValue)){
+
+
+                                    if (log10IntensityPlot.isVisible()){
+                                        log10IntensityPlot.setNotify(false);
+                                    }
+                                    final LowerUpperBoundManager boundLower = new LowerUpperBoundManager(
+                                            2,
+                                            collectionSelected,
+                                            mainProgressBar,
+                                            status);
+
+                                    boundLower.boundNow(analysisModel, 4, Double.parseDouble(inputValue));
+                                    if (log10IntensityPlot.isVisible()){
+                                        //update plot
+                                        //log10IntensityPlot.updatePlot();
+                                        log10IntensityPlot.setNotify(true);
+                                    }
+                                    //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+
                     }
 
                 } else if (index == 5) {
-                    String inputValue = JOptionPane.showInputDialog("Please input a maximum q value");
-                    if (inputValue != null){
-                        if (isQValue(inputValue)){
-                          //  lowerBoundThread[0] = new Thread(new SetLowerBound(Double.parseDouble(inputValue),5));
-                          //  lowerBoundThread[0].start();
-                        }
+                    final String inputValue = JOptionPane.showInputDialog("Please input a maximum q value");
+
+                    if (inputValue != null && isQValue(inputValue)){
+
+                                if (log10IntensityPlot.isVisible()){
+                                    log10IntensityPlot.setNotify(false);
+                                    //log10IntensityPlot.closeWindow();
+                                }
+                                final LowerUpperBoundManager boundLower = new LowerUpperBoundManager(
+                                        2,
+                                        collectionSelected,
+                                        mainProgressBar,
+                                        status);
+
+                                boundLower.boundNow(analysisModel, 5, Double.parseDouble(inputValue));
+                                if (log10IntensityPlot.isVisible()){
+                                    log10IntensityPlot.setNotify(true);
+                                }
+                                //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+
+
                     }
+
                 }
 
+                //analysisModel.fireTableDataChanged();
                 // check if key is depresed
-
             }
         });
 
@@ -440,6 +507,119 @@ public class Scatter {
         // create plot, set attribute to true
         // on close plot, set attribute to false
         // only works on singleton classes since only one window is open
+        // toggles selected Files in
+        dataFilesList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                super.mouseClicked(event);
+                JList list = (JList) event.getSource();
+                // Get index of clicked item
+                int index = list.locationToIndex(event.getPoint());
+                // Toggle selected state
+                DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
+                // Repaint cell
+                item.setSelected(! item.isSelected());
+                list.repaint(list.getCellBounds(index,index));
+            }
+        });
+
+        // toggles selected Files in
+        buffersList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                super.mouseClicked(event);
+                JList list = (JList) event.getSource();
+                // Get index of clicked item
+                int index = list.locationToIndex(event.getPoint());
+                // Toggle selected state
+                DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
+                // Repaint cell
+                item.setSelected(! item.isSelected());
+
+                //Collection inUse = (Collection) collections.get(69); //set dataset in the collection
+                //inUse.getDataset(index).setInUse(item.isSelected());
+
+                list.repaint(list.getCellBounds(index,index));
+            }
+        });
+
+        // toggles selected Files in
+        samplesList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                super.mouseClicked(event);
+                JList list = (JList) event.getSource();
+                // Get index of clicked item
+                int index = list.locationToIndex(event.getPoint());
+                // Toggle selected state
+                DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
+                // Repaint cell
+                item.setSelected(!item.isSelected());
+
+                //Collection inUse = (Collection) collections.get(96); // set dataset in the collection
+                //inUse.getDataset(index).setInUse(item.isSelected());
+
+                list.repaint(list.getCellBounds(index, index));
+            }
+        });
+
+        // remove file from Collection/Set
+        removeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //also update Analysis Table/Model
+                int start = dataFilesList.getModel().getSize() - 1;
+                int selected;
+
+                for (int i = 0; i < totalPanels; i++){
+                    //find which box is selected
+                    if (collectionButtons.get(i).isSelected()) {  // locate active panel
+                        selected = i;
+                        for(int j = start; j >= 0; j--){ // count in reverse and remove selected dataset
+                            DataFileElement m = (DataFileElement) dataFilesList.getModel().getElementAt(j);
+                            if (m.isSelected()) {
+                                ((Collection)collections.get(selected)).removeDataset(j);
+                                analysisModel.remove(j);
+                                resultsModel.remove(j);
+                            }
+                        }
+
+                        //update list on Files tab
+                        dataFilesModel.clear();
+                        dataFilesList.removeAll();
+                        // update dataFilesList in dataFilesPanel;
+                        // rebuild dataFilesPanel from collection.get(i)
+                        for(int j=0; j<((Collection)collections.get(selected)).getDatasets().size(); j++){
+                            String name = ((Collection)collections.get(selected)).getDataset(j).getFileName();
+                            dataFilesModel.addElement(new DataFileElement(name, j));
+                        }
+
+                        dataFilesList.setModel(dataFilesModel);
+
+                        //update collection ids
+                        int total = ((Collection)collections.get(selected)).getDatasets().size();
+
+                        for(int h=0; h<total; h++){
+                            ((Collection) collections.get(selected)).getDataset(h).setId(h);
+                        }
+
+                        break;
+                    }
+                }
+
+                //prModel.clear();
+
+                // replot any visible frames
+                //if (kratky.frame.isVisible()){
+                //    kratkyPlot();
+                //}
+
+                // replot any visible frames
+                //if (powerLawPlot.frame.isVisible()){
+                //    plotPowerLaw();
+                //}
+            }
+        });
 
         intensityPlotButton.addActionListener(new ActionListener() {
             @Override
@@ -573,9 +753,7 @@ public class Scatter {
 
                 if (filesSelected != 1){
                     status.setText("Select only 1(one) file for Rc (x-section) determination");
-                    return;
                 } else {
-
                     RcXSectionalPlot tempPlot = new RcXSectionalPlot(collectionSelected.getDataset(selected), WORKING_DIRECTORY_NAME);
                     tempPlot.createPlots();
                 }
@@ -597,7 +775,7 @@ public class Scatter {
                         ScaleManager scaling = new ScaleManager(
                                 2,
                                 collectionSelected,
-                                progressBar1,
+                                mainProgressBar,
                                 status);
 
                         scaling.scaleNow(0,0);
@@ -685,7 +863,6 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 if (collectionSelected.getTotalSelected() < 3){
                     status.setText("Select at least three datasets for median");
-                    return;
                 } else {
                     medianButton.setEnabled(false);
                     Medianer tempMedian = new Medianer(collectionSelected);
@@ -837,7 +1014,7 @@ public class Scatter {
                 ScaleManager scaling = new ScaleManager(
                         2,
                         collectionSelected,
-                        progressBar1,
+                        mainProgressBar,
                         status);
 
                 scaling.scaleNow(0.01,0.15);
@@ -901,8 +1078,199 @@ public class Scatter {
                 scaleMergeButton.setEnabled(true);
             }
         });
+
+        izeroRgPlot.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                DoubleXYPlot izeroRgPlot = new DoubleXYPlot(WORKING_DIRECTORY_NAME);
+                izeroRgPlot.makePlot(collectionSelected);
+            }
+        });
+
+
+
+        clearSamplesButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ((Collection)collections.get(96)).removeAllDatasets();
+                status.setText("Cleared");
+                sampleFilesModel.clear();
+                samplesList.removeAll();
+            }
+        });
+
+        plotMedianAndAverageSampleButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                plotMedianAndAverageSampleButton.setEnabled(false);
+                Collection tempCollection = (Collection) collections.get(96);
+                tempCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+
+                int total = sampleFilesModel.getSize();
+                int select=0;
+                for(int i=0;i<total; i++){
+                    if (sampleFilesModel.get(i).isSelected()){
+                        tempCollection.getDataset(i).setInUse(true);
+                        select++;
+                    } else {
+                        tempCollection.getDataset(i).setInUse(false);
+                    }
+                }
+
+                if (select < 2){
+                    status.setText("Too few datafiles");
+                    return;
+                }
+
+                BuffersSamplesPlot tempSamples = new BuffersSamplesPlot((Collection) collections.get(96));
+                try {
+                    tempSamples.makePlot(false);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                plotMedianAndAverageSampleButton.setEnabled(true);
+            }
+        });
+
+        setOutputDirectoryButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //Set working directory
+                File theCWD = new File(outPutDirSubtractionName);
+
+                JFileChooser chooser = new JFileChooser(theCWD);
+                chooser.setDialogTitle("Select Directory");
+
+                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                chooser.setAcceptAllFileFilterUsed(false);
+
+                if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
+
+                    if (chooser.getSelectedFile().isDirectory()){
+                        outPutDirSubtractionName = chooser.getSelectedFile().toString();
+                        System.out.println("Selected: " + chooser.getSelectedFile().toString());
+                    } else {
+                        outPutDirSubtractionName = chooser.getCurrentDirectory().toString();
+                        System.out.println("Not: " + chooser.getSelectedFile().toString());
+                    }
+
+                    subtractOutPutDirectoryLabel.setText(outPutDirSubtractionName);
+                }
+            }
+        });
+
+        plotLog10AverageSampleButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                plotLog10AverageSampleButton.setEnabled(false);
+                Collection tempCollection = (Collection) collections.get(96);
+                tempCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+
+                int total = sampleFilesModel.getSize();
+                int select=0;
+                for(int i=0;i<total; i++){
+                    if (sampleFilesModel.get(i).isSelected()){
+                        tempCollection.getDataset(i).setInUse(true);
+                        select++;
+                    } else {
+                        tempCollection.getDataset(i).setInUse(false);
+                    }
+                }
+
+                if (select < 2){
+                    status.setText("Too few datafiles");
+                    return;
+                }
+
+                BuffersSamplesPlot tempSamples = new BuffersSamplesPlot((Collection) collections.get(96));
+                try {
+                    tempSamples.makePlot(true);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                plotLog10AverageSampleButton.setEnabled(true);
+            }
+        });
+
+
+        signalPlotButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                Collection sampleCollection = (Collection) collections.get(96);
+                Collection bufferCollection = (Collection) collections.get(69);
+                sampleCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                bufferCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+
+                int total = sampleFilesModel.getSize();
+                int selectS=0;
+                for(int i=0;i<total; i++){
+                    if (sampleFilesModel.get(i).isSelected()){
+                        sampleCollection.getDataset(i).setInUse(true);
+                        selectS++;
+                    } else {
+                        sampleCollection.getDataset(i).setInUse(false);
+                    }
+                }
+
+                int totalBuffers = bufferFilesModel.getSize();
+                int selectB=0;
+                for(int i=0;i<totalBuffers; i++){
+                    if (bufferFilesModel.get(i).isSelected()){
+                        bufferCollection.getDataset(i).setInUse(true);
+                        selectB++;
+                    } else {
+                        bufferCollection.getDataset(i).setInUse(false);
+                    }
+                }
+
+                if (selectB <1 || selectS < 1){
+                    return;
+                }
+
+                SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar);
+                tempSignalPlot.makePlot(samplesList);
+
+            }
+        });
+
+        clearSamplesButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ((Collection)collections.get(96)).removeAllDatasets();
+                status.setText("Cleared");
+                sampleFilesModel.clear();
+                samplesList.removeAll();
+            }
+        });
+
+        buffersClearButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ((Collection)collections.get(69)).removeAllDatasets();
+                // equivalent to bufferCollections.removeAllDatasets();
+                status.setText("Cleared");
+                bufferFilesModel.clear();
+                buffersList.removeAll();
+            }
+        });
+
+
     }
 
+    public void updateProgress(final int newValue) {
+        mainProgressBar.setValue(newValue);
+    };
+
+    public void setPValue(final int j) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                updateProgress(j);
+            }
+        });
+    }
 
     public static void main(String[] args) {
         //check from property file
@@ -958,31 +1326,187 @@ public class Scatter {
 
         new FileDrop( programInstance.getLoadPanel(1), new FileDrop.Listener() {
             @Override
-            public void filesDropped(File[] files) {
-                // add the new file to the collection
-                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 0, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected());
+            public void filesDropped(final File[] files) {
+                collectionSelected = (Collection)collections.get(0);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+                collectionButtons.get(0).setSelected(true);
+
+                miniPlots.get(0).chart.setNotify(false);
+                new Thread() {
+                    public void run() {
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(0), programInstance.getStatus(), 0, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY_NAME);
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        Thread temp1 = new Thread(rec1);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        miniPlots.get(0).frame.removeAll();
+                        miniPlots.get(0).chart.setNotify(false);
+                        miniPlots.get(0).plot(collectionSelected);
+                        minis.get(0).add(miniPlots.get(0).frame.getChartPanel());
+                        miniPlots.get(0).chart.setNotify(true);
+                    }
+                }.start();
             }
         });
 
         // Load Files from Files Tab Panel 2
         new FileDrop( programInstance.getLoadPanel(2), new FileDrop.Listener() {
             @Override
-            public void filesDropped(File[] files) {
-                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 1, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected());
+            public void filesDropped(final File[] files) {
+                final int panel = 1;
+                collectionSelected = (Collection)collections.get(panel);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+                collectionButtons.get(panel).setSelected(true);
+
+                miniPlots.get(panel).chart.setNotify(false);
+                new Thread() {
+                    public void run() {
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY_NAME);
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        Thread temp1 = new Thread(rec1);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        miniPlots.get(panel).frame.removeAll();
+                        miniPlots.get(panel).chart.setNotify(false);
+                        miniPlots.get(panel).plot(collectionSelected);
+                        minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
+                        miniPlots.get(panel).chart.setNotify(true);
+                    }
+                }.start();
             }
         });
         // Load Files from Files Tab Panel 3
         new FileDrop( programInstance.getLoadPanel(3), new FileDrop.Listener() {
             @Override
-            public void filesDropped(File[] files) {
-                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 2, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected());
+            public void filesDropped(final File[] files) {
+                final int panel = 2;
+                collectionSelected = (Collection)collections.get(panel);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+                collectionButtons.get(panel).setSelected(true);
+
+                miniPlots.get(panel).chart.setNotify(false);
+                new Thread() {
+                    public void run() {
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY_NAME);
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        Thread temp1 = new Thread(rec1);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        miniPlots.get(panel).frame.removeAll();
+                        miniPlots.get(panel).chart.setNotify(false);
+                        miniPlots.get(panel).plot(collectionSelected);
+                        minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
+                        miniPlots.get(panel).chart.setNotify(true);
+                    }
+                }.start();
             }
         });
         // Load Files from Files Tab Panel 4
         new FileDrop( programInstance.getLoadPanel(4), new FileDrop.Listener() {
             @Override
-            public void filesDropped(File[] files) {
-                receivedDroppedFiles(files, programInstance.getStatus(), programInstance, 3, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected());
+            public void filesDropped(final File[] files) {
+                final int panel = 3;
+                collectionSelected = (Collection)collections.get(panel);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+                collectionButtons.get(panel).setSelected(true);
+
+                miniPlots.get(panel).chart.setNotify(false);
+                new Thread() {
+                    public void run() {
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY_NAME);
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        Thread temp1 = new Thread(rec1);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        miniPlots.get(panel).frame.removeAll();
+                        miniPlots.get(panel).chart.setNotify(false);
+                        miniPlots.get(panel).plot(collectionSelected);
+                        minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
+                        miniPlots.get(panel).chart.setNotify(true);
+                    }
+                }.start();
+            }
+        });
+
+        //Buffers panel
+        new FileDrop(programInstance.buffers, new FileDrop.Listener() {
+            @Override
+            public void filesDropped(final File[] files) {
+                final int panel = 69;
+                new Thread() {
+                    public void run() {
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY_NAME);
+                        // add other attributes and then run
+                        rec1.setSampleBufferModels(programInstance.bufferFilesModel, programInstance.buffersList);
+                        Thread temp1 = new Thread(rec1);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }.start();
+            }
+        });
+
+        //samples Panel
+        new FileDrop(programInstance.samples, new FileDrop.Listener() {
+            @Override
+            public void filesDropped(final File[] files) {
+
+                final int panel = 96;
+                new Thread() {
+                    public void run() {
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY_NAME);
+                        // add other attributes and then run
+                        rec1.setSampleBufferModels(programInstance.sampleFilesModel, programInstance.samplesList);
+                        Thread temp1 = new Thread(rec1);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        // populate drop down
+                        Collection thisCollection = ((Collection) collections.get(panel));
+                        int totalDatasets = thisCollection.getDatasetCount();
+                        programInstance.setReferenceBox.removeAllItems();
+                        for(int i=0; i< totalDatasets; i++){
+                            String name = thisCollection.getDataset(i).getFileName();
+                            programInstance.setReferenceBox.addItem(new ReferenceItem(name, i));
+                        }
+                        programInstance.setReferenceBox.setSelectedIndex(programInstance.setReferenceBox.getItemCount()-1);
+                    }
+                }.start();
             }
         });
 
@@ -1111,246 +1635,6 @@ public class Scatter {
         return jpanel;
     }
 
-
-    /**
-     * Creates LoadedFile from dropped file
-     * @param file
-     * @param status
-     * @param size
-     * @param convertNMtoAng
-     * @return
-     */
-    private static LoadedFile loadDroppedFile(File file, JLabel status, int size, boolean convertNMtoAng){
-        LoadedFile temp = null;
-        String ext;
-        // how to handle different file formats?
-        // get file base and extension
-        String[] currentFile;
-        currentFile = file.getName().split("\\.(?=[^\\.]+$)");
-
-        ext = (currentFile.length > 2) ? currentFile[2] : currentFile[1];
-
-        try {
-            if (ext.equals("brml")) {
-                status.setText("Bruker .brml  file detected ");
-                File tempFile;
-                tempFile = Bruker.makeTempDataFile(file, Scatter.WORKING_DIRECTORY_NAME);
-                temp = new LoadedFile(tempFile, status, size, convertNMtoAng);
-
-            } else if (ext.equals("dat") || ext.equals("fit") || ext.equals("Adat")) {
-                temp = new LoadedFile(file, status, size, convertNMtoAng);
-            } else {
-                // throw exception - incorrect file format
-                throw new Exception("Incorrect file format: Use either brml, dat, fit, Adat, or Bdat file formats: " + currentFile);
-            }
-        } catch (Exception ex) {
-            status.setText(ex.getMessage().toString());
-            Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        //add to collection
-        return temp;
-    }
-
-    /**
-     *
-     * @param collectionNumber
-     * @param tempFile
-     */
-    private static void addToCollection(int collectionNumber, LoadedFile tempFile, boolean doGuinier){
-        // how to update results? Use a results object
-        // if new dataset is added, we will have to add a JLabel thing and rerender
-        // if updating, we could probably just change the value of the object which will automatically update value
-        if (collectionNumber < 69){
-
-            int newIndex = ((Collection)collections.get(collectionNumber)).getDatasetCount();
-
-            ((Collection)collections.get(collectionNumber)).addDataset(new Dataset(
-                    tempFile.allData,       //data
-                    tempFile.allDataError,  //original
-                    tempFile.filebase,
-                    newIndex, doGuinier ));
-
-            // update Analysis Tab
-            //analysisModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
-            //resultsModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
-
-        } else if (collectionNumber == 69 || collectionNumber == 96) {
-            // buffers
-            int newIndex = ((Collection)collections.get(collectionNumber)).getDatasetCount();
-
-            ((Collection)collections.get(collectionNumber)).addDataset(new Dataset(
-                    tempFile.allData,       //data
-                    tempFile.allDataError,  //original
-                    tempFile.filebase,
-                    newIndex, false ));
-        }
-    }
-
-
-    /**
-     * This is a static method, it is not an instance of the Scatter class
-     * @param files
-     * @param status
-     * @param main
-     * @param index 1 through 4 refers to panels on Files tab
-     * @param convertNMtoAng
-     */
-    private static void receivedDroppedFiles(File[] files, JLabel status, Scatter main, int index, boolean convertNMtoAng, boolean doGuinier){
-
-        if (index <= 4){
-
-            main.dataFilesModel.clear();
-            main.dataFilesList.removeAll();
-
-//            prModel.clear();
-
-            analysisModel.clear();
-
-            resultsModel.datalist.clear();
-            resultsModel.clear();
-
-            // multithreading will add in quasi random order
-
-            int total = files.length;
-            for( int i = 0; i < total; i++ ) {
-                // call File loader function
-                // if true add loaded file object to collection
-                System.out.println("PANEL => " + index + " -------- DROPPED FILE: " + files[i]);
-
-                LoadedFile temp = loadDroppedFile(files[i], status, ((Collection)Scatter.collections.get(index)).getDatasetCount(), convertNMtoAng);
-
-                // load file into collection
-                if (temp !=null){
-                    addToCollection(index, temp, doGuinier);
-                }
-            }
-
-            // update dataFilesList in dataFilesPanel (Files tab);
-            // rebuild dataFilesPanel from collection.get(i)
-            for(int i=0; i< ((Collection)main.collections.get(index)).getDatasetCount(); i++){
-                String name = ((Collection)main.collections.get(index)).getDataset(i).getFileName();
-                main.dataFilesModel.addElement(new DataFileElement(name, i));
-                analysisModel.addDataset(((Collection) collections.get(index)).getDataset(i));
-                 resultsModel.addDataset(((Collection) collections.get(index)).getDataset(i));
-            }
-
-            main.dataFilesList.setModel(main.dataFilesModel);
-
-            //update collection ids
-            total = ((Collection)collections.get(index)).getDatasetCount();
-            for(int h=0; h<total; h++){
-                ((Collection) collections.get(index)).getDataset(h).setId(h);
-            }
-
-            for(int i=0; i < totalPanels; i++){
-                collectionButtons.get(i).setSelected(false);
-            }
-
-            collectionButtons.get(index).setSelected(true);
-            collectionSelected = (Collection)main.collections.get(index);
-
-            // replot miniCollection
-            miniPlots.get(index).frame.removeAll();
-            miniPlots.get(index).chart.setNotify(false);
-            miniPlots.get(index).plot((Collection)main.collections.get(index));
-            minis.get(index).add(miniPlots.get(index).frame.getChartPanel());
-            miniPlots.get(index).chart.setNotify(true);
-
-        }  else if (index < 97) {
-/*
-            if (index == 69){
-                //main.bufferFileElementArrayList.clear();
-                main.bufferFilesModel.clear();
-                main.buffersList.removeAll();
-            } else if (index == 96) {
-                //main.sampleFileElementArrayList.clear();
-                main.sampleFilesModel.clear();
-                main.samplesList.removeAll();
-                main.setReferenceBox.removeAllItems();
-            }
-
-            // incase directories are dropped
-            Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
-
-            for( int i = 0; i < files.length; i++ ) {
-                // call File loader function
-                // if true add loaded file object to collection
-
-
-                if (files[i].isDirectory()){
-                    int sizeOfCollection = ((Collection)main.collections.get(index)).getDatasets().size();
-
-                    File[] tempFiles = finder(files[i].getAbsolutePath());
-
-                    // sort
-                    Arrays.sort(tempFiles, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
-
-                    for (int j=0; j < tempFiles.length; j++){
-                        LoadedFile temp = loadDroppedFile(tempFiles[j], status, ((Collection)main.collections.get(index)).getDatasets().size(), 1, convertNMtoAng);
-                        addToCollection(index,temp);
-                    }
-                } else {
-                    LoadedFile temp = loadDroppedFile(files[i], status, ((Collection) main.collections.get(index)).getDatasets().size(), 1, convertNMtoAng);
-                    addToCollection(index,temp);
-                }
-            }
-            // update dataFilesList in dataFilesPanel;
-            // rebuild dataFilesPanel from collection.get(i)
-
-            Color tempColor;
-            for(int i=0; i< ((Collection)main.collections.get(index)).getDatasets().size(); i++){
-
-                String name = ((Collection)main.collections.get(index)).getDataset(i).getFileName();
-                name = name.replaceAll("sample_[0-9]+", "sample_"+ i);
-                ((Collection)main.collections.get(index)).getDataset(i).setFileName(name);
-
-                tempColor = ((Collection)main.collections.get(index)).getDataset(i).getColor();
-
-                if (index == 69) {
-                    main.bufferFilesModel.addElement(new SampleBufferElement(name, i, tempColor, ((Collection)main.collections.get(index)).getDataset(i)));
-                } else if (index == 96) {
-                    main.sampleFilesModel.addElement(new SampleBufferElement(name, i, tempColor, ((Collection)main.collections.get(index)).getDataset(i)));
-                    main.setReferenceBox.addItem(new ReferenceItem(name, i));
-                }
-            }
-
-            if (index == 69) {
-                main.buffersList.setModel(main.bufferFilesModel);
-
-            } else if (index == 96) {
-                main.samplesList.setModel(main.sampleFilesModel);
-                // auto set reference to last entry
-                main.setReferenceBox.setSelectedIndex(main.setReferenceBox.getItemCount()-1);
-            }
-*/
-        } else if (index == 138) {
-/*
-            main.fitFilesModel.clear();
-            main.fitFilesList.removeAll();
-            String absolutePath, filebase, ext;
-            String[] currentFile;
-            int count=0;
-
-            for( int i = 0; i < files.length; i++ ) {
-                // call File loader function
-                // if true add loaded file object to collection
-                absolutePath = files[i].getAbsolutePath();
-                currentFile = files[i].getName().split("\\.(?=[^\\.]+$)");
-                filebase = currentFile[0];
-                ext = (currentFile.length > 2) ? currentFile[2] : currentFile[1];
-
-                if (ext.matches("fit")){
-                    main.fitFilesModel.addElement(new DataFileElement(filebase, i));
-                    main.fitFilesModel.getElementAt(count).setFullpath(absolutePath);
-                    count++;
-                }
-            }
-
-            main.fitFilesList.setModel(main.fitFilesModel);
-            */
-        }
-
-    }
 
     private static class HeaderRenderer implements TableCellRenderer {
 
@@ -1556,11 +1840,12 @@ public class Scatter {
         }
 
         public void stateChanged(ChangeEvent e){
+            Dataset dataset = collectionSelected.getDataset(rowID);
             int temp = (Integer)this.spinner.getValue();
             int current = (Integer) this.spinner.getValue() - 1;
-            int direction = temp - this.priorValue;
+            int direction;// = temp - this.priorValue;
             int limit;
-            Dataset dataset = collectionSelected.getDataset(rowID);
+
 
             if (this.colID == 4){
 
@@ -1572,6 +1857,7 @@ public class Scatter {
                     this.priorValue = 1;
                 } else {
                     //moving up or down?
+                    direction = temp - dataset.getStart();
                     if (direction > 0) {
                         if (direction == 1) {
                             dataset.getData().remove(0);
@@ -1610,13 +1896,14 @@ public class Scatter {
                     this.spinner.setValue(limit);
                     this.priorValue = limit;
                 } else {
+                    direction = temp - dataset.getEnd();
                     //moving up or down?
                     if (direction < 0) {
                         if (direction == -1) {
                             //remove last point
                             dataset.getData().remove(dataset.getData().getItemCount()-1);
                         } else {
-                            limit = (Integer) temp - this.priorValue;
+                            limit = (Integer) temp - dataset.getEnd();
                             //current is the last point
                             int start = dataset.getData().getItemCount() - 1;
                             int stop = start + limit;
@@ -2335,109 +2622,38 @@ public class Scatter {
         return decimalPlaces;
     }
 
-    public class ResultsModel extends AbstractTableModel {
 
-        private final LinkedList<Dataset> datalist;
-        //DecimalFormat oneDecPlac = new DecimalFormat("0.0");
-        //DecimalFormat twoDecPlac = new DecimalFormat("0.00");
-        //DecimalFormat fourDecPlac = new DecimalFormat("0.0000");
-        //DecimalFormat scientific = new DecimalFormat("0.00E0");
-        //DecimalFormat twoOneFormat = new DecimalFormat("00.0");
+    public static File[] finder(String dirName){
+        File dir = new File(dirName);
 
-        private String[] columnNames = new String[]{"", "", "I(0)", "real", "<html>R<sub>g</sub></html>", "real", "<html>V<sub>c</sub></html>", "Volume", "Protein", "RNA", "r", "<html>d<sub>max</sub></html>", "<html>R<sub>c</sub></html>", "<html>P<sub>x</sub></html>"};
+        return dir.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String filename)
+            { return filename.endsWith(".dat"); }
+        } );
 
-        public ResultsModel(){
-            datalist = new LinkedList<Dataset>();
+    }
+
+
+    class LoadFiles implements Runnable {
+        private double limit;
+        private int upperlower;
+        private JProgressBar bar;
+        public LoadFiles(double limit, int uorl, JProgressBar bar){
+            this.bar = bar;
+            this.limit = limit;
+            this.upperlower=uorl;
         }
-
-        public int getRowCount() {
-            return datalist.size();
-        }
-
-        public void remove(int row){
-            datalist.remove(row);
-            this.fireTableRowsDeleted(row, row);
-        }
-
-        public void clear(){
-            datalist.clear();
-            this.fireTableDataChanged();
-        }
-
         @Override
-        public String getColumnName(int col) {
-            return columnNames[col];
-        }
-
-        @Override
-        public int getColumnCount() {
-            return columnNames.length;  //To change body of implemented methods use File | Settings | File Templates.
-        }
-
-
-        @Override
-        public Object getValueAt(int row, int col) {
-            Dataset dataset = (Dataset) datalist.get(row);
-            double q;
-            int index;
-            // anytime row is clicked, this method is executed
-            switch (col){
-                case 0:
-                    return row+1;
-                case 1:
-                    return dataset.getFileName();
-                case 2:
-                    return Constants.Scientific1.format(dataset.getGuinierIzero());
-                case 3:
-                    return Constants.Scientific1.format(dataset.getRealIzero());
-                case 4: //spinner
-                    return Constants.TwoDecPlace.format(dataset.getGuinierRg());
-                case 5: //spinner
-                    return Constants.TwoDecPlace.format(dataset.getRealRg());
-                case 6: //Fit file - rendered as a checkbox
-                    return Constants.OneDecPlace.format(dataset.getVC());
-                case 7:
-                    String vol = "<html><p><b>" + Constants.Scientific1.format(dataset.getPorodVolume()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getPorodVolumeReal()) + "</p></html>";
-                    return vol;
-                //return (int)dataset.getPorodVolume();
-                case 8:
-                    String massP = "<html><p><b>" + Constants.Scientific1.format(dataset.getMassProtein()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getMassProteinReal()) + "</p></html>";
-                    //return scientific.format(dataset.getMassProtein());
-                    return massP;
-                case 9:
-                    String massR = "<html><p><b>" + Constants.Scientific1.format(dataset.getMassRna()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getMassRnaReal()) + "</p></html>";
-                    return massR;
-                case 10:
-                    return Constants.OneDecPlace.format(dataset.getAverageR());
-                case 11:
-                    return (int)dataset.getDmax();
-                case 12:
-                    return Constants.TwoDecPlace.format(dataset.getRc());
-                case 13:
-                    return Constants.OneDecPlace.format(dataset.getPorodExponent());
-                default:
-                    return null;
+        public void run() {
+            //To change body of implemented methods use File | Settings | File Templates.
+            bar.setValue(0);
+            bar.setStringPainted(true);
+            for(int i=0; i<upperlower; i++){
+                bar.setValue((int) (i / (double) upperlower * 100));
             }
-
-        }
-
-        public void addDataset(Dataset dataset){
-            datalist.add(dataset);
-            fireTableRowsInserted(datalist.size()-1, datalist.size()-1);
-            //fireTableDataChanged();
-        }
-
-        /*
-         * JTable uses this method to determine the default renderer/
-         * editor for each cell.  If we didn't implement this method,
-         * then the last column would contain text ("true"/"false"),
-         * rather than a check box.
-         */
-        public boolean isCellEditable(int row, int col) {
-            //Note that the data/cell address is constant,
-            //no matter where the cell appears onscreen.
-            //editable 0,2,4,5,6,13,14
-            return false;
+            bar.setMinimum(0);
+            bar.setStringPainted(false);
+            bar.setValue(0);
         }
     }
 
@@ -2455,4 +2671,19 @@ class DataFilesListRenderer extends JCheckBox implements ListCellRenderer {
         setText(value.toString());
         return this;
     }
+}
+
+class SampleBufferListRenderer extends JCheckBox implements ListCellRenderer {
+
+    public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean hasFocus) {
+        setEnabled(list.isEnabled());
+        setSelected(((SampleBufferElement) value).isSelected());
+        setFont(list.getFont());
+        setBackground(list.getBackground());
+        setForeground(((SampleBufferElement) value).getColor());
+        setText(value.toString());
+
+        return this;
+    }
+
 }

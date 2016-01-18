@@ -2,12 +2,18 @@
   <library name="lib">
     <CLASSES>
       <root url="file://$PROJECT_DIR$/lib" />
+      <root url="file://$PROJECT_DIR$/lib/commons-io-2.4" />
     </CLASSES>
-    <JAVADOC />
+    <JAVADOC>
+      <root url="file://$PROJECT_DIR$/lib/commons-io-2.4/docs" />
+    </JAVADOC>
     <SOURCES>
       <root url="file://$PROJECT_DIR$/lib" />
+      <root url="file://$PROJECT_DIR$/lib/commons-io-2.4" />
     </SOURCES>
     <jarDirectory url="file://$PROJECT_DIR$/lib" recursive="false" />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/commons-io-2.4" recursive="false" />
     <jarDirectory url="file://$PROJECT_DIR$/lib" recursive="false" type="SOURCES" />
+    <jarDirectory url="file://$PROJECT_DIR$/lib/commons-io-2.4" recursive="false" type="SOURCES" />
   </library>
 </component>

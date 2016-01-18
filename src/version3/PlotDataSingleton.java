@@ -17,6 +17,8 @@ import org.jfree.ui.HorizontalAlignment;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 
@@ -44,6 +46,7 @@ public class PlotDataSingleton {
     CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
     private static double upper, dupper;
     private static double lower, dlower;
+    private static Point locationOfWindow;
 
     private static PlotDataSingleton singleton = new PlotDataSingleton( );
 
@@ -51,6 +54,8 @@ public class PlotDataSingleton {
      * class from instantiating.
      */
     private PlotDataSingleton(){
+
+        locationOfWindow = new Point(100,100);
 
         JPopupMenu popup = frame.getChartPanel().getPopupMenu();
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
@@ -76,9 +81,6 @@ public class PlotDataSingleton {
     }
 
     /* Other methods protected by singleton-ness */
-    protected static void demoMethod( ) {
-        System.out.println("demoMethod for singleton");
-    }
 
     public static void plot(Collection collection, String workingDirectoryName) {
         //
@@ -254,10 +256,20 @@ public class PlotDataSingleton {
         frame.getChartPanel().setDisplayToolTips(false);
         frame.pack();
 
+
+        jframe.addWindowListener(new WindowAdapter() {
+            public void WindowClosing(WindowEvent e) {
+                locationOfWindow = jframe.getLocation();
+                jframe.dispose();
+            }
+        });
+
+
         jframe.setMinimumSize(new Dimension(640,480));
         Container content = jframe.getContentPane();
         content.add(frame.getChartPanel());
-        jframe.setLocation(100,100);
+        //jframe.setLocation(100,100);
+        jframe.setLocation(locationOfWindow);
         jframe.setVisible(true);
     }
 
@@ -312,6 +324,11 @@ public class PlotDataSingleton {
         renderer1.setSeriesVisible(index, flag);
     }
 
+    public void closeWindow(){
+        locationOfWindow = jframe.getLocation();
+        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
+    }
+
     public void changeColor(int id, Color newColor, float thickness, int pointsize){
         System.out.println("Color id");
         renderer1.setSeriesPaint(id, newColor);
@@ -319,5 +336,27 @@ public class PlotDataSingleton {
         double offset = -0.5*pointsize;
         renderer1.setSeriesShape(id, new Ellipse2D.Double(offset, offset, pointsize, pointsize));
         renderer1.setSeriesOutlineStroke(id, new BasicStroke(thickness));
+    }
+
+    public void updatePlot(){
+
+        int totalSets = inUseCollection.getDatasetCount();
+
+        for (int i=0; i<totalSets; i++){
+            Dataset data = inUseCollection.getDataset(i);
+
+            if (data.getInUse()){
+                plottedDatasets.getSeries(i).clear();
+                //System.out.println(i + " Class " + plottedDatasets.getSeries().get(i).getClass());
+                int totalInData = data.getData().getItemCount();
+                for (int j=0; j<totalInData; j++){
+                    plottedDatasets.getSeries(i).add(data.getData().getDataItem(j));
+                }
+                //plottedDatasets.getSeries().get(i).
+                //plottedDatasets.addSeries(inUseCollection.getDataset(i).getData());
+            }
+        }
+
+
     }
 }

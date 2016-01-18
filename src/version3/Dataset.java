@@ -24,11 +24,11 @@ public class Dataset {
     private final XYSeries originalLog10Data;         // not to be modified
     private final XYSeries originalPositiveOnlyData;  // not to be modified
     private final XYSeries originalPositiveOnlyError; // not to be modified
-    private YIntervalSeries positiveOnlyIntensityError; //
+    private final YIntervalSeries positiveOnlyIntensityError; //
 
     private final XYSeries allData;      // not to be modified
     private final XYSeries allDataError; // not to be modified
-    private YIntervalSeries allDataYError; // not to be modified
+    private final YIntervalSeries allDataYError; // not to be modified
 
     private XYSeries normalizedKratkyReciprocalSpaceRgData;
     private XYSeries normalizedKratkyRealSpaceRgData;
@@ -47,7 +47,8 @@ public class Dataset {
     private XYSeries calcI;
     private String filename;
 
-    private int totalCountInAllData;
+    private final int totalCountInAllData;
+    private final int totalCountInPositiveData;
     private int startAt;  // start of the nonNegativeData
     private int endAt;    // end of the nonNegativeData
     private int indexOfUpperGuinierFit; //belongs to positiveOnlyData
@@ -210,6 +211,7 @@ public class Dataset {
         filename=fileName;
         this.startAt=1;
         this.endAt = originalPositiveOnlyData.getItemCount();
+        this.totalCountInPositiveData = originalPositiveOnlyData.getItemCount();
 
         // if possible do preliminary analysis here
         if (doGuinier){
@@ -314,6 +316,7 @@ public class Dataset {
         id = aDataset.id;
 
         realSpace = aDataset.realSpace;
+        totalCountInPositiveData = aDataset.totalCountInPositiveData;
     }
 
 
@@ -703,14 +706,18 @@ public class Dataset {
      *
      */
     public void setStart(int st){
-        startAt=st;
+        this.startAt=st;
     }
     /**
      * Sets end point of the series
      *
      */
     public void setEnd(int en){
-        endAt=en;
+
+        if (en > this.totalCountInPositiveData){
+            System.out.println("WARNING EN " + en + " > " + this.totalCountInPositiveData);
+        }
+        this.endAt=en;
     }
     /**
      * Sets guinier Izero of the series
@@ -794,7 +801,7 @@ public class Dataset {
         log10ScaleFactor = Math.log10(factor);
         scaleFactor=factor;
         // rescale plottedData
-        this.scalePlottedLog10IntensityData();
+        // this.scalePlottedLog10IntensityData();
     }
 
 
@@ -982,24 +989,87 @@ public class Dataset {
     /**
      *
      */
-    public void scalePlottedLog10IntensityData(){
-        plottedData.clear();
-        XYDataItem temp;
+    public synchronized void scalePlottedLog10IntensityData(){
+
+        //plottedData.clear();
+        //XYDataItem temp;
+        int endOf = plottedData.getItemCount();
         int startHere = this.startAt - 1;
 
+
         if (scaleFactor != 1){
-            for (int i = startHere; i< this.endAt; i++){
-                temp = originalLog10Data.getDataItem(i);
-                plottedData.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
+            for (int i = 0; i< endOf; i++){
+                //temp = originalLog10Data.getDataItem(i);
+                //plottedData.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
+                plottedData.updateByIndex(i, originalLog10Data.getY(startHere).doubleValue() + log10ScaleFactor);
+                startHere++;
             }
         } else {
-            for (int i = startHere; i< this.endAt; i++){
-                plottedData.add(originalLog10Data.getDataItem(i));
+
+            for (int i = 0; i< endOf; i++){
+                //temp = originalLog10Data.getDataItem(i);
+                //plottedData.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
+                plottedData.updateByIndex(i, originalLog10Data.getY(startHere));
+                startHere++;
             }
         }
-
     }
 
+
+public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
+
+    if (newStart < startAt){ // addValues
+        int startHere = this.startAt - 1; // current location in originalLog10Data
+        int limit = startAt-newStart;
+
+        plottedData.setNotify(false);
+        for(int i=0; i<limit && startHere > -1; i++){
+            startHere--;
+            XYDataItem temp = originalLog10Data.getDataItem(startHere);
+            plottedData.addOrUpdate(temp.getX(), temp.getYValue() + log10ScaleFactor);
+        }
+        plottedData.setNotify(true);
+
+    } else if (newStart > startAt){ //remove values
+
+        int limit = newStart - this.startAt;
+
+        for(int i=0; i<limit; i++){
+            plottedData.remove(0);
+        }
+    }
+    this.startAt = newStart;
+}
+
+    public synchronized void upperBoundPlottedLog10IntensityData(int newEnd){
+
+        if (newEnd > endAt){ // addValues
+            int startHere = this.endAt; // upper bound in originalLog10 exclusive
+            int limit = newEnd - this.endAt;
+            int upper = originalLog10Data.getItemCount();
+
+            plottedData.setNotify(false);
+            for(int i=0; i<limit && startHere < upper; i++){
+                XYDataItem temp = originalLog10Data.getDataItem(startHere);
+                plottedData.addOrUpdate(temp.getX(), temp.getYValue() + log10ScaleFactor);
+                startHere++;
+            }
+            plottedData.setNotify(true);
+
+        } else if (newEnd < endAt){ //remove values
+
+            int limit = this.endAt - newEnd;
+            int lastValue = plottedData.getItemCount();
+
+            plottedData.setNotify(false);
+            for(int i=0; i<limit; i++){ // remove the last point
+                lastValue--;
+                plottedData.remove(lastValue);
+            }
+            plottedData.setNotify(true);
+        }
+        this.endAt = newEnd;
+    }
 
     /**
      * Sets more Coefficients
@@ -1304,4 +1374,9 @@ public class Dataset {
             }
         }
     }
+
+    public void copyAndRenameDataset(String newName){
+
+    }
+
 }

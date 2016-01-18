@@ -15,6 +15,8 @@ import org.jfree.ui.HorizontalAlignment;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 import java.util.regex.Pattern;
@@ -35,12 +37,14 @@ public class NormalizedKratkyPlot {
     private Pattern realtag = Pattern.compile("Real");
     private static ValueMarker yMarker = new ValueMarker(1.1);
     private static ValueMarker xMarker = new ValueMarker(1.7320508);
+    private Point locationOfWindow;
 
     String chartTitle;
     String xLabel;
     String yLabel;
 
     public NormalizedKratkyPlot(final String title) {
+        locationOfWindow = new Point(100,100);
         chartTitle = title;
     }
 
@@ -229,8 +233,15 @@ public class NormalizedKratkyPlot {
             }
         }));
 
+        frame.addWindowListener(new WindowAdapter() {
+            public void WindowClosing(WindowEvent e) {
+                locationOfWindow = frame.getLocation();
+                frame.dispose();
+            }
+        });
 
-        frame.setLocation(300, 200 + horizontalDisplacement);
+
+        //frame.setLocation(new Point(frame.getLocation().getX(), frame.getLocation().getY() + horizontalDisplacement));
 
         //frame.getChartPanel().setSize(600, 500);
         //chartPanel.setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
@@ -239,7 +250,6 @@ public class NormalizedKratkyPlot {
         frame.pack();
         frame.setVisible(true);
         frame.setSize(688, 454);
-
     }
 
     public void clearAll(){

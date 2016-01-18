@@ -13,6 +13,7 @@ import java.util.LinkedList;
 public class AnalysisModel extends AbstractTableModel implements ChangeListener {
 
     private final LinkedList<Dataset> datalist;
+    private String currentWorkingDirectory;
     JLabel status;
     DecimalFormat oneDecPlac = new DecimalFormat("0.0");
     DecimalFormat fourDecPlac = new DecimalFormat("0.0000");
@@ -66,6 +67,7 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
 
         } else if (col == 3) {
             System.out.println("Copying " + dataset.getFileName()+ " to " + (String)obj);
+            dataset.copyAndRenameDataset((String)obj);
             // copyDataset((String)obj, dataset, Scatter.WORKING_DIRECTORY_NAME);
         } else if (col == 4){
             dataset.setStart((Integer)obj);
@@ -77,7 +79,6 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
             dataset.setStroke(temp.getStroke());
             dataset.setPointSize(temp.getPointSize());
             // rebuild plot
-            // replot(dataset);
         }
         fireTableCellUpdated(row, col);
     }

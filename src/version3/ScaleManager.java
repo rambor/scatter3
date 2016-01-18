@@ -26,7 +26,9 @@ public class ScaleManager {
         totalToScale = collection.getTotalSelected() - 1;
         setReferenceID();
         System.out.println("REFERENCE ID " + reference_ID);
+
         status = label;
+        status.setText("Scaling " + totalToScale + " datasets to row : " + (reference_ID + 1) );
     }
 
     private void setReferenceID(){

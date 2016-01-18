@@ -20,7 +20,7 @@ import java.awt.geom.Ellipse2D;
 public class Graph extends ApplicationFrame {
 
     public JFreeChart chart;
-    private XYSeriesCollection newDataset = new XYSeriesCollection();
+    //private XYSeriesCollection newDataset = new XYSeriesCollection();
     public ChartFrame frame = new ChartFrame("", chart);
 
     public double markerStart = 0.0;
@@ -35,7 +35,7 @@ public class Graph extends ApplicationFrame {
 
     public void plot(Collection collection) {
 
-        newDataset = collection.getMiniCollection();
+        XYSeriesCollection newDataset = collection.getMiniCollection();
         chart = ChartFactory.createXYLineChart(
                 "",                     // chart title
                 "",                        // domain axis label

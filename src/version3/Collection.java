@@ -21,6 +21,7 @@ public class Collection {
     private double maxq;
 
     public Random rand;
+    private String WORKING_DIRECTORY_NAME;
 
     // constructor
     public Collection(){
@@ -167,6 +168,8 @@ public class Collection {
         return this.getDataset(last);
     }
 
+
+
     public int getDatasetCount(){
         return totalDatasets;
     }
@@ -218,6 +221,14 @@ public class Collection {
             }
         }
         return selected;
+    }
+
+    public void setWORKING_DIRECTORY_NAME(String name){
+        this.WORKING_DIRECTORY_NAME = name;
+    }
+
+    public String getWORKING_DIRECTORY_NAME(){
+        return this.WORKING_DIRECTORY_NAME;
     }
 
 }
