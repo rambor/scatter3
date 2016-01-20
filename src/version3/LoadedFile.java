@@ -93,6 +93,8 @@ public class LoadedFile {
                                 allDataError.add(dataPoints.getq(), dataPoints.getE()*0.05);
                             }
 
+                        } else if (checkRemark(strLine)){ // check if header without BUFFER LINE
+
                         } // move to next line
                     }
 
@@ -107,6 +109,20 @@ public class LoadedFile {
             jLabel.setText("File is empty");
             System.out.println("Error: " + ex.getMessage());
         }
+    }
+
+    private boolean checkRemark(String line){
+        if (line.startsWith("REMARK")){
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkBuffer(String line){
+        if (line.contains("BUFFER")){
+            return true;
+        }
+        return false;
     }
 
 
@@ -218,5 +234,13 @@ public class LoadedFile {
         }
         return number.doubleValue();
     }
+
+    private class RemarkInfo{
+
+        public RemarkInfo(){
+
+        }
+    }
+
 
 }

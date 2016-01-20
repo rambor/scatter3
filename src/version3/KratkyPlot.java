@@ -45,6 +45,7 @@ public class KratkyPlot {
     private static ValueMarker yMarker = new ValueMarker(1.1);
     private static ValueMarker xMarker = new ValueMarker(1.7320508);
     private static String chartTitle;
+    private static Point locationOfWindow;
 
     private static KratkyPlot singleton = new KratkyPlot();
 
@@ -230,10 +231,17 @@ public class KratkyPlot {
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.pack();
 
+        jframe.addWindowListener(new WindowAdapter() {
+            public void WindowClosing(WindowEvent e) {
+                locationOfWindow = jframe.getLocation();
+                jframe.dispose();
+            }
+        });
+
         jframe.setMinimumSize(new Dimension(640,480));
         Container content = jframe.getContentPane();
         content.add(frame.getChartPanel());
-        jframe.setLocation(200,200);
+        jframe.setLocation(locationOfWindow);
         jframe.setVisible(true);
         jframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
@@ -272,6 +280,11 @@ public class KratkyPlot {
             }
             collectionToPlot.addSeries(temp.getPlottedKratkyDataSeries());  // should add an empty Series
         }
+    }
+
+    public void closeWindow(){
+        locationOfWindow = jframe.getLocation();
+        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
     }
 
     public void setNotify(boolean state){

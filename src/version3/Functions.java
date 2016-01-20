@@ -3111,7 +3111,8 @@ public class Functions {
             returnMe.addSeries(returnI);
             returnMe.addSeries(returnE);
         }
-        System.out.println("FINISHED " + returnMe.getSeries(0).getItemCount());
+
+        System.out.println("FINISHED " + returnMe.getSeries(0).getItemCount() + " " + returnMe.getSeries(1).getItemCount());
         return returnMe;
     }
 }

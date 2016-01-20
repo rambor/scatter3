@@ -407,7 +407,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
             //analysisModel
             //
             tempSpinner.setPriorIndex((Integer) tempSpinner.getValue());
-            analysisModel.setValueAt((Integer) tempSpinner.getValue() ,rowID, 4);
+            analysisModel.setValueAt((Integer) tempSpinner.getValue(), rowID, 4);
             //analysisModel.fireTableCellUpdated(tempSpinner.getID(),4);
             analysisModel.fireTableDataChanged();
 

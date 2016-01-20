@@ -9,6 +9,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
+import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.HorizontalAlignment;
@@ -75,8 +76,28 @@ public class BuffersSamplesPlot {
             }
         }
 
-        mergedSets.addSeries(medianSet);
-        mergedSets.addSeries(averageSet);
+
+
+        if (isLog){
+            int totalInMerge = averageSet.getItemCount();
+            XYSeries tempMedian = new XYSeries("median");
+            XYSeries tempAverage = new XYSeries("average");
+
+            for (int i=0; i<totalInMerge; i++){
+                XYDataItem tempItem = medianSet.getDataItem(i);
+                tempMedian.add(tempItem.getX(), Math.log10(tempItem.getYValue()));
+
+                tempItem = averageSet.getDataItem(i);
+                tempAverage.add(tempItem.getX(), Math.log10(tempItem.getYValue()));
+
+            }
+            mergedSets.addSeries(tempMedian);
+            mergedSets.addSeries(tempAverage);
+        } else {
+            mergedSets.addSeries(medianSet);
+            mergedSets.addSeries(averageSet);
+        }
+
 
         chart = ChartFactory.createXYLineChart(
                 "Main Plot",                     // chart title
@@ -228,7 +249,6 @@ public class BuffersSamplesPlot {
         mergedRenderer.setSeriesPaint(0, Color.RED);
         mergedRenderer.setSeriesPaint(1, Color.CYAN);
 
-
         //set dot size for all series
         int locale =0;
         double offset;
@@ -242,11 +262,11 @@ public class BuffersSamplesPlot {
             dataRenderer.setSeriesVisible(i, tempData.getInUse());
             dataRenderer.setSeriesOutlineStroke(i, tempData.getStroke());
         }
+
         plot.setDomainZeroBaselineVisible(false);
 
         frame.getContentPane().add(chartPanel);
         frame.getChartPanel().setDisplayToolTips(true);
-
 
         File theDir = new File(collection.getWORKING_DIRECTORY_NAME());
 
@@ -255,8 +275,6 @@ public class BuffersSamplesPlot {
         }
 
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(collection.getWORKING_DIRECTORY_NAME()));
-
-
         frame.pack();
 
         if (isLog){

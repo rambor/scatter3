@@ -13,6 +13,7 @@ public class Collection {
     //collection of datasets
     private ArrayList<Dataset> datasets;
     private XYSeriesCollection miniCollection;
+    private int panelID;
     private int totalDatasets=0;
     private String note;
     private double maxI;
@@ -25,7 +26,7 @@ public class Collection {
 
     // constructor
     public Collection(){
-        datasets = new ArrayList<Dataset>();
+        datasets = new ArrayList<>();
         miniCollection = new XYSeriesCollection();
         rand = new Random();
         maxI = -100000000.0;
@@ -64,9 +65,11 @@ public class Collection {
 
         miniCollection.addSeries(dat.getData()); // log10 data
         // reset max and min values for collection
+
         if (dat.getMaxI() > this.maxI ) {
             this.maxI = dat.getMaxI();
         }
+
         if (dat.getMinI() < this.minI ) {
             this.minI = dat.getMinI();
         }
@@ -145,14 +148,18 @@ public class Collection {
     public void removeAllDatasets(){
         datasets.clear();
         miniCollection.removeAllSeries();
+        datasets = new ArrayList<>();
+        miniCollection = new XYSeriesCollection();
+
         maxI = -100000000.0;
         minI = 10000;
         maxq = 0.0;
         minq = 1.0;
         this.setNote("");
 
-        datasets = new ArrayList<>();
-        miniCollection = new XYSeriesCollection();
+        totalDatasets=0;
+        //datasets = new ArrayList<>();
+        //miniCollection = new XYSeriesCollection();
     }
 
     public void setNote(String text){
@@ -167,8 +174,6 @@ public class Collection {
         int last = this.datasets.size() - 1;
         return this.getDataset(last);
     }
-
-
 
     public int getDatasetCount(){
         return totalDatasets;
@@ -226,6 +231,12 @@ public class Collection {
     public void setWORKING_DIRECTORY_NAME(String name){
         this.WORKING_DIRECTORY_NAME = name;
     }
+
+    public void setPanelID(int id){
+        panelID = id;
+    }
+
+    public int getPanelID(){return panelID;}
 
     public String getWORKING_DIRECTORY_NAME(){
         return this.WORKING_DIRECTORY_NAME;

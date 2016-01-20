@@ -29,7 +29,6 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
     private AnalysisModel analysisModel;
     private ResultsModel resultsModel;
     private DefaultListModel<SampleBufferElement> sampleBufferFilesModel;
-    private JList sampleBufferFilesList;
 
     private DefaultListModel<DataFileElement> dataFilesModel;  // common for all files that are loaded and displayed as a Jlist
     private JList dataFilesList;  // common for all files that are loaded and displayed as a list
@@ -126,8 +125,9 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
             dataFilesList.setModel(dataFilesModel); 
             
         } else if (collectionIndex == 69 || collectionIndex == 96){
+
             sampleBufferFilesModel.clear();
-            sampleBufferFilesList.removeAll();
+            //sampleBufferFilesList.removeAll();
             //repopulate
 
             Color tempColor;
@@ -141,7 +141,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 sampleBufferFilesModel.addElement(new SampleBufferElement(name, i, tempColor, targetCollection.getDataset(i)));
             }
 
-            sampleBufferFilesList.setModel(sampleBufferFilesModel);
+            //sampleBufferFilesList.setModel(sampleBufferFilesModel);
+            sampleBufferFilesModel.notifyAll();
         }
 
     }
@@ -210,9 +211,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         this.dataFilesList = datafileslist;
     }
 
-    public void setSampleBufferModels(DefaultListModel<SampleBufferElement> bufferFilesModel, JList buffersList){
+    public void setSampleBufferModels(DefaultListModel<SampleBufferElement> bufferFilesModel){
         this.sampleBufferFilesModel = bufferFilesModel;
-        this.sampleBufferFilesList = buffersList;
     }
 
 }

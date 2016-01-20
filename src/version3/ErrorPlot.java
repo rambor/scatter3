@@ -15,6 +15,8 @@ import org.jfree.ui.HorizontalAlignment;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 
@@ -42,6 +44,7 @@ public class ErrorPlot {
     private static double dupper;
     private static double lower;
     private static double dlower;
+    private static Point locationOfWindow;
 
     private static ErrorPlot singleton = new ErrorPlot( );
 
@@ -49,6 +52,8 @@ public class ErrorPlot {
      * class from instantiating.
      */
     private ErrorPlot(){
+
+        locationOfWindow = new Point(300,300);
 
         JPopupMenu popup = frame.getChartPanel().getPopupMenu();
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
@@ -251,10 +256,18 @@ public class ErrorPlot {
         frame.getChartPanel().setDisplayToolTips(false);
         frame.pack();
 
+        jframe.addWindowListener(new WindowAdapter() {
+            public void WindowClosing(WindowEvent e) {
+                locationOfWindow = jframe.getLocation();
+                jframe.dispose();
+            }
+        });
+
+
         jframe.setMinimumSize(new Dimension(640,480));
         Container content = jframe.getContentPane();
         content.add(frame.getChartPanel());
-        jframe.setLocation(100,100);
+        jframe.setLocation(locationOfWindow);
         jframe.setVisible(true);
     }
 
@@ -277,6 +290,11 @@ public class ErrorPlot {
             temp.scalePlottedLogErrorData();
             renderer.setSeriesVisible(index, flag);
         }
+    }
+
+    public void closeWindow(){
+        locationOfWindow = jframe.getLocation();
+        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){

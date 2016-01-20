@@ -9,6 +9,7 @@ import org.jfree.data.xy.XYSeries;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by robertrambo on 15/01/2016.
@@ -26,9 +27,10 @@ public class Scaler implements Runnable {
     private int targetID;
     //private ScaleManager manager;
     private String statustext;
+    private ScaleManager.AtomicCounter count;
 
 
-    public Scaler(Dataset reference, Dataset target, double lower, double upper, int targetID) {
+    public Scaler(Dataset reference, Dataset target, double lower, double upper, int targetID, ScaleManager.AtomicCounter count) {
         this.reference = reference;
         this.referenceSet = reference.getOriginalPositiveOnlyData();
         this.referenceErrorSet = reference.getOriginalPositiveOnlyError();
@@ -44,8 +46,10 @@ public class Scaler implements Runnable {
         if (lower != upper && lower < upper && lower > 0 && upper > 0){
             useRange = true;
         }
+
         System.out.println("SCALER lower " + lower + " < " + upper);
         this.targetID = targetID;
+        this.count = count;
     }
 
     @Override
@@ -74,6 +78,7 @@ public class Scaler implements Runnable {
             lowerq = lower;
             upperq = upper;
         }
+
 
         double refXValue;
         int ssIndexOf;
@@ -136,6 +141,7 @@ public class Scaler implements Runnable {
 
         target.setScaleFactor(1.0/scale);
         target.scalePlottedLog10IntensityData();
+        count.increment();
     }
 
     public String getStatustext(){return statustext;}

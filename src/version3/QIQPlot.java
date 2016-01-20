@@ -16,6 +16,8 @@ import org.jfree.ui.HorizontalAlignment;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 
@@ -36,12 +38,13 @@ public class QIQPlot {
     public boolean crosshair = true;
 
     private static QIQPlot singleton = new QIQPlot( );
-
+    private static Point locationOfWindow;
     /* A private Constructor prevents any other
      * class from instantiating.
      */
     private QIQPlot(){
 
+        locationOfWindow = new Point(200,250);
         JPopupMenu popup = frame.getChartPanel().getPopupMenu();
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
             @Override
@@ -192,16 +195,23 @@ public class QIQPlot {
             renderer1.setSeriesOutlineStroke(i, temp.getStroke());
         }
 
-        frame.setLocation(350, 350);
+        //frame.setLocation(350, 350);
         frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDisplayToolTips(true);
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.pack();
 
+        jframe.addWindowListener(new WindowAdapter() {
+            public void WindowClosing(WindowEvent e) {
+                locationOfWindow = jframe.getLocation();
+                jframe.dispose();
+            }
+        });
+
         jframe.setMinimumSize(new Dimension(640,480));
         Container content = jframe.getContentPane();
         content.add(frame.getChartPanel());
-        jframe.setLocation(200,200);
+        jframe.setLocation(locationOfWindow);
         jframe.setVisible(true);
         jframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -232,6 +242,11 @@ public class QIQPlot {
             temp.scalePlottedQIQData();
             renderer1.setSeriesVisible(index, flag);
         }
+    }
+
+    public void closeWindow(){
+        locationOfWindow = jframe.getLocation();
+        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){

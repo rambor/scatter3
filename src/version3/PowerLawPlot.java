@@ -15,6 +15,8 @@ import org.jfree.ui.HorizontalAlignment;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 
@@ -41,6 +43,7 @@ public class PowerLawPlot {
     CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
     private static double upper;
     private static double lower;
+    private static Point locationOfWindow;
 
     private static PowerLawPlot singleton = new PowerLawPlot( );
 
@@ -48,6 +51,8 @@ public class PowerLawPlot {
      * class from instantiating.
      */
     private PowerLawPlot(){
+
+        locationOfWindow = new Point(200,200);
 
         JPopupMenu popup = frame.getChartPanel().getPopupMenu();
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
@@ -226,6 +231,14 @@ public class PowerLawPlot {
         }
         plot.setDomainZeroBaselineVisible(false);
 
+        jframe.addWindowListener(new WindowAdapter() {
+            public void WindowClosing(WindowEvent e) {
+                locationOfWindow = jframe.getLocation();
+                jframe.dispose();
+            }
+        });
+
+
         frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.getChartPanel().setDisplayToolTips(false);
@@ -234,7 +247,7 @@ public class PowerLawPlot {
         jframe.setMinimumSize(new Dimension(640,480));
         Container content = jframe.getContentPane();
         content.add(frame.getChartPanel());
-        jframe.setLocation(100,100);
+        jframe.setLocation(locationOfWindow);
         jframe.setVisible(true);
     }
 
@@ -257,6 +270,11 @@ public class PowerLawPlot {
             temp.scalePlottedPowerLaw();
             renderer1.setSeriesVisible(index, flag);
         }
+    }
+
+    public void closeWindow(){
+        locationOfWindow = jframe.getLocation();
+        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){
