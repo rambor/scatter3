@@ -4,6 +4,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 
 /**
@@ -134,6 +135,11 @@ public class Collection {
     public Dataset getDataset(int index){
         return datasets.get(index);
     }
+
+    public void swapDataset(int index){
+        //Collections.swap();
+    }
+
     /**
      * Returns datasets
      * @return ArrayList of Dataset objects

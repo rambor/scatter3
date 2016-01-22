@@ -50,6 +50,7 @@ public class KratkyPlot {
     private static KratkyPlot singleton = new KratkyPlot();
 
     private KratkyPlot() {
+        locationOfWindow = new Point(225,300);
         chartTitle = "Kratky Plot";
 
         jframe.addWindowListener(new WindowAdapter()
@@ -59,8 +60,6 @@ public class KratkyPlot {
                 System.out.println("Kratky Plot closed");
             }
         });
-
-
     }
 
 

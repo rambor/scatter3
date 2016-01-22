@@ -1,11 +1,14 @@
 package version3;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatistics;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
@@ -18,6 +21,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
+import java.util.ArrayList;
 
 /**
  * Created by robertrambo on 13/01/2016.
@@ -31,6 +35,10 @@ public class RatioPlot {
     private Dataset referenceDataset, targetDataset;
     private String refName;
     private String targetName;
+    //private double yMarker;
+    private ValueMarker yMarker; //= new ValueMarker(1.1);
+    private ValueMarker yMarkerLog; //= new ValueMarker(1.1);
+
     JFreeChart chart;
     JFreeChart chartLogRatio;
     JFreeChart combChart;
@@ -75,7 +83,9 @@ public class RatioPlot {
         int endPt = referenceDataset.getEnd();
         XYSeries referenceSeries = referenceDataset.getAllData();
         XYSeries targetSeries = targetDataset.getAllData();
+
         XYDataItem tempXY, errorXYref, errorXYtar, tarXY;
+        ArrayList<Double> valuesPerBin = new ArrayList<>();
 
         double xValue, ratioValue, ratioError;
         int locale;
@@ -93,6 +103,7 @@ public class RatioPlot {
                 // reference/target
                 ratioValue = tempXY.getYValue()/tarXY.getYValue();
 
+                valuesPerBin.add(ratioValue);
                 ratioSeries.add(xValue, ratioValue);
 
                 ratioError = ratioValue*Math.sqrt((errorXYref.getYValue()/tempXY.getYValue()*errorXYref.getYValue()/tempXY.getYValue()) + (tarXY.getYValue()*tarXY.getYValue()*tarXY.getYValue()*tarXY.getYValue()));
@@ -106,9 +117,11 @@ public class RatioPlot {
                 // interpolate value
                 // make sure reference q values is greater than first two or last two points in sourceSeries
                 if ( (xValue > targetSeries.getX(1).doubleValue()) || (xValue < targetSeries.getX(targetSeries.getItemCount()-2).doubleValue()) ){
+
                     Double[] results =  Functions.interpolateOriginal(targetSeries, targetError, xValue, 1);
                     //target.add(xValue, results[1]);
                     ratioValue = tempXY.getYValue()/results[1];
+                    valuesPerBin.add(ratioValue);
                     ratioSeries.add(xValue, ratioValue);
                     if (ratioValue > 0) {
                         logRatioSeries.add(xValue, Math.log10(ratioValue));
@@ -117,6 +130,11 @@ public class RatioPlot {
             }
         }
 
+        double mark = averageByMAD(valuesPerBin).getMean();
+        yMarker = new ValueMarker(mark);
+        if (mark > 0){
+            yMarkerLog = new ValueMarker(Math.log10(mark));
+        }
         ratioCollection.addSeries(ratioSeries);
         logRatioCollection.addSeries(logRatioSeries);
     }
@@ -192,25 +210,38 @@ public class RatioPlot {
         rangeAxis.setRange(-0.5*average+average,0.5*average+average);
 
         plot.setRangeAxis(rangeAxis);
+        yMarker.setPaint(Color.RED);
+        yMarker.setStroke(new BasicStroke(
+                2.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                1.0f, new float[] {6.0f, 6.0f}, 0.0f
+        ));
+        plot.addRangeMarker(yMarker);
+
 
         plot.setDomainAxis(domainAxis);
         XYLineAndShapeRenderer renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
         renderer1.setBaseShapesVisible(true);
-        renderer1.setBaseShapesFilled(true);
+        renderer1.setBaseShapesFilled(false);
         renderer1.setBaseLinesVisible(false);
-        renderer1.setSeriesShape(0, new Ellipse2D.Double(-3.0, -3.0, 3.0, 3.0));
-        renderer1.setSeriesPaint(0, Color.BLACK);
+        renderer1.setSeriesShape(0, new Ellipse2D.Double(-3.6, -3.6, 3.6, 3.6));
+        renderer1.setSeriesPaint(0, Constants.DarkGray);
         plot.getAnnotations().size();
         plot.setBackgroundAlpha(0.0f);
         plot.setBackgroundPaint(Color.WHITE);
 
         final XYPlot plotLogRatio = chartLogRatio.getXYPlot();
+        yMarkerLog.setPaint(Color.RED);
+        yMarkerLog.setStroke(new BasicStroke(
+                2.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                1.0f, new float[] {6.0f, 6.0f}, 0.0f
+        ));
+        plotLogRatio.addRangeMarker(yMarkerLog);
 
         XYSplineRenderer renderer2 = new XYSplineRenderer();
         renderer2.setBaseLinesVisible(false);
         renderer2.setBaseShapesFilled(false);
-        renderer2.setSeriesShape(0, new Ellipse2D.Double(-3.0, -3.0, 3.0, 3.0));
-        renderer2.setSeriesPaint(0, Color.BLACK);
+        renderer2.setSeriesShape(0, new Ellipse2D.Double(-3.6, -3.6, 3.6, 3.6));
+        renderer2.setSeriesPaint(0,  Constants.DarkGray);
 
         plotLogRatio.setRenderer(renderer2);
         plotLogRatio.setBackgroundAlpha(0.0f);
@@ -224,7 +255,9 @@ public class RatioPlot {
         }
 
         average = sum/((double)counter);
-        rangeAxisLog.setRange(-0.5*average+average,0.5*average+average);
+
+        //rangeAxisLog.setRange(-0.5*average+average,0.5*average+average);
+
         rangeAxisLog.setLabelFont(fnt);
         rangeAxisLog.setAutoRangeIncludesZero(false);
 
@@ -256,5 +289,39 @@ public class RatioPlot {
 
         f.setVisible(true);
 
+    }
+
+    private DescriptiveStatistics averageByMAD(ArrayList<Double> values){
+
+        int total = values.size();
+        DescriptiveStatistics stats = new SynchronizedDescriptiveStatistics();
+
+        for (int i=0; i<total; i++) {
+            stats.addValue(values.get(i));
+        }
+
+        double median = stats.getPercentile(50);
+        DescriptiveStatistics deviations = new SynchronizedDescriptiveStatistics();
+
+        ArrayList<Double> testValues = new ArrayList<>(total);
+
+        for (int i=0; i<total; i++){
+            testValues.add(Math.abs(values.get(i) - median));
+            deviations.addValue(testValues.get(i));
+        }
+
+        double mad = 1.4826*deviations.getPercentile(50);
+        double invMAD = 1.0/mad;
+
+        // create
+        DescriptiveStatistics keptValues = new DescriptiveStatistics();
+
+        for (int i=0; i<total; i++){
+            if (testValues.get(i)*invMAD < 2.5 ){
+                keptValues.addValue(values.get(i));
+            }
+        }
+
+        return keptValues;
     }
 }

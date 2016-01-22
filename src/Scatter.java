@@ -1,6 +1,7 @@
 import net.iharder.dnd.FileDrop;
 import org.apache.commons.io.comparator.NameFileComparator;
 import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
 import version3.Collection;
 
@@ -95,14 +96,12 @@ public class Scatter {
     private JScrollPane buffers;
     private JLabel samplesSubtractionLabel;
     private JTextField subtractionFileNameField;
-    private JPanel covPlotPanel;
     private JPanel covDetailsPanel;
     private JScrollPane covFilesScrollPanel;
     private JPanel covResetPanel;
     private JPanel covRightPanel;
     private JPanel covLeftPanel;
-    private JButton clearButton;
-    private JButton button1;
+    private JButton clearSimButton;
     private JCheckBox autoRgCheckBox;
     private JButton medianButton;
     private JButton singleButton;
@@ -119,6 +118,21 @@ public class Scatter {
     private JCheckBox onDropConvertNmCheckBox;
     private JButton plotAverageAndMedianBuffers;
     private JButton plotLog10AverageBufferButton;
+    private JButton calculateSimlarityButton;
+    private JCheckBox excessKurtosisCheckBox;
+    private JCheckBox volatilityVRCheckBox;
+
+    private JTextField qminSimilarityField;
+    private JTextField qmaxSimilarityField;
+    private JLabel qmaxSimilarityLabel;
+    private JLabel qminSimilarityLabel;
+    private JButton realSpaceButton;
+    private JButton addSetButton;
+    private JTextField nameOfSetTextField;
+    private JPanel simParamsPanel;
+    private JButton SELECTSetsToAnalyzeButton;
+    private JButton clearAboveButton;
+    private JComboBox comboBox1;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -134,11 +148,10 @@ public class Scatter {
     private DefaultListModel<String> chiFilesModel;
     private DefaultListModel<String> damminfModelsModel;
 
-
-    //public static ArrayList<Collection> collections;
     private static HashMap collections;
     private static Collection bufferCollections;
     private static Collection sampleCollections;
+    private static Collection similarityCollection;
     private static Collection collectionSelected;
     public static ArrayList<JRadioButton> collectionButtons;
     public static ArrayList<Graph> miniPlots;
@@ -164,6 +177,8 @@ public class Scatter {
     public ErrorPlot errorPlot;
     public PowerLawPlot powerLawPlot;
 
+    private static Similarity similarityObject;
+
     public NormalizedKratkyPlot normalKratkyRg;
     public NormalizedKratkyPlot normalKratkyRgReal;
     public NormalizedKratkyPlot normalKratkyVc;
@@ -179,6 +194,7 @@ public class Scatter {
         collections = new HashMap();
         bufferCollections = new Collection();
         sampleCollections = new Collection();
+        similarityCollection = new Collection();
         cpuCores = Runtime.getRuntime().availableProcessors();
 
         // Files Tab
@@ -189,6 +205,9 @@ public class Scatter {
         buffersList = new JList();
         samplesList = new JList();
         similarityList = new JList();
+        MouseAdaptorForDragging mouseAdaptorForDragging = new MouseAdaptorForDragging();
+        similarityList.addMouseListener(mouseAdaptorForDragging);
+        similarityList.addMouseMotionListener(mouseAdaptorForDragging);
         //fitFilesList = new JList();
 
         bufferFilesModel = new DefaultListModel<SampleBufferElement>();
@@ -203,6 +222,21 @@ public class Scatter {
         samplesList.setModel(sampleFilesModel);
         similarityList.setModel(similarityFilesModel);
 
+        similarityList.setCellRenderer(new SampleBufferListRenderer());
+        similarityList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+        similarityList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);    //To change body of overridden methods use File | Settings | File Templates.
+                int index = similarityList.locationToIndex(e.getPoint());
+                SampleBufferElement item = (SampleBufferElement)similarityList.getModel().getElementAt(index);
+            }
+        });
+
+        //similarityList.setCellRenderer(new SelectedListCellRenderer());
+
+        covFilesScrollPanel.setViewportView(similarityList);
         //fitFilesList.setModel(fitFilesModel);
         //chiValuesList.setModel(chiFilesModel);
         //completedDamminList.setModel(damminfModelsModel);
@@ -242,6 +276,7 @@ public class Scatter {
         collectionButtons = new ArrayList<JRadioButton>(){{add(radioButtonLoad1); add(radioButtonLoad2); add(radioButtonLoad3); add(radioButtonLoad4); }};
         totalPanels = collectionButtons.size();
 
+        // initialize the collections in the HashMap
         for (int i=0; i< totalPanels; i++){
             collections.put(new Integer(i), new Collection()); // HashMap for new Collection
             miniPlots.add(new Graph("Set " + Integer.toString(i+1)));
@@ -253,6 +288,7 @@ public class Scatter {
 
         collections.put(69, bufferCollections);
         collections.put(96, sampleCollections);
+        collections.put(29, similarityCollection);
 
         // Mini Collections for Drag-N-Drop on Files Tab
         for (int i = 0; i < totalPanels; i++){
@@ -508,6 +544,8 @@ public class Scatter {
         qIqPlot = QIQPlot.getInstance();
         errorPlot = ErrorPlot.getInstance();
         powerLawPlot = PowerLawPlot.getInstance();
+
+        similarityObject = new Similarity(status, mainProgressBar);
 
         normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
         normalKratkyRgReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (Real space)");
@@ -1487,6 +1525,118 @@ public class Scatter {
         });
 
 
+        calculateSimlarityButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int total = similarityFilesModel.getSize();
+                System.out.println("Total Dropped files");
+                Collection tempCollection = new Collection();
+                for (int i=0; i< total; i++){
+                    System.out.println(i + " " + similarityFilesModel.get(i).getCollection_id());
+                    Dataset dataset = similarityCollection.getDataset(similarityFilesModel.get(i).getCollection_id());
+                    dataset.setId(i);
+                    tempCollection.addDataset(dataset);
+                }
+
+                checkQminQmax(qminSimilarityField.getText(), qmaxSimilarityField.getText());
+
+                final double qminFinal = Double.parseDouble(qminSimilarityField.getText());
+                final double qmaxFinal = Double.parseDouble(qmaxSimilarityField.getText());
+                //final double binsFinal = Double.parseDouble(vrBinsBox.getSelectedItem().toString());
+                final double binsFinal = 23;
+
+                new Thread() {
+                    public void run() {
+                        //Collection collection, double qmin, double qmax, double bins, int cpus, JLabel status, final JProgressBar bar
+                        calculateSimlarityButton.setEnabled(false);
+                        similarityObject.setParameters(qminFinal, qmaxFinal, binsFinal, cpuCores);
+                        //Similarity simTemp = new Similarity(similarityCollection, qminFinal, qmaxFinal, binsFinal, cpuCores, status, mainProgressBar);
+                        // add other attributes and then run
+                        // Double.parseDouble(comboBoxBins.getSelectedItem().toString())/100.00;
+                        similarityObject.setFunction(excessKurtosisCheckBox.isSelected(), volatilityVRCheckBox.isSelected());
+                        //simTemp.setFunction(excessKurtosisCheckBox.isSelected(), volatilityVRCheckBox.isSelected());
+
+                        //Thread temp1 = new Thread(simTemp);
+                        Thread temp1 = new Thread(similarityObject);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        calculateSimlarityButton.setEnabled(true);
+                    }
+                }.start();
+
+
+
+            }
+        });
+
+        excessKurtosisCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                if (excessKurtosisCheckBox.isSelected()){
+                    volatilityVRCheckBox.setSelected(false);
+                } else {
+                    volatilityVRCheckBox.setSelected(true);
+                }
+
+            }
+        });
+
+        clearSimButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                similarityCollection.removeAllDatasets();
+                similarityObject.clearAll();
+                similarityFilesModel.clear();
+                similarityList.removeAll();
+                nameOfSetTextField.setText("name of set");
+            }
+        });
+
+        addSetButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+
+                if (nameOfSetTextField.getText().matches("name of set") || nameOfSetTextField.getText().length() < 3){
+                    Toolkit.getDefaultToolkit().beep();
+                    JOptionPane optionPane = new JOptionPane("Must Provide a Meaningful name for the dataset",JOptionPane.WARNING_MESSAGE);
+                    JDialog dialog = optionPane.createDialog("Warning!");
+                    dialog.setAlwaysOnTop(true);
+                    dialog.setVisible(true);
+                    status.setText("name the set  ");
+                    return;
+                }
+
+                // create a new collection container to hold all the data files
+                similarityObject.addCollection(nameOfSetTextField.getText());
+
+                int total = similarityCollection.getDatasetCount();
+                int index = similarityObject.getTotalItemsInCollection() - 1; // get last Collection in Object
+
+
+                for (int i=0; i<total; i++){
+                    similarityObject.getCollectionItemByIndex(index).addDataset(new Dataset(similarityCollection.getDataset(i)));
+                    similarityObject.getCollectionItemByIndex(index).getDataset(i).setInUse(similarityFilesModel.get(i).isSelected());
+                }
+                // clear list
+                similarityCollection.removeAllDatasets();
+                similarityFilesModel.clear();
+                similarityList.removeAll();
+            }
+        });
+
+        nameOfSetTextField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+                nameOfSetTextField.setText("");
+            }
+        });
     }
 
 
@@ -1527,6 +1677,28 @@ public class Scatter {
         resultsModel.clear();
 
         closeWindows();
+    }
+
+    private boolean checkQminQmax(String qminText, String qmaxText){
+        if (!isNumber(qminText) || !isNumber(qmaxText)){
+            Toolkit.getDefaultToolkit().beep();
+            status.setText("q-range (qmin, qmax) is not a number ");
+            return false;
+        } else {
+            double qmin = Double.parseDouble(qminText);
+            double qmax = Double.parseDouble(qmaxText);
+            if (qmin > qmax){
+                Toolkit.getDefaultToolkit().beep();
+                JOptionPane optionPane = new JOptionPane("q-range (qmin > qmax) invalid range",JOptionPane.WARNING_MESSAGE);
+                JDialog dialog = optionPane.createDialog("Warning!");
+                dialog.setAlwaysOnTop(true);
+                dialog.setVisible(true);
+
+                status.setText("q-range (qmin > qmax) invalid range ");
+                return false;
+            }
+        }
+        return true;
     }
 
     private void closeWindows(){
@@ -1774,7 +1946,7 @@ public class Scatter {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        //System.out.println("Total Loaded: " + programInstance.bufferFilesModel.getSize());
+
                         programInstance.status.setText("Total Loaded: " + programInstance.bufferFilesModel.getSize());
                         programInstance.buffersList.removeAll();
                         programInstance.buffersList.setModel(programInstance.bufferFilesModel);
@@ -1820,6 +1992,55 @@ public class Scatter {
                 }.start();
             }
         });
+
+
+//similarity Panel
+        new FileDrop(programInstance.covFilesScrollPanel, new FileDrop.Listener() {
+            @Override
+            public void filesDropped(final File[] files) {
+
+                final int panel = 29;
+
+                new Thread() {
+                    public void run() {
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY_NAME);
+                        // add other attributes and then run
+                        Collection thisCollection = ((Collection) collections.get(panel));
+                        rec1.setSampleBufferModels(programInstance.similarityFilesModel);
+                        Thread temp1 = new Thread(rec1);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        // populate drop down
+                        programInstance.similarityList.removeAll();
+                        programInstance.similarityFilesModel.clear();
+                        //sampleBufferFilesList.removeAll();
+                        //repopulate
+                        int totalDatasets = thisCollection.getDatasetCount();
+                        Color tempColor;
+                        for(int i=0; i< totalDatasets; i++){
+                            String name = thisCollection.getDataset(i).getFileName();
+                            name = name + "_" + i;
+                            //thisCollection.getDataset(i).setFileName(name);
+                            tempColor = ((Collection)collections.get(panel)).getDataset(i).getColor();
+                            programInstance.similarityFilesModel.addElement(new SampleBufferElement(name, i, tempColor, thisCollection.getDataset(i)));
+                        }
+
+                        //sampleBufferFilesList.setModel(sampleBufferFilesModel);
+                        programInstance.similarityList.setModel(programInstance.similarityFilesModel);
+                        programInstance.qminSimilarityField.setText(String.valueOf(thisCollection.getDataset(0).getAllData().getMinX()));
+                        programInstance.qmaxSimilarityField.setText(String.valueOf(thisCollection.getDataset(0).getAllData().getMaxX()));
+
+                        programInstance.status.setText("Total Loaded: " + programInstance.similarityFilesModel.getSize());
+
+                    }
+                }.start();
+            }
+        });
+
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
@@ -3049,7 +3270,7 @@ public class Scatter {
     }
 
 
-    private class MyMouseAdaptor extends MouseInputAdapter {
+    private class MouseAdaptorForDragging extends MouseInputAdapter {
         private boolean mouseDragging = false;
         private int dragSourceIndex;
 
@@ -3057,6 +3278,7 @@ public class Scatter {
         public void mousePressed(MouseEvent e) {
             if (SwingUtilities.isLeftMouseButton(e)) {
                 dragSourceIndex = similarityList.getSelectedIndex();
+
                 mouseDragging = true;
             }
         }
@@ -3078,12 +3300,16 @@ public class Scatter {
                     similarityFilesModel.remove(dragSourceIndex);
                     similarityFilesModel.add(dragTargetIndex, dragElement);
                     dragSourceIndex = currentIndex;
+
                 }
             }
         }
     }
 
 } // end of Scatter class
+
+
+
 
 class DataFilesListRenderer extends JCheckBox implements ListCellRenderer {
     Color setColor;
@@ -3101,12 +3327,17 @@ class DataFilesListRenderer extends JCheckBox implements ListCellRenderer {
 class SampleBufferListRenderer extends JCheckBox implements ListCellRenderer {
 
     public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean hasFocus) {
+
         setEnabled(list.isEnabled());
         setSelected(((SampleBufferElement) value).isSelected());
         setFont(list.getFont());
         setBackground(list.getBackground());
         setForeground(((SampleBufferElement) value).getColor());
         setText(value.toString());
+
+        if (isSelected) {
+            setBackground(Constants.LightBlueGray);
+        }
 
         return this;
     }

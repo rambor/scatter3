@@ -209,6 +209,7 @@ private int refId, scaleToID;
             for (int i=0; i<totalSubtracted; i++){
                 subtractedCollection.getDataset(i).setExperimentalNotes("");
             }
+
             writeSinglesToFile(subtractedCollection);
             returnCollection = subtractedCollection;
         }

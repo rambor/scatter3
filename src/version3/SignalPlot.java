@@ -285,7 +285,7 @@ public class SignalPlot {
                 "Signal Plot",            // chart title
                 "sample",                 // domain axis label
                 "signal",                 // range axis label
-                plotMe,                 // data
+                plotMe,                   // data
                 PlotOrientation.VERTICAL,
                 false,                    // include legend
                 true,                     // toolTip
