@@ -505,7 +505,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-15822098"/>
+                      <foreground color="-3969338"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Real Space"/>
@@ -521,7 +521,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-16735422"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Kratky"/>
@@ -569,7 +569,7 @@
                     </constraints>
                     <properties>
                       <font size="12" style="1"/>
-                      <foreground color="-673024"/>
+                      <foreground color="-1922560"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Rc Plot"/>
@@ -776,6 +776,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <enabled value="false"/>
                       <font size="12" style="1"/>
                       <foreground color="-404179"/>
                       <iconTextGap value="0"/>
@@ -1074,11 +1075,11 @@
                             </constraints>
                             <properties>
                               <model>
-                                <item value="50"/>
-                                <item value="70"/>
-                                <item value="85"/>
-                                <item value="90"/>
-                                <item value="95"/>
+                                <item value="13"/>
+                                <item value="17"/>
+                                <item value="23"/>
+                                <item value="31"/>
+                                <item value="57"/>
                               </model>
                             </properties>
                           </component>
@@ -1343,7 +1344,10 @@
                     <preferred-size width="200" height="-1"/>
                   </grid>
                 </constraints>
-                <properties/>
+                <properties>
+                  <autoscrolls value="true"/>
+                  <background color="-7876609"/>
+                </properties>
                 <border type="none"/>
                 <children>
                   <scrollpane id="e0e85" binding="covFilesScrollPanel">
@@ -1424,6 +1428,7 @@
                     <margin top="0" left="0" bottom="0" right="0"/>
                     <constraints border-constraint="Center"/>
                     <properties>
+                      <background color="-1381654"/>
                       <minimumSize width="494" height="-1"/>
                       <preferredSize width="494" height="-1"/>
                     </properties>
@@ -1443,7 +1448,7 @@
                             </constraints>
                             <properties>
                               <selected value="true"/>
-                              <text value="integral of ratio"/>
+                              <text value="Kurtosis"/>
                             </properties>
                           </component>
                           <component id="b2f9b" class="javax.swing.JCheckBox" binding="volatilityVRCheckBox" default-binding="true">
@@ -1524,7 +1529,7 @@
                           </component>
                           <component id="740f9" class="javax.swing.JLabel">
                             <constraints>
-                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
                             </constraints>
                             <properties>
                               <text value="Set Range for Calculation "/>
@@ -1546,21 +1551,44 @@
                           </component>
                         </children>
                       </grid>
-                      <grid id="8ae21" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                      <grid id="8ae21" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
-                        <properties/>
+                        <properties>
+                          <background color="-7876609"/>
+                        </properties>
                         <border type="none"/>
-                        <children/>
+                        <children>
+                          <grid id="54848" binding="simScatPlotPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                <preferred-size width="-1" height="200"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="etched"/>
+                            <children/>
+                          </grid>
+                          <grid id="c2a31" binding="heatMapPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties/>
+                            <border type="etched"/>
+                            <children/>
+                          </grid>
+                        </children>
                       </grid>
-                      <component id="42ac8" class="javax.swing.JLabel">
+                      <component id="42ac8" class="javax.swing.JLabel" binding="simLabel">
                         <constraints>
-                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="2" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="Label"/>
+                          <font style="1"/>
+                          <foreground color="-3203840"/>
+                          <text value=""/>
                         </properties>
                       </component>
                     </children>
@@ -1651,24 +1679,219 @@
                 <border type="none"/>
                 <children>
                   <grid id="fc1ca" layout-manager="FormLayout">
-                    <rowspec value="center:d:grow"/>
+                    <rowspec value="center:max(d;4px):noGrow"/>
+                    <rowspec value="top:3dlu:noGrow"/>
+                    <rowspec value="center:max(d;4px):noGrow"/>
+                    <rowspec value="top:3dlu:noGrow"/>
+                    <rowspec value="center:max(d;4px):noGrow"/>
                     <colspec value="fill:d:grow"/>
                     <constraints>
                       <tabbedpane title="GENERAL"/>
                     </constraints>
                     <properties/>
-                    <border type="none"/>
-                    <children/>
-                  </grid>
-                  <grid id="bd096" layout-manager="FormLayout">
-                    <rowspec value="center:d:grow"/>
-                    <colspec value="fill:d:grow"/>
-                    <constraints>
-                      <tabbedpane title="ANALYSIS"/>
-                    </constraints>
-                    <properties/>
-                    <border type="none"/>
-                    <children/>
+                    <border type="etched"/>
+                    <children>
+                      <grid id="58986" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <forms/>
+                        </constraints>
+                        <properties>
+                          <background color="-1"/>
+                        </properties>
+                        <border type="etched"/>
+                        <children>
+                          <grid id="251f0" layout-manager="GridLayoutManager" row-count="1" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <background color="-1"/>
+                            </properties>
+                            <border type="none"/>
+                            <children>
+                              <component id="99810" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="2" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <font style="1"/>
+                                  <foreground color="-7876609"/>
+                                  <text value=" ATSAS DIRECTORY"/>
+                                </properties>
+                              </component>
+                              <hspacer id="8f3d9">
+                                <constraints>
+                                  <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                              </hspacer>
+                              <component id="8f32d" class="javax.swing.JButton" binding="atsasDirButton">
+                                <constraints>
+                                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="SET"/>
+                                </properties>
+                              </component>
+                              <component id="59d50" class="javax.swing.JLabel" binding="atsasDirLabel">
+                                <constraints>
+                                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value=""/>
+                                </properties>
+                              </component>
+                            </children>
+                          </grid>
+                          <grid id="655ee" layout-manager="GridLayoutManager" row-count="1" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <background color="-1"/>
+                            </properties>
+                            <border type="none"/>
+                            <children>
+                              <component id="38876" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <background color="-1"/>
+                                  <font style="1"/>
+                                  <foreground color="-15648368"/>
+                                  <text value="WORKING DIRECTORY"/>
+                                </properties>
+                              </component>
+                              <hspacer id="50d36">
+                                <constraints>
+                                  <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                              </hspacer>
+                              <component id="ad95e" class="javax.swing.JButton" binding="workingDirButton">
+                                <constraints>
+                                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="SET"/>
+                                </properties>
+                              </component>
+                              <component id="8413e" class="javax.swing.JLabel" binding="workingDirLabel">
+                                <constraints>
+                                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value=""/>
+                                </properties>
+                              </component>
+                            </children>
+                          </grid>
+                          <component id="6abbd" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <font size="14" style="1"/>
+                              <text value="Set the working directory (where your files will be saved) "/>
+                            </properties>
+                          </component>
+                          <component id="24d0c" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <font size="14" style="1"/>
+                              <text value="Set the ATSAS directory (location of the ATSAS binaries, i.e, dammin.exe)"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </grid>
+                      <grid id="c1b37" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <forms/>
+                        </constraints>
+                        <properties>
+                          <background color="-1117441"/>
+                        </properties>
+                        <border type="none"/>
+                        <children>
+                          <grid id="9819f" layout-manager="GridLayoutManager" row-count="2" column-count="5" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <background color="-1117441"/>
+                            </properties>
+                            <border type="etched"/>
+                            <children>
+                              <component id="74068" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <font style="1"/>
+                                  <text value="Set qmin and qmax range used for scaling"/>
+                                </properties>
+                              </component>
+                              <hspacer id="2e17f">
+                                <constraints>
+                                  <grid row="0" column="1" row-span="1" col-span="4" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                              </hspacer>
+                              <vspacer id="dc33e">
+                                <constraints>
+                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                              </vspacer>
+                              <component id="64331" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="&lt;html&gt;q&lt;sub&gt;min&lt;/sub&gt;&lt;/html&gt;"/>
+                                </properties>
+                              </component>
+                              <component id="33783" class="javax.swing.JTextField" binding="qmaxLimitField">
+                                <constraints>
+                                  <grid row="1" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                    <preferred-size width="75" height="-1"/>
+                                    <maximum-size width="75" height="-1"/>
+                                  </grid>
+                                </constraints>
+                                <properties>
+                                  <text value="0.18"/>
+                                </properties>
+                              </component>
+                              <component id="ab58c" class="javax.swing.JTextField" binding="qminLimitField">
+                                <constraints>
+                                  <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                    <preferred-size width="75" height="-1"/>
+                                    <maximum-size width="75" height="-1"/>
+                                  </grid>
+                                </constraints>
+                                <properties>
+                                  <text value="0.02"/>
+                                </properties>
+                              </component>
+                              <component id="58ad1" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="1" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="&lt;html&gt;q&lt;sub&gt;max&lt;/sub&gt;&lt;/html&gt;&#10;"/>
+                                </properties>
+                              </component>
+                            </children>
+                          </grid>
+                        </children>
+                      </grid>
+                    </children>
                   </grid>
                   <grid id="7a1da" layout-manager="FormLayout">
                     <rowspec value="center:d:grow"/>

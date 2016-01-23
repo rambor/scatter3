@@ -58,6 +58,11 @@ public class PlotDataSingleton {
         locationOfWindow = new Point(100,100);
 
         JPopupMenu popup = frame.getChartPanel().getPopupMenu();
+
+        //frame.getChartPanel().getChart().getXYPlot().getRangeAxis().setAxisLineStroke();
+
+
+
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -112,6 +117,8 @@ public class PlotDataSingleton {
                 false
         );
 
+        chart.getXYPlot().setDomainCrosshairVisible(false);
+        chart.getXYPlot().setRangeCrosshairVisible(false);
         chart.setTitle("SC\u212BTTER \u2263 Intensity Plot");
         chart.getTitle().setFont(new java.awt.Font("Times", 1, 20));
         chart.getTitle().setPaint(Constants.SteelBlue);

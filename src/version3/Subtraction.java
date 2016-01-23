@@ -41,7 +41,7 @@ private int refId, scaleToID;
     private Collection collectionToUpdate;
 
 
-    public Subtraction(Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage, boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar){
+    public Subtraction(Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage, boolean singles, boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar){
         this.samples = samples;
         this.buffers = buffers;
 
@@ -61,8 +61,13 @@ private int refId, scaleToID;
         this.status = status;
         this.bar = bar;
 
-        this.mergebyAverage = mergeByAverage;
-        this.mergebyMedian = !mergeByAverage;
+        if (!singles){
+            this.mergebyAverage = mergeByAverage;
+            this.mergebyMedian = !mergeByAverage;
+        } else {
+            this.mergebyAverage = false;
+            this.mergebyMedian = false;
+        }
 
         status.setText("Merging => average " + mergebyAverage + " median: " + mergebyMedian);
 

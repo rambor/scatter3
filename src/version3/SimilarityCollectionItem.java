@@ -10,23 +10,17 @@ public class SimilarityCollectionItem {
 
     private final Collection collection;
     private final String name;
-    private boolean inUse;
-
+    private boolean isSelected = true;
 
     public SimilarityCollectionItem(String name){
         this.name = name;
         this.collection = new Collection();
-        inUse = true;
+        isSelected = true;
     }
 
     public String getName(){
         return name;
     }
-
-    public boolean getInUse(){
-        return inUse;
-    }
-
 
     public Collection getCollection(){
         return collection;
@@ -42,4 +36,10 @@ public class SimilarityCollectionItem {
         return collection.getDataset(index);
     }
 
+    public boolean isSelected(){
+        return isSelected;
+    }
+    public void setSelected(boolean flag){
+        this.isSelected = flag;
+    }
 }

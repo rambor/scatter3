@@ -9,10 +9,19 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.XYToolTipGenerator;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.DomainOrder;
+import org.jfree.data.general.DatasetChangeListener;
+import org.jfree.data.general.DatasetGroup;
 import org.jfree.data.xy.*;
 import org.jfree.ui.HorizontalAlignment;
 
 import javax.swing.*;
+import java.awt.geom.Ellipse2D;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -22,6 +31,7 @@ public class Similarity implements Runnable {
 
     private JFreeChart chart;
     private ChartFrame frame;
+    private XYZDataset heatData;
     //private Collection collectionInUse;
     private ArrayList<SimilarityCollectionItem> collections;
     private XYSeriesCollection averageValuePerBin;
@@ -34,9 +44,18 @@ public class Similarity implements Runnable {
     private JProgressBar bar;
     private boolean useKurtosis = false;
     private boolean useVr = false;
-    private int totalItemsInCollection =0;
+    private int totalItemsInCollection=0;
     private int cpus = 1;
     private String range_type="";
+    private double[] xFrameHeat;
+    private double[] yBinHeat;
+    private double[] zHeat;
+    private int xCount;
+    private int yCount;
+    private int zCount;
+    private int frameCount;
+    private JPanel panelForChart;
+    private String directory;
 
     public Similarity(JLabel status, final JProgressBar bar){
 
@@ -48,11 +67,12 @@ public class Similarity implements Runnable {
         averageValuePerBin = new XYSeriesCollection();
         collections = new ArrayList<>();
 
+
         chart = ChartFactory.createXYLineChart(
-                "",                  // chart title
-                "",                        // domain axis label
-                "",                          // range axis label
-                plottedCollection,               // data
+                "",                         // chart title
+                "",                         // domain axis label
+                "",                         // range axis label
+                plottedCollection,          // data
                 PlotOrientation.VERTICAL,
                 false,                      // include legend
                 true,
@@ -71,6 +91,12 @@ public class Similarity implements Runnable {
 
             XYPlot plot = chart.getXYPlot();
             plot.setDataset(plottedCollection);
+
+            // write out file for each collection
+            int totalCollections = collections.size();
+            for (int i=0; i<totalCollections; i++){
+
+            }
 /*
             int totalSeries = averageValuePerBin.getSeriesCount();
             for (int i=0; i<totalSeries; i++){
@@ -86,8 +112,41 @@ public class Similarity implements Runnable {
 
             makeKurtosisPlot();
 
+            int totalDatasetToAnalyze = collections.size();
+            int count=0;
+            for (int i=0; i<totalDatasetToAnalyze; i++){
+                if(collections.get(i).isSelected()){
+                    writeCollectionToFile(collections.get(i).getName() + "_kurtosis", collectionOfkurtosisPerFrame.getSeries(count));
+                    count++;
+                }
+            }
+
+
         } else if (useVr){
 
+        }
+
+    }
+
+    public void setDirectory(String object){
+        this.directory = object;
+    }
+
+    private void writeCollectionToFile(String name, XYSeries data){
+
+        try {
+            FileWriter fw = new FileWriter(directory +"/"+name+".txt");
+            BufferedWriter out = new BufferedWriter(fw);
+            int total = data.getItemCount();
+
+            out.write(String.format("REMARK\t  COLUMNS : frame, kurtosis%n"));
+
+            for (int n=0; n < total; n++) {
+                out.write( String.format("%d\t%s %n", (int)data.getX(n).doubleValue(), Constants.Scientific1dot5e2.format(data.getY(n).doubleValue()) ));
+            }
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
     }
@@ -114,13 +173,14 @@ public class Similarity implements Runnable {
         return totalItemsInCollection;
     }
 
-    public void setParameters(double qmin, double qmax, double bins, int cpus){
+    public void setParameters(double qmin, double qmax, double bins, int cpus, JPanel outsidePanel){
         this.qmin = qmin;
         this.qmax = qmax;
         this.bins = bins;
         this.binWidth = (qmax-qmin)/bins;
         System.out.println("QMIN to QMAX: " + qmin + " < " + qmax + " BINWIDTH => " + binWidth);
         this.cpus = cpus;
+        this.panelForChart = outsidePanel;
     };
 
     public void calculateCorrelation(){
@@ -174,6 +234,8 @@ public class Similarity implements Runnable {
     public void calculateKurtosis(){
         // for each bin, collect values, do outlier rejection and average
         collectionOfkurtosisPerFrame.removeAllSeries();
+        heatData = new DefaultXYZDataset();
+        // total data points in heat map = bins x frames
 
         int totalDatasetToAnalyze = collections.size();
 
@@ -213,11 +275,32 @@ public class Similarity implements Runnable {
             collectionOfkurtosisPerFrame.addSeries(new XYSeries("Index " +dd));
             int locale = collectionOfkurtosisPerFrame.getSeriesCount()-1;
 
+            int useableFrames = collectionInUse.getTotalSelected();
+            int totalHeatMapPts = (int)bins*useableFrames;
+            xFrameHeat = new double[totalHeatMapPts];
+            yBinHeat = new double[totalHeatMapPts];
+            zHeat = new double[totalHeatMapPts];
+
+            xCount=0;
+            yCount=0;
+            zCount=0;
+            frameCount=0;
+
+            for(int j=0; j<bins; j++){
+                xFrameHeat[xCount] = frameCount; // frame 0
+                yBinHeat[yCount] = j; // bin
+                zHeat[zCount] = 0; // intensity of signal
+                xCount++;
+                yCount++;
+                zCount++;
+            }
+
             for(int s=startAt; s<totalDatasets; s++){
 
                 Dataset targetSet = collectionInUse.getDataset(s);
                 if (targetSet.getInUse()){
 
+                    frameCount++;
                     double kurt = calculateKurtosisPerSet(referenceSet, startPt, endPt, targetSet);
 
                     collectionOfkurtosisPerFrame.getSeries(locale).add(seriesCount, kurt);
@@ -226,7 +309,6 @@ public class Similarity implements Runnable {
                 }
             }
         }
-
 
         plottedCollection = collectionOfkurtosisPerFrame;
     }
@@ -332,11 +414,19 @@ public class Similarity implements Runnable {
         DescriptiveStatistics top = new DescriptiveStatistics();
         DescriptiveStatistics bottom = new DescriptiveStatistics();
         mean = meanFromXYSeries(tempK);
+
         for (int ss=0; ss<bins; ss++){
-            diff = tempK.getY(ss).doubleValue() - mean;
+            diff = tempK.getY(ss).doubleValue() - mean; // tempK average value per bin
             diff2 = diff*diff;
             top.addValue(diff2*diff2);
             bottom.addValue(diff2);
+
+            xFrameHeat[xCount] = frameCount; // frame 0
+            yBinHeat[yCount] = ss; // bin
+            zHeat[zCount] = diff2; // intensity of signal
+            xCount++;
+            yCount++;
+            zCount++;
         }
 
         averageBottom = bottom.getMean();
@@ -408,7 +498,7 @@ public class Similarity implements Runnable {
 
     private void makeKurtosisPlot(){
 
-        chart.setTitle("SC\u212BTTER \u2263 Plot");
+
         chart.getTitle().setFont(new java.awt.Font("Times", 1, 20));
         chart.getTitle().setPaint(Constants.SteelBlue);
         chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
@@ -416,33 +506,98 @@ public class Similarity implements Runnable {
         chart.getTitle().setMargin(10, 10, 4, 0);
         chart.setBorderVisible(false);
 
-        final NumberAxis domainAxis = new NumberAxis("Signal");
+        final NumberAxis domainAxis = new NumberAxis("frame");
         final NumberAxis rangeAxis = new NumberAxis(range_type);
         rangeAxis.setAutoRangeIncludesZero(false);
 
         final XYPlot plot = chart.getXYPlot();
         plot.setRangeAxis(rangeAxis);
 
-        frame = new ChartFrame("SC\u212BTTER \u2263 SIGNAL PLOT", chart);
-        frame.getChartPanel().setDisplayToolTips(true);
+        domainAxis.setLabelFont(Constants.BOLD_16);
+        domainAxis.setTickLabelFont(Constants.FONT_12);
+        domainAxis.setAutoRangeStickyZero(false);
+        rangeAxis.setAutoRange(false);
+        rangeAxis.setLabelFont(Constants.BOLD_16);
+        rangeAxis.setTickLabelFont(Constants.FONT_12);
+        rangeAxis.setAutoRangeStickyZero(false);
 
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
+        plot.configureDomainAxes();
+        plot.configureRangeAxes();
+        plot.setBackgroundAlpha(0.0f);
+        plot.setDomainCrosshairLockedOnData(true);
+        plot.setOutlineVisible(false);
+
+        XYLineAndShapeRenderer renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
+        renderer1.setBaseShapesVisible(true);
+        renderer1.setBaseShape(Constants.Ellipse4);
+
+        plot.setRenderer(0, renderer1);
+
+//        renderer1.setSeriesLinesVisible(i, false);
+//        renderer1.setSeriesPaint(i, tempData.getColor());
+//        renderer1.setSeriesShapesFilled(i, tempData.getBaseShapeFilled());
+//        renderer1.setSeriesVisible(i, tempData.getInUse());
+//        renderer1.setSeriesOutlineStroke(i, tempData.getStroke());
+
+        frame = new ChartFrame("SC\u212BTTER \u2263 SIMILARITY PLOT", chart);
+        frame.pack();
+        panelForChart.add(frame.getContentPane());
+        panelForChart.validate();
+        //frame.setVisible(true);
+
+/*
+        frame.getChartPanel().setDisplayToolTips(true);
         frame.getChartPanel().getChart().getXYPlot().getRenderer(0).setBaseToolTipGenerator(new XYToolTipGenerator() {
             @Override
             public String generateToolTip(XYDataset xyDataset, int i, int i2) {
                 return (String) xyDataset.getSeriesKey(i);
             }
         });
+*/
+        //frame.getChartPanel().setRangeZoomable(false);
+        //frame.getChartPanel().setDomainZoomable(false);
 
-        frame.getChartPanel().setRangeZoomable(false);
-        frame.getChartPanel().setDomainZoomable(false);
-
-        frame.pack();
-        frame.setVisible(true);
+        //frame.pack();
+        //frame.setVisible(true);
     }
 
+    private int getDigits(double qvalue) {
+        String toText = Double.toString(qvalue);
+        int integerPlaces = toText.indexOf('.');
+        int decimalPlaces;
 
-    public void editSets(){
+        String[] temp = toText.split("\\.0*");
+        decimalPlaces = (temp.length == 2) ? temp[1].length() : (toText.length() - integerPlaces -1);
 
+        return decimalPlaces;
     }
+
+    public String formattedQ(double qvalue, int numberOfDigits) {
+        String numberToPrint ="";
+        switch(numberOfDigits){
+            case 7: numberToPrint = String.format(Locale.US, "%.6E", qvalue);
+                break;
+            case 8: numberToPrint = String.format(Locale.US, "%.7E", qvalue);
+                break;
+            case 9: numberToPrint = String.format(Locale.US, "%.8E", qvalue);
+                break;
+            case 10: numberToPrint = String.format(Locale.US, "%.9E", qvalue);
+                break;
+            case 11: numberToPrint = String.format(Locale.US,"%.10E", qvalue);
+                break;
+            case 12: numberToPrint = String.format(Locale.US, "%.11E", qvalue);
+                break;
+            case 13: numberToPrint = String.format(Locale.US, "%.12E", qvalue);
+                break;
+            case 14: numberToPrint = String.format(Locale.US, "%.13E", qvalue);
+                break;
+            default: numberToPrint = String.format(Locale.US,"%.6E", qvalue);
+                break;
+        }
+        return numberToPrint;
+    }
+
 
 }

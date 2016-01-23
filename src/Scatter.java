@@ -133,6 +133,15 @@ public class Scatter {
     private JButton SELECTSetsToAnalyzeButton;
     private JButton clearAboveButton;
     private JComboBox comboBox1;
+    private JPanel heatMapPanel;
+    private JPanel simScatPlotPanel;
+    private JLabel simLabel;
+    private JButton atsasDirButton;
+    private JButton workingDirButton;
+    private JLabel workingDirLabel;
+    private JLabel atsasDirLabel;
+    private JTextField qmaxLimitField;
+    private JTextField qminLimitField;
 
     private String version = "3.0";
     private static String WORKING_DIRECTORY_NAME;
@@ -168,7 +177,6 @@ public class Scatter {
     private JList similarityList;
     private JList fitFilesList;
 
-    private String outPutDirSubtractionName="";
 
     // singleton plots
     public PlotDataSingleton log10IntensityPlot;
@@ -833,6 +841,8 @@ public class Scatter {
                         if (log10IntensityPlot.isVisible()){
                             log10IntensityPlot.setNotify(true);
                         }
+                        mainProgressBar.setValue(0);
+                        mainProgressBar.setStringPainted(false);
                         scaleButton.setEnabled(true);
                     }
                 }.start();
@@ -864,6 +874,7 @@ public class Scatter {
 
                     if(option == JFileChooser.CANCEL_OPTION) {
                         log10IntensityPlot.removeFromMerged(mergedIndex);
+                        averageButton.setEnabled(true);
                         return;
                     }
 
@@ -931,6 +942,7 @@ public class Scatter {
 
                     if(option == JFileChooser.CANCEL_OPTION) {
                         log10IntensityPlot.removeFromMerged(mergedIndex);
+                        medianButton.setEnabled(true);
                         return;
                     }
 
@@ -1178,7 +1190,7 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //Set working directory
-                File theCWD = new File(outPutDirSubtractionName);
+                File theCWD = new File(OUTPUT_DIR_SUBTRACTION_NAME);
 
                 JFileChooser chooser = new JFileChooser(theCWD);
                 chooser.setDialogTitle("Select Directory");
@@ -1189,14 +1201,15 @@ public class Scatter {
                 if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
 
                     if (chooser.getSelectedFile().isDirectory()){
-                        outPutDirSubtractionName = chooser.getSelectedFile().toString();
+                        OUTPUT_DIR_SUBTRACTION_NAME = chooser.getSelectedFile().toString();
                         System.out.println("Selected: " + chooser.getSelectedFile().toString());
                     } else {
-                        outPutDirSubtractionName = chooser.getCurrentDirectory().toString();
+                        OUTPUT_DIR_SUBTRACTION_NAME = chooser.getCurrentDirectory().toString();
                         System.out.println("Not: " + chooser.getSelectedFile().toString());
                     }
 
-                    subtractOutPutDirectoryLabel.setText(outPutDirSubtractionName);
+                    subtractOutPutDirectoryLabel.setText(OUTPUT_DIR_SUBTRACTION_NAME);
+
                 }
             }
         });
@@ -1424,7 +1437,13 @@ public class Scatter {
                     }
                 }
 
-                if (subtractionFileNameField.getText().length() < 3){
+                final boolean mergeByAverage = averageSampleFileCheckBox.isSelected();
+                boolean singles = false;
+                if (!mergeByAverage && !subtractFromMedianCheckBox.isSelected()){
+                    singles = true;
+                }
+
+                if (subtractionFileNameField.getText().length() < 3 && !singles){
                     Toolkit.getDefaultToolkit().beep();
                     JOptionPane optionPane = new JOptionPane("Provide a meaningful name",JOptionPane.WARNING_MESSAGE);
                     JDialog dialog = optionPane.createDialog("Warning!");
@@ -1436,14 +1455,16 @@ public class Scatter {
                 // launch in separate thread
                 final double finalQmin = qmin;
                 final double finalQmax = qmax;
-                final boolean mergeByAverage = averageSampleFileCheckBox.isSelected();
+
                 final boolean scaleBefore = scaleThenMergeCheckBox.isSelected();
                 final boolean svd = SVDAverageFilesCheckBox.isSelected();
 
+
+                final boolean finalSingles = singles;
                 new Thread() {
                     public void run() {
                         //Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage,  boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar){
-                        Subtraction subTemp = new Subtraction(bufferCollections, sampleCollections, finalQmin, finalQmax, mergeByAverage, scaleBefore, svd, cpuCores, status, mainProgressBar);
+                        Subtraction subTemp = new Subtraction(bufferCollections, sampleCollections, finalQmin, finalQmax, mergeByAverage, finalSingles, scaleBefore, svd, cpuCores, status, mainProgressBar);
                         // add other attributes and then run
                         // Double.parseDouble(comboBoxBins.getSelectedItem().toString())/100.00;
                         subTemp.setBinsAndCutoff(Double.parseDouble(comboBoxBins.getSelectedItem().toString()), Double.parseDouble(subtractionCutOff.getSelectedItem().toString()));
@@ -1549,7 +1570,8 @@ public class Scatter {
                     public void run() {
                         //Collection collection, double qmin, double qmax, double bins, int cpus, JLabel status, final JProgressBar bar
                         calculateSimlarityButton.setEnabled(false);
-                        similarityObject.setParameters(qminFinal, qmaxFinal, binsFinal, cpuCores);
+                        similarityObject.setParameters(qminFinal, qmaxFinal, binsFinal, cpuCores, simScatPlotPanel);
+                        similarityObject.setDirectory(WORKING_DIRECTORY_NAME);
                         //Similarity simTemp = new Similarity(similarityCollection, qminFinal, qmaxFinal, binsFinal, cpuCores, status, mainProgressBar);
                         // add other attributes and then run
                         // Double.parseDouble(comboBoxBins.getSelectedItem().toString())/100.00;
@@ -1589,18 +1611,19 @@ public class Scatter {
         clearSimButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                similarityCollection.removeAllDatasets();
-                similarityObject.clearAll();
-                similarityFilesModel.clear();
-                similarityList.removeAll();
-                nameOfSetTextField.setText("name of set");
+                if (similarityObject.getTotalItemsInCollection() > 0){
+                    similarityCollection.removeAllDatasets();
+                    similarityObject.clearAll();
+                    similarityFilesModel.clear();
+                    similarityList.removeAll();
+                    nameOfSetTextField.setText("name of set");
+                }
             }
         });
 
         addSetButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
 
                 if (nameOfSetTextField.getText().matches("name of set") || nameOfSetTextField.getText().length() < 3){
                     Toolkit.getDefaultToolkit().beep();
@@ -1627,6 +1650,8 @@ public class Scatter {
                 similarityCollection.removeAllDatasets();
                 similarityFilesModel.clear();
                 similarityList.removeAll();
+                nameOfSetTextField.setText("name of set");
+                simLabel.setText("ADDED SET: " + similarityObject.getCollectionItemByIndex(index).getName());
             }
         });
 
@@ -1637,9 +1662,86 @@ public class Scatter {
                 nameOfSetTextField.setText("");
             }
         });
+
+        SELECTSetsToAnalyzeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (similarityObject.getTotalItemsInCollection() > 0){
+                    SimMenuItem tempSim = new SimMenuItem(similarityObject);
+                } else {
+                    Toolkit.getDefaultToolkit().beep();
+                    JOptionPane optionPane = new JOptionPane("No Sets to Edit",JOptionPane.WARNING_MESSAGE);
+                    JDialog dialog = optionPane.createDialog("Warning!");
+                    dialog.setAlwaysOnTop(true);
+                    dialog.setVisible(true);
+                    return;
+                }
+            }
+        });
+
+        clearAboveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (similarityCollection.getDatasetCount() > 0){
+                    similarityCollection.removeAllDatasets();
+                    similarityFilesModel.clear();
+                    similarityList.removeAll();
+                    nameOfSetTextField.setText("name of set");
+                }
+            }
+        });
+
+        workingDirButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                File theCWD = new File(WORKING_DIRECTORY_NAME+ "/.");
+                JFileChooser chooser = new JFileChooser(theCWD);
+                chooser.setDialogTitle("Select Directory");
+
+                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                chooser.setAcceptAllFileFilterUsed(false);
+
+                if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
+                    WORKING_DIRECTORY_NAME = chooser.getCurrentDirectory().toString();
+                    if (chooser.getSelectedFile().isDirectory()){
+                        WORKING_DIRECTORY_NAME = chooser.getSelectedFile().toString();
+                    } else {
+                        WORKING_DIRECTORY_NAME = chooser.getCurrentDirectory().toString();
+                    }
+                    workingDirLabel.setText(WORKING_DIRECTORY_NAME);
+                    updateProp();
+                }
+            }
+        });
     }
 
+    public static void updateProp(){
+        Properties prop = new Properties();
+        OutputStream output = null;
 
+        try {
+            output = new FileOutputStream("scatter.config");
+
+            // set the properties value
+            prop.setProperty("workingDirectory", WORKING_DIRECTORY_NAME);
+            prop.setProperty("atsasDirectory", ATSAS_DIRECTORY);
+            prop.setProperty("subtractionDirectory", OUTPUT_DIR_SUBTRACTION_NAME);
+            // save properties to project root folder
+            prop.store(output, null);
+
+        } catch (IOException io) {
+            io.printStackTrace();
+        } finally {
+            if (output != null) {
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
+    }
     private void clearCollection(int panel){
         ((Collection)collections.get(panel)).removeAllDatasets();
         ((Collection)collections.get(panel)).setNote("Drop Files in Colored Box for Set " + panel);
@@ -1950,7 +2052,7 @@ public class Scatter {
                         programInstance.status.setText("Total Loaded: " + programInstance.bufferFilesModel.getSize());
                         programInstance.buffersList.removeAll();
                         programInstance.buffersList.setModel(programInstance.bufferFilesModel);
-
+                        programInstance.buffersList.validate();
                     }
                 }.start();
             }
@@ -1988,6 +2090,7 @@ public class Scatter {
                             programInstance.setReferenceBox.addItem(new ReferenceItem(name, i));
                         }
                         programInstance.setReferenceBox.setSelectedIndex(programInstance.setReferenceBox.getItemCount()-1);
+                        programInstance.samplesList.validate();
                     }
                 }.start();
             }
@@ -3330,7 +3433,8 @@ class SampleBufferListRenderer extends JCheckBox implements ListCellRenderer {
 
         setEnabled(list.isEnabled());
         setSelected(((SampleBufferElement) value).isSelected());
-        setFont(list.getFont());
+        //setFont(list.getFont());
+        setFont( new Font ("Sanserif", Font.BOLD, 14));
         setBackground(list.getBackground());
         setForeground(((SampleBufferElement) value).getColor());
         setText(value.toString());
