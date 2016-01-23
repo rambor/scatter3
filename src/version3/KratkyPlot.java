@@ -53,8 +53,7 @@ public class KratkyPlot {
         locationOfWindow = new Point(225,300);
         chartTitle = "Kratky Plot";
 
-        jframe.addWindowListener(new WindowAdapter()
-        {
+        jframe.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e)
             {
                 System.out.println("Kratky Plot closed");
@@ -226,21 +225,22 @@ public class KratkyPlot {
             }
         }));
 
+        frame.setLocation(locationOfWindow);
         frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.pack();
 
-        jframe.addWindowListener(new WindowAdapter() {
+        frame.addWindowListener(new WindowAdapter() {
             public void WindowClosing(WindowEvent e) {
-                locationOfWindow = jframe.getLocation();
-                jframe.dispose();
+                locationOfWindow = frame.getLocation();
+                frame.dispose();
             }
         });
 
         jframe.setMinimumSize(new Dimension(640,480));
         Container content = jframe.getContentPane();
         content.add(frame.getChartPanel());
-        jframe.setLocation(locationOfWindow);
+
         jframe.setVisible(true);
         jframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
@@ -282,8 +282,8 @@ public class KratkyPlot {
     }
 
     public void closeWindow(){
-        locationOfWindow = jframe.getLocation();
-        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
+        locationOfWindow = frame.getLocation();
+        frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
 
     public void setNotify(boolean state){
@@ -298,5 +298,4 @@ public class KratkyPlot {
         renderer1.setSeriesOutlineStroke(id, new BasicStroke(thickness));
 
     }
-
 }

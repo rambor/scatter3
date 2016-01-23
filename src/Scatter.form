@@ -1729,7 +1729,7 @@
                               </hspacer>
                               <component id="8f32d" class="javax.swing.JButton" binding="atsasDirButton">
                                 <constraints>
-                                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
                                   <text value="SET"/>
@@ -1773,7 +1773,7 @@
                               </hspacer>
                               <component id="ad95e" class="javax.swing.JButton" binding="workingDirButton">
                                 <constraints>
-                                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
                                   <text value="SET"/>
@@ -1839,11 +1839,6 @@
                                   <text value="Set qmin and qmax range used for scaling"/>
                                 </properties>
                               </component>
-                              <hspacer id="2e17f">
-                                <constraints>
-                                  <grid row="0" column="1" row-span="1" col-span="4" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-                                </constraints>
-                              </hspacer>
                               <vspacer id="dc33e">
                                 <constraints>
                                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>

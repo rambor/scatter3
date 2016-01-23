@@ -258,16 +258,17 @@ public class PlotDataSingleton {
         }
         plot.setDomainZeroBaselineVisible(false);
 
+        frame.setLocation(locationOfWindow);
         frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.getChartPanel().setDisplayToolTips(false);
         frame.pack();
 
 
-        jframe.addWindowListener(new WindowAdapter() {
+        frame.addWindowListener(new WindowAdapter() {
             public void WindowClosing(WindowEvent e) {
-                locationOfWindow = jframe.getLocation();
-                jframe.dispose();
+                locationOfWindow = frame.getLocation();
+                frame.dispose();
             }
         });
 
@@ -275,8 +276,7 @@ public class PlotDataSingleton {
         jframe.setMinimumSize(new Dimension(640,480));
         Container content = jframe.getContentPane();
         content.add(frame.getChartPanel());
-        //jframe.setLocation(100,100);
-        jframe.setLocation(locationOfWindow);
+        //jframe.setLocation(locationOfWindow);
         jframe.setVisible(true);
     }
 
@@ -332,8 +332,8 @@ public class PlotDataSingleton {
     }
 
     public void closeWindow(){
-        locationOfWindow = jframe.getLocation();
-        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
+        locationOfWindow = frame.getLocation();
+        frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){
