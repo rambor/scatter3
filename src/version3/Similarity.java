@@ -83,49 +83,36 @@ public class Similarity implements Runnable {
     @Override
     public void run() {
 
+        //averageValuePerBin.removeAllSeries();
+        this.calculate();
+
+        XYPlot plot = chart.getXYPlot();
+        plot.setDataset(plottedCollection);
+
+        int totalDatasetToAnalyze = collections.size();
+        int count=0;
+
         if (useKurtosis){
+            range_type="excess kurtosis";
+            makePlot();
 
-            range_type="kurtosis";
-            //averageValuePerBin.removeAllSeries();
-            this.calculateKurtosis();
-
-            XYPlot plot = chart.getXYPlot();
-            plot.setDataset(plottedCollection);
-
-            // write out file for each collection
-            int totalCollections = collections.size();
-            for (int i=0; i<totalCollections; i++){
-
-            }
-/*
-            int totalSeries = averageValuePerBin.getSeriesCount();
-            for (int i=0; i<totalSeries; i++){
-                int totalpoints = averageValuePerBin.getSeries(i).getItemCount();
-                XYSeries temp = averageValuePerBin.getSeries(i);
-                System.out.println(i + "\n ");
-                for (int j=0; j<totalpoints; j++){
-                    System.out.println(temp.getX(j) + " " + temp.getY(j));
-                }
-            }
-*/
-
-
-            makeKurtosisPlot();
-
-            int totalDatasetToAnalyze = collections.size();
-            int count=0;
             for (int i=0; i<totalDatasetToAnalyze; i++){
                 if(collections.get(i).isSelected()){
                     writeCollectionToFile(collections.get(i).getName() + "_kurtosis", collectionOfkurtosisPerFrame.getSeries(count));
                     count++;
                 }
             }
-
-
         } else if (useVr){
+            range_type="volatility-ratio";
+            makePlot();
 
+            for (int i=0; i<totalDatasetToAnalyze; i++){
+                if(collections.get(i).isSelected()){
+                    writeCollectionToFile(collections.get(i).getName() + "_vr", collectionOfkurtosisPerFrame.getSeries(count));
+                    count++;
+                }
+            }
         }
-
     }
 
     public void setDirectory(String object){
@@ -183,55 +170,11 @@ public class Similarity implements Runnable {
         this.panelForChart = outsidePanel;
     };
 
-    public void calculateCorrelation(){
-        //for each q-value create XYSeries
-
-        // go through each q value and create a common set, no interpolation
-        /*
-        int totalDatasets = collectionInUse.getDatasetCount();
-        int totalSelected = collectionInUse.getTotalSelected();
-
-        for(int i=0; i<totalDatasets; i++){
-            Dataset dataset = collectionInUse.getDataset(i);
-            if (dataset.getInUse()){
-                int totaldatapoints = dataset.getAllData().getItemCount();
-                for (int j=0; j<totaldatapoints; j++){
-                    commonQValues.add(dataset.getAllData().getX(j));
-                }
-            }
-        }
-
-        // create hashmap key = qValues
-
-        Iterator it = commonQValues.iterator();
-        while (it.hasNext()) {
-            Number qvalue = (Number) it.next();
-            int count = 0;
-            for(int i=0; i<totalDatasets; i++){
-                Dataset dataset = collectionInUse.getDataset(i);
-                if (dataset.getInUse()){
-                    XYDataItem tempXY = dataset.getAllData().getDataItem(i);
-
-                    if (dataset.getAllData().indexOf(qvalue) > -1 && tempXY.getXValue() > qmin && tempXY.getXValue() < qmax ){
-                        count++;
-                    }
-                }
-            }
-            // should be sorted since iteration is over a sorted set
-            if (count == totalSelected){ // keep q-value
-                keptQvalues.add(qvalue);
-            }
-        }
-*/
-        // Matrix [row (q-value), column (frame)]
-        // average across row to get average Intensity at a specific q-value
-
-    }
 
     /**
      *
      */
-    public void calculateKurtosis(){
+    public void calculate(){
         // for each bin, collect values, do outlier rejection and average
         collectionOfkurtosisPerFrame.removeAllSeries();
         heatData = new DefaultXYZDataset();
@@ -301,7 +244,7 @@ public class Similarity implements Runnable {
                 if (targetSet.getInUse()){
 
                     frameCount++;
-                    double kurt = calculateKurtosisPerSet(referenceSet, startPt, endPt, targetSet);
+                    double kurt = calculateSimFunctionPerSet(referenceSet, startPt, endPt, targetSet);
 
                     collectionOfkurtosisPerFrame.getSeries(locale).add(seriesCount, kurt);
                     System.out.println(s + " target set " + targetSet.getFileName() + " <=> " + seriesCount + " " + kurt);
@@ -322,7 +265,7 @@ public class Similarity implements Runnable {
      * @param targetSet
      * @return double representing kurtosis of the ratio
      */
-    private double calculateKurtosisPerSet(Dataset referenceSet, int startPt, int endPt, Dataset targetSet){
+    private double calculateSimFunctionPerSet(Dataset referenceSet, int startPt, int endPt, Dataset targetSet){
 
         XYSeries referenceSeries = referenceSet.getAllData();
         XYSeries referenceError = referenceSet.getAllDataError();
@@ -410,36 +353,70 @@ public class Similarity implements Runnable {
             tempK.add(0.5*binWidth + qlower, mean);
         }
 
+        // return kurtosis or Vr
+        if (useKurtosis){
+            return calculateKurtosis(tempK);
+        } else if (useVr){
+            return calculateVr(tempK);
+        }
+
+        return 0;
+    }
+
+
+    public double calculateKurtosis(XYSeries reducedBinData){
+        double mean, diff, diff2, averageBottom;
         // calculate kurtosis of tempK
         DescriptiveStatistics top = new DescriptiveStatistics();
         DescriptiveStatistics bottom = new DescriptiveStatistics();
-        mean = meanFromXYSeries(tempK);
+        mean = meanFromXYSeries(reducedBinData);
 
         for (int ss=0; ss<bins; ss++){
-            diff = tempK.getY(ss).doubleValue() - mean; // tempK average value per bin
+            diff = reducedBinData.getY(ss).doubleValue() - mean; // tempK average value per bin
             diff2 = diff*diff;
             top.addValue(diff2*diff2);
             bottom.addValue(diff2);
-
-            xFrameHeat[xCount] = frameCount; // frame 0
-            yBinHeat[yCount] = ss; // bin
-            zHeat[zCount] = diff2; // intensity of signal
-            xCount++;
-            yCount++;
-            zCount++;
         }
-
         averageBottom = bottom.getMean();
         return top.getMean()/(averageBottom*averageBottom) - 3;
     }
 
-    public void setFunction(boolean useKurtosis, boolean useVr){
-        this.useKurtosis = useKurtosis;
-        this.useVr = useVr;
+    /**
+     * calculate volatility ratio
+     * @param reducedBinData
+     * @return
+     */
+    private double calculateVr(XYSeries reducedBinData){
+        //for each q-value create XYSeries
+        int upperLimit = (int)bins-1;
+        double diff, r_i, r_i_1, denom;
+        double sum=0;
+        for (int ss=0; ss<upperLimit; ss++){
+
+            r_i = reducedBinData.getY(ss).doubleValue();
+            r_i_1 = reducedBinData.getY(ss+1).doubleValue();
+            diff = r_i_1 - r_i; // tempK average value per bin
+            denom = 0.5*(r_i + r_i_1); // tempK average value per bin
+            sum += Math.abs(diff)/denom;
+        }
+        return sum;
     }
 
-    public void makeHeatMap(){
+    /**
+     *
+     * @param useKurtosis
+     * @param useVr
+     */
+    public void setFunction(boolean useKurtosis, boolean useVr){
+        if (useKurtosis){
+            this.useKurtosis = useKurtosis;
+            this.useVr = false;
 
+        } else if (useVr) {
+            this.useKurtosis = false;
+            this.useVr = useVr;
+
+        }
     }
 
 
@@ -452,7 +429,11 @@ public class Similarity implements Runnable {
         return sum;
     }
 
-
+    /**
+     * average using median based rejection method
+     * @param values
+     * @return
+     */
     private DescriptiveStatistics averageByMAD(ArrayList<Double> values){
 
         int total = values.size();
@@ -487,6 +468,11 @@ public class Similarity implements Runnable {
         return keptValues;
     }
 
+    /**
+     * calculates average value of the y-column from XYSeries
+     * @param temp
+     * @return double mean
+     */
     private double meanFromXYSeries(XYSeries temp){
         int total = temp.getItemCount();
         double sum = 0.0;
@@ -496,7 +482,7 @@ public class Similarity implements Runnable {
         return sum/(double)total;
     }
 
-    private void makeKurtosisPlot(){
+    private void makePlot(){
 
 
         chart.getTitle().setFont(new java.awt.Font("Times", 1, 20));
@@ -530,8 +516,13 @@ public class Similarity implements Runnable {
         plot.setOutlineVisible(false);
 
         XYLineAndShapeRenderer renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
-        renderer1.setBaseShapesVisible(true);
         renderer1.setBaseShape(Constants.Ellipse4);
+        renderer1.setBaseShapesVisible(true);
+
+        int totalSeries = plottedCollection.getSeriesCount();
+        for (int i=0; i<totalSeries; i++){
+            renderer1.setSeriesShape(i, Constants.Ellipse8);
+        }
 
         plot.setRenderer(0, renderer1);
 

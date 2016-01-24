@@ -56,5 +56,7 @@ public final class Constants {
 
     public static final DecimalFormat df = new DecimalFormat("0.0000", otherSymbols);
 
-    public static final Shape Ellipse4 = new Ellipse2D.Double(-4.0, -4.0, 4.0, 4.0);
+    public static final Shape Ellipse4 = new Ellipse2D.Double(-2.0, -2.0, 4.0, 4.0);
+    public static final Shape Ellipse6 = new Ellipse2D.Double(-3.0, -3.0, 6.0, 6.0);
+    public static final Shape Ellipse8 = new Ellipse2D.Double(-4.0, -4.0, 8.0, 8.0);
 }

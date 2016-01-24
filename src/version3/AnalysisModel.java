@@ -4,17 +4,20 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.AbstractTableModel;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.text.DecimalFormat;
 import java.util.LinkedList;
 
 /**
  * Created by robertrambo on 11/01/2016.
  */
-public class AnalysisModel extends AbstractTableModel implements ChangeListener {
+public class AnalysisModel extends AbstractTableModel implements ChangeListener, PropertyChangeListener {
 
     private final LinkedList<Dataset> datalist;
-    private String currentWorkingDirectory;
-    JLabel status;
+    private WorkingDirectory currentWorkingDirectory;
+    private JLabel status;
+
     DecimalFormat oneDecPlac = new DecimalFormat("0.0");
     DecimalFormat fourDecPlac = new DecimalFormat("0.0000");
     DecimalFormat scientific = new DecimalFormat("0.00E0");
@@ -22,8 +25,10 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
 
     private String[] columnNames = new String[]{"", "", "", "", "start", "end", "I(0)", "<html>R<sub>g</sub></html>", "<html>d<sub>max</sub></html>", "<html>R<sub>c</sub></html>", "<html>P<sub>x</sub></html>", "<html>V<sub>p</sub></html>", "Scale", "G"};
 
-    public AnalysisModel(JLabel status){
+    public AnalysisModel(JLabel status, WorkingDirectory cwd){
         this.status = status;
+        this.currentWorkingDirectory = cwd;
+        currentWorkingDirectory.addPropertyChangeListener(this);
         datalist = new LinkedList<>();
     }
 
@@ -67,8 +72,8 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
 
         } else if (col == 3) {
             System.out.println("Copying " + dataset.getFileName()+ " to " + (String)obj);
-            dataset.copyAndRenameDataset((String)obj);
-            // copyDataset((String)obj, dataset, Scatter.WORKING_DIRECTORY_NAME);
+            dataset.copyAndRenameDataset((String)obj, currentWorkingDirectory.getWorkingDirectory());
+            status.setText("Renamed(copied) original file");
         } else if (col == 4){
             dataset.setStart((Integer)obj);
         } else if (col == 5){
@@ -162,6 +167,36 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener 
         }
         catch( Exception e) {
             return false;
+        }
+    }
+
+   // public void setCurrentWorkingDirectory(String cwd){
+   //     this.currentWorkingDirectory = cwd;
+   // }
+
+    public void propertyChange(PropertyChangeEvent evt) {
+        // determine if the CurrentTemperature property of the temperature
+        // object is the one that changed
+        if (evt.getSource() == currentWorkingDirectory &&
+                evt.getPropertyName() == "WorkingDirectory")
+        {
+            WorkingDirectory t = (WorkingDirectory) evt.getSource();
+            // get the new value object
+            Object o = evt.getNewValue();
+
+            String newCWD;
+
+            if (o == null)
+            {
+                // go back to the object to get the temperature
+                newCWD = t.getWorkingDirectory();
+            }
+            else
+            {
+                // get the new temperature value
+                newCWD = ((String)o).toString();
+            }
+
         }
     }
 }

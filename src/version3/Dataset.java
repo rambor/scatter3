@@ -6,6 +6,7 @@ import org.jfree.data.xy.*;
 import java.awt.*;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.util.ArrayList;
 
 /**
@@ -1300,6 +1301,10 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
         this.experimentalNotes = text;
     }
 
+    public void appendExperimentalNotes(String text) {
+        this.experimentalNotes = this.experimentalNotes + "\n"  + text;
+    }
+
     public String getExperimentalNotes(){
         return this.experimentalNotes;
     }
@@ -1375,8 +1380,12 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
         }
     }
 
-    public void copyAndRenameDataset(String newName){
-
+    public void copyAndRenameDataset(String newName, String cwd){
+        String base = newName.replaceAll("\\W","_");
+        this.appendExperimentalNotes("COPIED FROM " + this.filename);
+        this.setFileName(base);
+        FileObject dataToWrite = new FileObject(new File(cwd));
+        dataToWrite.writeSAXSFile(base, this);
     }
 
 }
