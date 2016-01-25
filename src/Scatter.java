@@ -144,6 +144,27 @@ public class Scatter {
     private JTextField qminLimitField;
     private JComboBox comboBox2;
     private JButton runButton;
+    private JButton SVDReduceButton;
+    private JCheckBox antiLogCheckBox;
+    private JPanel menuBarPrPanel;
+    private JPanel prGraphPanels;
+    private JCheckBox qIQCheckBox;
+    private JProgressBar progressBar1;
+    private JLabel prStatusLabel;
+    private JPanel pr_settings;
+    private JComboBox refinementRoundsBox;
+    private JComboBox rejectionCutOffBox;
+    private JLabel defaultDmax;
+    private JLabel dmaxLabel;
+    private JCheckBox l1NormCheckBox;
+    private JSlider dmaxSlider;
+    private JComboBox lambdaBox;
+    private JComboBox cBox;
+    private JPanel prPanel;
+    private JScrollPane prScrollPane;
+    private JPanel lowerPrPanel;
+    private JPanel prDistribution;
+    private JPanel prIntensity;
 
     private String version = "3.0";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -175,6 +196,9 @@ public class Scatter {
     public static AnalysisModel analysisModel;
     public static ResultsModel resultsModel;
 
+    public static JTable prTable;
+    public static PrModel prModel;
+
     private JList buffersList;
     private JList samplesList;
     private JList similarityList;
@@ -201,6 +225,8 @@ public class Scatter {
     private static int cpuCores;
 
     public Scatter() { // constructor
+
+        refinementRoundsBox.setSelectedIndex(3);
 
         collections = new HashMap();
         bufferCollections = new Collection();
@@ -541,12 +567,74 @@ public class Scatter {
         resultsTable.getColumnModel().getColumn(12).setCellRenderer(centerRenderer);
         resultsTable.getColumnModel().getColumn(13).setCellRenderer(centerRenderer);
 
-
         JScrollPane resultsList = new JScrollPane(resultsTable);
         resultsPanel.add(resultsList);
         resultsTable.setFillsViewportHeight(false);
         resultsList.setOpaque(true);
         resultsPanel.setOpaque(true);
+
+
+        //Pr Table JLabel status, WorkingDirectory cwd, Double lambda
+        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, 0.01));
+        prModel = (PrModel) prTable.getModel();
+        TableColumnModel pcm = prTable.getColumnModel();
+
+        TableColumn pc = pcm.getColumn(4);
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, antiLogCheckBox));
+        pc = pcm.getColumn(5);
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, antiLogCheckBox));
+        pc = pcm.getColumn(9);
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, antiLogCheckBox));
+
+        pc = pcm.getColumn(2);
+        pc.setCellEditor(new CheckBoxCellEditorRenderer());
+        pc.setCellRenderer(new CheckBoxCellEditorRenderer());
+
+        prTable.getColumnModel().getColumn(0).setPreferredWidth(10);
+        prTable.getColumnModel().getColumn(1).setPreferredWidth(30);
+        prTable.getColumnModel().getColumn(2).setPreferredWidth(35);
+        prTable.getColumnModel().getColumn(3).setPreferredWidth(100);
+
+        JTableHeader pheader = prTable.getTableHeader();
+        pheader.setDefaultRenderer(new HeaderRenderer(prTable));
+
+        final JScrollPane prList = new JScrollPane(prTable);
+        prPanel.add(prList);
+
+        prScrollPane.add(prTable);
+
+        prTable.setFillsViewportHeight(false);
+        prTable.setRowHeight(22);
+        prList.setOpaque(true);
+        prPanel.setOpaque(true);
+
+        pc = prTable.getColumnModel().getColumn(0);
+        pc.setCellEditor(new ColorEditor());
+        pc.setCellRenderer(new ColorRenderer(true));
+
+        pc = pcm.getColumn(12);  //Norm
+        pc.setCellEditor(new PrButtonEditorRenderer("Norm"));
+        pc.setCellRenderer(new PrButtonEditorRenderer("Norm"));
+        pc = pcm.getColumn(14);  //Refine
+        pc.setCellEditor(new PrButtonEditorRenderer("Refine"));
+        pc.setCellRenderer(new PrButtonEditorRenderer("Refine"));
+        pc = pcm.getColumn(15);  //toFile
+        pc.setCellEditor(new PrButtonEditorRenderer("2File"));
+        pc.setCellRenderer(new PrButtonEditorRenderer("2File"));
+
+        prTable.getColumnModel().getColumn(4).setPreferredWidth(80);
+        prTable.getColumnModel().getColumn(5).setPreferredWidth(100);
+        prTable.getColumnModel().getColumn(6).setPreferredWidth(170); // I(0)
+        prTable.getColumnModel().getColumn(7).setPreferredWidth(160); // Rg
+        prTable.getColumnModel().getColumn(14).setPreferredWidth(70);
+        prTable.getColumnModel().getColumn(12).setPreferredWidth(40);
+
+        prTable.getColumnModel().getColumn(4).setCellRenderer(centerRenderer); // r_ave
+        prTable.getColumnModel().getColumn(5).setCellRenderer(centerRenderer); //
+        prTable.getColumnModel().getColumn(6).setCellRenderer(centerRenderer);
+        prTable.getColumnModel().getColumn(7).setCellRenderer(centerRenderer);
+        prTable.getColumnModel().getColumn(8).setCellRenderer(centerRenderer); // r_ave
+        prTable.getColumnModel().getColumn(9).setCellRenderer(centerRenderer); // dmax
 
 
         // define Singleton plots
@@ -1730,6 +1818,33 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 excessKurtosisCheckBox.setSelected(!(volatilityVRCheckBox.isSelected()));
+            }
+        });
+
+        realSpaceButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                // add to PrModel
+
+            }
+        });
+
+        qIQCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (qIQCheckBox.isSelected()){
+                    antiLogCheckBox.setSelected(!qIQCheckBox.isSelected());
+                }
+            }
+        });
+
+        antiLogCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (antiLogCheckBox.isSelected()){
+                    qIQCheckBox.setSelected(!antiLogCheckBox.isSelected());
+                }
             }
         });
     }
@@ -3449,6 +3564,82 @@ public class Scatter {
         }
     }
 
+    public class PrButtonEditorRenderer extends AbstractCellEditor implements TableCellRenderer, TableCellEditor, ActionListener {
+        JButton button;
+        private int rowID;
+        private int colID;
+
+
+        public PrButtonEditorRenderer(String name){
+            this.button = new JButton();
+            this.button.addActionListener(this);
+            //button.setMaximumSize(new Dimension(10,10));
+            //button.setPreferredSize(new Dimension(10,10));
+
+            if (name == "Norm"){
+                this.button.setText("N");
+                this.button.setToolTipText("Normalize");
+            } else if (name == "Refine"){
+                this.button.setText("Refine");
+                this.button.setToolTipText("Refine P(r) model");
+            } else if (name == "2File"){
+                this.button.setText("2File");
+                this.button.setToolTipText("Write to File");
+            }
+
+            this.button.setFont(new Font("Verdana", Font.PLAIN, 10));
+            this.button.setBorderPainted(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            button.setSelected(Boolean.TRUE.equals(value));
+            this.button.setForeground(Color.BLACK);
+            return button;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            button.setSelected(Boolean.TRUE.equals(value));
+            rowID = row;
+            colID = column;
+            return button;
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (this.colID == 12) {
+                this.button.setBackground(Color.WHITE);
+                this.button.setForeground(Color.GREEN);
+                //normalize - divide P(r) by I-Zero
+                double invIzero = 1/prModel.getDataset(rowID).getIzero();
+                prModel.getDataset(rowID).setScale((float) invIzero);
+
+                prModel.fireTableDataChanged();
+
+            } else if (this.colID == 14){
+                //refine_Pr
+                this.button.setBackground(Color.WHITE);
+                this.button.setForeground(Color.GREEN);
+                status.setText("");
+                // launch a thread
+                //Runnable refineThread = new RefineThread(prModel.getDataset(rowID), Integer.parseInt(refinementRoundsBox.getSelectedItem().toString()), Double.parseDouble(rejectionCutOffBox.getSelectedItem().toString()), Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), status);
+                //new Thread(refineThread).start();
+            } else if (this.colID == 15){
+                //write Pr and Iq distributions toFile
+                // create new instance of save and pass through datasets
+                // get and return directory and filename
+                //SavePr tempSave = new SavePr();
+                //toFilePofR(collectionSelected.getDataset(prModel.getDataset(rowID).getId()), prModel.getDataset(rowID));
+            }
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return button.isSelected();
+        }
+    }
+
 } // end of Scatter class
 
 
@@ -3487,3 +3678,4 @@ class SampleBufferListRenderer extends JCheckBox implements ListCellRenderer {
     }
 
 }
+

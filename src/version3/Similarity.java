@@ -484,7 +484,6 @@ public class Similarity implements Runnable {
 
     private void makePlot(){
 
-
         chart.getTitle().setFont(new java.awt.Font("Times", 1, 20));
         chart.getTitle().setPaint(Constants.SteelBlue);
         chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
@@ -533,11 +532,11 @@ public class Similarity implements Runnable {
 //        renderer1.setSeriesOutlineStroke(i, tempData.getStroke());
 
         frame = new ChartFrame("SC\u212BTTER \u2263 SIMILARITY PLOT", chart);
-        frame.pack();
+        //frame.pack();
+        panelForChart.removeAll();
         panelForChart.add(frame.getContentPane());
         panelForChart.validate();
         //frame.setVisible(true);
-
 /*
         frame.getChartPanel().setDisplayToolTips(true);
         frame.getChartPanel().getChart().getXYPlot().getRenderer(0).setBaseToolTipGenerator(new XYToolTipGenerator() {

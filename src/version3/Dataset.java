@@ -246,6 +246,8 @@ public class Dataset {
         pointSize = 6;
         this.setStroke(1.0f);
         this.id = id;
+
+        this.realSpace = new RealSpace(this);
     }
 
     /*
@@ -1328,6 +1330,10 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
         this.setAM(dataset.getMooreCoefficients());
         this.setDmax((double)dataset.getDmax());
         // update Vc
+    }
+
+    public RealSpace getRealSpaceModel(){
+        return realSpace;
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {

@@ -45,28 +45,31 @@ public class RealSpace {
     private double kurtosis = 0;
     private double l1_norm = 0;
     private double kurt_l1_sum;
+    private Dataset dataset;
 
-    public RealSpace(String filename, XYSeries original, XYSeries error, int id, int dmax, Color color, int start, int lastPoint, double scaleFactor){
-        this.filename = filename;
-        this.id = id;
-        this.dmax = dmax;
+    // rescale the data when loading analysisModel
+
+    public RealSpace(Dataset dataset){
+        this.dataset = dataset;
+        this.filename = dataset.getFileName();
+        this.id = dataset.getId();
+        this.dmax = (int)dataset.getDmax();
         selected = true;
-        analysisToPrScaleFactor = scaleFactor;
+        analysisToPrScaleFactor = 1;
 
         try {
-            allData = original.createCopy(0,original.getItemCount()-1);
+            allData = dataset.getAllData().createCopy(0,dataset.getAllData().getItemCount()-1);
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
         try {
-            errorAllData = error.createCopy(0,original.getItemCount()-1);
+            errorAllData = dataset.getAllDataError().createCopy(0,dataset.getAllData().getItemCount()-1);
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
-
-        fittedIq = new XYSeries(Integer.toString(this.id) + "fitted" + filename);
+        fittedIq = new XYSeries(Integer.toString(this.id) + "fitted-" + filename);
         fittedError = new XYSeries(Integer.toString(this.id) + "fittedError-" + filename);
         logData = new XYSeries(Integer.toString(this.id) + "log-" + filename);
         calcIq = new XYSeries(Integer.toString(this.id) + "calc-" + filename);
@@ -75,27 +78,25 @@ public class RealSpace {
         qIq = new XYSeries(Integer.toString(this.id) + "qIq-" + filename);
 
         prDistribution = new XYSeries(Integer.toString(this.id) + "Pr-" + filename);
-        this.color = color;
-        pointSize = 2;
-        stroke = new BasicStroke(1);
+        this.color = dataset.getColor();
+        pointSize = dataset.getPointSize();
+        stroke = dataset.getStroke();
         scale = 1.0f;
         baseShapeFilled = false;
         //for spinners
-        this.start = start; // spinner value
-        //stop = allData.getItemCount();
-        stop = lastPoint;   // spinner value
+        this.start = dataset.getStart(); // spinner value
+        this.stop = dataset.getEnd();   // spinner value
 
         double xValue;
         double yValue;
+
         // transform all the data in allData
-        for(int i=0; i<allData.getItemCount(); i++){
+
+        for(int i=0; i < allData.getItemCount(); i++){
             XYDataItem temp = allData.getDataItem(i);
 
             xValue = temp.getXValue();
-            yValue = temp.getYValue()*scaleFactor;
-
-            allData.updateByIndex(i, yValue); //update the datapoint to the scaled value
-            errorAllData.updateByIndex(i, errorAllData.getY(i).doubleValue()*scaleFactor);
+            yValue = temp.getYValue();
 
             if (i >= (start-1) && (i<stop)){
                 if (temp.getYValue() > 0){
@@ -106,14 +107,46 @@ public class RealSpace {
                 fittedError.add(errorAllData.getDataItem(i));
                 qIq.add(xValue, xValue*yValue); // fitted data
             }
-
         }
+
+        //check for negative values at start
+        double qlimit = 0.05;
+        XYDataItem temp;
+        for (int i=0; i< allData.getItemCount(); i++){
+            temp = allData.getDataItem(i);
+
+            if (temp.getYValue() < 0){
+                start = i + 1;
+            }
+
+            if (temp.getXValue() > qlimit){
+                break;
+            }
+        }
+
     }
 
+    public double getGuinierRg(){
+        return dataset.getGuinierRg();
+    }
+
+    public double getGuinierIzero(){
+        return dataset.getGuinierIzero();
+    }
+
+
+    /**
+     * shoudl match spinner index
+     * @param i
+     */
     public void setStart(int i){
         start = i;
     }
 
+    /**
+     * set start value of the spinner
+     * @return
+     */
     public int getStart(){
         return start;
     }
@@ -131,6 +164,7 @@ public class RealSpace {
     }
 
     public void setDmax(int d){
+        this.dataset.setDmax(d);
         dmax = d;
     }
 
@@ -165,6 +199,7 @@ public class RealSpace {
     public float getChi2(){
         return chi2;
     }
+
 
     public void setChi2(float j){
         chi2 = j;
@@ -296,10 +331,6 @@ public class RealSpace {
         this.izero = temp.get(0);
         this.rg = temp.get(1);
         this.raverage = temp.get(2);
-
-     //   tempData.setRealIzero(this.izero);
-     //   tempData.setRealRg(this.rg);
-     //   tempData.setAverageR(this.raverage);
     }
 
     public void setRealVariants(){
