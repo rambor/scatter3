@@ -102,6 +102,7 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener,
             case 2: // rendered as a checkbox
                 return dataset.getInUse();
             case 3:
+
                 return dataset.getFileName();
             case 4: //spinner
                 index = dataset.getStart();

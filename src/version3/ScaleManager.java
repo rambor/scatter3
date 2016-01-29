@@ -53,7 +53,6 @@ public class ScaleManager {
     }
 
 
-
     public void scaleNow(double lower, double upper){
 
         status.setText("Scaling " + totalToScale + " datasets to row : " + (reference_ID + 1) );

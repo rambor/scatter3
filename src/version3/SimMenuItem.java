@@ -21,7 +21,7 @@ public class SimMenuItem {
     private JFrame frame;
 
 
-    public SimMenuItem(Similarity simObject){
+    public SimMenuItem(final Similarity simObject){
         this.simObject = simObject;
         itemList = new JList();
         itemList.setCellRenderer(new SimDataFilesListRenderer());
@@ -52,10 +52,9 @@ public class SimMenuItem {
         saveButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                frame.dispose();
             }
         });
-
 
         cancelButton.addActionListener(new ActionListener() {
             @Override
@@ -63,7 +62,6 @@ public class SimMenuItem {
                 frame.dispose();
             }
         });
-
 
         this.makeFrame();
     }

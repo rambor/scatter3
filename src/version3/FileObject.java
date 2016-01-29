@@ -34,8 +34,8 @@ public class FileObject {
             out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
             out.write(this.createNotesRemark(data));
             out.write(this.createBufferRemark(data));
-            out.write(String.format("REMARK\t  COLUMNS : q, I(q), error%n"));
-            out.write(String.format("REMARK\t  q : defined in inverse Angstroms%n"));
+            out.write(String.format("REMARK 265 COLUMNS : q, I(q), error%n"));
+            out.write(String.format("REMARK 265 q : defined in inverse Angstroms%n"));
 
             int numberOfDigits;
             for (int n=0; n < total; n++) {
@@ -63,8 +63,8 @@ public class FileObject {
             out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
             out.write(this.createNotesRemark(data));
             out.write(this.createBufferRemark(data));
-            out.write(String.format("REMARK\t  COLUMNS : q, I(q), error%n"));
-            out.write(String.format("REMARK\t  q : defined in inverse Angstroms%n"));
+            out.write(String.format("REMARK 265  COLUMNS : q, I(q), error%n"));
+            out.write(String.format("REMARK 265  q : defined in inverse Angstroms%n"));
 
             int numberOfDigits;
             for (int n=startAt; n < endAt; n++) {
@@ -81,6 +81,12 @@ public class FileObject {
     public void writePRFile(String name){
 
     }
+
+
+    public void writeRefinedDataToFile(){
+
+    }
+
 
     private int getDigits(double qvalue) {
         String toText = Double.toString(qvalue);

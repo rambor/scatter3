@@ -454,7 +454,7 @@ private int refId, scaleToID;
         FileObject dataToWrite = new FileObject(new File(cwd));
 
         for (int i = 0; i < total; i++) {
-            dataToWrite.writeSAXSFile(subtractedCollection.getDataset(i).getFileName()+"_sub", subtractedCollection.getDataset(i));
+            dataToWrite.writeSAXSFile(subtractedCollection.getDataset(i).getFileName(), subtractedCollection.getDataset(i));
         }
     }
 

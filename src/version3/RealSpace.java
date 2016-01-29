@@ -16,19 +16,27 @@ public class RealSpace {
     private String filename;
     private boolean selected;
     private int id;
-    private int start;
-    private int stop;
-    private XYSeries allData;  // use for actual fit and setting spinners
+    private int startAt;
+    private int stopAt;
+    private int totalMooreCoefficients;
+    private XYSeries allData;       // use for actual fit and setting spinners
     private XYSeries errorAllData;  // use for actual fit and setting spinners
 
-    private XYSeries fittedIq; // range of data used for the actual fit, may contain negative values
-    private XYSeries qIq; // range of data used for the actual fit, may contain negative values
-    private XYSeries fittedError;
+    private XYSeries originalqIq;         // range of data used for the actual fit, may contain negative values
+    private XYSeries fittedqIq;           // range of data used for the actual fit, may contain negative values
+    private XYSeries fittedIq;           // range of data used for the actual fit, may contain negative values
+    private XYSeries fittedError;        //
 
-    private XYSeries calcIq;   // log of calculate I(q), matches logData
-    private XYSeries nonLogCalcIq;   // non-log of calculate I(q), matches logData
-    private XYSeries logData;  // only for plotting
+    private XYSeries refinedIq;           // range of data used for the actual fit, may contain negative values
+    private XYSeries refinedError;        //
+
+
+    private XYSeries calcIq;          // log of calculate I(q), matches logData
+    private XYSeries calcqIq;         // log of calculate I(q), matches logData
+    private XYSeries logData;         // only for plotting
     private XYSeries prDistribution;
+    private XYSeries refinedPrDistribution;
+
     private double analysisToPrScaleFactor;
     private double izero;
     private double rg;
@@ -36,7 +44,7 @@ public class RealSpace {
     private int dmax;
     private double qmax;
     private double raverage;
-    private float chi2;
+    private double chi2;
     private float scale;
     private Color color;
     private boolean baseShapeFilled;
@@ -46,6 +54,9 @@ public class RealSpace {
     private double l1_norm = 0;
     private double kurt_l1_sum;
     private Dataset dataset;
+    private int lowerQIndexLimit=0;
+    private final int maxCount;
+    private final static double invPi = 1.0/Math.PI;
 
     // rescale the data when loading analysisModel
 
@@ -56,75 +67,93 @@ public class RealSpace {
         this.dmax = (int)dataset.getDmax();
         selected = true;
         analysisToPrScaleFactor = 1;
+        int totalAllData = dataset.getAllData().getItemCount();
 
         try {
-            allData = dataset.getAllData().createCopy(0,dataset.getAllData().getItemCount()-1);
+            allData = dataset.getAllData().createCopy(0,totalAllData-1);
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
         try {
-            errorAllData = dataset.getAllDataError().createCopy(0,dataset.getAllData().getItemCount()-1);
+            errorAllData = dataset.getAllDataError().createCopy(0, totalAllData-1);
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
-        fittedIq = new XYSeries(Integer.toString(this.id) + "fitted-" + filename);
-        fittedError = new XYSeries(Integer.toString(this.id) + "fittedError-" + filename);
-        logData = new XYSeries(Integer.toString(this.id) + "log-" + filename);
-        calcIq = new XYSeries(Integer.toString(this.id) + "calc-" + filename);
-        nonLogCalcIq = new XYSeries(Integer.toString(this.id) + "calc-" + filename);
+        fittedIq = new XYSeries(Integer.toString(this.id) + " Iq-" + filename);
+        fittedqIq = new XYSeries(Integer.toString(this.id) + " qIq-" + filename);
+        fittedError = new XYSeries(Integer.toString(this.id) + " fittedError-" + filename);
 
-        qIq = new XYSeries(Integer.toString(this.id) + "qIq-" + filename);
+        logData = new XYSeries(Integer.toString(this.id) + " log-" + filename);
+        calcIq = new XYSeries(Integer.toString(this.id) + " calc-" + filename);
+        calcqIq = new XYSeries(Integer.toString(this.id) + " calc-" + filename);
 
-        prDistribution = new XYSeries(Integer.toString(this.id) + "Pr-" + filename);
+        refinedIq = new XYSeries(Integer.toString(this.id) + " refined-" + filename);
+        refinedError = new XYSeries(Integer.toString(this.id) + " refined-" + filename);
+
+        originalqIq = dataset.getQIQData();
+
+        prDistribution = new XYSeries(Integer.toString(this.id) + " Pr-" + filename);
         this.color = dataset.getColor();
+
         pointSize = dataset.getPointSize();
         stroke = dataset.getStroke();
         scale = 1.0f;
         baseShapeFilled = false;
         //for spinners
-        this.start = dataset.getStart(); // spinner value
-        this.stop = dataset.getEnd();   // spinner value
+        //this.startAt = dataset.getStart(); // spinner value in reference to non-negative data
+        int startAll = dataset.getStart();
+        //int startAll = dataset.getAllData().indexOf(dataset.getData().getMinX());
+        int stopAll = dataset.getAllData().indexOf(dataset.getData().getMaxX());
 
         double xValue;
         double yValue;
 
         // transform all the data in allData
+        //check for negative values at start
+        double qlimit = 0.05;
 
-        for(int i=0; i < allData.getItemCount(); i++){
-            XYDataItem temp = allData.getDataItem(i);
+        XYDataItem temp;
+        int ii=startAll, lastNegative=-1;
+        temp = allData.getDataItem(ii);
+        while (temp.getXValue() < qlimit && ii < stopAll){
+            if (temp.getYValue() < 0){
+                lastNegative = ii;
+            }
+            ii++;
+            temp = allData.getDataItem(ii);
+        }
+
+        lowerQIndexLimit = (lastNegative < 0) ? startAll : lastNegative+1;
+
+
+        for(int i=lowerQIndexLimit; i < totalAllData; i++){
+            temp = allData.getDataItem(i);
 
             xValue = temp.getXValue();
             yValue = temp.getYValue();
 
-            if (i >= (start-1) && (i<stop)){
-                if (temp.getYValue() > 0){
-                    logData.add(xValue, Math.log10(yValue));
-                }
-                //fittedIq.add(temp);
-                fittedIq.add(xValue, yValue);
-                fittedError.add(errorAllData.getDataItem(i));
-                qIq.add(xValue, xValue*yValue); // fitted data
+            if (temp.getYValue() > 0){
+                logData.add(xValue, Math.log10(yValue));
             }
+
+            fittedIq.add(temp);
+            fittedError.add(errorAllData.getDataItem(i));
+            fittedqIq.add(originalqIq.getDataItem(i));   // fitted data, spinners will add and remove from this XYSeries
         }
 
-        //check for negative values at start
-        double qlimit = 0.05;
-        XYDataItem temp;
-        for (int i=0; i< allData.getItemCount(); i++){
-            temp = allData.getDataItem(i);
-
-            if (temp.getYValue() < 0){
-                start = i + 1;
-            }
-
-            if (temp.getXValue() > qlimit){
-                break;
-            }
-        }
-
+        lowerQIndexLimit++; // increment to set to value for spinner
+        startAt=lowerQIndexLimit;
+        stopAt=originalqIq.getItemCount();
+        maxCount = originalqIq.getItemCount();
     }
+
+    /**
+     * max value of original dataset
+     * @return
+     */
+    public int getMaxCount(){ return maxCount;}
 
     public double getGuinierRg(){
         return dataset.getGuinierRg();
@@ -134,13 +163,14 @@ public class RealSpace {
         return dataset.getGuinierIzero();
     }
 
+    public int getLowerQIndexLimit(){ return lowerQIndexLimit;}
 
     /**
      * shoudl match spinner index
      * @param i
      */
     public void setStart(int i){
-        start = i;
+        startAt = i;
     }
 
     /**
@@ -148,15 +178,15 @@ public class RealSpace {
      * @return
      */
     public int getStart(){
-        return start;
+        return startAt;
     }
 
     public void setStop(int i){
-        stop = i;
+        stopAt = i;
     }
 
     public int getStop(){
-        return stop;
+        return stopAt;
     }
 
     public int getDmax(){
@@ -196,7 +226,7 @@ public class RealSpace {
         raverage = j;
     }
 
-    public float getChi2(){
+    public double getChi2(){
         return chi2;
     }
 
@@ -206,7 +236,9 @@ public class RealSpace {
         this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(301));
         this.l1_norm = this.l1_norm_pddr(11);
         this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
+
         // System.out.println("CHI2 " + j + " " + this.kurtosis + " L1 " + this.l1_norm);
+
     }
 
     public float getScale(){
@@ -214,7 +246,7 @@ public class RealSpace {
     }
 
     public void setScale(float j){
-        float oldscale = 1/this.scale;
+        float oldscale = (float) (1.0/this.scale);
         this.scale = j;
         /*
          * scale Pr distribution
@@ -225,7 +257,6 @@ public class RealSpace {
             tempData = this.getPrDistribution().getDataItem(i);
             this.prDistribution.updateByIndex(i, tempData.getYValue()*oldscale*this.scale);
         }
-
     }
 
     public void setPointSize(int size){
@@ -288,19 +319,35 @@ public class RealSpace {
         return calcIq;
     }
 
-    public XYSeries getqIq(){
-        return qIq;
-    }
 
     public XYSeries getErrorAllData(){
         return errorAllData;
     }
 
+    /**
+     * return range of data used for fitting, includes negative Intensities
+     * @return
+     */
     public XYSeries getfittedIq(){
+
+        try {
+            fittedIq = allData.createCopy(startAt-1, stopAt-1);
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
         return fittedIq;
     }
 
+    public XYSeries getfittedqIq(){
+        return fittedqIq;
+    }
+
     public XYSeries getfittedError(){
+        try {
+            fittedError = errorAllData.createCopy(startAt-1, stopAt-1);
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
         return fittedError;
     }
 
@@ -324,21 +371,134 @@ public class RealSpace {
         return mooreCoefficients;
     }
 
-    public void setMooreCoefficients(double[] values, Dataset tempData){
-        this.mooreCoefficients = values;
-        ArrayList<Double> temp;
-        temp = Functions.saxs_invariants(this.mooreCoefficients, this.dmax);
-        this.izero = temp.get(0);
-        this.rg = temp.get(1);
-        this.raverage = temp.get(2);
+    public void setMooreCoefficients(double[] values){
+        totalMooreCoefficients = values.length;
+        this.mooreCoefficients = new double[totalMooreCoefficients];
+        System.arraycopy(values, 0, this.mooreCoefficients, 0, totalMooreCoefficients);
+        saxs_invariants();
+
+        // calculate P(r) distribution
+        this.calculatePofR();
+        // this.createIofQ();
+        try {
+            this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    public void setRealVariants(){
-        ArrayList<Double> temp;
-        temp = Functions.saxs_invariants(this.mooreCoefficients, this.dmax);
-        this.izero = temp.get(0);
-        this.rg = temp.get(1);
-        this.raverage = temp.get(2);
+
+    public void calculatePofR(){
+        /*
+         * create P(r) plot
+         */
+
+        prDistribution.clear();
+        double totalPrPoints = (Math.ceil(fittedqIq.getMaxX()*dmax*invPi)*3);
+        int r_limit = (int)totalPrPoints -1;
+        double deltar = dmax/totalPrPoints;
+
+
+        double resultM;
+        double inv_d = 1.0/dmax;
+        double pi_dmax = Math.PI*inv_d;
+        double inv_2d = 0.5*inv_d;
+        double pi_dmax_r;
+        double r_value;
+        prDistribution.add(0.0d, 0.0d);
+
+        for (int j=1; j < r_limit; j++){
+
+            r_value = j*deltar;
+            pi_dmax_r = pi_dmax*r_value;
+            resultM = 0;
+
+            for(int i=1; i < totalMooreCoefficients; i++){
+                resultM += mooreCoefficients[i]*Math.sin(pi_dmax_r*i);
+            }
+
+            prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
+        }
+        prDistribution.add(dmax,0);
+    }
+
+
+    /**
+     *
+     * @param isqIq
+     */
+    public void calculateIntensityFromModel(boolean isqIq){
+
+        if (isqIq) {
+            this.calculateQIQ();
+        } else {
+            this.calculateIofQ();
+        }
+    }
+
+    /**
+     * calculate QIQ for plotting, includes negative values
+     */
+    public void calculateQIQ(){
+        calcqIq.clear();
+        double iofq;
+        XYDataItem temp;
+        //iterate over each q value and calculate I(q)
+        int startHere = startAt -1;
+        for (int j=startHere; j<stopAt; j++){
+            temp = allData.getDataItem(j);
+            iofq = moore_Iq(temp.getXValue());
+            calcqIq.add(temp.getX(), temp.getXValue()*iofq);
+        }
+    }
+
+    /**
+     *
+     * @return calcqIq XYSeries
+     */
+    public XYSeries getCalcqIq(){
+        return calcqIq;
+    }
+
+    /**
+     * @return XYSeries of log10 Intensities
+     */
+    public void calculateIofQ(){
+        calcIq.clear();
+        //calcqIq.clear();
+        double iofq;
+        XYDataItem temp;
+        //iterate over each q value and calculate I(q)
+        int startHere = startAt -1;
+        for (int j=startHere; j<stopAt; j++){
+            temp = allData.getDataItem(j);
+            iofq = moore_Iq(temp.getXValue());
+
+            //calcqIq.add(temp.getX(), temp.getXValue()*iofq);
+            if (iofq > 0){
+                calcIq.add(temp.getXValue(), Math.log10(iofq));
+            }
+        }
+    }
+
+    /**
+     * Calculates intensities from moore coefficients
+     * @param q single scattering vector point
+     * @return Intensity I(q)
+     */
+    public double moore_Iq(double q){
+        double invq = 1.0/q;
+        double resultM = mooreCoefficients[0]*invq;
+        double dmaxPi = dmax*Math.PI;
+        double dmaxq;
+        double pi2 = Math.PI*Math.PI;
+
+        for(int i=1; i < totalMooreCoefficients; i++){
+            dmaxq = dmax*q;
+            resultM = resultM + mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(pi2*i*i - dmaxq*dmaxq)*invq;
+        }
+
+        return resultM;
     }
 
 
@@ -355,8 +515,7 @@ public class RealSpace {
 
         double a_i_sum, product, l1_norm = 0.0;
 
-
-        double shannon = Math.ceil(multiple*1.0/Math.PI*this.dmax*this.fittedIq.getMaxX());
+        double shannon = Math.ceil(multiple*1.0/Math.PI*this.dmax*this.fittedqIq.getMaxX());
         double delta_r = this.dmax/shannon;
         double[] r_vector = new double[(int)shannon + 1];
 
@@ -459,4 +618,268 @@ public class RealSpace {
 
         return Statistics.calculateMedian(kurtosises);
     }
+
+    private void saxs_invariants(){
+
+        /*
+         * Calculate invariants
+         */
+        double i_zero = 0;
+        double partial_rg = 0;
+        double rsum = 0;
+
+        double am;
+        double pi_sq = 9.869604401089358;
+        int sizeOf = mooreCoefficients.length;
+
+        for (int i = 0; i < sizeOf; i++) {
+
+            if (i != 0) {
+                am = mooreCoefficients[i];
+                i_zero = i_zero + am/(i)*Math.pow(-1,(i+1));
+                partial_rg = partial_rg + am/Math.pow(i,3)*(Math.pow(Math.PI*i, 2) - 6)*Math.pow(-1, (i+1));
+                rsum = rsum + am/Math.pow(i,3)*((Math.pow(Math.PI*i, 2) - 2)*Math.pow(-1, (i+1)) - 2 );
+            }
+        }
+
+
+        double dmax2 = dmax*dmax;
+        double dmax3 = dmax2*dmax;
+        double dmax4 = dmax2*dmax2;
+        double inv_pi_cube = 1/(pi_sq*Math.PI);
+
+        izero = i_zero*dmax2/Math.PI + mooreCoefficients[0];
+        rg = Math.sqrt(dmax4*inv_pi_cube/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
+        raverage = dmax3*inv_pi_cube/izero*rsum;
+
+    }
+
+    public void decrementLow(int spinnerValue){
+
+        Number currentQ = fittedqIq.getX(0);
+
+        int total = spinnerValue - this.startAt;
+
+        if (total == 1){
+            if (currentQ.equals(logData.getX(0))){
+                fittedqIq.remove(0);
+                logData.remove(0);
+            } else {
+                // find where in logData is currentQ
+                int stopHere = logData.indexOf(currentQ);
+                fittedqIq.remove(0);
+                logData.delete(0, stopHere);
+            }
+        } else {
+            int stopHere = logData.indexOf(currentQ);
+            int totalminus = total-1;
+            fittedqIq.delete(0,totalminus);
+            logData.delete(0,stopHere);
+        }
+
+    }
+
+
+
+    public void resetStartStop(){
+        // start should be the low-q value
+        // spinner in Analysis tab follows non-negative values
+        // spinner in Pr follows originalqIq but limited by lowerQIndex
+
+        int tempStart = originalqIq.indexOf(this.dataset.getData().getMinX()) + 1;
+        System.out.println("index of plotted data mapped into original " + originalqIq.indexOf(this.dataset.getData().getMinX()));
+        System.out.println("lowerqlimit " + lowerQIndexLimit);
+        if (tempStart < lowerQIndexLimit){
+            this.startAt = lowerQIndexLimit;
+        } else {
+            this.startAt = tempStart;
+        }
+
+        this.stopAt = originalqIq.indexOf(this.dataset.getData().getMaxX());
+
+        logData.clear();
+        fittedIq.clear();
+        fittedqIq.clear();
+        fittedError.clear();
+
+        XYDataItem temp;
+        for(int i=startAt-1; i < stopAt; i++){
+            temp = allData.getDataItem(i);
+
+            if (temp.getYValue() > 0){
+                logData.add(temp.getXValue(), Math.log10(temp.getYValue()));
+            }
+
+            fittedIq.add(temp);
+            fittedError.add(errorAllData.getDataItem(i));
+            fittedqIq.add(originalqIq.getDataItem(i));   // fitted data, spinners will add and remove from this XYSeries
+        }
+    }
+
+
+    public void incrementLow(int target){
+
+        // add point to fittedqiq
+        int diff = this.getStart() - target;
+
+        if (diff == 1){
+            XYDataItem tempXY = originalqIq.getDataItem(target-1);
+            fittedqIq.add(tempXY);
+
+            if (tempXY.getYValue() > 0){
+                logData.add(tempXY.getX(), Math.log10(allData.getY(target-1).doubleValue()));
+            }
+        } else { // add more than one point
+            int indexStart = this.getStart()-1;
+
+            for (int i=0; i<diff && indexStart >= 0; i++){
+                indexStart--;
+                XYDataItem tempXY = originalqIq.getDataItem(indexStart);
+
+                fittedqIq.add(tempXY);
+                if (tempXY.getYValue() > 0) {
+                    logData.add(tempXY.getX(), Math.log10(allData.getY(indexStart).doubleValue()));
+                }
+            }
+        }
+        this.startAt = target;
+    }
+
+
+    public void incrementHigh(int target){
+
+        // add point to fittedqiq
+        int diff = target - this.getStop();
+
+        if (diff == 1){
+            XYDataItem tempXY = originalqIq.getDataItem(target-1);
+            fittedqIq.add(tempXY);
+
+            if (tempXY.getYValue() > 0){
+                logData.add(tempXY.getX(), Math.log10(allData.getY(target-1).doubleValue()));
+            }
+        } else { // add more than one point
+            int indexStart = this.getStop();
+            int maxCount = originalqIq.getItemCount();
+            int limit = (target > maxCount) ? maxCount : (target);
+
+            for (int i=indexStart; i < limit; i++){
+                XYDataItem tempXY = originalqIq.getDataItem(i);
+                fittedqIq.add(tempXY);
+
+                if (tempXY.getYValue() > 0) {
+                    logData.add(tempXY.getX(), Math.log10(allData.getY(i).doubleValue()));
+                }
+            }
+
+            target = limit;
+        }
+        this.stopAt = target;
+    }
+
+
+    public void decrementHigh(int spinnerValue){
+
+        int total = this.stopAt - spinnerValue;
+
+        if (total == 1){
+            Number currentQ = fittedqIq.getMaxX();
+            if (currentQ.equals(logData.getMaxX())){
+                fittedqIq.remove(fittedqIq.getItemCount()-1);
+                logData.remove(logData.getItemCount()-1);
+            }
+        } else {
+
+            int maxFittedqiq = fittedqIq.getItemCount();
+            int delta = this.stopAt - spinnerValue;
+            // spinnerValue is in reference to complete original data
+            fittedqIq.delete(maxFittedqiq - delta, maxFittedqiq-1);
+
+            double lastValue = fittedqIq.getMaxX();
+            if (logData.getMaxX() > lastValue) { // if true, keep deleting until logData.MaxX <= fittedqIq.maxX
+                int last = logData.getItemCount();
+                while (logData.getMaxX() > lastValue){
+                    last--;
+                    logData.remove(last);
+                }
+            }
+        }
+
+        this.stopAt = spinnerValue;
+    }
+
+    public void updatedRefinedSets(XYSeries data, XYSeries error){
+        int total = data.getItemCount();
+        refinedIq.clear();
+        refinedError.clear();
+        for (int i=0; i<total; i++){
+            refinedIq.add(data.getDataItem(i));
+            refinedError.add(error.getDataItem(i));
+        }
+    }
+
+
+    /**
+     *
+     * Estimates chi-square at the cardinal series
+     * @throws Exception
+     */
+    public void chi_estimate(XYSeries data, XYSeries error) throws Exception{
+        // how well does the fit estimate the cardinal series (shannon points)
+        double chi=0;
+        double inv_card;
+        final double inv_dmax = 1.0/(double)dmax;
+        // n*PI/qmax
+        final double pi_dmax = inv_dmax*Math.PI;
+        double error_value;
+        // Number of Shannon bins, excludes the a_o
+        int bins = totalMooreCoefficients - 1, count=0, total = data.getItemCount();
+
+        double df = 0; //1.0/(double)(bins-1);
+        double cardinal, test_q = 0, diff;
+        Double[] values;
+        // see if q-value exists but to what significant figure?
+        // if low-q is truncated and is missing must exclude from calculation
+        for (int i=1; i <= bins; i++){
+
+            cardinal = i*pi_dmax;
+            inv_card = 1.0/cardinal;
+
+            // what happens if a bin is empty?
+            searchLoop:
+            while ( (test_q < cardinal) && (count < total) ){
+                test_q = data.getX(count).doubleValue();
+                // find first value >= shannon cardinal value
+                if (test_q >= cardinal){
+                    break searchLoop;
+                }
+                count++;
+            }
+
+            // if either differences is less than 0.1% use the measured value
+            if (count != 0){
+                if ((count > 0) && (Math.abs(data.getX(count-1).doubleValue() - cardinal)*inv_card < 0.001)) {
+                    error_value = 1.0/error.getY(count - 1).doubleValue();
+                    diff = data.getY(count-1).doubleValue() - moore_Iq(data.getX(count - 1).doubleValue());
+                    chi += (diff*diff)*(error_value*error_value);
+                    df += 1.0;
+                } else if ((count < total) && (Math.abs(data.getX(count).doubleValue() - cardinal)*inv_card < 0.001)) {
+                    error_value = 1.0/error.getY(count).doubleValue();
+                    diff = data.getY(count).doubleValue() - moore_Iq(data.getX(count).doubleValue());
+                    chi += (diff*diff)*(error_value*error_value);
+                    df += 1.0;
+                } else if (count > 0) { // if difference is greater than 0.1% interpolate and also the cardinal is bounded
+                    values = Functions.interpolateOriginal(data, error, cardinal, 1.0);
+                    diff = values[1] - (mooreCoefficients[0] + mooreCoefficients[i]*dmax*0.5)*inv_card;
+                    chi += (diff*diff)/(values[2]*values[2]);
+                    df += 1.0;
+                }
+            }
+        }
+
+        System.out.println("dmax => " + dmax + " SUM " + chi + " " + (totalMooreCoefficients - df) + " (a_m).size : " + totalMooreCoefficients + " df : " + df);
+        //return chi*1.0/(df-1);
+        chi2 = chi*1.0/(totalMooreCoefficients-1);
+    }
+
 }

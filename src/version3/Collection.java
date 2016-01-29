@@ -56,11 +56,11 @@ public class Collection {
      */
     public void addDataset(Dataset dat){
         // do color assignment when adding to collection
-        float r,g,b;
-        r = rand.nextFloat();
-        g = rand.nextFloat();
-        b = rand.nextFloat();
-        dat.setColor(new Color(r,g,b));
+        //float r,g,b;
+        //r = rand.nextFloat();
+        //g = rand.nextFloat();
+        //b = rand.nextFloat();
+        //dat.setColor(new Color(r,g,b));
         datasets.add(dat);
         totalDatasets = datasets.size();
 

@@ -46,13 +46,13 @@ public class LowerUpperBoundManager {
             System.out.println("InterruptedException " + e.getMessage());
             setStatus("Failed settings limits, exceeded thread time");
         }
-
-
     }
+
 
     public void setStatus(String text){
         status.setText(text);
     }
+
 
     public class Bounder implements Runnable {
 

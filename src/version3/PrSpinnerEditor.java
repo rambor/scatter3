@@ -23,18 +23,20 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     private int priorValue;
     private int lastValue;
     private JLabel status;
-    private JCheckBox antiLog;
     private JCheckBox qIqFit;
+    private JComboBox lambdaBox;
 
     // Initializes the spinner.
-    public PrSpinnerEditor(PrModel prModel, JLabel status, JCheckBox antiLogCheckBox) {
+    public PrSpinnerEditor(PrModel prModel, JLabel status,  JCheckBox qIqCheckBox, JComboBox lambdaBox) {
         super(new JTextField());
         spinner = new JSpinner();
+
+        this.lambdaBox = lambdaBox;
 
         this.prModel = prModel;
 
         this.status = status;
-        this.antiLog = antiLogCheckBox;
+        this.qIqFit = qIqCheckBox;
 
         editor = ((JSpinner.DefaultEditor)spinner.getEditor());
         textField = editor.getTextField();
@@ -42,17 +44,6 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         textField.addFocusListener( new FocusListener() {
             public void focusGained( FocusEvent fe ) {
 
-                //textField.setSelectionStart(0);
-                //textField.setSelectionEnd(1);
-                    /*
-                    SwingUtilities.invokeLater( new Runnable() {
-                        public void run() {
-                            if ( valueSet ) {
-                                textField.setCaretPosition(1);
-                            }
-                        }
-                    });
-                    */
             }
 
             public void focusLost( FocusEvent fe ) {
@@ -74,187 +65,63 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         RealSpace prDataset = prModel.getDataset(rowID);
 
         int temp = (Integer)this.spinner.getValue();
-        int current = (Integer) this.spinner.getValue() - 1;
 
-        int direction = temp - this.priorValue;
+        int oldStart = prDataset.getStart();
+        int oldStop = prDataset.getStop();
+
         int limit;
-
-        XYDataItem tempData;
+        int valueOfSpinner = (Integer)this.spinner.getValue();
 
         if (this.colID == 4){ // lower(start) spinner
-            double test = prDataset.getAllData().getMaxX(); // plotted data
-            double testSpinner = prDataset.getAllData().getX(((Integer) this.spinner.getValue()).intValue()).doubleValue();
 
-            if (((Integer)this.spinner.getValue() < 1) || (testSpinner > test)){
-                this.spinner.setValue(1);
-                this.priorValue = 1;
+            if (((Integer)this.spinner.getValue() < prDataset.getLowerQIndexLimit()) || (valueOfSpinner > oldStop)){
+                this.spinner.setValue(prDataset.getLowerQIndexLimit());
+                this.priorValue = prDataset.getLowerQIndexLimit();
             } else {
                 //moving up or down?
+                int direction = valueOfSpinner - oldStart;
                 if (direction > 0) {
-                    if (direction == 1) {
-
-                        tempData = prDataset.getfittedIq().getDataItem(0);
-                        // check to see if datapoint is in log plot
-                        if (prDataset.getLogData().indexOf(tempData.getX()) >= 0){
-                            prDataset.getLogData().remove(0);
-                        }
-                        prDataset.getfittedIq().remove(0);
-                        prDataset.getfittedError().remove(0);
-                        prDataset.getqIq().remove(0);
-                    } else {
-
-                        limit = (Integer) temp - this.priorValue;
-                        for (int i = 0; i < limit; i++){
-                            tempData = prDataset.getfittedIq().getDataItem(0);
-                            // check to see if datapoint is in log plot
-                            if (prDataset.getLogData().indexOf(tempData.getX()) >= 0){
-                                prDataset.getLogData().remove(0);
-                            }
-                            prDataset.getfittedIq().remove(0);
-                            prDataset.getfittedError().remove(0);
-                            prDataset.getqIq().remove(0);
-                        }
-
-                    }
-                    this.priorValue = temp;
+                    prDataset.decrementLow(valueOfSpinner);
                 } else if (direction < 0){
-                    if (direction == -1) {
-
-                        tempData = prDataset.getAllData().getDataItem(current);
-                        double q = tempData.getXValue();
-
-                        if (tempData.getYValue() > 0){  // make sure Intensity is positive
-                            double lnI = Math.log10(tempData.getYValue());
-                            prDataset.getLogData().add(q, lnI);
-                        }
-                        prDataset.getfittedIq().add(tempData);
-                        prDataset.getfittedError().add(prDataset.getErrorAllData().getDataItem(current));
-                        prDataset.getqIq().add(q,q*tempData.getYValue());
-
-
-                    } else {
-                        // keep adding points up until currentValue
-                        int start = current;
-                        double lastq = prDataset.getfittedIq().getMaxX();
-                        int last = prDataset.getAllData().indexOf(lastq);
-
-                        double q, lnI;
-                        //int start = this.priorValue - 2;
-                        prDataset.getLogData().clear();
-                        prDataset.getfittedIq().clear();
-                        prDataset.getfittedError().clear();
-                        prDataset.getqIq().clear();
-
-                        for(int i = start; i <= last; i++){
-                            tempData = prDataset.getAllData().getDataItem(i);
-                            q = tempData.getXValue();
-
-                            if (tempData.getYValue() > 0){
-                                lnI = Math.log10(tempData.getYValue());
-                                prDataset.getLogData().add(q, lnI);
-                            }
-                            prDataset.getfittedIq().add(tempData);
-                            prDataset.getfittedError().add(prDataset.getErrorAllData().getDataItem(i));
-                            prDataset.getqIq().add(q,q*tempData.getYValue());
-                        }
-                    }
-                    this.priorValue = temp;
-                }
-            }
-        } else if (colID == 5) {
-            limit = prDataset.getAllData().getItemCount();
-            int testLogInt;
-            if ((Integer)this.spinner.getValue() > limit){
-                this.spinner.setValue(limit);
-                this.priorValue = limit;
-            } else {
-                //moving up or down?
-                if (direction < 0) {
-                    if (direction == -1) {
-                        //remove last point
-                        int last = prDataset.getfittedIq().getItemCount();
-                        tempData = prDataset.getfittedIq().getDataItem(last -1);
-
-                        // check to see if datapoint is in log plot
-                        if (prDataset.getLogData().indexOf(tempData.getX()) >= 0){
-                            prDataset.getLogData().remove(prDataset.getLogData().getItemCount()-1);
-                        }
-                        prDataset.getfittedIq().remove(last-1);
-                        prDataset.getfittedError().remove(last-1);
-                        prDataset.getqIq().remove(last-1);
-                    } else {
-                        limit = (Integer) temp - this.priorValue;
-                        //current is the last point
-                        int start = prDataset.getfittedIq().getItemCount() - 1;
-                        int stop = start + limit;
-                        // keep removing last point
-                        for (int i = start; i > stop; i--){
-                            tempData = prDataset.getfittedIq().getDataItem(i);
-                            testLogInt = prDataset.getLogData().indexOf(tempData.getXValue());
-                            if ( testLogInt >= 0){
-                                prDataset.getLogData().remove(testLogInt);
-                            }
-                            prDataset.getfittedIq().remove(i);
-                            prDataset.getfittedError().remove(i);
-                            prDataset.getqIq().remove(i);
-                        }
-                    }
-
-                } else if (direction > 0){
-                    if (direction == 1) {
-                        //XYDataItem tempXY = collectionSelected.getDataset(collectionID).getAllData().getDataItem(current);
-                        XYDataItem tempXY = prDataset.getAllData().getDataItem(current);
-                        double q = tempXY.getXValue();
-
-                        if (tempXY.getYValue() > 0){
-                            double lnI = Math.log10(tempXY.getYValue());
-                            prDataset.getLogData().add(q,lnI);
-                        }
-                        prDataset.getfittedIq().add(tempXY);
-                        prDataset.getfittedError().add(prDataset.getErrorAllData().getDataItem(current));
-                        prDataset.getqIq().add(q, q*tempXY.getYValue());
-
-
-                    } else {
-                        // keep adding points up until currentValue
-                        int last = current;
-                        double startq = prDataset.getfittedIq().getX(0).doubleValue();
-                        int start = prDataset.getAllData().indexOf(startq);
-                        double q, lnI;
-
-                        prDataset.getfittedIq().clear();
-                        prDataset.getfittedError().clear();
-                        prDataset.getLogData().clear();
-                        prDataset.getqIq().clear();
-
-                        for(int i = start; i <= last; i++){
-                            XYDataItem tempXY = prDataset.getAllData().getDataItem(i);
-                            q = tempXY.getXValue();
-                            if (tempXY.getYValue() > 0){
-                                lnI = Math.log10(tempXY.getYValue());
-                                prDataset.getLogData().add(q,lnI);
-                            }
-                            prDataset.getfittedIq().add(tempXY);
-                            prDataset.getfittedError().add(prDataset.getErrorAllData().getDataItem(i));
-                            prDataset.getqIq().add(q, q*tempXY.getYValue());
-                        }
-                    }
+                    prDataset.incrementLow(valueOfSpinner);
                 }
                 this.priorValue = temp;
-                prModel.setValueAt(temp, rowID, colID);
             }
-        } else if (colID==9){
 
+            prDataset.setStart(valueOfSpinner);
+
+        } else if (colID == 5) {
+
+            limit = prDataset.getMaxCount();
+
+            if (valueOfSpinner >= limit){
+                this.spinner.setValue(prDataset.getStop());
+            } else {
+                //moving up or down?
+                int direction = valueOfSpinner - oldStop;
+
+                if (direction < 0) {
+                    prDataset.decrementHigh(valueOfSpinner);
+                } else if (direction > 0){
+                    prDataset.incrementHigh(valueOfSpinner);
+                }
+                this.priorValue = temp;
+            }
+
+        } else if (colID==9){
             temp = (Integer)this.spinner.getValue();
-            //collectionID = prDataset.getId();
             prDataset.setDmax(temp);
+            status.setText("Finished: d_max set to " + prDataset.getDmax());
         }
         //recalculate P(r) distributions
         status.setText("Analyzing, please wait");
 
-        //recalculatePr(prDataset, antiLog.isSelected());
-
-        status.setText("Finished: d_max set to " + prDataset.getDmax());
+        // calculte new Fit
+        PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), false);
+        tempPr.run();
+        //prDataset.calculateIofQ();
+        prDataset.calculateIntensityFromModel(qIqFit.isSelected());
+        prModel.fireTableDataChanged();
     }
 
     // Prepares the spinner component and returns it.
@@ -264,11 +131,10 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         colID = column;
         lastValue = prModel.getDataset(rowID).getAllData().getItemCount();
 
-        if (colID == 4){
+        if (colID == 4) {
             priorValue = prModel.getDataset(rowID).getStart();
             spinner.setModel(new SpinnerNumberModel(priorValue, 1, lastValue, 10));
-
-        } else if (colID == 5){
+        } else if (colID == 5) {
             priorValue = prModel.getDataset(rowID).getStop();
             spinner.setModel(new SpinnerNumberModel(priorValue, 1, lastValue, 10));
         } else if (colID == 9) {
@@ -286,8 +152,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         return spinner;
     }
 
-    public boolean isCellEditable( EventObject eo )
-    {
+    public boolean isCellEditable( EventObject eo ) {
         //System.err.println("isCellEditable");
         if ( eo instanceof KeyEvent) {
             KeyEvent ke = (KeyEvent)eo;

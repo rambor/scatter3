@@ -188,71 +188,71 @@ public class Similarity implements Runnable {
 
         for (int dd=0; dd<totalDatasetToAnalyze; dd++){
 
-            collectionInUse = collections.get(dd).getCollection();
-            // first dataset is reference to calculate ratio to
-            int totalDatasets = collectionInUse.getDatasetCount();
-            Dataset referenceSet =  null;  // set first checked dataset as reference
+            if (collections.get(dd).isSelected()){
+                collectionInUse = collections.get(dd).getCollection();
+                // first dataset is reference to calculate ratio to
+                int totalDatasets = collectionInUse.getDatasetCount();
+                Dataset referenceSet =  null;  // set first checked dataset as reference
 
-            int startAt=0;
+                int startAt=0;
 
-            for(int i=0; i<totalDatasets; i++){
-                referenceSet = collectionInUse.getDataset(i);
-                if (referenceSet.getInUse()){
-                    startAt = i+1;
-                    break;
+                for(int i=0; i<totalDatasets; i++){
+                    referenceSet = collectionInUse.getDataset(i);
+                    if (referenceSet.getInUse()){
+                        startAt = i+1;
+                        break;
+                    }
                 }
-            }
 
-            int startPt=0, endPt;
-            int totalPoints = referenceSet.getAllData().getItemCount();
-            endPt = totalPoints - 1;
-            for (int i=0; i<totalPoints; i++){
-                if (referenceSet.getAllData().getX(i).doubleValue() >= qmin){
-                    startPt = i;
-                    break;
+                int startPt=0, endPt;
+                int totalPoints = referenceSet.getAllData().getItemCount();
+                endPt = totalPoints - 1;
+                for (int i=0; i<totalPoints; i++){
+                    if (referenceSet.getAllData().getX(i).doubleValue() >= qmin){
+                        startPt = i;
+                        break;
+                    }
                 }
-            }
 
-            int seriesCount=0;
+                int seriesCount=0;
 
-            collectionOfkurtosisPerFrame.addSeries(new XYSeries("Index " +dd));
-            int locale = collectionOfkurtosisPerFrame.getSeriesCount()-1;
+                collectionOfkurtosisPerFrame.addSeries(new XYSeries("Index " +dd));
+                int locale = collectionOfkurtosisPerFrame.getSeriesCount()-1;
 
-            int useableFrames = collectionInUse.getTotalSelected();
-            int totalHeatMapPts = (int)bins*useableFrames;
-            xFrameHeat = new double[totalHeatMapPts];
-            yBinHeat = new double[totalHeatMapPts];
-            zHeat = new double[totalHeatMapPts];
+                int useableFrames = collectionInUse.getTotalSelected();
+                int totalHeatMapPts = (int)bins*useableFrames;
+                xFrameHeat = new double[totalHeatMapPts];
+                yBinHeat = new double[totalHeatMapPts];
+                zHeat = new double[totalHeatMapPts];
 
-            xCount=0;
-            yCount=0;
-            zCount=0;
-            frameCount=0;
+                xCount=0;
+                yCount=0;
+                zCount=0;
+                frameCount=0;
 
-            for(int j=0; j<bins; j++){
-                xFrameHeat[xCount] = frameCount; // frame 0
-                yBinHeat[yCount] = j; // bin
-                zHeat[zCount] = 0; // intensity of signal
-                xCount++;
-                yCount++;
-                zCount++;
-            }
+                for(int j=0; j<bins; j++){
+                    xFrameHeat[xCount] = frameCount; // frame 0
+                    yBinHeat[yCount] = j; // bin
+                    zHeat[zCount] = 0; // intensity of signal
+                    xCount++;
+                    yCount++;
+                    zCount++;
+                }
 
-            for(int s=startAt; s<totalDatasets; s++){
+                for(int s=startAt; s<totalDatasets; s++){
 
-                Dataset targetSet = collectionInUse.getDataset(s);
-                if (targetSet.getInUse()){
+                    Dataset targetSet = collectionInUse.getDataset(s);
+                    if (targetSet.getInUse()){
 
-                    frameCount++;
-                    double kurt = calculateSimFunctionPerSet(referenceSet, startPt, endPt, targetSet);
-
-                    collectionOfkurtosisPerFrame.getSeries(locale).add(seriesCount, kurt);
-                    System.out.println(s + " target set " + targetSet.getFileName() + " <=> " + seriesCount + " " + kurt);
-                    seriesCount++;
+                        frameCount++;
+                        double kurt = calculateSimFunctionPerSet(referenceSet, startPt, endPt, targetSet);
+                        seriesCount++;
+                        collectionOfkurtosisPerFrame.getSeries(locale).add(seriesCount, kurt);
+                        System.out.println(s + " target set " + targetSet.getFileName() + " <=> " + seriesCount + " " + kurt);
+                    }
                 }
             }
         }
-
         plottedCollection = collectionOfkurtosisPerFrame;
     }
 
@@ -277,7 +277,7 @@ public class Similarity implements Runnable {
         ArrayList<Double> ratioValuesForAveraging = new ArrayList<>();
 
         double xValue, ratioValue, ratioError, qlower, qupper;
-        int locale, seriesCount=0, intBins = (int)bins;
+        int locale, intBins = (int)bins;
 
         //System.out.println(targetSet.getFileName() + " " + averageValuePerBin.getSeriesCount());
         //averageValuePerBin.addSeries(new XYSeries(targetSet.getFileName()));
@@ -326,7 +326,7 @@ public class Similarity implements Runnable {
         int startIndex = 0;
         int totalRatio = ratioSeries.getItemCount();
         double mean, diff, diff2, averageBottom;
-        //XYSeries tempK = averageValuePerBin.getSeries(seriesCount);
+
         XYSeries tempK = new XYSeries("tempK");
 
         for (int b=0; b < intBins; b++){

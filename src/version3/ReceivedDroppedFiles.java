@@ -47,10 +47,6 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         this.sortFiles = sort;
         this.workingDirectoryName = workingDirectoryName;
 
-
-        if (sortFiles){
-            Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
-        }
     }
 
 
@@ -62,6 +58,10 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         bar.setMaximum(100);
         bar.setStringPainted(true);
         bar.setValue(0);
+
+        if (sortFiles){ // sort the name of directories first and then proceed to loading files
+            Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
+        }
 
         for( int i = 0; i < totalFiles; i++ ) {
             // call File loader function
@@ -135,8 +135,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
 
                 String name = targetCollection.getDataset(i).getFileName();
                 name = name + "_" + i;
-
-                targetCollection.getDataset(i).setFileName(name);
+                //System.out.println(i + " renaming after loading : " + name + " " + targetCollection.getDataset(i).getId());
+                // targetCollection.getDataset(i).setFileName(name);
                 tempColor = targetCollection.getDataset(i).getColor();
                 sampleBufferFilesModel.addElement(new SampleBufferElement(name, i, tempColor, targetCollection.getDataset(i)));
             }

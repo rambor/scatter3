@@ -249,6 +249,7 @@ public class GPAPlot extends PlotManualGuinier {
     private void createTransformedSeries(){
 
         // fitted series will terminate at qRg < 1.5
+
         double upperLimit = 1.5/guinierRg;
         int count=0;
         for(int i=0; i<datasetInUse.getOriginalPositiveOnlyData().getItemCount(); i++){

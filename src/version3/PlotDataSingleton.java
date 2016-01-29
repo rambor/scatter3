@@ -60,9 +60,6 @@ public class PlotDataSingleton {
         JPopupMenu popup = frame.getChartPanel().getPopupMenu();
 
         //frame.getChartPanel().getChart().getXYPlot().getRangeAxis().setAxisLineStroke();
-
-
-
         popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
             @Override
             public void actionPerformed(ActionEvent e) {

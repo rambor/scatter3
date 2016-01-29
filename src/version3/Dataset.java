@@ -8,6 +8,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * Created by robertrambo on 05/01/2016.
@@ -121,6 +122,8 @@ public class Dataset {
     private String experimentalNotes;
     private String bufferComposition;
 
+    private ArrayList<XYSeries> allMySeries;
+
     /**
      *
      * @param dat current dataset
@@ -161,6 +164,9 @@ public class Dataset {
         kratkyData = new XYSeries(tempName);            // derived from allData
         qIqData = new XYSeries(tempName);               // derived from allData
         powerLawData = new XYSeries(tempName);          // derived from originalPositiveOnlyData
+
+
+//thia        allMySeries = new ArrayList<>();
 
         /*
          * make working copies of the data into non-negative, log10 and all
@@ -246,6 +252,9 @@ public class Dataset {
         pointSize = 6;
         this.setStroke(1.0f);
         this.id = id;
+
+        Random r=new Random();
+        color = new Color(r.nextInt(256),r.nextInt(256),r.nextInt(256));
 
         this.realSpace = new RealSpace(this);
     }
@@ -895,6 +904,8 @@ public class Dataset {
         }
     }
 
+
+    public XYSeries getQIQData(){ return qIqData;}
 
     public void clearPlottedQIQData(){
         plottedqIqData.clear();

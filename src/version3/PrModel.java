@@ -4,10 +4,12 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.AbstractTableModel;
+import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.text.DecimalFormat;
 import java.util.LinkedList;
+import java.util.Objects;
 
 /**
  * Created by robertrambo on 24/01/2016.
@@ -16,26 +18,33 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
 
     private final LinkedList<RealSpace> datalist;
     private boolean fitModel;
-    private double lambda;
     private WorkingDirectory currentWorkingDirectory;
     private JLabel status;
+    private DoubleValue dmaxLow, dmaxHigh, dmaxStart;
+    private JComboBox lambdaBox;
+    private JProgressBar mainBar, prBar;
 
     DecimalFormat twoDecPlac = new DecimalFormat("0.00");
     DecimalFormat scientific = new DecimalFormat("0.00E0");
     DecimalFormat twoOneFormat = new DecimalFormat("0.0");
 
-    private String[] columnNames = new String[]{"","", "", "", "start", "end", "<html>I(0)<font color=\"#ffA500\"> Real</font> | <font color=\"#808080\">Reci</font></html>", "<html>R<sub>g</sub><font color=\"#ffA500\"> Real</font> | <font color=\"#808080\">Reci</font></html> ", "<html>r<sub>ave</sub></html>", "<html>d<sub>max</sub></html>", "<html>Chi<sup>2</sup>(S<sub>k2</sub>)</html>", "<html>scale</html>", "", "", "",""};
+    private String[] columnNames = new String[]{"","", "", "", "start", "end", "<html>I(0)<font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html>", "<html>R<sub>g</sub><font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html> ", "<html>r<sub>ave</sub></html>", "<html>d<sub>max</sub></html>", "<html>Chi<sup>2</sup>(S<sub>k2</sub>)</html>", "<html>scale</html>", "", "", "",""};
+    private JLabel mainStatus, prStatus;
 
-    public PrModel(JLabel status, WorkingDirectory cwd, Double lambda){
+    public PrModel(JLabel status, WorkingDirectory cwd, JComboBox lambdaBox, DoubleValue dmaxlow, DoubleValue dmaxhigh, DoubleValue dmaxstart, boolean fitModel){
         this.status = status;
         this.currentWorkingDirectory = cwd;
         currentWorkingDirectory.addPropertyChangeListener(this);
 
-        datalist = new LinkedList<RealSpace>();
-        fitModel = true;
-        this.lambda = lambda;
-    }
+        this.lambdaBox = lambdaBox;
 
+        datalist = new LinkedList<>();
+        this.fitModel = fitModel;
+        dmaxLow = dmaxlow;
+        dmaxHigh = dmaxhigh;
+        dmaxStart = dmaxstart;
+    }
+/*
     public void setLambda(double value){
         lambda = value;
     }
@@ -43,7 +52,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     public double getLambda(){
         return lambda;
     }
-
+*/
     public void setFitModel(boolean flag){
         fitModel = flag;
     }
@@ -104,11 +113,10 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 dataset.setPointSize(temp.getPointSize());
 
                 // rebuild plot
-                //replotPr(row, dataset);
+                // replotPr(row, dataset);
             } else if (col == 9){
                 dataset.setDmax((Integer)obj);
-
-                //recalculatePr(dataset, antiLogCheckBox.isSelected());
+                // recalculatePr(dataset, antiLogCheckBox.isSelected());
             }
             fireTableCellUpdated(row, col);
 
@@ -134,7 +142,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     @Override
     public Object getValueAt(int row, int col) {
         RealSpace dataset = (RealSpace) datalist.get(row);
-        double q;
+
         int index;
         // anytime row is clicked, this method is executed
         switch (col){
@@ -154,28 +162,36 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 return index;
             case 6: //I-zero
                 double tempIzero = dataset.getGuinierIzero();
-                return "<html><font color=\"#ffA500\">" + scientific.format(dataset.getIzero()).toString() + "</font> | <font color=\"#808080\">" + scientific.format(tempIzero).toString() +"</font></html>";
+                return "<html><b><font color=\"#ffA500\">" + scientific.format(dataset.getIzero()).toString() + "</font></b> (<font color=\"#808080\">" + scientific.format(tempIzero).toString() +"</font>)</html>";
             case 7: //Rg
                 String tempRg = twoDecPlac.format(dataset.getGuinierRg()).toString();
-                return "<html><font color=\"#ffA500\">" + twoDecPlac.format(dataset.getRg()).toString()  + "</font> | <font color=\"#808080\">" +  tempRg +"</font></html>";
+                return "<html><b><font color=\"#ffA500\">" + twoDecPlac.format(dataset.getRg()).toString()  + "</font></b> (<font color=\"#808080\">" +  tempRg +"</font>)</html>";
             case 8: //r-average
                 return twoOneFormat.format(dataset.getRaverage());
             case 9:
                 return dataset.getDmax();
             case 10:
-                return twoDecPlac.format(dataset.getChi2()) + "("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
+                return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
             case 11:
                 return scientific.format(dataset.getScale());
             case 12: //norm  Button
                 return true;
-            case 13: //refine Button
+            case 13: //dmax search Button
                 return true;
-            case 14: //toFile Button
+            case 14: //refine Button
+                return true;
+            case 15: //toFile Button
                 return true;
             default:  //
                 return null;
         }
+    }
 
+    public void setBars(JProgressBar mainBar, JProgressBar prBar, JLabel mainStatus, JLabel prStatus){
+        this.mainBar = mainBar;
+        this.prBar = prBar;
+        this.mainStatus = mainStatus;
+        this.prStatus = prStatus;
     }
 
     public RealSpace getDataset(int i){
@@ -188,18 +204,41 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         //fireTableDataChanged();
     }
 
-    public void addDatasetsFromCollection(Collection collection){
+    public void addDatasetsFromCollection(final Collection collection){
 
-        int total = collection.getDatasetCount();
+        datalist.clear();
+        final int total = collection.getDatasetCount();
+        mainBar.setStringPainted(true);
+        mainBar.setIndeterminate(true);
+        mainStatus.setText("Loading Datasets into Pr-tab");
+        prStatus.setText("");
 
-        for(int i=0; i<total; i++){
+        for (int i = 0; i < total; i++) {
+            if (collection.getDataset(i).getInUse()) {
 
-            if (collection.getDataset(i).getInUse()){
+                RealSpace temp = collection.getDataset(i).getRealSpaceModel();
+                temp.setColor(collection.getDataset(i).getColor());
+
+                if ((temp.getRg() == 0 && temp.getIzero() == 0) || temp.getDmax() == 0) {
+                            temp.resetStartStop();
+                            fireTableDataChanged();
+                            temp.setDmax((int) dmaxStart.getValue());
+                            //create a new PrObject and run in thrad
+                            // fit model is L1-norm of coefficients or second derivative
+                            PrObject tempPr = new PrObject(temp, Double.parseDouble(lambdaBox.getSelectedItem().toString()), fitModel);
+                            Thread tempThread = new Thread(tempPr);
+                            tempThread.run();
+                            // update series in plots
+                }
+
                 datalist.add(collection.getDataset(i).getRealSpaceModel());
             }
-
         }
 
+        mainBar.setStringPainted(false);
+        mainBar.setIndeterminate(false);
+        mainStatus.setText("");
+        //fireTableDataChanged();
     }
 
 
@@ -213,7 +252,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         //Note that the data/cell address is constant,
         //no matter where the cell appears onscreen.
         //editable 0,2,4,5,6,13,14
-        if (col==0 || col==2 || col==4 || col==5 || col==9 || col==11 || col==12 ||col==13 ||col==14) {
+        if (col==0 || col==2 || col==4 || col==5 || col==9 || col==11 || col==12 ||col==13 ||col==14 ||col==15) {
             return true;
         } else {
             return false;
@@ -236,9 +275,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
             WorkingDirectory t = (WorkingDirectory) evt.getSource();
             // get the new value object
             Object o = evt.getNewValue();
-
             String newCWD;
-
             if (o == null) {
                 // go back to the object to get the temperature
                 newCWD = t.getWorkingDirectory();
@@ -246,8 +283,21 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 // get the new temperature value
                 newCWD = ((String)o).toString();
             }
+        } else if (evt.getSource() == dmaxLow && evt.getPropertyName() == "DoubleValue") {
+
+            DoubleValue t = (DoubleValue) evt.getSource();
+            Object o = evt.getNewValue();
+            double newCWD;
+            if (o == null) {
+                // go back to the object to get the temperature
+                newCWD = t.getValue();
+            } else {
+                // get the new temperature value
+                newCWD = ((Double)o).doubleValue();
+            }
         }
     }
+
 
     @Override
     public void stateChanged(ChangeEvent e) {
