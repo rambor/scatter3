@@ -2414,6 +2414,7 @@ public class Functions {
         return scaleFactor;
     }
 
+
     public static LinkedHashMap sortHashMapByValuesD(HashMap passedMap) {
         List mapKeys = new ArrayList(passedMap.keySet());
         List mapValues = new ArrayList(passedMap.values());
