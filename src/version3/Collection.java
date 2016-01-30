@@ -248,4 +248,32 @@ public class Collection {
         return this.WORKING_DIRECTORY_NAME;
     }
 
+
+    public void reorderCollection(int currentIndex, int targetIndex){
+        System.out.println("Current " + currentIndex + "  " + targetIndex);
+        // reset IDs
+        for(int i=0; i<totalDatasets; i++){
+            System.out.println(i+ " Before " + datasets.get(i).getFileName());
+        }
+
+
+        if (targetIndex > currentIndex){
+            Collections.rotate(datasets.subList(currentIndex, targetIndex+1), -1);
+        } else if (targetIndex < currentIndex){
+            Collections.rotate(datasets.subList(targetIndex, currentIndex+1), 1);
+        }
+
+        // reset IDs
+        for(int i=0; i<totalDatasets; i++){
+            datasets.get(i).setId(i);
+        }
+
+        for(int i=0; i<totalDatasets; i++){
+            System.out.println(i+ " After " + datasets.get(i).getFileName());
+        }
+
+
+
+    }
+
 }
