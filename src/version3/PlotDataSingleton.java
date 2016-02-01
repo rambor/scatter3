@@ -334,7 +334,6 @@ public class PlotDataSingleton {
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){
-        System.out.println("Color id");
         renderer1.setSeriesPaint(id, newColor);
 
         double offset = -0.5*pointsize;

@@ -35,6 +35,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
     private boolean useLabels = false;
     private double upperq;
     private int totalToFit;
+    private double dmax_pi;
+    private double startingResidual;
 
     public RefineManager(RealSpace dataset, int numberOfCPUs, int refinementRounds, double rejectionCutOff, double lambda, boolean useL1){
 
@@ -52,6 +54,10 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         upperq = dataset.getAllData().getX(dataset.getStop()-1).doubleValue();
         this.dmax = dataset.getDmax();
+        this.dmax_pi = Math.PI*dmax;
+
+        startingResidual = medianMooreResidualsQIQ(dataset.getfittedqIq(), dataset.getMooreCoefficients(), dataset.getTotalMooreCoefficients());
+
     }
 
 
@@ -80,10 +86,14 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
     @Override
     protected Void doInBackground() throws Exception {
+        if (useLabels){
+            statusLabel.setText("Starting median residual " + startingResidual);
+        }
+
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
         for (int i=0; i < numberOfCPUs; i++){
 
-            Runnable bounder = new Refiner(dataset.getfittedqIq(), dataset.getfittedIq(), dataset.getfittedError(), roundsPerCPU, useLabels, statusLabel);
+            Runnable bounder = new Refiner(dataset.getfittedqIq(), dataset.getfittedIq(), dataset.getfittedError(), roundsPerCPU, statusLabel, startingResidual);
             executor.execute(bounder);
         }
 
@@ -100,7 +110,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
         //update realspaceModel
         dataset.setMooreCoefficients(keptAm);
         notifyUser("Finished Refining");
-
         createKeptSeries();
         return null;
     }
@@ -117,7 +126,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
         //private double upperq;
         private int totalRuns;
 
-        private double median = 10000;
+        private double median;
 
         private int sizeAm;
 
@@ -128,12 +137,12 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         private JLabel status;
 
-        public Refiner(XYSeries qIq, XYSeries iofQ, XYSeries allError, int totalruns, boolean useLabels, JLabel status){
+        public Refiner(XYSeries qIq, XYSeries iofQ, XYSeries allError, int totalruns, JLabel status, double startMedian){
 
             try {
                 int totalItems = qIq.getItemCount() ;
                 activeSet = qIq.createCopy(0, totalItems-1);
-                activeIqSet = iofQ.createCopy(0, totalItems-1);
+                //activeIqSet = iofQ.createCopy(0, totalItems-1);
                 errorActiveSet = new XYSeries("Error qIq");
                 relativeErrorSeries = new XYSeries("Error qIq");
 
@@ -154,6 +163,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
             this.averageSignalToNoisePerBin();
 
             this.status = status;
+            //this.setMedian(startMedian);
+            this.setMedian(10000);
         }
 
 
@@ -215,7 +226,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                         for(int h=0; h<randomNumbers.length; h++){
                             locale = randomNumbers[h];
                             tempData = activeSet.getDataItem(locale);
-                            randomSeries.add(tempData.getXValue(), tempData.getYValue());
+                            randomSeries.add(tempData);
                             errorSeries.add(tempData.getXValue(), errorActiveSet.getY(locale));
                         }
 
@@ -232,7 +243,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 }
 
                 // Calculate Residuals
-                tempMedian = medianMooreResiduals(activeIqSet, results.get(0));
+                tempMedian = medianMooreResiduals(activeSet, results.get(0));
 
                 if (tempMedian < this.getMedian()){
                     // keep current values
@@ -344,7 +355,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         /**
          * Calculate the median residual of Moore function and dataset
-         * Requires anti-log10 I(q) data
+         * Requires anti-log10 q*I(q) data
          * @param data XYSeries of (q, I(q))
          * @param a_m Moore Coefficients
          * @return Median residual as float
@@ -355,9 +366,9 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
             int dataLimit = data.getItemCount();
             double q;
-            double dmax_q2;
-            double dmaxPi = dmax*Math.PI;
-            double pi2 = Math.PI*Math.PI;
+            double dmax_q2, dmax_q;
+            //double dmaxPi = dmax*Math.PI;
+            //double pi2 = Math.PI*Math.PI;
             double sin_dmaxq;
             double resultM;
             XYDataItem tempitem;
@@ -366,14 +377,17 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 tempitem = data.getDataItem(i);
 
                 q = tempitem.getXValue();
-                dmax_q2 = Math.pow(dmax*q, 2);
-                sin_dmaxq = Math.sin(dmax*q);
+                dmax_q = dmax*q;
+                dmax_q2 = dmax_q*dmax_q;
+                sin_dmaxq = Math.sin(dmax_q);
 
                 resultM = a_m[0];
                 for(int j=1; j < sizeAm; j++){
-                    resultM = resultM + a_m[j]*j*dmaxPi*Math.pow(-1,j+1)*sin_dmaxq/(j*j*pi2 - dmax_q2);
+                    resultM = resultM + Constants.TWO_DIV_PI*a_m[j]*j*dmax_pi*Math.pow(-1,j+1)*sin_dmaxq/(j*j*Constants.PI_2 - dmax_q2);
                 }
-                residuals.add( Math.pow(tempitem.getYValue() - resultM/q, 2) );  //squaring the difference
+                // should this be abs(residuals) or squared?
+                //residuals.add( Math.pow(tempitem.getYValue() - resultM, 2) );  //squaring the difference
+                residuals.add( Math.abs(tempitem.getYValue() - resultM) );  //squaring the difference
             }
 
             medianResidual = Statistics.calculateMedian(residuals);
@@ -397,7 +411,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
     private synchronized double getS_o() {
         return this.s_o;
     }
-
 
     public void createKeptSeries(){
         // go over selected values in active set
@@ -490,7 +503,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
             int totalrejected =  totalToFit - keptSeries.getItemCount();
             double percentRejected = (double)totalrejected/(double)totalToFit*100;
             notifyUser(String.format("Rejected %d points (%.1f %%) using cutoff: %.4f => files written to working directory", totalrejected, percentRejected, rejectionCutOff));
-        } else { // do nothing if unacceptable, so clear and reload ao riginal
+        } else { // do nothing if unacceptable, so clear and reload a original
+
             for (int i=0; i<size; i++){
                 tempData = activeIqSet.getDataItem(i);
                 xObsValue = tempData.getXValue();
@@ -507,6 +521,47 @@ public class RefineManager extends SwingWorker<Void, Void> {
             dataset.calculateIntensityFromModel(useL1);
             updateText(String.format("Refinement failed check data for unusual numbers"));
         }
+    }
+
+    /**
+     * Calculate the median residual of Moore function and dataset
+     * Requires anti-log10 I(q) data
+     * @param data XYSeries of (q, I(q))
+     * @param a_m Moore Coefficients
+     * @return Median residual as float
+     */
+    private double medianMooreResidualsQIQ(XYSeries data, double[] a_m, int sizeAm){
+        double medianResidual;
+        ArrayList<Double> residuals = new ArrayList<Double>();
+
+        int dataLimit = data.getItemCount();
+        double q;
+        double dmax_q2, dmax_q;
+        //double dmaxPi = dmax*Math.PI;
+        //double pi2 = Math.PI*Math.PI;
+        double sin_dmaxq;
+        double resultM;
+        XYDataItem tempitem;
+
+        for (int i = 0; i < dataLimit; i++){
+            tempitem = data.getDataItem(i);
+
+            q = tempitem.getXValue();
+            dmax_q = dmax*q;
+            dmax_q2 = dmax_q*dmax_q;
+            sin_dmaxq = Math.sin(dmax_q);
+
+            resultM = a_m[0];
+            for(int j=1; j < sizeAm; j++){
+                resultM = resultM + Constants.TWO_DIV_PI*a_m[j]*j*dmax_pi*Math.pow(-1,j+1)*sin_dmaxq/(j*j*Constants.PI_2 - dmax_q2);
+            }
+            // should this be abs(residuals) or squared?
+            //residuals.add( Math.pow(tempitem.getYValue() - resultM, 2) );  //squaring the difference
+            residuals.add( Math.abs(tempitem.getYValue() - resultM) );  //squaring the difference
+        }
+
+        medianResidual = Statistics.calculateMedian(residuals);
+        return medianResidual;
     }
 
 }

@@ -516,7 +516,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="11" style="0"/>
+                      <font size="11" style="1"/>
                       <foreground color="-3969338"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
@@ -532,7 +532,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="11" style="0"/>
+                      <font size="11" style="1"/>
                       <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
@@ -548,7 +548,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="11" style="0"/>
+                      <font size="11" style="1"/>
                       <foreground color="-760048"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
@@ -1263,7 +1263,6 @@
                                 <item value="31"/>
                                 <item value="57"/>
                               </model>
-                              <selectedIndex value="-1"/>
                             </properties>
                           </component>
                           <component id="91fe9" class="javax.swing.JLabel">
@@ -1823,7 +1822,6 @@
                                 <item value="27"/>
                                 <item value="31"/>
                               </model>
-                              <selectedIndex value="-1"/>
                             </properties>
                           </component>
                         </children>
@@ -1877,12 +1875,349 @@
           <grid id="6645c" layout-manager="FormLayout">
             <rowspec value="center:d:grow"/>
             <colspec value="fill:d:grow"/>
+            <colspec value="left:4dlu:noGrow"/>
+            <colspec value="fill:d:grow"/>
             <constraints>
               <tabbedpane title="DAMMIN/F"/>
             </constraints>
-            <properties/>
+            <properties>
+              <background color="-5712646"/>
+            </properties>
             <border type="none"/>
-            <children/>
+            <children>
+              <grid id="6f61b" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <forms defaultalign-vert="false"/>
+                </constraints>
+                <properties>
+                  <background color="-16750147"/>
+                </properties>
+                <border type="line"/>
+                <children>
+                  <scrollpane id="76b3e">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="6dbb5" class="javax.swing.JList" binding="completedDamminList">
+                        <constraints/>
+                        <properties/>
+                      </component>
+                    </children>
+                  </scrollpane>
+                </children>
+              </grid>
+              <grid id="de8ec" layout-manager="GridLayoutManager" row-count="7" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <forms defaultalign-vert="false"/>
+                </constraints>
+                <properties>
+                  <background color="-5712646"/>
+                </properties>
+                <border type="line"/>
+                <children>
+                  <scrollpane id="df576" binding="damScrollPane">
+                    <constraints>
+                      <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="896f4" class="javax.swing.JTextPane" binding="damTextPane">
+                        <constraints/>
+                        <properties/>
+                      </component>
+                    </children>
+                  </scrollpane>
+                  <grid id="8fdb3" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="etched"/>
+                    <children>
+                      <component id="ea237" class="javax.swing.JLabel" binding="damminLabel">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="selected file"/>
+                        </properties>
+                      </component>
+                      <component id="a4a39" class="javax.swing.JButton" binding="GNOMOutFileButton" default-binding="true">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                            <minimum-size width="200" height="-1"/>
+                            <preferred-size width="200" height="-1"/>
+                            <maximum-size width="200" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <text value="GNOM .out file"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="7a2eb" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="etched"/>
+                    <children>
+                      <component id="57bb0" class="javax.swing.JLabel">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Number of Runs to Average: "/>
+                        </properties>
+                      </component>
+                      <component id="c9263" class="javax.swing.JComboBox" binding="runsComboBox">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                            <minimum-size width="80" height="-1"/>
+                            <preferred-size width="80" height="-1"/>
+                            <maximum-size width="80" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <model>
+                            <item value="1"/>
+                            <item value="3"/>
+                            <item value="7"/>
+                            <item value="13"/>
+                            <item value="17"/>
+                            <item value="23"/>
+                          </model>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="ed85f" layout-manager="GridLayoutManager" row-count="1" column-count="7" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="etched"/>
+                    <children>
+                      <component id="e6317" class="javax.swing.JLabel">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Select One :"/>
+                        </properties>
+                      </component>
+                      <component id="552f1" class="javax.swing.JRadioButton" binding="damminRadioButton">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                            <minimum-size width="100" height="-1"/>
+                            <preferred-size width="100" height="-1"/>
+                            <maximum-size width="100" height="-1"/>
+                          </grid>
+                        </constraints>
+                        <properties>
+                          <label value="DAMMIN"/>
+                          <text value="DAMMIN"/>
+                        </properties>
+                      </component>
+                      <component id="e2846" class="javax.swing.JRadioButton" binding="dammifRadioButton">
+                        <constraints>
+                          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="DAMMIF"/>
+                        </properties>
+                      </component>
+                      <component id="195bb" class="javax.swing.JLabel">
+                        <constraints>
+                          <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value=" SYMMETRY :"/>
+                        </properties>
+                      </component>
+                      <component id="14d9f" class="javax.swing.JComboBox" binding="symmetryBox">
+                        <constraints>
+                          <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <model>
+                            <item value="P1"/>
+                            <item value="P2"/>
+                            <item value="P3"/>
+                            <item value="P4"/>
+                            <item value="P5"/>
+                            <item value="P6"/>
+                            <item value="P7"/>
+                            <item value="P8"/>
+                            <item value="P9"/>
+                            <item value="P10"/>
+                            <item value="P11"/>
+                            <item value="P12"/>
+                            <item value="P22"/>
+                            <item value="P32"/>
+                            <item value="P42"/>
+                            <item value="P52"/>
+                            <item value="P62"/>
+                            <item value="P72"/>
+                            <item value="P82"/>
+                            <item value="P92"/>
+                            <item value="P102"/>
+                          </model>
+                        </properties>
+                      </component>
+                      <component id="91465" class="javax.swing.JRadioButton" binding="fastRadioButton" default-binding="true">
+                        <constraints>
+                          <grid row="0" column="5" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Fast"/>
+                        </properties>
+                      </component>
+                      <component id="cdf44" class="javax.swing.JRadioButton" binding="slowRadioButton" default-binding="true">
+                        <constraints>
+                          <grid row="0" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Slow"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="7deb4" layout-manager="GridLayoutManager" row-count="3" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="etched"/>
+                    <children>
+                      <component id="153e" class="javax.swing.JCheckBox" binding="damRefineCheckBox">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Refine damstart.pdb"/>
+                        </properties>
+                      </component>
+                      <component id="a2019" class="javax.swing.JLabel" binding="damstartLabel">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value=""/>
+                        </properties>
+                      </component>
+                      <component id="f2937" class="javax.swing.JButton" binding="damstartButton">
+                        <constraints>
+                          <grid row="0" column="2" row-span="1" col-span="2" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="SELECT damstart"/>
+                        </properties>
+                      </component>
+                      <component id="73bdc" class="javax.swing.JCheckBox" binding="alignPDBModelRunsCheckBox" default-binding="true">
+                        <constraints>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Align PDB Model (runs SUPCOMB)"/>
+                        </properties>
+                      </component>
+                      <grid id="ec0bd" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="1d69" class="javax.swing.JButton" binding="startButton" default-binding="true">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="Start"/>
+                            </properties>
+                          </component>
+                          <hspacer id="f621c">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                          </hspacer>
+                        </children>
+                      </grid>
+                      <component id="962bf" class="javax.swing.JButton" binding="selectPDBDamminButton">
+                        <constraints>
+                          <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="SELECT PDB"/>
+                        </properties>
+                      </component>
+                      <component id="8d0" class="javax.swing.JLabel" binding="supcombLabel">
+                        <constraints>
+                          <grid row="1" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value=""/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="cb12a" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties/>
+                    <border type="etched"/>
+                    <children>
+                      <component id="d6731" class="javax.swing.JLabel">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value="Number of CPU cores to use : "/>
+                        </properties>
+                      </component>
+                      <component id="94398" class="javax.swing.JComboBox" binding="cpuBox">
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <model>
+                            <item value="1"/>
+                            <item value="2"/>
+                          </model>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <component id="a3aea" class="javax.swing.JLabel">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <font size="14" style="0"/>
+                      <foreground color="-16760376"/>
+                      <text value="DAMMIN/F Interface (limited availability until release of BUBBLES)"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+            </children>
           </grid>
           <grid id="67ac7" layout-manager="FormLayout">
             <rowspec value="center:max(d;4px):noGrow"/>
@@ -2211,7 +2546,6 @@
                                 <item value="4000"/>
                                 <item value="6000"/>
                               </model>
-                              <selectedIndex value="-1"/>
                             </properties>
                           </component>
                           <component id="a994a" class="javax.swing.JLabel">
@@ -2239,7 +2573,6 @@
                                 <item value="5"/>
                                 <item value="5.5"/>
                               </model>
-                              <selectedIndex value="-1"/>
                             </properties>
                           </component>
                           <component id="cdd32" class="javax.swing.JLabel">
@@ -2325,7 +2658,6 @@
                                 <item value="0.07"/>
                                 <item value="0.1"/>
                               </model>
-                              <selectedIndex value="-1"/>
                             </properties>
                           </component>
                           <component id="c302f" class="javax.swing.JLabel">
@@ -2358,7 +2690,6 @@
                                 <item value="7"/>
                                 <item value="11"/>
                               </model>
-                              <selectedIndex value="-1"/>
                             </properties>
                           </component>
                           <component id="e4f31" class="javax.swing.JLabel">

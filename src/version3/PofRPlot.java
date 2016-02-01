@@ -15,6 +15,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.geom.Ellipse2D;
 import java.io.File;
 
 /**
@@ -220,6 +221,13 @@ public class PofRPlot {
         this.splineCollection.removeAllSeries();
     }
 
+    public boolean inUse(){
+        if (splineCollection.getSeriesCount() > 0){
+            return true;
+        }
+        return false;
+    }
+
     public void setPDBPofR(XYSeries pdbData){
         this.pdbCollection.removeAllSeries();
         this.pdbCollection.addSeries(pdbData);
@@ -227,5 +235,10 @@ public class PofRPlot {
 
     public void removePDB(){
         this.pdbCollection.removeAllSeries();
+    }
+
+    public void changeColor(int id, Color newColor, float thickness){
+        splineRend.setSeriesPaint(id, newColor);
+        chart.getXYPlot().getRenderer(0).setSeriesStroke(id, new BasicStroke(thickness));
     }
 }

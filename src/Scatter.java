@@ -163,6 +163,25 @@ public class Scatter {
     private JTextField a39TextField;
     private JTextField a157TextField;
     private JComboBox ffCEFileSelectionComboBox;
+    private JList completedDamminList;
+    private JComboBox runsComboBox;
+    private JRadioButton damminRadioButton;
+    private JRadioButton dammifRadioButton;
+    private JComboBox symmetryBox;
+    private JRadioButton fastRadioButton;
+    private JRadioButton slowRadioButton;
+    private JButton GNOMOutFileButton;
+    private JComboBox cpuBox;
+    private JCheckBox damRefineCheckBox;
+    private JLabel damstartLabel;
+    private JButton damstartButton;
+    private JCheckBox alignPDBModelRunsCheckBox;
+    private JButton startButton;
+    private JButton selectPDBDamminButton;
+    private JLabel supcombLabel;
+    private JScrollPane damScrollPane;
+    private JTextPane damTextPane;
+    private JLabel damminLabel;
 
     private String version = "3.0";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -232,7 +251,7 @@ public class Scatter {
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(2);
         simBinsComboBox.setSelectedIndex(0);
-        lambdaBox.setSelectedIndex(2);
+        lambdaBox.setSelectedIndex(0);
         cBox.setSelectedIndex(2);
 
 
@@ -584,18 +603,18 @@ public class Scatter {
         dmaxStart = new DoubleValue(97);
 
         //Pr Table JLabel status, WorkingDirectory cwd, Double lambda
-        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxStart, l1NormCheckBox.isSelected()));
+        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox));
 
         prModel = (PrModel) prTable.getModel();
         prModel.setBars(mainProgressBar, progressBar1, status, prStatusLabel);
         TableColumnModel pcm = prTable.getColumnModel();
 
         TableColumn pc = pcm.getColumn(4);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox));
         pc = pcm.getColumn(5);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox));
         pc = pcm.getColumn(9);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox));
 
         pc = pcm.getColumn(2);
         pc.setCellEditor(new CheckBoxCellEditorRenderer());
@@ -3434,6 +3453,11 @@ public class Scatter {
             powerLawPlot.changeColor(row, newColor, thickness, pointsize);
         }
 
+        if (PofRPlot.getInstance().inUse() && IofQPofRPlot.getInstance().inUse()){
+            PofRPlot.getInstance().changeColor(row, newColor, thickness);
+            IofQPofRPlot.getInstance().changeColor(row, newColor, thickness, pointsize);
+        }
+
         // add Normalized KratkyPlots
     }
 
@@ -3552,14 +3576,14 @@ public class Scatter {
             if (mouseDragging) {
                 int currentIndex = similarityList.locationToIndex(e.getPoint());
                 if (currentIndex != dragSourceIndex) {
-                    int dragTargetIndex = similarityList.getSelectedIndex();
-
+                    int dragTargetIndex = similarityList.getSelectedIndex(); // new location
                     SampleBufferElement dragElement = similarityFilesModel.get(dragSourceIndex);
+                    // reorder the collection is created on drop from received files similarityCollection
+                    similarityCollection.reorderCollection(dragSourceIndex, dragTargetIndex);
 
                     similarityFilesModel.remove(dragSourceIndex);
                     similarityFilesModel.add(dragTargetIndex, dragElement);
                     dragSourceIndex = currentIndex;
-
                 }
             }
         }
@@ -3642,7 +3666,7 @@ public class Scatter {
                 //        l1NormCheckBox.isSelected());
                 //prStatusLabel.setText("");
                 //refineMe.setBar(progressBar1, prStatusLabel);
-                new Thread(){
+                Thread refineIt = new Thread(){
                     public void run() {
                         RefineManager refineMe = new RefineManager(prModel.getDataset(rowID), cpuCores,
                                 Integer.parseInt(refinementRoundsBox.getSelectedItem().toString()),
@@ -3653,7 +3677,14 @@ public class Scatter {
                         refineMe.setBar(progressBar1, prStatusLabel);
                         refineMe.execute();
                     }
-                }.start();
+                };
+                refineIt.start();
+                try {
+                    refineIt.join();
+                    System.out.println("hello from end of join");
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
 
 
             } else if (this.colID == 15){
@@ -3668,6 +3699,43 @@ public class Scatter {
         @Override
         public Object getCellEditorValue() {
             return button.isSelected();
+        }
+    }
+
+    private void runDatGnom(String dat_file_name, double rg){
+        // run datgnom
+        String os = System.getProperty("os.name");
+        String datgnom = "";
+        Runtime rt = Runtime.getRuntime();
+
+        if (os.indexOf("win") >=0 ){
+            datgnom = "datgnom.exe";
+        } else {
+            datgnom = "datgnom";
+        }
+
+        String[] base_name = dat_file_name.split("\\.");
+
+        try {
+            System.out.println("Running datgnom: " + ATSAS_DIRECTORY+"/"+datgnom);
+
+            ProcessBuilder pr = new ProcessBuilder(ATSAS_DIRECTORY+"/"+datgnom, "-r", Constants.Scientific1dot3e1.format(rg), "-o", base_name[0]+"_dg.out", WORKING_DIRECTORY.getWorkingDirectory()+ "/" + dat_file_name);
+            pr.directory(new File(WORKING_DIRECTORY.getWorkingDirectory()));
+            Process ps = pr.start();
+
+            BufferedReader input = new BufferedReader(new InputStreamReader(ps.getInputStream()));
+            String line=null;
+            while((line=input.readLine()) != null) {
+                System.out.println(line);
+            }
+            System.out.println("Finished datgnom: file " + base_name[0] + "_dg.out");
+            damminLabel.setText(WORKING_DIRECTORY.getWorkingDirectory()+ "/"+ base_name[0] + "_dg.out");
+
+        } catch (IOException e) {
+            System.out.println("Problem running datgnom from " + ATSAS_DIRECTORY);
+            status.setText("Problem running datgnom from " + ATSAS_DIRECTORY);
+            System.out.println(e.toString());
+            e.printStackTrace();
         }
     }
 

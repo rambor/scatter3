@@ -17,12 +17,13 @@ import java.util.Objects;
 public class PrModel extends AbstractTableModel implements ChangeListener, PropertyChangeListener {
 
     private final LinkedList<RealSpace> datalist;
-    private boolean fitModel;
+    private JCheckBox fitModel;
     private WorkingDirectory currentWorkingDirectory;
     private JLabel status;
-    private DoubleValue dmaxLow, dmaxHigh, dmaxStart;
+    private DoubleValue dmaxLow, dmaxHigh;
     private JComboBox lambdaBox;
     private JProgressBar mainBar, prBar;
+    private JSlider dmaxStart;
 
     DecimalFormat twoDecPlac = new DecimalFormat("0.00");
     DecimalFormat scientific = new DecimalFormat("0.00E0");
@@ -31,7 +32,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     private String[] columnNames = new String[]{"","", "", "", "start", "end", "<html>I(0)<font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html>", "<html>R<sub>g</sub><font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html> ", "<html>r<sub>ave</sub></html>", "<html>d<sub>max</sub></html>", "<html>Chi<sup>2</sup>(S<sub>k2</sub>)</html>", "<html>scale</html>", "", "", "",""};
     private JLabel mainStatus, prStatus;
 
-    public PrModel(JLabel status, WorkingDirectory cwd, JComboBox lambdaBox, DoubleValue dmaxlow, DoubleValue dmaxhigh, DoubleValue dmaxstart, boolean fitModel){
+    public PrModel(JLabel status, WorkingDirectory cwd, JComboBox lambdaBox, DoubleValue dmaxlow, DoubleValue dmaxhigh, JSlider dmaxSlider, JCheckBox fitModel){
         this.status = status;
         this.currentWorkingDirectory = cwd;
         currentWorkingDirectory.addPropertyChangeListener(this);
@@ -42,7 +43,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         this.fitModel = fitModel;
         dmaxLow = dmaxlow;
         dmaxHigh = dmaxhigh;
-        dmaxStart = dmaxstart;
+        this.dmaxStart = dmaxSlider;
     }
 /*
     public void setLambda(double value){
@@ -53,12 +54,6 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         return lambda;
     }
 */
-    public void setFitModel(boolean flag){
-        fitModel = flag;
-    }
-    public boolean getFitModel(){
-        return fitModel;
-    }
 
     public int getRowCount() {
         return datalist.size();
@@ -111,12 +106,10 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 dataset.setColor(temp.getColor());
                 dataset.setStroke(temp.getStroke());
                 dataset.setPointSize(temp.getPointSize());
-
                 // rebuild plot
                 // replotPr(row, dataset);
             } else if (col == 9){
                 dataset.setDmax((Integer)obj);
-                // recalculatePr(dataset, antiLogCheckBox.isSelected());
             }
             fireTableCellUpdated(row, col);
 
@@ -225,7 +218,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                             temp.setDmax((int) dmaxStart.getValue());
                             //create a new PrObject and run in thrad
                             // fit model is L1-norm of coefficients or second derivative
-                            PrObject tempPr = new PrObject(temp, Double.parseDouble(lambdaBox.getSelectedItem().toString()), fitModel);
+                            PrObject tempPr = new PrObject(temp, Double.parseDouble(lambdaBox.getSelectedItem().toString()), fitModel.isSelected());
                             Thread tempThread = new Thread(tempPr);
                             tempThread.run();
                             // update series in plots

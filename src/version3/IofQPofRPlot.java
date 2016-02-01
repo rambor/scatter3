@@ -270,11 +270,24 @@ public class IofQPofRPlot {
         }
     }
 
+    public void changeColor(int id, Color newColor, float thickness, int pointsize){
+        double delta = -pointsize*0.5;
+        chart.getXYPlot().getRenderer(1).setSeriesPaint(id, newColor);
+        chart.getXYPlot().getRenderer(1).setSeriesShape(id, new Ellipse2D.Double(delta, delta, pointsize, pointsize));
+        chart.getXYPlot().getRenderer(1).setSeriesOutlineStroke(id, new BasicStroke(thickness));
+    }
 
     public void clear(){
         this.scatterCollection.removeAllSeries();
         this.splineCollection.removeAllSeries();
 
+    }
+
+    public boolean inUse(){
+        if (this.scatterCollection.getSeriesCount() >0){
+            return true;
+        }
+        return false;
     }
 
 }

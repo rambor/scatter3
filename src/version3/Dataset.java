@@ -812,6 +812,7 @@ public class Dataset {
 
         log10ScaleFactor = Math.log10(factor);
         scaleFactor=factor;
+
         // rescale plottedData
         // this.scalePlottedLog10IntensityData();
     }
@@ -1009,7 +1010,6 @@ public class Dataset {
         //XYDataItem temp;
         int endOf = plottedData.getItemCount();
         int startHere = this.startAt - 1;
-
 
         if (scaleFactor != 1){
             for (int i = 0; i< endOf; i++){

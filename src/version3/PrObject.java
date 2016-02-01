@@ -269,7 +269,7 @@ public class PrObject implements Runnable {
             616850.2750680848
     };
 
-    private double qmax, dmax, lambda=0.01;
+    private double qmax, dmax, lambda=0.001;
     private final double INV_PI = 1.0/Math.PI;
     private boolean useL1;
     private XYSeries data;
@@ -285,6 +285,7 @@ public class PrObject implements Runnable {
         this.lambda = lambda;
         this.useL1 = useL1;
         data = dataset.getfittedqIq();
+        System.out.println("Use L1 " + useL1);
     }
 
     public PrObject(XYSeries fittedqIq, double qmax, double dmax, double lambda, boolean useL1Coefficients){
@@ -300,10 +301,11 @@ public class PrObject implements Runnable {
     public void run() {
 
         ArrayList<double[]> tempResults;
-
+        System.out.println("lambda " + lambda);
         if (useL1){
             tempResults = moore_pr_L1();  // minimize on second derivative
         } else {
+            System.out.println("Using L1-norm Coefficients");
             tempResults = moore_coeffs_L1();  // minimize on coefficients
         }
 
@@ -321,15 +323,13 @@ public class PrObject implements Runnable {
 
         ArrayList<double[]> results = new ArrayList<>(2);
 
-        double inv_d = 1.0/dmax;
-
         int ns = (int) Math.round(qmax*dmax*INV_PI); //
         int coeffs_size = ns + 1;   //+1 for constant background
         //int coeffs_size = ns // no background correction
 
         double incr = 2.0;
         int r_limit = (int)incr*ns-1;
-        double del_r = dmax/ns/incr;
+        double del_r = dmax/(double)ns/incr;
         double[] r_vector = new double[r_limit];
 
         for(int i=0; i< r_limit; i++){
@@ -342,18 +342,18 @@ public class PrObject implements Runnable {
         /*
          * Interior Point Parameters
          */
-        int MU = 2;            // updating parameter of t
-        int max_nt_iter = 500; // maximum IPM (Newton) iteration
+        int MU = 2;                    // updating parameter of t
+        int max_nt_iter = 500;         // maximum IPM (Newton) iteration
 
         /*
          * LINE SEARCH PARAMETERS
          */
-        double alpha = 0.01;          // minimum fraction of decrease in the objective
-        double beta  = 0.5;           // stepsize decrease factor
-        int max_ls_iter = 400;    // maximum backtracking line search iteration
+        double alpha = 0.01;            // minimum fraction of decrease in the objective
+        double beta  = 0.5;             // stepsize decrease factor
+        int max_ls_iter = 400;          // maximum backtracking line search iteration
 
-        int m = data.getItemCount();  // rows
-        int n = coeffs_size;          // columns
+        int m = data.getItemCount();    // rows
+        int n = coeffs_size;            // columns
         int u_size = coeffs_size;
         int hessian_size = coeffs_size*2;
 
@@ -397,9 +397,9 @@ public class PrObject implements Runnable {
         // Initialize and guess am
         //
         double qd, inv_t;
-
-        SimpleMatrix am = new SimpleMatrix(n,1);// am is 0 column
-        am.set(0,0,0);
+        System.out.println("L1-NORM COEFFS");
+        SimpleMatrix am = new SimpleMatrix(n,1);  // am is 0 column
+        am.set(0,0,0.000001);
 
         for (int i=1; i < n; i++){
             am.set(i, 0, 0); // initialize coefficient vector a_m to zero
@@ -411,6 +411,7 @@ public class PrObject implements Runnable {
         SimpleMatrix a_matrix = new SimpleMatrix(m,n);
 
         double qd2, pi_sq_n;
+        double twodivpi = 2.0/Math.PI;
 
         for(int r=0; r<m; r++){ //rows, length is size of data
             tempData = data.getDataItem(r);
@@ -422,11 +423,11 @@ public class PrObject implements Runnable {
                     // a_matrix.set(r, 0, tempData.getXValue());
                     a_matrix.set(r, 0, 1);
                 } else {
-                    pi_sq_n = n_pi_squared[c];
-                    a_matrix.set(r, c, pi_d * c * Math.pow(-1.0, c + 1) * Math.sin(qd) / (pi_sq_n - qd2));
+                    //pi_sq_n = n_pi_squared[c];
+                    a_matrix.set(r, c, twodivpi*pi_d * c * Math.pow(-1.0, c + 1) * Math.sin(qd) / (n_pi_squared[c] - qd2));
                 }
             }
-            y.set(r,0,tempData.getYValue());
+            y.set(r,0,tempData.getYValue()); //set data vector
         }
 
         SimpleMatrix a_transpose = a_matrix.transpose();
@@ -498,10 +499,9 @@ public class PrObject implements Runnable {
             dobj = Math.max(( (nu.transpose().mult(nu)).get(0,0)*(-0.25) - ((nu.transpose().mult(y))).get(0,0) ), dobj);
 
             // dobj = Math.max(( (nu.transpose().mult(nu)).get(0,0)*(-0.25) - ((nu.transpose().mult(y))).get(0,0) ), dobj);
-            gap   =  pobj - dobj;
+            gap   = pobj - dobj;
 
             //System.out.println("GAP: " + gap + " : " + " | ratio " + gap/dobj + " reltol " + reltol);
-
             //------------------------------------------------------------
             //       Shall we Stop?
             //------------------------------------------------------------
@@ -509,7 +509,6 @@ public class PrObject implements Runnable {
                 status = "Solved";
                 break calculationLoop;
             }
-
 
             //------------------------------------------------------------
             //       UPDATE t
@@ -698,7 +697,6 @@ public class PrObject implements Runnable {
             r_vector[i] = (i+1)*del_r;
         }
 
-
         double pi_d = Math.PI*dmax;
         XYDataItem tempData;
 
@@ -713,7 +711,7 @@ public class PrObject implements Runnable {
          */
         double alpha = 0.01;          // minimum fraction of decrease in the objective
         double beta  = 0.5;           // stepsize decrease factor
-        int max_ls_iter = 400;    // maximum backtracking line search iteration
+        int max_ls_iter = 400;        // maximum backtracking line search iteration
 
         int m = data.getItemCount();  // rows
 
@@ -723,8 +721,8 @@ public class PrObject implements Runnable {
 
         //double delq = (qmax-qmin)/ns;
 
-        double t0 = Math.min(Math.max(1, 1/lambda), n/0.001);
-        double reltol = 0.001;
+        double t0 = Math.min(Math.max(1, 1.0/lambda), n/0.001);
+        double reltol = 0.01;
         double eta = 0.001;
         int pcgmaxi = 5000;
 
@@ -759,7 +757,6 @@ public class PrObject implements Runnable {
         SimpleMatrix p_u_r2;
         SimpleMatrix p_am_r2;
 
-
         /*
          * initialize u vector with 1's
          * size must include a_o and r_limit
@@ -782,13 +779,14 @@ public class PrObject implements Runnable {
         double qd, inv_t;
 
         SimpleMatrix am = new SimpleMatrix(n,1);// am is 0 column
-        am.set(0,0,0.0000001);
+        am.set(0,0,0);
 
+        double guess = data.getMaxY();
         for (int i=1; i < n; i++){
             //q = delq*0.5 + delq*(i-1);
             //qd = q*dmax;
             //am.set(i, 0, 0); // initialize coefficient vector a_m to zero
-            am.set(i,0,0);
+            am.set(i, 0, 0);
             //am.set(i,0,(q*slope + izero)*q/pi_d/i/Math.pow(-1,i+1)*(Math.pow(Math.PI*i,2) - Math.pow(qd, 2))/Math.sin(qd));
         }
 
@@ -798,6 +796,7 @@ public class PrObject implements Runnable {
         SimpleMatrix a_matrix = new SimpleMatrix(m,n);
 
         double qd2, pi_sq_n, q;
+        double twodivpi = 2.0/Math.PI;
 
         for(int r=0; r<m; r++){ //rows, length is size of data
             tempData = data.getDataItem(r);
@@ -812,10 +811,8 @@ public class PrObject implements Runnable {
                     //a_matrix.set(r, 0, tempData.getXValue());
                 } else {
                     pi_sq_n = n_pi_squared[c];
-                    a_matrix.set(r, c, pi_d * c * Math.pow(-1.0, c + 1) * Math.sin(qd) / (pi_sq_n - qd2));
+                    a_matrix.set(r, c, twodivpi*pi_d * c * Math.pow(-1.0, c + 1) * Math.sin(qd) / (pi_sq_n - qd2));
                 }
-
-
 
             }
             y.set(r, 0, tempData.getYValue());
@@ -895,7 +892,7 @@ public class PrObject implements Runnable {
             //------------------------------------------------------------
             if (gap/dobj < reltol) {
                 //status = "Solved";
-                //System.out.println("Solved " + gap/dobj);
+                System.out.println("Solved " + gap/dobj);
                 break calculationLoop;
             }
 

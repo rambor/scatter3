@@ -44,7 +44,7 @@ public class Functions {
     private static Double[] resultS = new Double[3];
 
     private static int[] values;
-    private static double resultM;
+
     private static double tempsum;
     private static Integer limit;
     private static Integer dataLimit;
@@ -1011,22 +1011,17 @@ public class Functions {
      * @return Intensity I(q)
      */
     public static double moore_Iq(double[] a_m, double dmax, double q, int limit){
-        resultM = 0.0;
         double invq = 1/q;
-        for(int i=0; i < limit; i++){
-
-            if (i==0){
-                resultM = a_m[0]*invq;
-            }  else {
-                resultM = resultM + a_m[i]*Math.PI*i*dmax*Math.pow(-1,i+1)*Math.sin(dmax*q)/(Math.pow(Math.PI*i, 2) - Math.pow(dmax*q, 2))*invq;
-            }
+        double resultM=a_m[0];
+        for(int i=1; i < limit; i++){
+                resultM = resultM + Constants.TWO_DIV_PI*a_m[i]*Math.PI*i*dmax*Math.pow(-1,i+1)*Math.sin(dmax*q)/(Math.pow(Math.PI*i, 2) - Math.pow(dmax*q, 2));
         }
 
-        return resultM;
+        return resultM*invq;
     }
 
     public static double moore_Iq_L(ArrayList<Double> a_m, double dmax, double q, int limit, boolean background){
-        resultM = 0.0;
+        double resultM = 0;
         double invq = 1/q;
         for(int i=0; i < limit; i++){
 
@@ -1049,7 +1044,7 @@ public class Functions {
      * @return P(r) as double
      */
     public static double mooreP_r(ArrayList<Double> a_m, double dmax, double r){
-        resultM = 0.0;
+        double resultM = 0;
     /*
      * a_m includes the zero element which is the background/offset correction
      * Do not a_m[0] in P(r) calculation
@@ -1072,6 +1067,7 @@ public class Functions {
      */
     public static double medianMooreResiduals(XYSeries data, double[] a_m, double dmax){
         double medianResidual;
+        double resultM;
         ArrayList<Double> residuals = new ArrayList<Double>();
 
         limit = a_m.length;
@@ -1108,6 +1104,7 @@ public class Functions {
      */
     public static double medianMooreResidualsWeighted(XYSeries data, XYSeries error, ArrayList<Double> a_m, double dmax){
         double medianResidual;
+        double resultM;
         ArrayList<Double> residuals = new ArrayList<Double>();
         residuals.clear();
         limit = a_m.size();

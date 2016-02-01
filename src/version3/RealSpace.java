@@ -69,8 +69,10 @@ public class RealSpace {
         analysisToPrScaleFactor = 1;
         int totalAllData = dataset.getAllData().getItemCount();
 
+        //allData = new XYSeries("rescale data");
+
         try {
-            allData = dataset.getAllData().createCopy(0,totalAllData-1);
+            allData = dataset.getAllData().createCopy(0, totalAllData-1);
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
@@ -92,6 +94,11 @@ public class RealSpace {
         refinedIq = new XYSeries(Integer.toString(this.id) + " refined-" + filename);
         refinedError = new XYSeries(Integer.toString(this.id) + " refined-" + filename);
 
+        //originalqIq = new XYSeries("qIq relaspace");
+        //for (int i=0; i<dataset.getQIQData().getItemCount(); i++){
+        //    XYDataItem tempqiq = dataset.getQIQData().getDataItem(i);
+        //    originalqIq.add(tempqiq.getX(), tempqiq.getYValue()/10000);
+        //}
         originalqIq = dataset.getQIQData();
 
         prDistribution = new XYSeries(Integer.toString(this.id) + " Pr-" + filename);
@@ -127,10 +134,8 @@ public class RealSpace {
 
         lowerQIndexLimit = (lastNegative < 0) ? startAll : lastNegative+1;
 
-
         for(int i=lowerQIndexLimit; i < totalAllData; i++){
             temp = allData.getDataItem(i);
-
             xValue = temp.getXValue();
             yValue = temp.getYValue();
 
@@ -338,6 +343,10 @@ public class RealSpace {
         return fittedIq;
     }
 
+    /**
+     * fittedqIq is actively managed by spinners, so should be always up-to-date
+     * @return
+     */
     public XYSeries getfittedqIq(){
         return fittedqIq;
     }
@@ -376,10 +385,10 @@ public class RealSpace {
         this.mooreCoefficients = new double[totalMooreCoefficients];
         System.arraycopy(values, 0, this.mooreCoefficients, 0, totalMooreCoefficients);
         saxs_invariants();
-
+        System.out.println("Background : " + mooreCoefficients[0]);
         // calculate P(r) distribution
         this.calculatePofR();
-        // this.createIofQ();
+
         try {
             this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
         } catch (Exception e) {
@@ -392,12 +401,10 @@ public class RealSpace {
         /*
          * create P(r) plot
          */
-
         prDistribution.clear();
         double totalPrPoints = (Math.ceil(fittedqIq.getMaxX()*dmax*invPi)*3);
         int r_limit = (int)totalPrPoints -1;
         double deltar = dmax/totalPrPoints;
-
 
         double resultM;
         double inv_d = 1.0/dmax;
@@ -441,14 +448,13 @@ public class RealSpace {
      */
     public void calculateQIQ(){
         calcqIq.clear();
-        double iofq;
+
         XYDataItem temp;
         //iterate over each q value and calculate I(q)
         int startHere = startAt -1;
         for (int j=startHere; j<stopAt; j++){
-            temp = allData.getDataItem(j);
-            iofq = moore_Iq(temp.getXValue());
-            calcqIq.add(temp.getX(), temp.getXValue()*iofq);
+            temp = allData.getDataItem(j); // allData gives q-value
+            calcqIq.add(temp.getX(), moore_qIq(temp.getXValue()));
         }
     }
 
@@ -465,7 +471,6 @@ public class RealSpace {
      */
     public void calculateIofQ(){
         calcIq.clear();
-        //calcqIq.clear();
         double iofq;
         XYDataItem temp;
         //iterate over each q value and calculate I(q)
@@ -474,7 +479,6 @@ public class RealSpace {
             temp = allData.getDataItem(j);
             iofq = moore_Iq(temp.getXValue());
 
-            //calcqIq.add(temp.getX(), temp.getXValue()*iofq);
             if (iofq > 0){
                 calcIq.add(temp.getXValue(), Math.log10(iofq));
             }
@@ -488,14 +492,35 @@ public class RealSpace {
      */
     public double moore_Iq(double q){
         double invq = 1.0/q;
-        double resultM = mooreCoefficients[0]*invq;
+
         double dmaxPi = dmax*Math.PI;
-        double dmaxq;
-        double pi2 = Math.PI*Math.PI;
+        double dmaxq = dmax*q;
+        //double pi2 = Math.PI*Math.PI;
+
+        double resultM = mooreCoefficients[0];
+        //double twodivpi = 2.0/Math.PI;
 
         for(int i=1; i < totalMooreCoefficients; i++){
-            dmaxq = dmax*q;
-            resultM = resultM + mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(pi2*i*i - dmaxq*dmaxq)*invq;
+            resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
+        }
+
+        return resultM*invq;
+    }
+
+
+    /**
+     * Calculates intensities from moore coefficients
+     * @param q single scattering vector point
+     * @return Intensity q*I(q)
+     */
+    public double moore_qIq(double q){
+
+        double dmaxPi = dmax*Math.PI;
+        double dmaxq = dmax*q;
+
+        double resultM = mooreCoefficients[0];
+        for(int i=1; i < totalMooreCoefficients; i++){
+            resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
         }
 
         return resultM;
@@ -632,23 +657,20 @@ public class RealSpace {
         double pi_sq = 9.869604401089358;
         int sizeOf = mooreCoefficients.length;
 
-        for (int i = 0; i < sizeOf; i++) {
-
-            if (i != 0) {
+        for (int i = 1; i < sizeOf; i++) {
                 am = mooreCoefficients[i];
                 i_zero = i_zero + am/(i)*Math.pow(-1,(i+1));
                 partial_rg = partial_rg + am/Math.pow(i,3)*(Math.pow(Math.PI*i, 2) - 6)*Math.pow(-1, (i+1));
                 rsum = rsum + am/Math.pow(i,3)*((Math.pow(Math.PI*i, 2) - 2)*Math.pow(-1, (i+1)) - 2 );
-            }
         }
-
 
         double dmax2 = dmax*dmax;
         double dmax3 = dmax2*dmax;
         double dmax4 = dmax2*dmax2;
         double inv_pi_cube = 1/(pi_sq*Math.PI);
+        double twodivPi = 2.0/Math.PI;
 
-        izero = i_zero*dmax2/Math.PI + mooreCoefficients[0];
+        izero = twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0];
         rg = Math.sqrt(dmax4*inv_pi_cube/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
         raverage = dmax3*inv_pi_cube/izero*rsum;
 
@@ -880,6 +902,10 @@ public class RealSpace {
         System.out.println("dmax => " + dmax + " SUM " + chi + " " + (totalMooreCoefficients - df) + " (a_m).size : " + totalMooreCoefficients + " df : " + df);
         //return chi*1.0/(df-1);
         chi2 = chi*1.0/(totalMooreCoefficients-1);
+    }
+
+    public int getTotalMooreCoefficients(){
+        return totalMooreCoefficients;
     }
 
 }
