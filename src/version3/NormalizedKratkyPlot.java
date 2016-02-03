@@ -26,13 +26,16 @@ import java.util.regex.Pattern;
  */
 public class NormalizedKratkyPlot {
 
-    JFreeChart chart;
-    boolean crosshair=true;
+    private JFreeChart chart;
+    private boolean crosshair=true;
     private XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
     private XYSeriesCollection plottedData = new XYSeriesCollection();
-    ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 DIMENSIONLESS KRATKY PLOT", chart);
-    XYLineAndShapeRenderer renderer1;
-    double upper;
+    private XYSeriesCollection vcDataReciprocal = new XYSeriesCollection();
+    private XYSeriesCollection rgDataReal = new XYSeriesCollection();
+    private XYSeriesCollection vcDataReal = new XYSeriesCollection();
+    private ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 DIMENSIONLESS KRATKY PLOT", chart);
+    private XYLineAndShapeRenderer renderer1;
+    private double upper;
     private Pattern vctag = Pattern.compile("Vc");
     private Pattern realtag = Pattern.compile("Real");
     private static ValueMarker yMarker = new ValueMarker(1.1);
@@ -59,15 +62,18 @@ public class NormalizedKratkyPlot {
         int horizontalDisplacement = 200;
 
         plottedData.removeAllSeries();
+        //frame.getChartPanel().removeAll();
         // create collection of series to plot
 
         if (type.equals("RECIRG")) {
             for (int i = 0; i < totalSets; i++){
                 Dataset temp = collectionSelected.getDataset(i);
                 temp.clearNormalizedKratkyReciRgData();
+
                 if (temp.getInUse()){
                     temp.createNormalizedKratkyReciRgData();
                 }
+                // adds empty series if not in use
                 plottedData.addSeries(temp.getNormalizedKratkyReciRgData());
             }
             horizontalDisplacement += 50;
@@ -244,6 +250,7 @@ public class NormalizedKratkyPlot {
         //frame.setLocation(new Point(frame.getLocation().getX(), frame.getLocation().getY() + horizontalDisplacement));
 
         //frame.getChartPanel().setSize(600, 500);
+
         //chartPanel.setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.getContentPane().add(chartPanel);
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));

@@ -274,8 +274,9 @@ public class PrObject implements Runnable {
     private boolean useL1;
     private XYSeries data;
     private RealSpace dataset;
+    private int cBoxValue=2;
 
-    public PrObject(RealSpace dataset, double lambda, boolean useL1){
+    public PrObject(RealSpace dataset, double lambda, boolean useL1, int cBoxValue){
 
         // create real space object for each dataset in use
         // XYSeries data, double dmax, double lambda, double qmax
@@ -285,7 +286,8 @@ public class PrObject implements Runnable {
         this.lambda = lambda;
         this.useL1 = useL1;
         data = dataset.getfittedqIq();
-        System.out.println("Use L1 " + useL1);
+        this.cBoxValue = cBoxValue;
+        System.out.println("Use L1 Norm of Second Derivate => " + useL1);
     }
 
     public PrObject(XYSeries fittedqIq, double qmax, double dmax, double lambda, boolean useL1Coefficients){
@@ -357,7 +359,7 @@ public class PrObject implements Runnable {
         int u_size = coeffs_size;
         int hessian_size = coeffs_size*2;
 
-        double t0 = Math.min(Math.max(1, 1/lambda), 2*n/0.001);
+        double t0 = Math.min(Math.max(1, 1.0/lambda), 2*n/0.001);
         double reltol = 0.01;
         double eta = 0.001;
         int pcgmaxi = 5000;
@@ -397,7 +399,7 @@ public class PrObject implements Runnable {
         // Initialize and guess am
         //
         double qd, inv_t;
-        System.out.println("L1-NORM COEFFS");
+
         SimpleMatrix am = new SimpleMatrix(n,1);  // am is 0 column
         am.set(0,0,0.000001);
 
@@ -410,7 +412,7 @@ public class PrObject implements Runnable {
          */
         SimpleMatrix a_matrix = new SimpleMatrix(m,n);
 
-        double qd2, pi_sq_n;
+        double qd2;
         double twodivpi = 2.0/Math.PI;
 
         for(int r=0; r<m; r++){ //rows, length is size of data
@@ -688,7 +690,7 @@ public class PrObject implements Runnable {
         int coeffs_size = ns + 1;   //+1 for constant background
         //int coeffs_size = ns;
 
-        double incr = 2.0;
+        double incr = cBoxValue; // sets the number of points to calculate second derivative
         int r_limit = (int)(incr*ns)-1;
         double del_r = dmax/(ns*incr);
         double[] r_vector = new double[r_limit];
@@ -1071,7 +1073,7 @@ public class PrObject implements Runnable {
                 pcgtol = 0.1*pcgtol;
             }
 
-            hessian = hessphi(laplacian, d1, d2, d3, hessian_size, coeffs_size, u_size);
+            hessian = hessphi(laplacian, d1, d2, d3);
 
             /*
              *
@@ -1333,7 +1335,7 @@ public class PrObject implements Runnable {
     }
 
 
-    private SimpleMatrix hessphi(SimpleMatrix ata, SimpleMatrix d1, SimpleMatrix d2, SimpleMatrix d3, int totalSize, int coeffSize, int u_size){
+    private SimpleMatrix hessphi(SimpleMatrix ata, SimpleMatrix d1, SimpleMatrix d2, SimpleMatrix d3){
 
         int h = d2.numCols();
         int n = ata.numCols();
@@ -1366,7 +1368,6 @@ public class PrObject implements Runnable {
 
         //hessian.print();
         return hessian;
-
     }
 
     private double inf_norm(SimpleMatrix vec){
@@ -1391,7 +1392,14 @@ public class PrObject implements Runnable {
     }
 
 
-    public static SimpleMatrix p_dd_r(SimpleMatrix am, double[] r_vector, double inv_d){
+    /**
+     * value of second derivative calculated at points in r_vector
+     * @param am Moore coefficients
+     * @param r_vector set of equally distributions points along dmax
+     * @param inv_d 1/dmax
+     * @return
+     */
+    public SimpleMatrix p_dd_r(SimpleMatrix am, double[] r_vector, double inv_d){
 
         double r_value, pi_r_n_inv_d, pi_r_inv_d, cos_pi_r_n_inv_d, sin_pi_r_n_inv_d;
         double pi_inv_d = Math.PI*inv_d;

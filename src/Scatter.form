@@ -419,10 +419,10 @@
                       <forms defaultalign-horz="false" defaultalign-vert="false"/>
                     </constraints>
                     <properties>
-                      <background color="-6178385"/>
+                      <background color="-4532522"/>
                       <borderPainted value="true"/>
                       <font size="12" style="1"/>
-                      <foreground color="-15822098"/>
+                      <foreground color="-16777216"/>
                       <hideActionText value="true"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
@@ -438,8 +438,9 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
+                      <background color="-4532522"/>
                       <font size="12" style="1"/>
-                      <foreground color="-15822098"/>
+                      <foreground color="-16777216"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Normalized Kratky"/>
                     </properties>
@@ -453,8 +454,10 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
+                      <background color="-4532522"/>
                       <font size="12" style="1"/>
-                      <foreground color="-15822098"/>
+                      <foreground color="-16777216"/>
+                      <hideActionText value="false"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Guinier Peak Analysis"/>
                     </properties>
@@ -468,8 +471,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="12" style="0"/>
-                      <foreground color="-15822098"/>
+                      <background color="-723724"/>
+                      <font size="12" style="1"/>
+                      <foreground color="-5723178"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Volume"/>
@@ -484,8 +488,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="12" style="0"/>
-                      <foreground color="-15822098"/>
+                      <background color="-4532522"/>
+                      <font size="12" style="1"/>
+                      <foreground color="-5723178"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Vc Plot"/>
@@ -500,8 +505,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="12" style="0"/>
-                      <foreground color="-15822098"/>
+                      <background color="-4532522"/>
+                      <font size="12" style="1"/>
+                      <foreground color="-5723178"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Flexibility"/>
@@ -516,12 +522,16 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="11" style="1"/>
-                      <foreground color="-3969338"/>
+                      <background color="-5723178"/>
+                      <font size="12" style="1"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Real Space"/>
                     </properties>
+                    <clientProperties>
+                      <html.disable class="java.lang.Boolean" value="false"/>
+                    </clientProperties>
                   </component>
                   <component id="e282b" class="javax.swing.JButton" binding="kratkyPlotButton">
                     <constraints>
@@ -532,7 +542,8 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="11" style="1"/>
+                      <background color="-5723178"/>
+                      <font size="12" style="1"/>
                       <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
@@ -548,8 +559,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <font size="11" style="1"/>
-                      <foreground color="-760048"/>
+                      <background color="-5723178"/>
+                      <font size="12" style="1"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Powerlaw"/>
@@ -564,6 +576,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-3919037"/>
                       <iconTextGap value="0"/>
@@ -580,6 +593,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
@@ -596,6 +610,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-3919037"/>
                       <iconTextGap value="0"/>
@@ -612,6 +627,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-5361508"/>
                       <iconTextGap value="0"/>
@@ -628,6 +644,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-5361508"/>
                       <iconTextGap value="0"/>
@@ -644,6 +661,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-5361508"/>
                       <iconTextGap value="0"/>
@@ -660,6 +678,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-16735422"/>
                       <iconTextGap value="0"/>
@@ -676,6 +695,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-13908400"/>
                       <iconTextGap value="0"/>
@@ -692,6 +712,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-16735422"/>
                       <iconTextGap value="0"/>
@@ -708,6 +729,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-15648368"/>
                       <iconTextGap value="0"/>
@@ -724,6 +746,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-13135918"/>
                       <iconTextGap value="0"/>
@@ -740,6 +763,7 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <background color="-394753"/>
                       <font size="12" style="1"/>
                       <foreground color="-3917525"/>
                       <iconTextGap value="0"/>
@@ -1975,7 +1999,7 @@
                     <children>
                       <component id="57bb0" class="javax.swing.JLabel">
                         <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
                         </constraints>
                         <properties>
                           <text value="Number of Runs to Average: "/>
@@ -2012,7 +2036,7 @@
                     <children>
                       <component id="e6317" class="javax.swing.JLabel">
                         <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
                         </constraints>
                         <properties>
                           <text value="Select One :"/>
@@ -2145,7 +2169,7 @@
                         <children>
                           <component id="1d69" class="javax.swing.JButton" binding="startButton" default-binding="true">
                             <constraints>
-                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
                             </constraints>
                             <properties>
                               <text value="Start"/>
@@ -2186,7 +2210,7 @@
                     <children>
                       <component id="d6731" class="javax.swing.JLabel">
                         <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
                         </constraints>
                         <properties>
                           <text value="Number of CPU cores to use : "/>
@@ -2207,11 +2231,11 @@
                   </grid>
                   <component id="a3aea" class="javax.swing.JLabel">
                     <constraints>
-                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="10" fill="0" indent="2" use-parent-layout="false"/>
                     </constraints>
                     <properties>
-                      <font size="14" style="0"/>
-                      <foreground color="-16760376"/>
+                      <font size="14" style="1"/>
+                      <foreground color="-1"/>
                       <text value="DAMMIN/F Interface (limited availability until release of BUBBLES)"/>
                     </properties>
                   </component>
@@ -2291,6 +2315,10 @@
                 <border type="none"/>
                 <children>
                   <grid id="fc1ca" layout-manager="FormLayout">
+                    <rowspec value="center:max(d;4px):noGrow"/>
+                    <rowspec value="top:3dlu:noGrow"/>
+                    <rowspec value="center:max(d;4px):noGrow"/>
+                    <rowspec value="top:3dlu:noGrow"/>
                     <rowspec value="center:max(d;4px):noGrow"/>
                     <rowspec value="top:3dlu:noGrow"/>
                     <rowspec value="center:max(d;4px):noGrow"/>
@@ -2496,6 +2524,91 @@
                               </component>
                             </children>
                           </grid>
+                        </children>
+                      </grid>
+                      <grid id="591fc" layout-manager="GridLayoutManager" row-count="2" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="8" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <forms/>
+                        </constraints>
+                        <properties>
+                          <background color="-3134"/>
+                        </properties>
+                        <border type="etched" title="Source Info"/>
+                        <children>
+                          <component id="1acb7" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="RADIATION SOURCE :"/>
+                            </properties>
+                          </component>
+                          <hspacer id="9926c">
+                            <constraints>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                          </hspacer>
+                          <component id="a1d70" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="BEAMLINE/MANUFACTURER :"/>
+                            </properties>
+                          </component>
+                          <component id="5664c" class="javax.swing.JComboBox" binding="comboBoxSource">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <model>
+                                <item value="BENDING MAGNET"/>
+                                <item value="WIGGLER"/>
+                                <item value="UNDULATOR"/>
+                                <item value="HOME Cu ANODE"/>
+                                <item value="HOME Mo ANODE"/>
+                                <item value="HOME LIQUID METAL JET"/>
+                                <item value="OTHER"/>
+                              </model>
+                            </properties>
+                          </component>
+                          <component id="2a359" class="javax.swing.JTextField" binding="SourceTextField">
+                            <constraints>
+                              <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                                <preferred-size width="70" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties>
+                              <text value="B21 Diamond Light Source"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </grid>
+                      <grid id="533ae" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <forms/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="e1ba7" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="2" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <font style="1"/>
+                              <text value="Information below will be included in the header for all written files"/>
+                            </properties>
+                          </component>
+                          <hspacer id="4d08b">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                          </hspacer>
                         </children>
                       </grid>
                     </children>
@@ -2747,15 +2860,59 @@
               </tabbedpane>
             </children>
           </grid>
-          <grid id="9c1a4" layout-manager="FormLayout">
-            <rowspec value="center:d:grow"/>
-            <colspec value="fill:d:grow"/>
+          <grid id="9c1a4" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
             <constraints>
               <tabbedpane title="Messages"/>
             </constraints>
             <properties/>
             <border type="none"/>
-            <children/>
+            <children>
+              <component id="476a3" class="javax.swing.JLabel">
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <font style="1"/>
+                  <text value="ERROR MESSAGES"/>
+                </properties>
+              </component>
+              <scrollpane id="1abfc" binding="stdOutPane">
+                <constraints>
+                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
+                <border type="etched"/>
+                <children>
+                  <component id="a0cb0" class="javax.swing.JTextPane" binding="stdOutText">
+                    <constraints/>
+                    <properties/>
+                  </component>
+                </children>
+              </scrollpane>
+              <component id="2f83c" class="javax.swing.JLabel">
+                <constraints>
+                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <font style="1"/>
+                  <text value="GENERAL MESSAGES"/>
+                </properties>
+              </component>
+              <scrollpane id="8a8d2" binding="generalPane">
+                <constraints>
+                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties/>
+                <border type="etched"/>
+                <children>
+                  <component id="ff274" class="javax.swing.JTextPane" binding="generalText">
+                    <constraints/>
+                    <properties/>
+                  </component>
+                </children>
+              </scrollpane>
+            </children>
           </grid>
         </children>
       </tabbedpane>
@@ -2790,7 +2947,7 @@
               <forms defaultalign-horz="false"/>
             </constraints>
             <properties>
-              <text value="Label"/>
+              <text value="Scatter v3.0"/>
             </properties>
           </component>
         </children>

@@ -1012,9 +1012,13 @@ public class Functions {
      */
     public static double moore_Iq(double[] a_m, double dmax, double q, int limit){
         double invq = 1/q;
+
+        double dmaxq = dmax*q;
+        double sin_dmaxq = Math.sin(dmaxq);
+
         double resultM=a_m[0];
         for(int i=1; i < limit; i++){
-                resultM = resultM + Constants.TWO_DIV_PI*a_m[i]*Math.PI*i*dmax*Math.pow(-1,i+1)*Math.sin(dmax*q)/(Math.pow(Math.PI*i, 2) - Math.pow(dmax*q, 2));
+                resultM = resultM + Constants.TWO_DIV_PI*a_m[i]*Math.PI*i*dmax*Math.pow(-1,i+1)*sin_dmaxq/(Math.pow(Math.PI*i, 2) - dmaxq*dmaxq);
         }
 
         return resultM*invq;

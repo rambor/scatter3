@@ -27,6 +27,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
     private boolean useL1;
     private JProgressBar bar;
 
+    private boolean isFinished = false;
+
     private XYSeries keptSeries;
     private XYSeries keptErrorSeries;
     private double[] keptAm;
@@ -36,7 +38,10 @@ public class RefineManager extends SwingWorker<Void, Void> {
     private double upperq;
     private int totalToFit;
     private double dmax_pi;
-    private double startingResidual;
+    private double median;
+    private double invReScaleFactor;
+    private double totalRoundsForRefinement;
+    private AtomicInteger counter = new AtomicInteger(0);
 
     public RefineManager(RealSpace dataset, int numberOfCPUs, int refinementRounds, double rejectionCutOff, double lambda, boolean useL1){
 
@@ -49,20 +54,23 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         totalToFit = dataset.getfittedqIq().getItemCount();
 
+        totalRoundsForRefinement = refinementRounds;
         roundsPerCPU = (int)(this.refinementRounds/(double)numberOfCPUs);
-        bins = (int) (Math.round(dataset.getfittedIq().getMaxX() * dataset.getDmax() / Math.PI));
-
-        upperq = dataset.getAllData().getX(dataset.getStop()-1).doubleValue();
+        bins = (int) (Math.round(dataset.getfittedqIq().getMaxX() * dataset.getDmax() / Math.PI));
+        //upperq = dataset.getAllData().getX(dataset.getStop()-1).doubleValue();
+        upperq = dataset.getfittedqIq().getMaxX();
         this.dmax = dataset.getDmax();
         this.dmax_pi = Math.PI*dmax;
 
-        startingResidual = medianMooreResidualsQIQ(dataset.getfittedqIq(), dataset.getMooreCoefficients(), dataset.getTotalMooreCoefficients());
-
+        invReScaleFactor = 1.0/dataset.getRescaleFactor();
+        median = 1000; //medianMooreResidualsQIQ(dataset.getfittedqIq(), dataset.getMooreCoefficients(), dataset.getTotalMooreCoefficients());
     }
 
 
     public void setBar(JProgressBar bar, JLabel prStatusLabel){
         this.bar = bar;
+        this.bar.setValue(0);
+        this.bar.setStringPainted(true);
         this.statusLabel = prStatusLabel;
         useLabels = true;
     }
@@ -87,13 +95,12 @@ public class RefineManager extends SwingWorker<Void, Void> {
     @Override
     protected Void doInBackground() throws Exception {
         if (useLabels){
-            statusLabel.setText("Starting median residual " + startingResidual);
+            statusLabel.setText("Starting median residual " + median);
         }
-
+        System.out.println("BEFORE : isFinsihed " + isFinished);
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
         for (int i=0; i < numberOfCPUs; i++){
-
-            Runnable bounder = new Refiner(dataset.getfittedqIq(), dataset.getfittedIq(), dataset.getfittedError(), roundsPerCPU, statusLabel, startingResidual);
+            Runnable bounder = new Refiner(dataset.getfittedqIq(), dataset.getfittedError(), roundsPerCPU, statusLabel);
             executor.execute(bounder);
         }
 
@@ -101,7 +108,9 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         try {
             executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-            notifyUser("Finished Setting q-limits");
+            bar.setValue(0);
+            bar.setStringPainted(false);
+            notifyUser("Finished Refining");
         } catch (InterruptedException e) {
             System.out.println("InterruptedException " + e.getMessage());
             notifyUser("Failed settings limits, exceeded thread time");
@@ -111,6 +120,12 @@ public class RefineManager extends SwingWorker<Void, Void> {
         dataset.setMooreCoefficients(keptAm);
         notifyUser("Finished Refining");
         createKeptSeries();
+
+        synchronized (this) {
+            isFinished = true;
+            notifyAll();
+        }
+        System.out.println(" AFTER : isFinsihed " + isFinished);
         return null;
     }
 
@@ -118,40 +133,40 @@ public class RefineManager extends SwingWorker<Void, Void> {
     public class Refiner implements Runnable {
 
         private XYSeries activeSet;
-        private XYSeries activeIqSet;
+        //private XYSeries activeIqSet;
         private XYSeries errorActiveSet;
         private XYSeries relativeErrorSeries;
-        private boolean useNotify = false;
+        //private boolean useNotify = false;
+
 
         //private double upperq;
         private int totalRuns;
 
-        private double median;
+        //private double median;
 
         private int sizeAm;
-
-        private AtomicInteger counter = new AtomicInteger(0);
 
         private ArrayList<Integer> countsPerBin;
         private ArrayList<Double> averageStoNPerBin;
 
         private JLabel status;
 
-        public Refiner(XYSeries qIq, XYSeries iofQ, XYSeries allError, int totalruns, JLabel status, double startMedian){
+        public Refiner(XYSeries qIq, XYSeries allError, int totalruns, JLabel status){
 
             try {
                 int totalItems = qIq.getItemCount() ;
-                activeSet = qIq.createCopy(0, totalItems-1);
+                activeSet = qIq.createCopy(0, totalItems-1); // possibly scaled by rescaleFactor
                 //activeIqSet = iofQ.createCopy(0, totalItems-1);
                 errorActiveSet = new XYSeries("Error qIq");
                 relativeErrorSeries = new XYSeries("Error qIq");
 
                 this.totalRuns = totalruns;
+                double rescalefactor = dataset.getRescaleFactor();
 
                 for (int i=0; i<totalItems; i++){
                     XYDataItem tempData = allError.getDataItem(i);
-                    errorActiveSet.add(tempData.getXValue(), tempData.getXValue() * tempData.getYValue());
-                    relativeErrorSeries.add(tempData.getXValue(), Math.abs(activeSet.getY(i).doubleValue() / (tempData.getXValue() * tempData.getYValue())));
+                    errorActiveSet.add(tempData.getXValue(), tempData.getXValue() * tempData.getYValue()*rescalefactor);
+                    relativeErrorSeries.add(tempData.getXValue(), Math.abs(activeSet.getY(i).doubleValue() / (tempData.getXValue() * tempData.getYValue()*rescalefactor)));
                 }
 
             } catch (CloneNotSupportedException e) {
@@ -163,8 +178,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
             this.averageSignalToNoisePerBin();
 
             this.status = status;
-            //this.setMedian(startMedian);
-            this.setMedian(10000);
         }
 
 
@@ -205,7 +218,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                         if (averageStoNPerBin.get(b-1) < 1.25){ // increase more points if S-to-N is less than
                             samplingNumber = 36;
                         } else {
-                            samplingNumber = 12;
+                            samplingNumber = 5;
                         }
 
                         samplingLimit = (1.0 + randomGenerator.nextInt(samplingNumber))/100.0;  // return a random percent up to ...
@@ -245,10 +258,9 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 // Calculate Residuals
                 tempMedian = medianMooreResiduals(activeSet, results.get(0));
 
-                if (tempMedian < this.getMedian()){
+                if (tempMedian < getMedian()){
                     // keep current values
-                    notifyUser(String.format("Improved fit, new median residual %.5f < %.5f at round %d", tempMedian, median, i));
-
+                    notifyUser(String.format("Improved fit, new median residual %1.7E < %1.7E at round %d", tempMedian, median, i));
                     //status.setText("Improved fit, new median residual: " + tempMedian + " < " + median + " at round " + i );
 
                     sizeAm = results.get(0).length;
@@ -256,7 +268,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                     setMedian(tempMedian);
                     setS_o(1.4826*(1.0+5.0/(size - sizeAm))*Math.sqrt(median));
                 }
-                //this.increment();
+                this.increment();
             }
         }
 
@@ -302,25 +314,16 @@ public class RefineManager extends SwingWorker<Void, Void> {
         }
 
         private void increment() {
-//            int currentCount = counter.incrementAndGet();
-//
-//            if (currentCount%100==0){
-//                bar.setValue((int)(currentCount/(float)(totalRoundsForRefinement)*100));
-//            }
+            int currentCount = counter.incrementAndGet();
+
+            if (currentCount%100==0){
+                bar.setValue((int)(currentCount/totalRoundsForRefinement*100));
+            }
         }
 
         public AtomicInteger getValue() {
             return counter;
         }
-
-        private synchronized void setMedian(double value) {
-            this.median = value;
-        }
-
-        public synchronized double getMedian() {
-            return this.median;
-        }
-
 
         /**
          *
@@ -367,8 +370,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
             int dataLimit = data.getItemCount();
             double q;
             double dmax_q2, dmax_q;
-            //double dmaxPi = dmax*Math.PI;
-            //double pi2 = Math.PI*Math.PI;
             double sin_dmaxq;
             double resultM;
             XYDataItem tempitem;
@@ -386,13 +387,14 @@ public class RefineManager extends SwingWorker<Void, Void> {
                     resultM = resultM + Constants.TWO_DIV_PI*a_m[j]*j*dmax_pi*Math.pow(-1,j+1)*sin_dmaxq/(j*j*Constants.PI_2 - dmax_q2);
                 }
                 // should this be abs(residuals) or squared?
-                //residuals.add( Math.pow(tempitem.getYValue() - resultM, 2) );  //squaring the difference
-                residuals.add( Math.abs(tempitem.getYValue() - resultM) );  //squaring the difference
+                residuals.add( Math.pow(tempitem.getYValue() - resultM, 2) );  //squaring the difference
+                //residuals.add( Math.abs(tempitem.getYValue() - resultM) );  //squaring the difference
             }
 
             medianResidual = Statistics.calculateMedian(residuals);
             return medianResidual;
         }
+
     } // end of runnable class
 
     private synchronized void setkeptAm(double[] values, int sizeAm) {
@@ -433,7 +435,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
             xObsValue = tempData.getXValue();
             yObsValue = tempData.getYValue();
 
-            residual = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm)-yObsValue;
+            residual = invReScaleFactor*Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm)-yObsValue;
 
             if (Math.abs(residual/this.getS_o()) <= rejectionCutOff){
                 residualsList.add(residual*residual);
@@ -449,21 +451,21 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         double iCalc;
         dataset.getCalcIq().clear();
-        dataset.getfittedIq().clear();
+        //dataset.getfittedIq().clear();
 
         for (int i=0; i<size; i++){
             tempData = activeIqSet.getDataItem(i);
             xObsValue = tempData.getXValue();
             yObsValue = tempData.getYValue();
 
-            iCalc = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm);
+            iCalc = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm)*invReScaleFactor;
             residual = iCalc-yObsValue;
 
             if (Math.abs(residual*sigmaM) <= rejectionCutOff){
                 keptSeries.add(tempData);
-                dataset.getfittedIq().add(tempData);
+                //dataset.getfittedIq().add(tempData);
 
-                keptqIq.add(xObsValue, xObsValue*yObsValue);
+                keptqIq.add(xObsValue, xObsValue*yObsValue*dataset.getRescaleFactor());  // used in actual fitting must be rescaled if too low or high
                 keptErrorSeries.add(xObsValue, errorActiveSet.getY(i).doubleValue());
 
                 if (yObsValue > 0){ // only positive values
@@ -510,7 +512,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 xObsValue = tempData.getXValue();
                 yObsValue = tempData.getYValue();
 
-                dataset.getfittedIq().add(tempData);
+                //dataset.getfittedIq().add(tempData);
 
                 if (yObsValue > 0){ // only positive values
                     tempData = new XYDataItem(xObsValue, Math.log10(yObsValue));
@@ -521,6 +523,29 @@ public class RefineManager extends SwingWorker<Void, Void> {
             dataset.calculateIntensityFromModel(useL1);
             updateText(String.format("Refinement failed check data for unusual numbers"));
         }
+    }
+
+
+    public boolean getIsFinished() {
+        return isFinished;
+    }
+
+    /**
+     *
+     * @param value
+     * @return
+     */
+    private synchronized void setMedian(double value) {
+            this.median = value;
+    }
+
+
+    /**
+     *
+     * @return
+     */
+    public synchronized double getMedian() {
+        return this.median;
     }
 
     /**
@@ -556,8 +581,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 resultM = resultM + Constants.TWO_DIV_PI*a_m[j]*j*dmax_pi*Math.pow(-1,j+1)*sin_dmaxq/(j*j*Constants.PI_2 - dmax_q2);
             }
             // should this be abs(residuals) or squared?
-            //residuals.add( Math.pow(tempitem.getYValue() - resultM, 2) );  //squaring the difference
-            residuals.add( Math.abs(tempitem.getYValue() - resultM) );  //squaring the difference
+            residuals.add( Math.pow(tempitem.getYValue() - resultM, 2) );  //squaring the difference
+            //residuals.add( Math.abs(tempitem.getYValue() - resultM) );  //squaring the difference
         }
 
         medianResidual = Statistics.calculateMedian(residuals);

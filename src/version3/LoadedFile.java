@@ -161,7 +161,7 @@ public class LoadedFile {
                     data.setE(convertToUS(row[2]));
                 }
             } else {
-                data = new DataLine(Double.parseDouble(row[0]), Double.parseDouble(row[1])*100, 1.0, true);
+                data = new DataLine(Double.parseDouble(row[0]), Double.parseDouble(row[1]), 1.0, true);
                 if ((row.length == 3 && isNumeric(row[2])) || (row.length == 4 && isNumeric(row[2]))) {
                     data.setE(Double.parseDouble(row[2]));
                 }

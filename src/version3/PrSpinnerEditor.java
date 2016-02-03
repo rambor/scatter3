@@ -26,14 +26,16 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     private JCheckBox qIqFit;
     private JComboBox lambdaBox;
     private JCheckBox l1NormCheckBox;
+    private JComboBox cBox;
 
     // Initializes the spinner.
-    public PrSpinnerEditor(PrModel prModel, JLabel status,  JCheckBox qIqCheckBox, JComboBox lambdaBox, JCheckBox l1NormCheckBox) {
+    public PrSpinnerEditor(PrModel prModel, JLabel status,  JCheckBox qIqCheckBox, JComboBox lambdaBox, JCheckBox l1NormCheckBox, JComboBox cBox) {
         super(new JTextField());
         spinner = new JSpinner();
 
         this.lambdaBox = lambdaBox;
         this.l1NormCheckBox = l1NormCheckBox;
+        this.cBox = cBox;
 
         this.prModel = prModel;
 
@@ -119,7 +121,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         status.setText("Analyzing, please wait");
 
         // calculte new Fit
-        PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected());
+        PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()));
         tempPr.run();
 
         prDataset.calculateIntensityFromModel(qIqFit.isSelected());

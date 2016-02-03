@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.RunnableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -182,6 +183,12 @@ public class Scatter {
     private JScrollPane damScrollPane;
     private JTextPane damTextPane;
     private JLabel damminLabel;
+    private JComboBox comboBoxSource;
+    private JTextField SourceTextField;
+    private JScrollPane stdOutPane;
+    private JTextPane stdOutText;
+    private JScrollPane generalPane;
+    private JTextPane generalText;
 
     private String version = "3.0";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -241,10 +248,19 @@ public class Scatter {
 
     private boolean isCtrlC = false;
     private boolean isCtrlB = false;
+    private boolean damstartStatus = false;
+    private File supcombFile;
 
     private static int cpuCores;
 
     public Scatter() { // constructor
+
+        //MessageConsole mc = new MessageConsole(stdOutText);
+        //mc.redirectOut();
+        //mc.redirectErr(Color.RED, null);
+
+        final MessageConsole info = new MessageConsole(generalText);
+        //info.redirectOut();
 
         //int[] subtractionBins = new int[] {11, 13, 17, 23, 29};
         //comboBoxSubtractBins = new JComboBox(subtractionBins);
@@ -252,7 +268,7 @@ public class Scatter {
         rejectionCutOffBox.setSelectedIndex(2);
         simBinsComboBox.setSelectedIndex(0);
         lambdaBox.setSelectedIndex(0);
-        cBox.setSelectedIndex(2);
+        cBox.setSelectedIndex(1);
 
 
         collections = new HashMap();
@@ -280,7 +296,7 @@ public class Scatter {
 
         //fitFilesModel = new DefaultListModel<DataFileElement>();
         //chiFilesModel = new DefaultListModel<String>();
-        //damminfModelsModel = new DefaultListModel<String>();
+        damminfModelsModel = new DefaultListModel<String>();
 
         buffersList.setModel(bufferFilesModel);
         samplesList.setModel(sampleFilesModel);
@@ -303,7 +319,7 @@ public class Scatter {
         covFilesScrollPanel.setViewportView(similarityList);
         //fitFilesList.setModel(fitFilesModel);
         //chiValuesList.setModel(chiFilesModel);
-        //completedDamminList.setModel(damminfModelsModel);
+        completedDamminList.setModel(damminfModelsModel);
 
         buffersList.setCellRenderer(new SampleBufferListRenderer());
         buffersList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -603,18 +619,18 @@ public class Scatter {
         dmaxStart = new DoubleValue(97);
 
         //Pr Table JLabel status, WorkingDirectory cwd, Double lambda
-        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox));
+        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox));
 
         prModel = (PrModel) prTable.getModel();
         prModel.setBars(mainProgressBar, progressBar1, status, prStatusLabel);
         TableColumnModel pcm = prTable.getColumnModel();
 
         TableColumn pc = pcm.getColumn(4);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox));
         pc = pcm.getColumn(5);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox));
         pc = pcm.getColumn(9);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox));
 
         pc = pcm.getColumn(2);
         pc.setCellEditor(new CheckBoxCellEditorRenderer());
@@ -681,8 +697,8 @@ public class Scatter {
 
         similarityObject = new Similarity(status, mainProgressBar);
 
-        normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
-        normalKratkyRgReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (Real space)");
+        //normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
+        //normalKratkyRgReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (Real space)");
         normalKratkyVc = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Guinier)");
         normalKratkyVcReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Real space)");
 
@@ -1085,7 +1101,6 @@ public class Scatter {
                         if(fc.getSelectedFile()!=null){
 
                             WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
-
                             FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
                             dataToWrite.writeSAXSFile(cleaned, tempDataset);
 
@@ -1869,6 +1884,8 @@ public class Scatter {
                     status.setText("No data to use");
                     return;
                 }
+                // reset box before making plot
+                qIQCheckBox.setSelected(false);
 
                 prModel.clear();
                 prModel.addDatasetsFromCollection(collectionSelected);
@@ -1928,6 +1945,95 @@ public class Scatter {
                     }
                     atsasDirLabel.setText(ATSAS_DIRECTORY);
                     updateProp();
+                }
+            }
+        });
+
+        startButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                new Thread(){
+                    public void run() {
+                        String filename = damminLabel.getText();
+                        String damstartFile = damstartLabel.getText();
+                        boolean dammin = damminRadioButton.isSelected();
+                        boolean fast = fastRadioButton.isSelected();
+
+                        DammiNFManager tempModeling = new DammiNFManager( Integer.valueOf(cpuBox.getSelectedItem().toString()),
+                                filename,
+                                dammin,
+                                Integer.valueOf(runsComboBox.getSelectedItem().toString()),
+                                symmetryBox.getSelectedItem().toString(),
+                                ATSAS_DIRECTORY,
+                                WORKING_DIRECTORY.getWorkingDirectory(),
+                                damminfModelsModel, fast, damstartFile, damstartStatus, damRefineCheckBox.isSelected());
+
+                        if (alignPDBModelRunsCheckBox.isSelected() && supcombFile.exists()){
+                            tempModeling.setSupcombFile(supcombFile);
+                        }
+
+                        tempModeling.modelNow(damTextPane, info);
+
+                    }
+                }.start();
+            }
+        });
+
+        damstartButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //Set GNOM out file
+                File theCWD = new File(WORKING_DIRECTORY.getWorkingDirectory());
+                JFileChooser chooser = new JFileChooser(theCWD);
+                chooser.setDialogTitle("Select File");
+
+                chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+                chooser.setAcceptAllFileFilterUsed(false);
+
+                if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
+
+                    damstartLabel.setText(chooser.getSelectedFile().toString());
+                    damstartStatus = true;;
+                    int test = chooser.getSelectedFile().toString().indexOf("damstart.pdb");
+
+                    if (test < 0){
+                        damRefineCheckBox.setSelected(false);
+                        damstartLabel.setText("Incorrect File");
+                        status.setText("Improper damstart file, must be damstart.pdb");
+                        damstartStatus = false;
+                    }
+                }
+            }
+        });
+
+        selectPDBDamminButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                File theCWD = new File(WORKING_DIRECTORY.getWorkingDirectory());
+                JFileChooser chooser = new JFileChooser(theCWD);
+                chooser.setDialogTitle("Select File");
+
+                chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+                chooser.setAcceptAllFileFilterUsed(false);
+
+                supcombLabel.setFont(new Font("Arial", Font.BOLD, 12));
+
+                if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION) {
+
+                    int test = chooser.getSelectedFile().toString().indexOf(".pdb");
+
+                    if (test < 0) {
+                        status.setText("Improper PDB extension");
+                    } else {
+                        // create PofR file for plotting
+                        try {
+                            supcombLabel.setText(chooser.getSelectedFile().getName());
+                            supcombFile = new File(chooser.getSelectedFile().getAbsolutePath());
+                        } catch (Exception e1) {
+                            e1.printStackTrace();
+                        }
+                    }
                 }
             }
         });
@@ -2368,7 +2474,8 @@ public class Scatter {
                         programInstance.qmaxSimilarityField.setText(String.valueOf(thisCollection.getDataset(0).getAllData().getMaxX()));
 
                         programInstance.status.setText("Total Loaded: " + programInstance.similarityFilesModel.getSize());
-
+                        programInstance.similarityList.revalidate();
+                        programInstance.similarityList.repaint();
                     }
                 }.start();
             }
@@ -2531,17 +2638,20 @@ public class Scatter {
 
     private void createNormalizedKratkyPlot(){
 
-        //normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
+        normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
         normalKratkyRg.plot(collectionSelected, "RECIRG", WORKING_DIRECTORY.getWorkingDirectory());
 
+
+        // test if Real Space Invariants have been determined
         for (int i=0; i<collectionSelected.getDatasetCount(); i++){
             Dataset temp = collectionSelected.getDataset(i);
             if (temp.getRealIzero() > 0 && temp.getRealRg() > 0){
-                //normalKratkyRgReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (Real space)");
+                normalKratkyRgReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (Real space)");
                 normalKratkyRgReal.plot(collectionSelected, "REALRG", WORKING_DIRECTORY.getWorkingDirectory());
                 break;
             }
         }
+
 
         //normalKratkyVc = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Guinier)");
         //normalKratkyVcReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Real space)");
@@ -3651,7 +3761,6 @@ public class Scatter {
             } else if (this.colID == 13){ // dmax search
 
 
-
             } else if (this.colID == 14){
                 //refine_Pr
                 this.button.setBackground(Color.WHITE);
@@ -3659,46 +3768,142 @@ public class Scatter {
                 status.setText("");
                 prStatusLabel.setText("Starting refinement of " + prModel.getDataset(rowID).getFilename());
                 // launch a thread
-                //RefineManager refineMe = new RefineManager(prModel.getDataset(rowID), cpuCores,
-                //        Integer.parseInt(refinementRoundsBox.getSelectedItem().toString()),
-                //        Double.parseDouble(rejectionCutOffBox.getSelectedItem().toString()),
-                //        Double.parseDouble(lambdaBox.getSelectedItem().toString()),
-                //        l1NormCheckBox.isSelected());
-                //prStatusLabel.setText("");
-                //refineMe.setBar(progressBar1, prStatusLabel);
+
                 Thread refineIt = new Thread(){
                     public void run() {
-                        RefineManager refineMe = new RefineManager(prModel.getDataset(rowID), cpuCores,
+
+                        final RefineManager refineMe = new RefineManager(prModel.getDataset(rowID), cpuCores,
                                 Integer.parseInt(refinementRoundsBox.getSelectedItem().toString()),
                                 Double.parseDouble(rejectionCutOffBox.getSelectedItem().toString()),
                                 Double.parseDouble(lambdaBox.getSelectedItem().toString()),
                                 l1NormCheckBox.isSelected());
+
                         prStatusLabel.setText("");
                         refineMe.setBar(progressBar1, prStatusLabel);
+
                         refineMe.execute();
+
+                        synchronized (refineMe) {
+                            if (!refineMe.getIsFinished()) {
+                                try {
+                                    refineMe.wait();
+                                } catch (InterruptedException ee) {
+                                    // handle it somehow
+                                    System.out.println("Catch " + ee.getMessage());
+                                }
+                            }
+                        }
+
+                        FileObject tempFile = new FileObject(new File(WORKING_DIRECTORY.getWorkingDirectory()));
+                        String newname = tempFile.writePRFile(collectionSelected.getDataset(prModel.getDataset(rowID).getId()),
+                                prStatusLabel,
+                                collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getFileName(),
+                                WORKING_DIRECTORY.getWorkingDirectory(),
+                                true
+                        );
+
+                        prStatusLabel.setText("Files written to " + WORKING_DIRECTORY.getWorkingDirectory() + ", ready to run DAMMIN/F");
+                        runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
+                        // run gnom
                     }
+
                 };
+
                 refineIt.start();
-                try {
-                    refineIt.join();
-                    System.out.println("hello from end of join");
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
+
+
+
 
 
             } else if (this.colID == 15){
                 // write Pr and Iq distributions toFile
                 // create new instance of save and pass through datasets
                 // get and return directory and filename
-                // SavePr tempSave = new SavePr();
-                // toFilePofR(collectionSelected.getDataset(prModel.getDataset(rowID).getId()), prModel.getDataset(rowID));
+                SavePr tempSave = new SavePr();
+
+                if (tempSave.getFileName().length() > 2){
+                    FileObject tempFile = new FileObject(tempSave.getCurrentDir());
+                    String newname = tempFile.writePRFile(collectionSelected.getDataset(prModel.getDataset(rowID).getId()),
+                                                                       prStatusLabel,
+                                                                       tempSave.getFileName(),
+                                                                       tempSave.getCurrentDir().getAbsolutePath(),
+                                                                       false
+                    );
+
+                    status.setText("Files written to " + WORKING_DIRECTORY.getWorkingDirectory() + ", ready to run DAMMIN/F");
+                    runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
+                }
             }
         }
 
         @Override
         public Object getCellEditorValue() {
             return button.isSelected();
+        }
+    }
+
+
+
+    class SavePr {
+        private String name;
+        private File currentDir;
+
+        public SavePr(){
+            JFileChooser c = new JFileChooser(WORKING_DIRECTORY.getWorkingDirectory());
+            JTextField filename = new JTextField(), dir = new JTextField();
+            // "Save" dialog:
+
+            int rVal = c.showSaveDialog(panel1);
+
+            if (rVal == JFileChooser.APPROVE_OPTION) {
+                filename.setText(c.getSelectedFile().getName());
+                this.setFileName(filename.getText());
+                dir.setText(c.getCurrentDirectory().toString());
+                this.setCurrentDir(c.getCurrentDirectory());
+            }
+
+            if (rVal == JFileChooser.CANCEL_OPTION) {
+                status.setText("Save Cancelled");
+                filename.setText("");
+                dir.setText("");
+            }
+        }
+        /*
+        public void actionPerformed(ActionEvent e) {
+            JFileChooser c = new JFileChooser();
+            JTextField filename = new JTextField(), dir = new JTextField();
+            // "Save" dialog:
+
+            int rVal = c.showSaveDialog(Scatter.this);
+
+            if (rVal == JFileChooser.APPROVE_OPTION) {
+                filename.setText(c.getSelectedFile().getName());
+                this.setFileName(filename.getText());
+                dir.setText(c.getCurrentDirectory().toString());
+                this.setCurrentDir(dir.getText());
+            }
+            if (rVal == JFileChooser.CANCEL_OPTION) {
+                status.setText("Save Cancelled");
+                filename.setText("You pressed cancel");
+                dir.setText("");
+            }
+        }
+        */
+        private void setFileName(String text){
+            this.name = text;
+            System.out.println("Setting name to " + text);
+        }
+
+        private void setCurrentDir(File text){
+            this.currentDir = text;
+        }
+
+        public String getFileName(){
+            return this.name;
+        }
+
+        public File getCurrentDir(){
+            return this.currentDir;
         }
     }
 
@@ -3729,7 +3934,7 @@ public class Scatter {
                 System.out.println(line);
             }
             System.out.println("Finished datgnom: file " + base_name[0] + "_dg.out");
-            damminLabel.setText(WORKING_DIRECTORY.getWorkingDirectory()+ "/"+ base_name[0] + "_dg.out");
+            damminLabel.setText(WORKING_DIRECTORY.getWorkingDirectory() + "/"+ base_name[0] + "_dg.out");
 
         } catch (IOException e) {
             System.out.println("Problem running datgnom from " + ATSAS_DIRECTORY);

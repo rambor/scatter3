@@ -43,6 +43,8 @@ public class RealSpace {
     private double[] mooreCoefficients;
     private int dmax;
     private double qmax;
+    private double rescaleFactor = 1;
+    private double invRescaleFactor =1;
     private double raverage;
     private double chi2;
     private float scale;
@@ -83,6 +85,26 @@ public class RealSpace {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
+
+        // need to rescale allData for fitting?
+        double digits = Math.log10(averageIntensity(allData));
+
+
+        if (digits < 0){
+            rescaleFactor = Math.pow(10,Math.ceil(Math.abs(digits)));
+            invRescaleFactor = 1.0/rescaleFactor;
+            originalqIq = new XYSeries("orignal qIq data");
+            for(int i=0; i<totalAllData; i++){
+                XYDataItem tempItem = allData.getDataItem(i);
+                originalqIq.add(tempItem.getX(), tempItem.getYValue()*rescaleFactor*tempItem.getXValue());
+            }
+
+        } else {
+            originalqIq = dataset.getQIQData();
+        }
+
+        System.out.println("Average I " + averageIntensity(allData) + " digits " + digits);
+
         fittedIq = new XYSeries(Integer.toString(this.id) + " Iq-" + filename);
         fittedqIq = new XYSeries(Integer.toString(this.id) + " qIq-" + filename);
         fittedError = new XYSeries(Integer.toString(this.id) + " fittedError-" + filename);
@@ -99,7 +121,7 @@ public class RealSpace {
         //    XYDataItem tempqiq = dataset.getQIQData().getDataItem(i);
         //    originalqIq.add(tempqiq.getX(), tempqiq.getYValue()/10000);
         //}
-        originalqIq = dataset.getQIQData();
+
 
         prDistribution = new XYSeries(Integer.toString(this.id) + " Pr-" + filename);
         this.color = dataset.getColor();
@@ -204,7 +226,7 @@ public class RealSpace {
     }
 
     public int getId(){
-        return id;
+        return dataset.getId();
     }
 
     public double getIzero(){
@@ -429,6 +451,18 @@ public class RealSpace {
         prDistribution.add(dmax,0);
     }
 
+    public double calculatePofRAtR(double r_value){
+        double inv_d = 1.0/dmax;
+        double pi_dmax = Math.PI*inv_d;
+        double pi_dmax_r = pi_dmax*r_value;
+        double resultM = 0;
+
+        for(int i=1; i < totalMooreCoefficients; i++){
+            resultM += mooreCoefficients[i]*Math.sin(pi_dmax_r*i);
+        }
+        return 0.5*inv_d * r_value * resultM*scale;
+    }
+
 
     /**
      *
@@ -477,7 +511,7 @@ public class RealSpace {
         int startHere = startAt -1;
         for (int j=startHere; j<stopAt; j++){
             temp = allData.getDataItem(j);
-            iofq = moore_Iq(temp.getXValue());
+            iofq = moore_Iq(temp.getXValue())*invRescaleFactor;
 
             if (iofq > 0){
                 calcIq.add(temp.getXValue(), Math.log10(iofq));
@@ -644,8 +678,8 @@ public class RealSpace {
         return Statistics.calculateMedian(kurtosises);
     }
 
-    private void saxs_invariants(){
 
+    private void saxs_invariants(){
         /*
          * Calculate invariants
          */
@@ -668,12 +702,16 @@ public class RealSpace {
         double dmax3 = dmax2*dmax;
         double dmax4 = dmax2*dmax2;
         double inv_pi_cube = 1/(pi_sq*Math.PI);
+        double inv_pi_fourth = inv_pi_cube*1/Math.PI;
         double twodivPi = 2.0/Math.PI;
 
         izero = twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0];
-        rg = Math.sqrt(dmax4*inv_pi_cube/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
-        raverage = dmax3*inv_pi_cube/izero*rsum;
+        //rg = Math.sqrt(dmax4*inv_pi_cube/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
+        rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
+        //raverage = dmax3*inv_pi_cube/izero*rsum;
+        raverage = 2*dmax3*inv_pi_fourth/izero*rsum;
 
+        this.dataset.setRealIzeroRgParameters(izero*invRescaleFactor, 0.1*izero, rg, rg*0.1);
     }
 
     public void decrementLow(int spinnerValue){
@@ -830,6 +868,11 @@ public class RealSpace {
         this.stopAt = spinnerValue;
     }
 
+    /**
+     * should be unscaled data, as is
+     * @param data
+     * @param error
+     */
     public void updatedRefinedSets(XYSeries data, XYSeries error){
         int total = data.getItemCount();
         refinedIq.clear();
@@ -840,6 +883,9 @@ public class RealSpace {
         }
     }
 
+    public XYSeries getRefinedqIData(){
+        return refinedIq;
+    }
 
     /**
      *
@@ -859,6 +905,7 @@ public class RealSpace {
 
         double df = 0; //1.0/(double)(bins-1);
         double cardinal, test_q = 0, diff;
+        XYDataItem priorValue, postValue;
         Double[] values;
         // see if q-value exists but to what significant figure?
         // if low-q is truncated and is missing must exclude from calculation
@@ -879,20 +926,22 @@ public class RealSpace {
             }
 
             // if either differences is less than 0.1% use the measured value
-            if (count != 0){
-                if ((count > 0) && (Math.abs(data.getX(count-1).doubleValue() - cardinal)*inv_card < 0.001)) {
+            if (count > 0 && count < total){
+                priorValue = data.getDataItem(count-1);
+                postValue = data.getDataItem(count);
+                if (Math.abs(priorValue.getXValue() - cardinal)*inv_card < 0.001) {// check if difference is smaller pre-cardinal
                     error_value = 1.0/error.getY(count - 1).doubleValue();
-                    diff = data.getY(count-1).doubleValue() - moore_Iq(data.getX(count - 1).doubleValue());
+                    diff = priorValue.getYValue() - moore_Iq(priorValue.getXValue())*invRescaleFactor;
                     chi += (diff*diff)*(error_value*error_value);
                     df += 1.0;
-                } else if ((count < total) && (Math.abs(data.getX(count).doubleValue() - cardinal)*inv_card < 0.001)) {
+                } else if ( Math.abs(postValue.getXValue() - cardinal)*inv_card < 0.001) {// check if difference is smaller post-cardinal
                     error_value = 1.0/error.getY(count).doubleValue();
-                    diff = data.getY(count).doubleValue() - moore_Iq(data.getX(count).doubleValue());
+                    diff = postValue.getYValue() - moore_Iq(postValue.getXValue())*invRescaleFactor;  // residual
                     chi += (diff*diff)*(error_value*error_value);
                     df += 1.0;
-                } else if (count > 0) { // if difference is greater than 0.1% interpolate and also the cardinal is bounded
+                } else { // if difference is greater than 0.1% interpolate and also the cardinal is bounded
                     values = Functions.interpolateOriginal(data, error, cardinal, 1.0);
-                    diff = values[1] - (mooreCoefficients[0] + mooreCoefficients[i]*dmax*0.5)*inv_card;
+                    diff = values[1] - (mooreCoefficients[0] + mooreCoefficients[i]*dmax*0.5)*invRescaleFactor;
                     chi += (diff*diff)/(values[2]*values[2]);
                     df += 1.0;
                 }
@@ -907,5 +956,19 @@ public class RealSpace {
     public int getTotalMooreCoefficients(){
         return totalMooreCoefficients;
     }
+
+    private double averageIntensity(XYSeries data){
+        int total = data.getItemCount();
+        double sum=0;
+        for (int i=0; i<total; i++){
+            sum+=data.getY(i).doubleValue();
+        }
+        return sum/(double)total;
+    }
+
+    public double getRescaleFactor(){
+        return rescaleFactor;
+    }
+
 
 }

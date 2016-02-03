@@ -95,7 +95,7 @@ public class PofRPlot {
         final NumberAxis domainAxis = new NumberAxis("r, \u212B");
         final NumberAxis rangeAxis = new NumberAxis("P(r)");
         domainAxis.setAutoRangeIncludesZero(true);
-        //domainAxis.setAutoRange(true);
+        domainAxis.setAutoRange(true);
         rangeAxis.setAutoRange(true);
         rangeAxis.setAxisLineVisible(true);
 

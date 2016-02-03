@@ -64,8 +64,8 @@ public class Dataset {
     private double rC;
     private double rC_sigma;
     private double dMax;
-    private double porodExponent;
-    private double porodExponentError;
+    private double porodExponent = 0;
+    private double porodExponentError = 0;
 
     private double scaleFactor;
     private double log10ScaleFactor;
@@ -73,9 +73,9 @@ public class Dataset {
     private double averageR;
     private double averageRSigma;
     private int porodDebyeVolume;
-    private int porodVolume;
+    private int porodVolume = 0;
     private int porodDebyeVolumeReal;
-    private int porodVolumeReal;
+    private int porodVolumeReal = 0;
     private double vc;
     private double vcSigma;
     private int massProtein;
@@ -875,7 +875,6 @@ public class Dataset {
     public void createNormalizedKratkyRealRgData(){
         XYDataItem temp;
         double rg2 = realRg*realRg/realIZero;
-
         int startHere = startAt - 1;
         for (int i = startHere; i < endAt; i++){
             temp = kratkyData.getDataItem(i);
