@@ -27,7 +27,6 @@ import java.io.File;
 public class QIQPlot {
 
     static JFreeChart chart;
-    XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
     private XYSeriesCollection plottedDatasets = new XYSeriesCollection();
     private Collection inUseCollection;
 

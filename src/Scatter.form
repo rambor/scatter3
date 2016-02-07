@@ -419,10 +419,11 @@
                       <forms defaultalign-horz="false" defaultalign-vert="false"/>
                     </constraints>
                     <properties>
-                      <background color="-4532522"/>
+                      <background color="-10987432"/>
                       <borderPainted value="true"/>
+                      <enabled value="true"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-1312001"/>
                       <hideActionText value="true"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
@@ -438,9 +439,9 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
-                      <background color="-4532522"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-1312001"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Normalized Kratky"/>
                     </properties>
@@ -454,9 +455,9 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
-                      <background color="-4532522"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-1312001"/>
                       <hideActionText value="false"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Guinier Peak Analysis"/>
@@ -471,9 +472,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-723724"/>
+                      <background color="-1118482"/>
                       <font size="12" style="1"/>
-                      <foreground color="-5723178"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Volume"/>
@@ -488,9 +489,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-4532522"/>
+                      <background color="-1118482"/>
                       <font size="12" style="1"/>
-                      <foreground color="-5723178"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Vc Plot"/>
@@ -505,9 +506,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-4532522"/>
+                      <background color="-1118482"/>
                       <font size="12" style="1"/>
-                      <foreground color="-5723178"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Flexibility"/>
@@ -522,9 +523,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5723178"/>
+                      <background color="-1118482"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Real Space"/>
@@ -542,7 +543,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5723178"/>
+                      <background color="-1118482"/>
                       <font size="12" style="1"/>
                       <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
@@ -559,7 +560,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5723178"/>
+                      <background color="-1118482"/>
                       <font size="12" style="1"/>
                       <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
@@ -612,7 +613,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-3919037"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="q*I(q) vs q"/>
@@ -629,7 +630,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-5361508"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Complex?"/>
@@ -646,7 +647,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-5361508"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Ratio"/>
@@ -663,7 +664,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-5361508"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="I(0) : Rg Plot"/>
@@ -680,7 +681,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16735422"/>
+                      <foreground color="-750303"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Scale"/>
@@ -697,7 +698,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-13908400"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Scale to I(0)"/>
@@ -714,7 +715,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16735422"/>
+                      <foreground color="-15648368"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="ScaleMerge"/>
@@ -765,7 +766,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-3917525"/>
+                      <foreground color="-16377094"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Single"/>
@@ -780,14 +781,15 @@
                       <forms/>
                     </constraints>
                     <properties>
+                      <enabled value="false"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-1118482"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="PDF"/>
                     </properties>
                   </component>
-                  <component id="a3634" class="javax.swing.JButton" default-binding="true">
+                  <component id="a3634" class="javax.swing.JButton" binding="packageItButton">
                     <constraints>
                       <grid row="2" column="14" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>
@@ -1131,11 +1133,12 @@
                         <children>
                           <component id="786a7" class="javax.swing.JLabel">
                             <constraints>
-                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
                             </constraints>
                             <properties>
                               <font style="1"/>
                               <foreground color="-16735422"/>
+                              <horizontalAlignment value="4"/>
                               <text value="qmin"/>
                             </properties>
                           </component>
@@ -1151,11 +1154,12 @@
                           </component>
                           <component id="79fec" class="javax.swing.JLabel">
                             <constraints>
-                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
                             </constraints>
                             <properties>
                               <font style="1"/>
                               <foreground color="-16735422"/>
+                              <horizontalAlignment value="4"/>
                               <text value="qmax"/>
                             </properties>
                           </component>
@@ -1492,28 +1496,124 @@
             <properties/>
             <border type="none"/>
             <children>
-              <grid id="3f0f6" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+              <grid id="3f0f6" layout-manager="GridLayoutManager" row-count="1" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                 <margin top="0" left="0" bottom="0" right="0"/>
                 <constraints border-constraint="North"/>
-                <properties/>
-                <border type="none"/>
+                <properties>
+                  <background color="-1"/>
+                </properties>
+                <border type="etched"/>
                 <children>
                   <component id="97b50" class="javax.swing.JComboBox" binding="ffCEFileSelectionComboBox">
                     <constraints>
-                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                        <minimum-size width="300" height="-1"/>
+                        <preferred-size width="300" height="-1"/>
+                      </grid>
                     </constraints>
                     <properties/>
                   </component>
                   <hspacer id="a5161">
                     <constraints>
-                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                      <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                     </constraints>
                   </hspacer>
+                  <grid id="6affb" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                    <margin top="0" left="0" bottom="0" right="0"/>
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <background color="-1"/>
+                    </properties>
+                    <border type="none"/>
+                    <children>
+                      <grid id="7b4ab" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <background color="-1"/>
+                        </properties>
+                        <border type="none"/>
+                        <children>
+                          <component id="f4f2b" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false">
+                                <preferred-size width="50" height="-1"/>
+                                <maximum-size width="50" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties>
+                              <foreground color="-16777216"/>
+                              <horizontalAlignment value="4"/>
+                              <text value="qmin"/>
+                            </properties>
+                          </component>
+                          <component id="d8b79" class="javax.swing.JTextField" binding="qminCEText">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                <minimum-size width="100" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                          </component>
+                        </children>
+                      </grid>
+                      <grid id="54b80" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <background color="-1"/>
+                        </properties>
+                        <border type="none"/>
+                        <children>
+                          <component id="974f6" class="javax.swing.JLabel">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false">
+                                <preferred-size width="50" height="-1"/>
+                                <maximum-size width="50" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties>
+                              <foreground color="-16777216"/>
+                              <horizontalAlignment value="4"/>
+                              <text value="qmax"/>
+                            </properties>
+                          </component>
+                          <component id="4b840" class="javax.swing.JTextField" binding="qmaxCEText">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                <minimum-size width="100" height="-1"/>
+                              </grid>
+                            </constraints>
+                            <properties>
+                              <text value="0.18"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </grid>
+                      <component id="18a6d" class="javax.swing.JLabel">
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <font style="1"/>
+                          <text value="q-range"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
                 </children>
               </grid>
               <tabbedpane id="70f37" binding="tabbedPane1" default-binding="true">
                 <constraints border-constraint="Center"/>
-                <properties/>
+                <properties>
+                  <enabled value="true"/>
+                </properties>
                 <border type="none"/>
                 <children>
                   <grid id="3de26" layout-manager="FormLayout">
@@ -1535,10 +1635,12 @@
                           <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                           <forms defaultalign-vert="false"/>
                         </constraints>
-                        <properties/>
+                        <properties>
+                          <background color="-5712646"/>
+                        </properties>
                         <border type="none"/>
                         <children>
-                          <grid id="a7203" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                          <grid id="a7203" binding="sphereDistributionPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                             <margin top="0" left="0" bottom="0" right="0"/>
                             <constraints>
                               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="2" fill="1" indent="0" use-parent-layout="false">
@@ -1550,7 +1652,7 @@
                             <border type="etched"/>
                             <children/>
                           </grid>
-                          <grid id="2c8e5" layout-manager="BorderLayout" hgap="0" vgap="0">
+                          <grid id="2c8e5" binding="dataSpherePanel" layout-manager="BorderLayout" hgap="0" vgap="0">
                             <constraints>
                               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                             </constraints>
@@ -1570,49 +1672,508 @@
                         <border type="none"/>
                         <children/>
                       </grid>
-                      <grid id="d3c7" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                      <grid id="d3c7" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="2" indent="0" use-parent-layout="false"/>
                           <forms defaultalign-horz="false" defaultalign-vert="false"/>
                         </constraints>
                         <properties>
+                          <background color="-5712646"/>
                           <maximumSize width="220" height="-1"/>
                           <minimumSize width="220" height="94"/>
                           <preferredSize width="220" height="94"/>
                         </properties>
-                        <border type="none"/>
+                        <border type="etched"/>
                         <children>
-                          <grid id="f3a1b" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                          <grid id="f3a1b" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                             <margin top="0" left="0" bottom="0" right="0"/>
                             <constraints>
                               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                             </constraints>
-                            <properties/>
+                            <properties>
+                              <background color="-5712646"/>
+                            </properties>
                             <border type="none"/>
-                            <children/>
+                            <children>
+                              <grid id="d6c41" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                <margin top="0" left="0" bottom="0" right="0"/>
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <background color="-1574918"/>
+                                </properties>
+                                <border type="etched" title="SEARCH LIMITS">
+                                  <font style="1"/>
+                                  <title-color color="-16777216"/>
+                                </border>
+                                <children>
+                                  <grid id="bedca" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="0" left="0" bottom="0" right="0"/>
+                                    <constraints>
+                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                                        <preferred-size width="210" height="-1"/>
+                                        <maximum-size width="210" height="-1"/>
+                                      </grid>
+                                    </constraints>
+                                    <properties>
+                                      <background color="-1574918"/>
+                                    </properties>
+                                    <border type="none"/>
+                                    <children>
+                                      <component id="652c6" class="javax.swing.JLabel">
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="100" height="-1"/>
+                                            <maximum-size width="100" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <horizontalAlignment value="4"/>
+                                          <text value="lower radius (Å)"/>
+                                        </properties>
+                                      </component>
+                                      <component id="3bdb1" class="javax.swing.JTextField" binding="lowerSphereRadius">
+                                        <constraints>
+                                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="50" height="-1"/>
+                                            <maximum-size width="50" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <text value="16"/>
+                                        </properties>
+                                      </component>
+                                    </children>
+                                  </grid>
+                                  <grid id="46e66" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="0" left="0" bottom="0" right="0"/>
+                                    <constraints>
+                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <background color="-1574918"/>
+                                    </properties>
+                                    <border type="none"/>
+                                    <children>
+                                      <component id="55685" class="javax.swing.JLabel">
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="100" height="-1"/>
+                                            <maximum-size width="100" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <horizontalAlignment value="4"/>
+                                          <text value="upper radius (Å)"/>
+                                        </properties>
+                                      </component>
+                                      <component id="301b1" class="javax.swing.JTextField" binding="upperSphereRadius">
+                                        <constraints>
+                                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="50" height="-1"/>
+                                            <maximum-size width="50" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <text value="76"/>
+                                        </properties>
+                                      </component>
+                                    </children>
+                                  </grid>
+                                </children>
+                              </grid>
+                              <grid id="48bd5" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                <margin top="0" left="0" bottom="0" right="0"/>
+                                <constraints>
+                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <background color="-1574918"/>
+                                </properties>
+                                <border type="etched" title="CONTRAST">
+                                  <font style="1"/>
+                                  <title-color color="-16777216"/>
+                                </border>
+                                <children>
+                                  <grid id="6d7d8" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="0" left="0" bottom="0" right="0"/>
+                                    <constraints>
+                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <background color="-1574918"/>
+                                    </properties>
+                                    <border type="none"/>
+                                    <children>
+                                      <component id="14278" class="javax.swing.JLabel">
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                        </constraints>
+                                        <properties>
+                                          <background color="-1574918"/>
+                                          <foreground color="-16777216"/>
+                                          <text value="solvent"/>
+                                        </properties>
+                                      </component>
+                                      <component id="b8688" class="javax.swing.JTextField" binding="solventContrastText">
+                                        <constraints>
+                                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="75" height="-1"/>
+                                            <maximum-size width="75" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <text value="2e-6"/>
+                                        </properties>
+                                      </component>
+                                    </children>
+                                  </grid>
+                                  <grid id="caa68" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="0" left="0" bottom="0" right="0"/>
+                                    <constraints>
+                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <background color="-1574918"/>
+                                    </properties>
+                                    <border type="none"/>
+                                    <children>
+                                      <component id="b793d" class="javax.swing.JLabel">
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                        </constraints>
+                                        <properties>
+                                          <background color="-1574918"/>
+                                          <foreground color="-16777216"/>
+                                          <text value="particle"/>
+                                        </properties>
+                                      </component>
+                                      <component id="6e308" class="javax.swing.JTextField" binding="particleContrastText">
+                                        <constraints>
+                                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="75" height="-1"/>
+                                            <maximum-size width="75" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <text value="1e-6"/>
+                                        </properties>
+                                      </component>
+                                    </children>
+                                  </grid>
+                                </children>
+                              </grid>
+                            </children>
                           </grid>
-                          <component id="a2249" class="javax.swing.JButton" binding="runButton" default-binding="true">
+                          <component id="a2249" class="javax.swing.JButton" binding="runSphereModelButton">
                             <constraints>
-                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                              <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                             </constraints>
                             <properties>
                               <text value="Run"/>
                             </properties>
                           </component>
+                          <vspacer id="ac418">
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                          </vspacer>
+                          <component id="856c9" class="javax.swing.JProgressBar" binding="progressBarSphere">
+                            <constraints>
+                              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties/>
+                          </component>
                         </children>
                       </grid>
                     </children>
                   </grid>
-                  <grid id="f0c7a" layout-manager="FormLayout">
+                  <grid id="f9e2f" layout-manager="FormLayout">
                     <rowspec value="center:d:grow"/>
+                    <rowspec value="top:3dlu:noGrow"/>
+                    <rowspec value="center:max(d;4px):noGrow"/>
+                    <colspec value="fill:max(d;4px):noGrow"/>
+                    <colspec value="left:4dlu:noGrow"/>
                     <colspec value="fill:d:grow"/>
                     <constraints>
                       <tabbedpane title="Ellipsoid"/>
                     </constraints>
-                    <properties/>
+                    <properties>
+                      <visible value="false"/>
+                    </properties>
                     <border type="none"/>
-                    <children/>
+                    <children>
+                      <grid id="38bdb" binding="ellipsoidResultsPanel" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <forms defaultalign-vert="false"/>
+                        </constraints>
+                        <properties>
+                          <background color="-8455528"/>
+                        </properties>
+                        <border type="none"/>
+                        <children>
+                          <grid id="a60dd" binding="ellipsoidDistributionPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="2" fill="1" indent="0" use-parent-layout="false">
+                                <preferred-size width="-1" height="220"/>
+                                <maximum-size width="-1" height="220"/>
+                              </grid>
+                            </constraints>
+                            <properties/>
+                            <border type="etched"/>
+                            <children/>
+                          </grid>
+                          <grid id="8ecbb" binding="ellipsoidFitPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties/>
+                            <border type="etched"/>
+                            <children/>
+                          </grid>
+                        </children>
+                      </grid>
+                      <grid id="e78d7" binding="ellipsoidStatusPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <forms/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children/>
+                      </grid>
+                      <grid id="ca2b8" binding="ellipsoidParametersPanel" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                        <margin top="0" left="0" bottom="0" right="0"/>
+                        <constraints>
+                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="2" indent="0" use-parent-layout="false"/>
+                          <forms defaultalign-horz="false" defaultalign-vert="false"/>
+                        </constraints>
+                        <properties>
+                          <background color="-3670058"/>
+                          <maximumSize width="220" height="-1"/>
+                          <minimumSize width="220" height="94"/>
+                          <preferredSize width="220" height="94"/>
+                        </properties>
+                        <border type="etched"/>
+                        <children>
+                          <grid id="cd6eb" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <background color="-8455528"/>
+                            </properties>
+                            <border type="none"/>
+                            <children>
+                              <grid id="2e8d1" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                <margin top="0" left="0" bottom="0" right="0"/>
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <background color="-4916547"/>
+                                </properties>
+                                <border type="etched" title="SEARCH LIMITS">
+                                  <font style="1"/>
+                                  <title-color color="-16777216"/>
+                                </border>
+                                <children>
+                                  <grid id="db9b6" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="0" left="0" bottom="0" right="0"/>
+                                    <constraints>
+                                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <background color="-4916547"/>
+                                    </properties>
+                                    <border type="none"/>
+                                    <children>
+                                      <component id="55502" class="javax.swing.JLabel" binding="ellipsoidUpperMajorLimitText">
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="100" height="-1"/>
+                                            <maximum-size width="100" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <background color="-4916547"/>
+                                          <horizontalAlignment value="4"/>
+                                          <text value="Major axis (Å)"/>
+                                        </properties>
+                                      </component>
+                                      <component id="16b5b" class="javax.swing.JTextField" binding="majorAxisLabel">
+                                        <constraints>
+                                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="50" height="-1"/>
+                                            <maximum-size width="50" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <text value="80"/>
+                                        </properties>
+                                      </component>
+                                    </children>
+                                  </grid>
+                                  <grid id="c39e" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="0" left="0" bottom="0" right="0"/>
+                                    <constraints>
+                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <background color="-4916547"/>
+                                    </properties>
+                                    <border type="none"/>
+                                    <children>
+                                      <component id="c952d" class="javax.swing.JLabel">
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="100" height="-1"/>
+                                            <maximum-size width="100" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <background color="-4916547"/>
+                                          <horizontalAlignment value="4"/>
+                                          <text value="Minor axis (Å)"/>
+                                        </properties>
+                                      </component>
+                                      <component id="54c50" class="javax.swing.JTextField" binding="minorAxisLabel">
+                                        <constraints>
+                                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="50" height="-1"/>
+                                            <maximum-size width="50" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <text value="10"/>
+                                        </properties>
+                                      </component>
+                                    </children>
+                                  </grid>
+                                  <component id="ca6de" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="Radius for each axis"/>
+                                    </properties>
+                                  </component>
+                                </children>
+                              </grid>
+                              <grid id="90c64" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                <margin top="0" left="0" bottom="0" right="0"/>
+                                <constraints>
+                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <background color="-4916547"/>
+                                </properties>
+                                <border type="etched" title="CONTRAST">
+                                  <font style="1"/>
+                                  <title-color color="-16777216"/>
+                                </border>
+                                <children>
+                                  <grid id="d7a6" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="0" left="0" bottom="0" right="0"/>
+                                    <constraints>
+                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <background color="-4916547"/>
+                                    </properties>
+                                    <border type="none"/>
+                                    <children>
+                                      <component id="caa3e" class="javax.swing.JLabel">
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                        </constraints>
+                                        <properties>
+                                          <background color="-4916547"/>
+                                          <foreground color="-16777216"/>
+                                          <horizontalAlignment value="4"/>
+                                          <text value="solvent"/>
+                                        </properties>
+                                      </component>
+                                      <component id="bedba" class="javax.swing.JTextField" binding="ellipsoidSolventText">
+                                        <constraints>
+                                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="75" height="-1"/>
+                                            <maximum-size width="75" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <text value="2e-6"/>
+                                        </properties>
+                                      </component>
+                                    </children>
+                                  </grid>
+                                  <grid id="4a072" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                    <margin top="0" left="0" bottom="0" right="0"/>
+                                    <constraints>
+                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <background color="-4916547"/>
+                                    </properties>
+                                    <border type="none"/>
+                                    <children>
+                                      <component id="a0f1" class="javax.swing.JLabel">
+                                        <constraints>
+                                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                        </constraints>
+                                        <properties>
+                                          <background color="-4916547"/>
+                                          <foreground color="-16777216"/>
+                                          <horizontalAlignment value="4"/>
+                                          <text value="particle"/>
+                                        </properties>
+                                      </component>
+                                      <component id="a6e0a" class="javax.swing.JTextField" binding="ellipsoidParticleText">
+                                        <constraints>
+                                          <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                            <preferred-size width="75" height="-1"/>
+                                            <maximum-size width="75" height="-1"/>
+                                          </grid>
+                                        </constraints>
+                                        <properties>
+                                          <text value="1e-6"/>
+                                        </properties>
+                                      </component>
+                                    </children>
+                                  </grid>
+                                </children>
+                              </grid>
+                            </children>
+                          </grid>
+                          <component id="1255e" class="javax.swing.JButton" binding="ellipsoidButton">
+                            <constraints>
+                              <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="Run"/>
+                            </properties>
+                          </component>
+                          <vspacer id="37a28">
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                          </vspacer>
+                          <component id="d0d22" class="javax.swing.JProgressBar" binding="progressBarEllipsoid">
+                            <constraints>
+                              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties/>
+                          </component>
+                        </children>
+                      </grid>
+                    </children>
                   </grid>
                   <grid id="5edc6" layout-manager="FormLayout">
                     <rowspec value="center:d:grow"/>

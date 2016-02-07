@@ -3,9 +3,12 @@ package version3;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import java.awt.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
+import java.util.Vector;
 
 /**
  * Created by robertrambo on 05/01/2016.
@@ -25,6 +28,8 @@ public class Collection {
     public Random rand;
     private String WORKING_DIRECTORY_NAME;
 
+    protected Vector propChangeListeners = new Vector();
+
     // constructor
     public Collection(){
         datasets = new ArrayList<>();
@@ -34,6 +39,9 @@ public class Collection {
         minI = 10000;
         maxq = 0.0;
         minq = 1.0;
+
+        // the collection of objects listening for property changes
+
     }
     /**
      * Returns XYSeriesCollection
@@ -80,6 +88,8 @@ public class Collection {
         if (dat.getMinq() < this.minq ) {
             this.minq = dat.getMinq();
         }
+
+        this.notifyDataSetsChange();
     }
 
     public void recalculateMinMaxQ(){
@@ -117,7 +127,6 @@ public class Collection {
         this.maxq = newMaxQ;
         this.minI = newMinI;
         this.maxI = newMaxI;
-
     }
 
     /**
@@ -271,9 +280,42 @@ public class Collection {
         for(int i=0; i<totalDatasets; i++){
             System.out.println(i+ " After " + datasets.get(i).getFileName());
         }
-
-
-
     }
+
+    // add a property change listener
+    public synchronized void addPropertyChangeListener(PropertyChangeListener l) {
+        // add a listener if it is not already registered
+        if (!propChangeListeners.contains(l)) {
+            propChangeListeners.addElement(l);
+        }
+    }
+
+    // remove a property change listener
+    public synchronized void removePropertyChangeListener(PropertyChangeListener l) {
+        // remove it if it is registered
+        if (propChangeListeners.contains(l)) {
+            propChangeListeners.removeElement(l);
+        }
+    }
+
+    // notify listening objects of property changes
+    protected void notifyDataSetsChange() {
+        // create the event object
+        PropertyChangeEvent evt = new PropertyChangeEvent(this, "DataSets", null, datasets);
+        // make a copy of the listener object vector so that it cannot
+        // be changed while we are firing events
+        Vector v;
+        synchronized(this) {
+            v = (Vector) propChangeListeners.clone();
+        }
+
+        // fire the event to all listeners
+        int cnt = v.size();
+        for (int i = 0; i < cnt; i++) {
+            PropertyChangeListener client = (PropertyChangeListener)v.elementAt(i);
+            client.propertyChange(evt);
+        }
+    }
+
 
 }

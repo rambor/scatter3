@@ -102,7 +102,9 @@ public class LoadedFile {
                 } catch (IOException ex) {
                     System.out.println("File Index out of bounds");
                 }
-            } // add new file formats here
+            } else if (ext.equals("pdb")) { // read in PDB file, make intensity from P(r)?
+
+            }
             // might have a cansas format, open file and read contents
 
         } catch (FileNotFoundException ex) {

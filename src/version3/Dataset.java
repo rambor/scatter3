@@ -1,5 +1,7 @@
 package version3;
 
+
+import net.jafama.FastMath;
 import org.jfree.data.ComparableObjectItem;
 import org.jfree.data.xy.*;
 
@@ -122,7 +124,6 @@ public class Dataset {
     private String experimentalNotes;
     private String bufferComposition;
 
-    private ArrayList<XYSeries> allMySeries;
 
     /**
      *
@@ -165,8 +166,6 @@ public class Dataset {
         qIqData = new XYSeries(tempName);               // derived from allData
         powerLawData = new XYSeries(tempName);          // derived from originalPositiveOnlyData
 
-
-//thia        allMySeries = new ArrayList<>();
 
         /*
          * make working copies of the data into non-negative, log10 and all
@@ -216,7 +215,7 @@ public class Dataset {
         fitList = new ArrayList<>();
 
         filename=fileName;
-        this.startAt=1;
+        this.startAt=1;  // with respect to positivelyOnlyData
         this.endAt = originalPositiveOnlyData.getItemCount();
         this.totalCountInPositiveData = originalPositiveOnlyData.getItemCount();
 
@@ -1368,6 +1367,11 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
 
     public int getIndexOfUpperGuinierFit(){
         return this.indexOfUpperGuinierFit;
+    }
+
+    public void updateRealSpaceErrors(double percentRgError, double percentIzeroError){
+        this.realRg_sigma = percentRgError*this.realRg;
+        this.realIZero_sigma = percentIzeroError*this.realIZero;
     }
 
     public void setAverageInfo(Collection collection){

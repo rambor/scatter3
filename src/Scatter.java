@@ -9,9 +9,12 @@ import javax.swing.event.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.RunnableFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -139,7 +142,7 @@ public class Scatter {
     private JLabel atsasDirLabel;
     private JTextField qmaxLimitField;
     private JTextField qminLimitField;
-    private JButton runButton;
+    private JButton runSphereModelButton;
     private JButton SVDReduceButton;
 
     private JPanel menuBarPrPanel;
@@ -189,6 +192,29 @@ public class Scatter {
     private JTextPane stdOutText;
     private JScrollPane generalPane;
     private JTextPane generalText;
+    private JTextField lowerSphereRadius;
+    private JTextField upperSphereRadius;
+    private JTextField particleContrastText;
+    private JTextField solventContrastText;
+    private JTextField qminCEText;
+    private JTextField qmaxCEText;
+    private JPanel sphereDistributionPanel;
+    private JPanel dataSpherePanel;
+    private JTextField ellipsoidLowerRadiusText;
+    private JLabel ellipsoidUpperMajorLimitText;
+    private JButton ellipsoidButton;
+    private JTextField ellipsoidSolventText;
+    private JTextField ellipsoidParticleText;
+    private JTextField minorAxisLabel;
+    private JTextField majorAxisLabel;
+    private JProgressBar progressBarSphere;
+    private JProgressBar progressBarEllipsoid;
+    private JPanel ellipsoidDistributionPanel;
+    private JPanel ellipsoidFitPanel;
+    private JPanel ellipsoidResultsPanel;
+    private JPanel ellipsoidStatusPanel;
+    private JPanel ellipsoidParametersPanel;
+    private JButton packageItButton;
 
     private String version = "3.0";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -255,7 +281,7 @@ public class Scatter {
 
     public Scatter() { // constructor
 
-        //MessageConsole mc = new MessageConsole(stdOutText);
+        MessageConsole mc = new MessageConsole(stdOutText);
         //mc.redirectOut();
         //mc.redirectErr(Color.RED, null);
 
@@ -275,7 +301,15 @@ public class Scatter {
         bufferCollections = new Collection();
         sampleCollections = new Collection();
         similarityCollection = new Collection();
+
         cpuCores = Runtime.getRuntime().availableProcessors();
+        Vector comboBoxItemsCPU = new Vector();
+        for (int i=1; i<=cpuCores; i++){
+            comboBoxItemsCPU.add(i);
+        }
+
+        final DefaultComboBoxModel cpuModel = new DefaultComboBoxModel(comboBoxItemsCPU);
+        cpuBox.setModel(cpuModel);
 
         // Files Tab
         dataFilesModel = new DefaultListModel<DataFileElement>();
@@ -313,6 +347,8 @@ public class Scatter {
                 SampleBufferElement item = (SampleBufferElement)similarityList.getModel().getElementAt(index);
             }
         });
+
+
 
         //similarityList.setCellRenderer(new SelectedListCellRenderer());
 
@@ -1146,6 +1182,7 @@ public class Scatter {
                 //set directory to default directory from Settings tab
 
                 if(option == JFileChooser.CANCEL_OPTION) {
+                    singleButton.setEnabled(true);
                     return;
                 }
 
@@ -1170,6 +1207,7 @@ public class Scatter {
                         //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
+
                 singleButton.setEnabled(true);
             }
         });
@@ -2037,6 +2075,191 @@ public class Scatter {
                 }
             }
         });
+
+
+
+        runSphereModelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                float lowerR = Float.parseFloat(lowerSphereRadius.getText());
+                float upperR = Float.parseFloat(upperSphereRadius.getText());
+                float qmin = Float.parseFloat(qminCEText.getText());
+                float qmax = Float.parseFloat(qmaxCEText.getText());
+                float solventContrast = Float.parseFloat(solventContrastText.getText());
+                float particleContrast = Float.parseFloat(particleContrastText.getText());
+
+                Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
+                //FormFactorCE sphereModel = new FormFactorCE(tempData.getAllData(), tempData.getAllDataError());
+                //sphereModel.setSphericalParameters(qmin, qmax, lowerR, upperR, particleContrast, solventContrast, dataSpherePanel,sphereDistributionPanel);
+
+                Thread findIt = new Thread(){
+                    public void run() {
+
+                        final FormFactorCE sphereModel = new FormFactorCE(tempData.getAllData(), tempData.getAllDataError(), progressBarSphere);
+                        sphereModel.setSphericalParameters(qmin, qmax, lowerR, upperR, particleContrast, solventContrast, dataSpherePanel,sphereDistributionPanel);
+
+                        sphereModel.execute();
+/*
+                        synchronized (sphereModel) {
+                            if (!sphereModel.getIsFinished()) {
+                                try {
+                                    sphereModel.wait();
+                                } catch (InterruptedException ee) {
+                                    // handle it somehow
+                                    System.out.println("Catch " + ee.getMessage());
+                                }
+                            }
+                        }
+                        */
+                    }
+
+                };
+                findIt.start();
+            }
+        });
+
+        collectionSelected.addPropertyChangeListener(new JComboBoxCEListener());
+
+        ffCEFileSelectionComboBox.setModel(new CEComboBoxModel(collectionSelected));
+        ffCEFileSelectionComboBox.setRenderer(new CECellRenderer());
+
+        ffCEFileSelectionComboBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JComboBox cb = (JComboBox)e.getSource();
+                System.out.println("dataset " + ((Dataset)cb.getSelectedItem()).getFileName());
+                Dataset tempDataset = (Dataset) cb.getSelectedItem();
+
+                if (qminCEText.getText().length() > 0){
+                    //double startq = tempDataset.getOriginalPositiveOnlyData().getX(tempDataset.getStart()).doubleValue();
+                    double currentqMin = Double.parseDouble(qminCEText.getText());
+                    double currentqMax = Double.parseDouble(qmaxCEText.getText());
+
+                    if (currentqMin > tempDataset.getAllData().getMinX()){
+                        qminCEText.setText(String.valueOf(tempDataset.getAllData().getMinX()));
+                    }
+
+                    if (currentqMax < tempDataset.getAllData().getMaxX()){
+                        qmaxCEText.setText(String.valueOf(tempDataset.getAllData().getMaxX()));
+                    }
+                } else {
+                    qminCEText.setText(String.valueOf(tempDataset.getOriginalPositiveOnlyData().getX(tempDataset.getStart()-1).doubleValue()));
+                    if (tempDataset.getAllData().getMaxX() > 0.18){
+                        qmaxCEText.setText("0.18");
+                    } else {
+                        qmaxCEText.setText(String.valueOf(tempDataset.getAllData().getMaxX()));
+                    }
+                }
+            }
+        });
+
+        minorAxisLabel.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // check values
+                double minor = Double.parseDouble(minorAxisLabel.getText());
+                double major = Double.parseDouble(majorAxisLabel.getText());
+                if (minor > major ){
+                    Toolkit.getDefaultToolkit().beep();
+                    status.setText("Minor Axis cannot be greater than Major ");
+                    double temp = major - (major)*0.5 - 1;
+                    minorAxisLabel.setText(String.valueOf(temp));
+                } else {
+                    minorAxisLabel.setText(String.valueOf(Math.floor(minor)));
+                }
+            }
+        });
+
+        majorAxisLabel.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // check values
+                double minor = Double.parseDouble(minorAxisLabel.getText());
+                double major = Double.parseDouble(majorAxisLabel.getText());
+                if (minor > major){
+                    Toolkit.getDefaultToolkit().beep();
+                    status.setText("Major Axis cannot be greater than Major ");
+                    double temp = minor + 60;
+                    majorAxisLabel.setText(String.valueOf(temp));
+                } else {
+                    majorAxisLabel.setText(String.valueOf(Math.ceil(major)));
+                }
+            }
+        });
+
+        qmaxCEText.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = ((JTextField)e.getSource()).getText();
+                double value = Double.parseDouble(text);
+                Dataset tempDataset = (Dataset) ffCEFileSelectionComboBox.getSelectedItem();
+
+                if (value > tempDataset.getAllData().getMaxX()){
+                    Toolkit.getDefaultToolkit().beep();
+                    status.setText("Resetting to q-max of selected dataset ");
+                    ((JTextField)e.getSource()).setText(String.valueOf(tempDataset.getAllData().getMaxX()));
+                }
+            }
+        });
+        ellipsoidButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                float lowerR = Float.parseFloat(minorAxisLabel.getText());
+                float upperR = Float.parseFloat(majorAxisLabel.getText());
+                float qmin = Float.parseFloat(qminCEText.getText());
+                float qmax = Float.parseFloat(qmaxCEText.getText());
+                float solventContrast = Float.parseFloat(solventContrastText.getText());
+                float particleContrast = Float.parseFloat(particleContrastText.getText());
+
+                Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
+
+                Thread findIt = new Thread(){
+                    public void run() {
+
+                        final FormFactorCE ellipseModel = new FormFactorCE(tempData.getAllData(), tempData.getAllDataError(), progressBarEllipsoid);
+                        ellipseModel.setEllipsoidParameters(qmin, qmax, lowerR, upperR, particleContrast, solventContrast, dataSpherePanel,sphereDistributionPanel);
+                        ellipseModel.execute();
+/*
+                        synchronized (sphereModel) {
+                            if (!sphereModel.getIsFinished()) {
+                                try {
+                                    sphereModel.wait();
+                                } catch (InterruptedException ee) {
+                                    // handle it somehow
+                                    System.out.println("Catch " + ee.getMessage());
+                                }
+                            }
+                        }
+                        */
+                    }
+
+                };
+
+                findIt.start();
+
+            }
+        });
+
+        packageItButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (collectionSelected.getTotalSelected() < 1){
+                    Toolkit.getDefaultToolkit().beep();
+                    JOptionPane optionPane = new JOptionPane("Need at least one file selected",JOptionPane.WARNING_MESSAGE);
+                    JDialog dialog = optionPane.createDialog("Warning!");
+                    dialog.setAlwaysOnTop(true);
+                    dialog.setVisible(true);
+                    status.setText("Select More than one file to make zip ");
+                    return;
+                }
+
+                PackageIt packageIt = new PackageIt(collectionSelected, WORKING_DIRECTORY);
+                packageIt.pack();
+                packageIt.setVisible(true);
+
+            }
+        });
     }
 
     public static void updateProp(){
@@ -2389,6 +2612,7 @@ public class Scatter {
                         programInstance.buffersList.removeAll();
                         programInstance.buffersList.setModel(programInstance.bufferFilesModel);
                         programInstance.buffersList.validate();
+                        programInstance.buffersList.updateUI();
                     }
                 }.start();
             }
@@ -2427,6 +2651,7 @@ public class Scatter {
                         }
                         programInstance.setReferenceBox.setSelectedIndex(programInstance.setReferenceBox.getItemCount()-1);
                         programInstance.samplesList.validate();
+                        programInstance.buffersList.updateUI();
                     }
                 }.start();
             }
@@ -3944,6 +4169,20 @@ public class Scatter {
         }
     }
 
+    class JComboBoxCEListener implements PropertyChangeListener {
+
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            Object source = evt.getSource();
+            System.out.println("SOURCE " + evt.getPropertyName());
+            //update comboxbox
+            ffCEFileSelectionComboBox.updateUI();
+
+            //ffCEFileSelectionComboBox.revalidate();
+            //ffCEFileSelectionComboBox.repaint();
+        }
+    }
+
 } // end of Scatter class
 
 class DataFilesListRenderer extends JCheckBox implements ListCellRenderer {
@@ -3977,5 +4216,60 @@ class SampleBufferListRenderer extends JCheckBox implements ListCellRenderer {
 
         return this;
     }
+}
+
+
+
+class CEComboBoxModel extends AbstractListModel implements ComboBoxModel {
+
+    private Object selectedItem;
+    private Collection collection;
+
+    public CEComboBoxModel(Collection collectioninUse){
+        this.collection = collectioninUse;
+    }
+
+    public void setSelectedItem(Object anItem) {
+        selectedItem = anItem; // to select and register an
+    } // item from the pull-down list
+
+    // Methods implemented from the interface ComboBoxModel
+    public Object getSelectedItem() {
+        return selectedItem; // to add the selection to the combo box
+    }
+
+    public int getSize(){
+        return collection.getDatasetCount();
+    }
+
+    public Object getElementAt(int i){
+        return collection.getDataset(i);
+    }
+}
+
+class CECellRenderer implements ListCellRenderer {
+
+    protected DefaultListCellRenderer defaultRenderer = new DefaultListCellRenderer();
+
+    public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+
+
+        JLabel renderer = (JLabel) defaultRenderer.getListCellRendererComponent(list, value, index,
+                isSelected, cellHasFocus);
+
+        if (value instanceof Dataset) {
+
+//            renderer.setBackground((Color) value);
+            renderer.setText(((Dataset) value).getFileName());
+        }
+
+        //renderer.setText(((Dataset) value).getFileName());
+        //if (index >= 0){
+        //    renderer.setText(((Dataset) value).getFileName());
+        //}
+
+        return renderer;
+    }
+
 }
 

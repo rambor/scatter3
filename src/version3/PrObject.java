@@ -1,5 +1,6 @@
 package version3;
 
+import net.jafama.FastMath;
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.ops.CommonOps;
 import org.ejml.simple.SimpleMatrix;
@@ -8,7 +9,6 @@ import org.jfree.data.xy.XYSeries;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Created by robertrambo on 24/01/2016.
@@ -287,7 +287,7 @@ public class PrObject implements Runnable {
         this.useL1 = useL1;
         data = dataset.getfittedqIq();
         this.cBoxValue = cBoxValue;
-        System.out.println("Use L1 Norm of Second Derivate => " + useL1);
+        //System.out.println("Use L1 Norm of Second Derivate => " + useL1);
     }
 
     public PrObject(XYSeries fittedqIq, double qmax, double dmax, double lambda, boolean useL1Coefficients){
@@ -303,11 +303,11 @@ public class PrObject implements Runnable {
     public void run() {
 
         ArrayList<double[]> tempResults;
-        System.out.println("lambda " + lambda);
+        //System.out.println("lambda " + lambda);
         if (useL1){
             tempResults = moore_pr_L1();  // minimize on second derivative
         } else {
-            System.out.println("Using L1-norm Coefficients");
+            //System.out.println("Using L1-norm Coefficients");
             tempResults = moore_coeffs_L1();  // minimize on coefficients
         }
 
@@ -426,7 +426,7 @@ public class PrObject implements Runnable {
                     a_matrix.set(r, 0, 1);
                 } else {
                     //pi_sq_n = n_pi_squared[c];
-                    a_matrix.set(r, c, twodivpi*pi_d * c * Math.pow(-1.0, c + 1) * Math.sin(qd) / (n_pi_squared[c] - qd2));
+                    a_matrix.set(r, c, twodivpi*pi_d * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (n_pi_squared[c] - qd2));
                 }
             }
             y.set(r,0,tempData.getYValue()); //set data vector
@@ -587,7 +587,7 @@ public class PrObject implements Runnable {
              */
             logfSum = 0.0;
             for(int fi=0; fi < f.numRows(); fi++){
-                logfSum+=Math.log(-f.get(fi));
+                logfSum+=FastMath.log(-f.get(fi));
             }
 
             phi = (z.transpose().mult(z)).get(0,0) + lambda*u.elementSum() - logfSum*inv_t;
@@ -614,7 +614,7 @@ public class PrObject implements Runnable {
                     logfSum = 0.0;
 
                     for(int fi=0; fi<new_f.getNumElements(); fi++){
-                        logfSum += Math.log(-new_f.get(fi));
+                        logfSum += FastMath.log(-new_f.get(fi));
                     }
 
                     new_phi = (new_z.transpose().mult(new_z)).get(0,0)+lambda*new_u.elementSum()-logfSum*inv_t;
@@ -813,7 +813,7 @@ public class PrObject implements Runnable {
                     //a_matrix.set(r, 0, tempData.getXValue());
                 } else {
                     pi_sq_n = n_pi_squared[c];
-                    a_matrix.set(r, c, twodivpi*pi_d * c * Math.pow(-1.0, c + 1) * Math.sin(qd) / (pi_sq_n - qd2));
+                    a_matrix.set(r, c, twodivpi*pi_d * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (pi_sq_n - qd2));
                 }
 
             }
@@ -894,7 +894,7 @@ public class PrObject implements Runnable {
             //------------------------------------------------------------
             if (gap/dobj < reltol) {
                 //status = "Solved";
-                System.out.println("Solved " + gap/dobj);
+                //System.out.println("Solved " + gap/dobj);
                 break calculationLoop;
             }
 
@@ -1093,7 +1093,7 @@ public class PrObject implements Runnable {
              */
             logfSum = 0.0;
             for(int fi=0; fi < f.numRows(); fi++){
-                logfSum+=Math.log(-1*f.get(fi));
+                logfSum+=FastMath.log(-1*f.get(fi));
             }
 
             phi = (z.transpose().mult(z)).get(0,0)+lambda*u.elementSum() - logfSum*inv_t;
@@ -1131,7 +1131,7 @@ public class PrObject implements Runnable {
                     logfSum = 0.0;
 
                     for(int fi=0; fi<new_f.numRows(); fi++){
-                        logfSum+=Math.log(-1*new_f.get(fi));
+                        logfSum+=FastMath.log(-1*new_f.get(fi));
                     }
 
                     new_phi = (new_z.transpose().mult(new_z)).get(0,0)+lambda*new_u.elementSum()-logfSum*inv_t;
@@ -1169,7 +1169,7 @@ public class PrObject implements Runnable {
             resultM = 0;
             for(int i=1; i < n; i++){
                 //System.out.println(i + " " + am.get(i,0));
-                resultM += am.get(i,0)*Math.sin(pi_dmax_r*i);
+                resultM += am.get(i,0)*FastMath.sin(pi_dmax_r*i);
             }
             //System.out.println(r_vector[j] + " " + 1/Math.PI*0.5*r_vector[j]*resultM);
         }
@@ -1386,7 +1386,7 @@ public class PrObject implements Runnable {
     private double c_ni_r(int ni, double r, double inv_d){
         double theta = ni*r*inv_d*Math.PI;
         double cir;
-        cir = inv_d*ni*Math.cos(theta) - Math.PI*r*0.5*inv_d*inv_d*ni*ni*Math.sin(theta);
+        cir = inv_d*ni*FastMath.cos(theta) - Math.PI*r*0.5*inv_d*inv_d*ni*ni*FastMath.sin(theta);
 
         return cir;
     }
@@ -1422,8 +1422,8 @@ public class PrObject implements Runnable {
             for(int n=1; n < coeffs_size; n++){
                 a_i = am.get(n,0);
                 pi_r_n_inv_d = pi_r_inv_d*n;
-                cos_pi_r_n_inv_d = inv_d*n*Math.cos(pi_r_n_inv_d);
-                sin_pi_r_n_inv_d = Math.sin(pi_r_n_inv_d);
+                cos_pi_r_n_inv_d = inv_d*n*FastMath.cos(pi_r_n_inv_d);
+                sin_pi_r_n_inv_d = FastMath.sin(pi_r_n_inv_d);
                 product = pi_r_inv_d*inv_2d*n*n*sin_pi_r_n_inv_d;
                 a_i_sum += a_i*cos_pi_r_n_inv_d + a_i*product;
             }

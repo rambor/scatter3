@@ -43,7 +43,6 @@ public class Functions {
     private static Double[] resultD = new Double[3];
     private static Double[] resultS = new Double[3];
 
-    private static int[] values;
 
     private static double tempsum;
     private static Integer limit;
@@ -332,7 +331,7 @@ public class Functions {
         int count = (int)Math.ceil(total*percent);
         // Pick count items.
         List<Integer> tempNumbers = numbers.subList(0, count);
-        values = new int[count];
+        int[] values = new int[count];
 
         for(int i=0; i < count; i++){
             values[i] = tempNumbers.get(i);
@@ -1339,7 +1338,7 @@ public class Functions {
             sequence.add(i);
         }
 
-        values = new int[limit];
+        int[] values = values = new int[limit];
 
         for (int i = 0; i < limit; i++){
             int position = (int)(Math.random()*max);
@@ -1369,7 +1368,7 @@ public class Functions {
 
         // Pick count items.
         List<Integer> tempNumbers = numbers.subList(0, count);
-        values = new int[count];
+        int[] values = new int[count];
         for(int i=0; i<count; i++){
             values[i] = tempNumbers.get(i);
         }
@@ -1401,7 +1400,7 @@ public class Functions {
         if (limit == 0){limit = 2;}
         System.out.println("Elements per bin After " + limit);
 
-        values = new int[(int)Math.round(percent*size)];
+        int[] values = new int[(int)Math.round(percent*size)];
 
         int index = 0;
 

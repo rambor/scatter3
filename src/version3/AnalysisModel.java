@@ -177,7 +177,7 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener,
    // }
 
     public void propertyChange(PropertyChangeEvent evt) {
-        // determine if the CurrentTemperature property of the temperature
+        // determine if the property of the temperature
         // object is the one that changed
         if (evt.getSource() == currentWorkingDirectory &&
                 evt.getPropertyName() == "WorkingDirectory")
@@ -188,13 +188,10 @@ public class AnalysisModel extends AbstractTableModel implements ChangeListener,
 
             String newCWD;
 
-            if (o == null)
-            {
+            if (o == null) {
                 // go back to the object to get the temperature
                 newCWD = t.getWorkingDirectory();
-            }
-            else
-            {
+            } else {
                 // get the new temperature value
                 newCWD = ((String)o).toString();
             }

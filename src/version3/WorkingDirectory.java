@@ -8,7 +8,7 @@ import java.util.Vector;
  * Created by robertrambo on 23/01/2016.
  */
 public class WorkingDirectory  {
-        // the current temperature in Celsius
+        //
         protected String workingDirectory="";
 
         // the collection of objects listening for property changes

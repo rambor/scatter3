@@ -1,6 +1,5 @@
 package version3;
 
-import com.sun.tools.internal.jxc.apt.Const;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
 import org.jfree.chart.JFreeChart;

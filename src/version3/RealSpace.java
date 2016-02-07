@@ -1,8 +1,10 @@
 package version3;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
+import net.jafama.FastMath;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -35,7 +37,7 @@ public class RealSpace {
     private XYSeries calcqIq;         // log of calculate I(q), matches logData
     private XYSeries logData;         // only for plotting
     private XYSeries prDistribution;
-    private XYSeries refinedPrDistribution;
+    //private XYSeries refinedPrDistribution;
 
     private double analysisToPrScaleFactor;
     private double izero;
@@ -443,7 +445,7 @@ public class RealSpace {
             resultM = 0;
 
             for(int i=1; i < totalMooreCoefficients; i++){
-                resultM += mooreCoefficients[i]*Math.sin(pi_dmax_r*i);
+                resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
             }
 
             prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
@@ -458,7 +460,7 @@ public class RealSpace {
         double resultM = 0;
 
         for(int i=1; i < totalMooreCoefficients; i++){
-            resultM += mooreCoefficients[i]*Math.sin(pi_dmax_r*i);
+            resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
         }
         return 0.5*inv_d * r_value * resultM*scale;
     }
@@ -514,7 +516,7 @@ public class RealSpace {
             iofq = moore_Iq(temp.getXValue())*invRescaleFactor;
 
             if (iofq > 0){
-                calcIq.add(temp.getXValue(), Math.log10(iofq));
+                calcIq.add(temp.getXValue(), FastMath.log10(iofq));
             }
         }
     }
@@ -535,7 +537,7 @@ public class RealSpace {
         //double twodivpi = 2.0/Math.PI;
 
         for(int i=1; i < totalMooreCoefficients; i++){
-            resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
+            resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
         }
 
         return resultM*invq;
@@ -554,7 +556,8 @@ public class RealSpace {
 
         double resultM = mooreCoefficients[0];
         for(int i=1; i < totalMooreCoefficients; i++){
-            resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
+            //resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
+            resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
         }
 
         return resultM;
@@ -970,5 +973,130 @@ public class RealSpace {
         return rescaleFactor;
     }
 
+    public void estimateErrors(){
+        // given set of Moore coefficients
+        // bin the data
+        // subsample fit
+        double dmax2 = dmax*dmax;
+        double dmax4 = dmax2*dmax2;
+        double pi_sq = 9.869604401089358;
+        double inv_pi = 1.0/Math.PI;
+        double inv_pi_cube = 1.0/(pi_sq*Math.PI);
+        double inv_pi_fourth = inv_pi_cube*inv_pi;
+        double dmax4_inv_pi_fourth = 2*dmax4*inv_pi_fourth;
+        double twodivPi = 2.0*inv_pi;
+        double pi_k_2, am, am3, minus1;
+
+        int size = fittedqIq.getItemCount();
+        double upperq = fittedqIq.getMaxX();
+        double bins = totalMooreCoefficients-1;
+        double delta_q = upperq/bins;
+        double samplingLimit;
+
+        XYDataItem tempData;
+        ArrayList<double[]> results;
+        int totalRuns = 31;
+        double[] rgValues = new double[totalRuns];
+        double[] izeroValues = new double[totalRuns];
+        double tempIzero, partial_rg, rsum;
+
+        ArrayList<Integer> countsPerBin = new ArrayList<>();
+        int startbb = 0;
+
+        // determine counts per bin to draw from
+        for (int b=1; b <= bins; b++) {
+            int sumCount = 0;
+            double upperBound = delta_q*b;
+
+            binloop:
+            for (int bb=startbb; bb < size; bb++){
+                double tempCurrent = fittedqIq.getX(bb).doubleValue();
+
+                if ( (tempCurrent >= (delta_q*(b-1)) ) && (tempCurrent < upperBound) ){
+                    sumCount += 1.0;
+                } else if (tempCurrent >= upperBound ) {
+                    startbb = bb;
+                    break binloop;
+                }
+            }
+            // you want a better algorithm, by a bad computer
+            // greens theorem surface integral
+            countsPerBin.add((int)sumCount);
+        }
+
+        XYSeries randomSeries = new XYSeries("Random-");
+
+        int upperbb, locale;
+        Random randomGenerator = new Random();
+        int[] randomNumbers;
+
+        for (int i=0; i < totalRuns; i++){
+
+            randomSeries.clear();
+            // randomly grab from each bin
+            startbb = 0;
+            upperbb = 0;
+
+            for (int b=1; b <= bins; b++){
+                // find upper q in bin
+                // if s-to-n of bin < 1.5, sample more points in bin
+                // if countPerBin < 5, randomly pick 1
+                // what if countPerBin = 0?
+                if (countsPerBin.get(b-1) > 0){
+
+                    samplingLimit = (1.0 + randomGenerator.nextInt(17))/100.0;  // return a random percent up to ...
+
+                    binloop:
+                    for (int bb=startbb; bb < size; bb++){
+                        if (fittedqIq.getX(bb).doubleValue() >= (delta_q*b) ){ // what happens on the last bin?
+                            upperbb = bb;
+                            break binloop;
+                        }
+                    }
+
+                    // grab indices inbetween startbb and upperbb
+                    randomNumbers = Functions.randomIntegersBounded(startbb, upperbb, samplingLimit);
+
+                    startbb = upperbb;
+
+                    for(int h=0; h<randomNumbers.length; h++){
+                        locale = randomNumbers[h];
+                        tempData = fittedqIq.getDataItem(locale);
+                        randomSeries.add(tempData);
+                    }
+                } // end of checking if bin is empty
+            }
+            // calculate PofR
+            PrObject prObject = new PrObject(randomSeries, upperq, dmax, 0.001, false);
+            results = prObject.moore_coeffs_L1();
+
+            // calculate Izero and Rg
+            tempIzero = 0;
+            partial_rg = 0;
+            rsum = 0;
+
+            for (int k = 1; k < bins+1; k++) {
+                am = results.get(0)[k];
+                minus1 = FastMath.pow(-1, (k+1));
+
+                tempIzero = tempIzero + am/(k)*minus1;
+                pi_k_2 = pi_sq*k*k;
+                am3 = am/(double)(k*k*k);
+
+                partial_rg = partial_rg + am3*(pi_k_2 - 6)*minus1;
+                rsum = rsum + am3*((pi_k_2 - 2)*minus1 - 2 );
+            }
+
+            tempIzero = twodivPi*tempIzero*dmax2*inv_pi + results.get(0)[0];
+            rgValues[i] = Math.sqrt(dmax4_inv_pi_fourth/tempIzero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
+            izeroValues[i] = tempIzero*invRescaleFactor;
+        }
+
+        DescriptiveStatistics rgStat = new DescriptiveStatistics(rgValues);
+        DescriptiveStatistics izeroStat = new DescriptiveStatistics(izeroValues);
+
+        this.dataset.updateRealSpaceErrors(rgStat.getStandardDeviation()/rgStat.getMean(), izeroStat.getStandardDeviation()/izeroStat.getMean());
+
+    }
 
 }

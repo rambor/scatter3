@@ -235,12 +235,16 @@ public class FileObject {
         newLines += String.format("REMARK 265  REAL REFERS TO REAL SPACE VALUES DERIVED FROM P(R)-DISTRIBUTION%n");
         double diff = 100*Math.abs(dataset.getRealIzero() - scaledGuinierIzero)/(0.5*(dataset.getRealIzero() + scaledGuinierIzero));
         newLines += String.format("REMARK 265                     REAL I(0) : %.3E %n", dataset.getRealIzero());
+        newLines += String.format("REMARK 265         REAL I(0) ERROR (+/-) : %.3E %n", dataset.getRealIzeroSigma());
         newLines += String.format("REMARK 265                     RECI I(0) : %.3E %n", dataset.getGuinierIzero());
+        newLines += String.format("REMARK 265         RECI I(0) ERROR (+/-) : %.3E %n", dataset.getGuinierIzeroSigma());
         newLines += String.format("REMARK 265            PERCENT DIFFERENCE : %.3f %n", diff);
 
         diff = 100*Math.abs(dataset.getRealRg() - dataset.getGuinierRg())/(0.5*dataset.getRealRg() + dataset.getGuinierRg());
         newLines += String.format("REMARK 265                       REAL Rg : %.3E (Angstroms)%n", dataset.getRealRg());
+        newLines += String.format("REMARK 265           REAL Rg ERROR (+/-) : %.3E (Angstroms)%n", dataset.getRealRgSigma());
         newLines += String.format("REMARK 265                       RECI Rg : %.3E (Angstroms)%n", dataset.getGuinierRg());
+        newLines += String.format("REMARK 265           RECI Rg ERROR (+/-) : %.3E %n", dataset.getGuinierRG_sigma());
         newLines += String.format("REMARK 265            PERCENT DIFFERENCE : %.3f %n", diff);
         newLines += String.format("REMARK 265                        VOLUME : %d (Angstroms^3) %n", dataset.getPorodVolume());
         newLines += String.format("REMARK 265          POROD EXPONENT (P_E) : %.3f %n", dataset.getPorodExponent());

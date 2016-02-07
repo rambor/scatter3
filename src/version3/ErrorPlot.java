@@ -37,8 +37,6 @@ public class ErrorPlot {
     private static XYErrorRenderer renderer;
     boolean crosshair = true;
 
-    private static Shape elipse6 = new Ellipse2D.Double(-3, -3, 6, 6);
-
     CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
     private static double upper;
     private static double dupper;
