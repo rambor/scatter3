@@ -2260,6 +2260,14 @@ public class Scatter {
 
             }
         });
+        exportButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                status.setText("Writing txt file to " + WORKING_DIRECTORY.getWorkingDirectory());
+                FileObject tempObject = new FileObject(new File(WORKING_DIRECTORY.getWorkingDirectory()));
+                tempObject.exportResults(collectionSelected);
+            }
+        });
     }
 
     public static void updateProp(){
@@ -2636,11 +2644,13 @@ public class Scatter {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        // populate drop down
-                        programInstance.samplesList.removeAll();
+
+                        programInstance.samplesList.removeAll();  // remove model and resetModel
+
                         programInstance.samplesList.setModel(programInstance.sampleFilesModel);
                         programInstance.status.setText("Total Loaded: " + programInstance.sampleFilesModel.getSize());
 
+                        // populate drop down
                         Collection thisCollection = ((Collection) collections.get(panel));
                         int totalDatasets = thisCollection.getDatasetCount();
                         programInstance.setReferenceBox.removeAllItems();
@@ -2651,7 +2661,7 @@ public class Scatter {
                         }
                         programInstance.setReferenceBox.setSelectedIndex(programInstance.setReferenceBox.getItemCount()-1);
                         programInstance.samplesList.validate();
-                        programInstance.buffersList.updateUI();
+                        programInstance.samplesList.updateUI();
                     }
                 }.start();
             }
@@ -4174,10 +4184,9 @@ public class Scatter {
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
             Object source = evt.getSource();
-            System.out.println("SOURCE " + evt.getPropertyName());
+            //System.out.println("SOURCE " + evt.getPropertyName());
             //update comboxbox
             ffCEFileSelectionComboBox.updateUI();
-
             //ffCEFileSelectionComboBox.revalidate();
             //ffCEFileSelectionComboBox.repaint();
         }

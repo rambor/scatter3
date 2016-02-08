@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 public class LoadedFile {
     public XYSeries allData;
     public XYSeries allDataError;
-    public String ext;
+    private String ext;
     public String filebase;
     private ArrayList<String> fileLines;
     private Pattern dataFormat = Pattern.compile("(-?[0-9].[0-9]+[Ee][+-]?[0-9]+)|(-?[0-9]+.[0-9]+)");

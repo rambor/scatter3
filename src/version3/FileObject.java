@@ -253,7 +253,63 @@ public class FileObject {
         return newLines;
     }
 
-    public void writeRefinedDataToFile(){
+    public void exportResults(Collection collection){
+
+        try {
+            FileWriter fw = new FileWriter(new File(directoryInfo, "scatter_results.txt"));
+            //fw = new FileWriter(workingDirectoryName.toString()+"/scatter_results.txt");
+            BufferedWriter out = new BufferedWriter(fw);
+
+            out.write("" +
+                    "# COLUMNS  (2,3)   Izero(Guinier) ERROR \n" +
+                    "# COLUMNS  (4,5)   Izero(Real) ERROR  \n" +
+                    "# COLUMNS  (6,7)   Rg(Guinier) ERROR  \n" +
+                    "# COLUMNS  (8,9)   Rg(Real) ERROR  \n" +
+                    "# COLUMNS  (10)    Vc (Guinier)\n" +
+                    "# COLUMNS  (11,12) Volume (Guinier) (Real) \n" +
+                    "# COLUMNS  (13,14) Mass (if Protein) (if RNA) \n" +
+                    "# COLUMNS  (15)    Average_r\n" +
+                    "# COLUMNS  (16)    R_c\n" +
+                    "# COLUMNS  (17,18) P_x Error\n" +
+                    "# COLUMNS  (19)    d_max\n" +
+                    "# COLUMNS  (20)    filename\n");
+
+            Dataset temp;
+            int count=1;
+            for(int i=0; i<collection.getDatasets().size(); i++){
+                temp = collection.getDataset(i);
+
+                if (temp.getInUse()){
+
+                    if (temp.getRealSpaceModel().getRg() > 0 && temp.getRealSpaceModel().getIzero() > 0){
+                        temp.getRealSpaceModel().estimateErrors();
+                    }
+
+                    String outputLine = String.format("%-3d ", count);
+                    outputLine += String.format("%.3E (+- %.3E) ", temp.getGuinierIzero(), temp.getGuinierIzeroSigma());
+                    outputLine += String.format("%.3E (+- %.3E) ", temp.getRealIzero(), temp.getRealIzeroSigma());
+                    outputLine += String.format("%5.2f (+- %4.2f) ", temp.getGuinierRg(), temp.getGuinierRG_sigma());
+                    outputLine += String.format("%5.2f (+- %4.2f) ", temp.getRealRg(), temp.getRealRgSigma());
+                    outputLine += String.format("%.3E ", temp.getVC());
+                    outputLine += String.format("%.4E %.4E ", (double) temp.getPorodVolume(), (double) temp.getPorodVolumeReal());
+                    outputLine += String.format("%.4E %.4E ", (double) temp.getMassProtein(), (double) temp.getMassRna());
+                    outputLine += String.format("%5.2f ", temp.getAverageR());
+                    outputLine += String.format("%5.2f ", temp.getRc());
+                    outputLine += String.format("%2.3f (+- %1.3f) ", temp.getPorodExponent(),temp.getPorodExponentError());
+                    outputLine += String.format("%5d %s %n", (int)temp.getDmax(), temp.getFileName());
+                    out.write(outputLine);
+                    count++;
+                }
+
+            }
+
+            out.close();
+
+        } catch (IOException e1) {
+            e1.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+
+
 
     }
 
@@ -358,6 +414,22 @@ public class FileObject {
         tempHeader += "REMARK 265               SOFTWARE AUTHOR : RP RAMBO\n";
         tempHeader += "REMARK 265\n";
         return tempHeader;
+    }
+
+    /**
+     * create single file to be re-read by Scatter
+     * @param name
+     * @param data
+     */
+    private void createSCT(String name, Dataset data){
+        // RECI_RG
+        // RECI_RG_ERROR
+        // RECI_IZERO
+        // RECI_IZERO_ERROR
+        //
+        // RECIDATA =>
+        // MOORE_COEFF   1 =>
+        // MOORE_COEFF  11 =>
     }
 
 }

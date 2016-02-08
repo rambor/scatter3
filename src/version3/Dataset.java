@@ -74,9 +74,7 @@ public class Dataset {
 
     private double averageR;
     private double averageRSigma;
-    private int porodDebyeVolume;
     private int porodVolume = 0;
-    private int porodDebyeVolumeReal;
     private int porodVolumeReal = 0;
     private double vc;
     private double vcSigma;
@@ -640,17 +638,18 @@ public class Dataset {
         return averageRSigma;
     }
 
-    public int getPorodDebyeVolume(){
-        return porodDebyeVolume;
-    }
+    //public int getPorodDebyeVolume(){
+    //    return porodDebyeVolume;
+    //}
 
     public int getPorodVolume(){
         return porodVolume;
     }
 
-    public int getPorodDebyeVolumeReal(){
-        return porodDebyeVolumeReal;
-    }
+    //public int getPorodDebyeVolumeReal(){
+    //    return porodDebyeVolumeReal;
+    //}
+
     public int getPorodVolumeReal(){
         return porodVolumeReal;
     }
@@ -751,21 +750,14 @@ public class Dataset {
     }
 
 
-    public void setRealIzeroRgParameters(double izero, double izeroError, double rg, double rgError){
+    public void setRealIzeroRgParameters(double izero, double izeroError, double rg, double rgError, double rave){
         this.realIZero = izero;
         this.realIZero_sigma = izeroError;
         this.realRg = rg;
         this.realRg_sigma = rgError;
+        this.averageR = rave;
     }
 
-
-    /**
-     * Sets average r calculated from P(r)
-     *
-     */
-    public void setAverageR(double aveR){
-        averageR=aveR;
-    }
     /**
      * Set Rc
      *
@@ -1147,16 +1139,8 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
         averageRSigma=aveRSigma;
     }
 
-    public void setPorodDebyeVolume(int porodDV){
-        porodDebyeVolume=porodDV;
-    }
-
     public void setPorodVolume(int porodV){
         porodVolume=porodV;
-    }
-
-    public void setPorodDebyeVolumeReal(int porodDVR){
-        porodDebyeVolumeReal=porodDVR;
     }
 
     public void setPorodVolumeReal(int porodVR){
@@ -1328,18 +1312,6 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
         return this.bufferComposition;
     }
 
-    /**
-     *
-     * @param dataset
-     */
-    public void updateMainDataset(RealSpace dataset){
-        this.setAverageR(dataset.getRaverage());
-        this.realIZero= dataset.getIzero()/dataset.getAnalysisToPrScaleFactor();
-        this.realRg = dataset.getRg();
-        this.setAM(dataset.getMooreCoefficients());
-        this.setDmax((double)dataset.getDmax());
-        // update Vc
-    }
 
     public RealSpace getRealSpaceModel(){
         return realSpace;

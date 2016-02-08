@@ -714,7 +714,7 @@ public class RealSpace {
         //raverage = dmax3*inv_pi_cube/izero*rsum;
         raverage = 2*dmax3*inv_pi_fourth/izero*rsum;
 
-        this.dataset.setRealIzeroRgParameters(izero*invRescaleFactor, 0.1*izero, rg, rg*0.1);
+        this.dataset.setRealIzeroRgParameters(izero*invRescaleFactor, 0.1*izero, rg, rg*0.1, raverage);
     }
 
     public void decrementLow(int spinnerValue){

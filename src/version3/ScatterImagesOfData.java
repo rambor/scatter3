@@ -360,7 +360,8 @@ public class ScatterImagesOfData {
         renderer.setSeriesPaint(0, dataset.getColor());
         renderer.setSeriesShapesFilled(0, true);
         renderer.setSeriesVisible(0, dataset.getInUse());
-        renderer.setSeriesOutlineStroke(0, dataset.getStroke());
+        renderer.setSeriesOutlineStroke(0, new BasicStroke(1.0f));
+        renderer.setSeriesOutlinePaint(0, Color.BLACK);
         renderer.setSeriesStroke(0, dataset.getStroke());
 
         plot.setDomainZeroBaselineVisible(false);

@@ -68,7 +68,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
             // if true add loaded file object to collection
 
             if (files[i].isDirectory()){
-                int sizeOfCollection = targetCollection.getDatasetCount();
+                //int sizeOfCollection = targetCollection.getDatasetCount();
 
                 File[] tempFiles = finder(files[i].getAbsolutePath());
 
@@ -83,9 +83,18 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 }
 
             } else {
-                LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
-                addToCollection(temp);
-                System.out.println(i + " Loaded File " + targetCollection.getLast().getFileName());
+                String[] filename = files[i].getName().split("\\.(?=[^\\.]+$)");
+                String ext = filename[1];
+                String filebase = filename[0];
+                if (ext.equals("pdb")){
+                    // make Dataset from PDB file and add to collection
+
+                } else {
+                    LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
+                    addToCollection(temp);
+                    System.out.println(i + " Loaded File " + targetCollection.getLast().getFileName());
+
+                }
             }
 
             status.setText(" Loaded File " + targetCollection.getLast().getFileName());
@@ -127,15 +136,13 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         } else if (collectionIndex == 69 || collectionIndex == 96){
 
             sampleBufferFilesModel.clear();
-            //sampleBufferFilesList.removeAll();
             //repopulate
-
             Color tempColor;
             for(int i=0; i< targetCollection.getDatasetCount(); i++){
 
                 String name = targetCollection.getDataset(i).getFileName();
                 name = name + "_" + i;
-                //System.out.println(i + " renaming after loading : " + name + " " + targetCollection.getDataset(i).getId());
+                System.out.println(i + " renaming after loading : " + name + " " + targetCollection.getDataset(i).getId());
                 // targetCollection.getDataset(i).setFileName(name);
                 tempColor = targetCollection.getDataset(i).getColor();
                 sampleBufferFilesModel.addElement(new SampleBufferElement(name, i, tempColor, targetCollection.getDataset(i)));

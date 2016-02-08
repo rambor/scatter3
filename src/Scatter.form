@@ -419,14 +419,16 @@
                       <forms defaultalign-horz="false" defaultalign-vert="false"/>
                     </constraints>
                     <properties>
-                      <background color="-10987432"/>
+                      <background color="-4916547"/>
                       <borderPainted value="true"/>
+                      <doubleBuffered value="false"/>
                       <enabled value="true"/>
                       <font size="12" style="1"/>
-                      <foreground color="-1312001"/>
+                      <foreground color="-16777216"/>
                       <hideActionText value="true"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
+                      <selected value="false"/>
                       <text value="Log10 Intensity Plot"/>
                     </properties>
                   </component>
@@ -439,10 +441,11 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
-                      <background color="-10987432"/>
+                      <background color="-4916547"/>
                       <font size="12" style="1"/>
-                      <foreground color="-1312001"/>
+                      <foreground color="-16777216"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
+                      <selected value="false"/>
                       <text value="Normalized Kratky"/>
                     </properties>
                   </component>
@@ -455,11 +458,12 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
-                      <background color="-10987432"/>
+                      <background color="-4916547"/>
                       <font size="12" style="1"/>
-                      <foreground color="-1312001"/>
+                      <foreground color="-16777216"/>
                       <hideActionText value="false"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
+                      <selected value="false"/>
                       <text value="Guinier Peak Analysis"/>
                     </properties>
                   </component>
@@ -472,9 +476,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1118482"/>
+                      <background color="-4916547"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Volume"/>
@@ -489,9 +493,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1118482"/>
+                      <background color="-4916547"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Vc Plot"/>
@@ -506,9 +510,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1118482"/>
+                      <background color="-4916547"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Flexibility"/>
@@ -543,9 +547,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1118482"/>
+                      <background color="-5712646"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Kratky"/>
@@ -560,9 +564,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1118482"/>
+                      <background color="-5712646"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Powerlaw"/>
@@ -577,7 +581,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-1118482"/>
                       <font size="12" style="1"/>
                       <foreground color="-3919037"/>
                       <iconTextGap value="0"/>
@@ -594,9 +598,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-5712646"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Rc Plot"/>
@@ -611,9 +615,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-5712646"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="q*I(q) vs q"/>
@@ -628,9 +632,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-1636"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Complex?"/>
@@ -645,9 +649,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-1636"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Ratio"/>
@@ -662,9 +666,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-1636"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="I(0) : Rg Plot"/>
@@ -698,7 +702,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-7250261"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Scale to I(0)"/>
@@ -715,7 +719,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-15648368"/>
+                      <foreground color="-10036868"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="ScaleMerge"/>
@@ -766,7 +770,7 @@
                     <properties>
                       <background color="-394753"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16377094"/>
+                      <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Single"/>
@@ -2431,13 +2435,71 @@
                             <border type="etched"/>
                             <children/>
                           </grid>
-                          <grid id="c2a31" binding="heatMapPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+                          <grid id="c2a31" binding="heatMapPanel" layout-manager="GridLayoutManager" row-count="7" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
                             <constraints>
                               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                             </constraints>
-                            <properties/>
+                            <properties>
+                              <background color="-1"/>
+                            </properties>
                             <border type="etched"/>
-                            <children/>
+                            <children>
+                              <component id="58fcf" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <font style="1"/>
+                                  <text value="Compare a set of SAXS curves to a reference"/>
+                                </properties>
+                              </component>
+                              <vspacer id="a5720">
+                                <constraints>
+                                  <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                              </vspacer>
+                              <component id="21df0" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="Drop files (on left) and arrange in any order"/>
+                                </properties>
+                              </component>
+                              <component id="84f6b" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="First file is the reference file that will be used for all comparisons"/>
+                                </properties>
+                              </component>
+                              <component id="59e34" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="Give the set of files a name and 'Add Set'"/>
+                                </properties>
+                              </component>
+                              <component id="f19d7" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="Many sets can be added for comparisons on the same plot"/>
+                                </properties>
+                              </component>
+                              <component id="f79ae" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="If data is particularly noise, consider narrowing the range of data used in comparision"/>
+                                </properties>
+                              </component>
+                            </children>
                           </grid>
                         </children>
                       </grid>
