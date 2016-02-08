@@ -215,6 +215,8 @@ public class Scatter {
     private JPanel ellipsoidStatusPanel;
     private JPanel ellipsoidParametersPanel;
     private JButton packageItButton;
+    private JTextField a04TextField;
+    private JCheckBox excludeWatersFromInputCheckBox;
 
     private String version = "3.0";
     private static WorkingDirectory WORKING_DIRECTORY;
