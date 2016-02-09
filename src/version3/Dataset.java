@@ -122,6 +122,87 @@ public class Dataset {
     private String experimentalNotes;
     private String bufferComposition;
 
+    private boolean isPDB = false;
+
+
+    /**
+     * use this constructor for samples and buffer in subtraction
+     * @param dat
+     * @param err
+     * @param fileName
+     * @param id
+     */
+    public Dataset(XYSeries dat, XYSeries err, String fileName, int id){
+
+        totalCountInAllData = dat.getItemCount();
+        System.out.println("Short constructor " + totalCountInAllData);
+        filename=fileName;
+        String tempName = fileName + "-" + id;
+        scaleFactor=1.000;
+
+        baseShapeFilled = false;
+        pointSize = 6;
+        this.setStroke(1.0f);
+        this.id = id;
+
+        Random r=new Random();
+        color = new Color(r.nextInt(256),r.nextInt(256),r.nextInt(256));
+        inUse = true;
+
+        experimentalNotes ="";
+        bufferComposition ="";
+
+        allData = new XYSeries(tempName);
+        allDataError = new XYSeries(tempName);
+        allDataYError = new YIntervalSeries(tempName);
+        plottedData = new XYSeries(tempName);  // actual log10 data that is plotted
+
+        for(int i=0; i<totalCountInAllData; i++) {
+            XYDataItem tempXY = dat.getDataItem(i);
+            XYDataItem tempError = err.getDataItem(i);
+
+            allData.add(tempXY);
+            allDataError.add(tempError);
+            if (tempXY.getYValue() > 0){
+                plottedData.add(tempXY.getX(), Math.log10(tempXY.getYValue()));
+            }
+        }
+
+
+
+        plottedError = new XYSeries(tempName); // actual log10 data that is plotted
+        plottedKratkyData = new XYSeries(tempName);
+        plottedqIqData = new XYSeries(tempName);
+        plottedLogErrors = new YIntervalSeries(tempName);
+        plottedPowerLaw = new XYSeries(tempName);
+
+        originalPositiveOnlyData = new XYSeries(tempName);
+        originalLog10Data = new XYSeries(tempName);
+        originalPositiveOnlyError = new XYSeries(tempName);
+        positiveOnlyIntensityError = new YIntervalSeries(tempName);
+
+        normalizedKratkyReciprocalSpaceRgData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyRealSpaceRgData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyReciprocalSpaceVcData = new XYSeries(tempName);  // derived from allData
+        normalizedKratkyRealSpaceVcData = new XYSeries(tempName);  // derived from allData
+
+        normalizedGuinierData = new XYSeries(tempName); // derived from originalPositiveOnlyData
+        guinierData = new XYSeries(tempName); // derived from originalPositiveOnlyData
+        kratkyData = new XYSeries(tempName);            // derived from allData
+        qIqData = new XYSeries(tempName);               // derived from allData
+        powerLawData = new XYSeries(tempName);          // derived from originalPositiveOnlyData
+        this.totalCountInPositiveData = plottedData.getItemCount();
+        guinierIZero=0;
+        guinierIZero_sigma = 0;
+        guinierRg=0;
+        guinierRG_sigma = 0;
+
+        maxI = this.plottedData.getMaxY();  //log10 data
+        minI = this.plottedData.getMinY();  //log10 data
+
+        maxq = this.plottedData.getMaxX();  //
+        minq = this.plottedData.getMinX();  //
+    }
 
     /**
      *
@@ -1380,4 +1461,15 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
         dataToWrite.writeSAXSFile(base, this);
     }
 
+    public void setIsPDB(XYSeries pofrDistribution, int dmax, double rg, double izero){
+        this.realSpace.setPrDistribution(pofrDistribution);
+        this.realSpace.setDmax(dmax);
+        this.isPDB = true;
+        this.realSpace.setRg(rg);
+        this.realSpace.setIzero(izero);
+    }
+
+    public boolean getIsPDB(){
+        return this.isPDB;
+    }
 }

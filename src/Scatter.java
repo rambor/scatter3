@@ -215,7 +215,7 @@ public class Scatter {
     private JPanel ellipsoidStatusPanel;
     private JPanel ellipsoidParametersPanel;
     private JButton packageItButton;
-    private JTextField a04TextField;
+    private JTextField qmaxForPDBText;
     private JCheckBox excludeWatersFromInputCheckBox;
 
     private String version = "3.0";
@@ -660,6 +660,7 @@ public class Scatter {
         prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox));
 
         prModel = (PrModel) prTable.getModel();
+
         prModel.setBars(mainProgressBar, progressBar1, status, prStatusLabel);
         TableColumnModel pcm = prTable.getColumnModel();
 
@@ -2480,6 +2481,7 @@ public class Scatter {
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(0), programInstance.getStatus(), 0, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
                         Thread temp1 = new Thread(rec1);
                         temp1.start();
                         try {
@@ -2610,6 +2612,7 @@ public class Scatter {
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setSampleBufferModels(programInstance.bufferFilesModel);
+                        rec1.useShortenedConstructor();
                         Thread temp1 = new Thread(rec1);
                         temp1.start();
                         try {
@@ -2639,6 +2642,7 @@ public class Scatter {
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setSampleBufferModels(programInstance.sampleFilesModel);
+                        rec1.useShortenedConstructor();
                         Thread temp1 = new Thread(rec1);
                         temp1.start();
                         try {

@@ -7,7 +7,9 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.lang.reflect.Array;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Objects;
 
@@ -18,6 +20,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
 
     private final LinkedList<RealSpace> datalist;
     private JCheckBox fitModel;
+    private ArrayList<ArrayList<Boolean>> editable_cells;
     private WorkingDirectory currentWorkingDirectory;
     private JLabel status;
     private DoubleValue dmaxLow, dmaxHigh;
@@ -25,9 +28,9 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     private JProgressBar mainBar, prBar;
     private JSlider dmaxStart;
 
-    DecimalFormat twoDecPlac = new DecimalFormat("0.00");
-    DecimalFormat scientific = new DecimalFormat("0.00E0");
-    DecimalFormat twoOneFormat = new DecimalFormat("0.0");
+    private DecimalFormat twoDecPlac = new DecimalFormat("0.00");
+    private DecimalFormat scientific = new DecimalFormat("0.00E0");
+    private DecimalFormat twoOneFormat = new DecimalFormat("0.0");
 
     private String[] columnNames = new String[]{"","", "", "", "start", "end", "<html>I(0)<font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html>", "<html>R<sub>g</sub><font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html> ", "<html>r<sub>ave</sub></html>", "<html>d<sub>max</sub></html>", "<html>Chi<sup>2</sup>(S<sub>k2</sub>)</html>", "<html>scale</html>", "", "", "",""};
     private JLabel mainStatus, prStatus;
@@ -40,21 +43,14 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         this.lambdaBox = lambdaBox;
 
         datalist = new LinkedList<>();
+        editable_cells = new ArrayList<ArrayList<Boolean>>();
+
         this.fitModel = fitModel;
         dmaxLow = dmaxlow;
         dmaxHigh = dmaxhigh;
         this.dmaxStart = dmaxSlider;
         this.cBox = cBox;
     }
-/*
-    public void setLambda(double value){
-        lambda = value;
-    }
-
-    public double getLambda(){
-        return lambda;
-    }
-*/
 
     public int getRowCount() {
         return datalist.size();
@@ -67,6 +63,12 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
 
     public void clear(){
         datalist.clear();
+
+        for(int i=0; i<editable_cells.size(); i++){
+            editable_cells.get(i).clear();
+        }
+        editable_cells.clear();
+
         this.fireTableDataChanged();
     }
 
@@ -193,7 +195,9 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     }
 
     public void addDataset(RealSpace dataset){
+
         datalist.add(dataset);
+
         fireTableRowsInserted(datalist.size()-1, datalist.size()-1);
         //fireTableDataChanged();
     }
@@ -228,8 +232,28 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 // don't want to use kept series here
                 datalist.add(collection.getDataset(i).getRealSpaceModel());
 
+                editable_cells.add(new ArrayList<>(columnNames.length));
+                int lastone = editable_cells.size() - 1;
+
+                for (int k=0; k<columnNames.length; k++){
+
+                    editable_cells.get(lastone).add(false);
+                    if (k==0 || k==2 || k==4 || k==5 || k==9 || k==11 || k==12 ||k==13 ||k==14 ||k==15){
+                        editable_cells.get(lastone).set(k, true);
+                    }
+                }
+
+                if (datalist.getLast().isPDB()){
+                    editable_cells.get(lastone).set(4, false);  // low q
+                    editable_cells.get(lastone).set(5, false);  // high q
+                    editable_cells.get(lastone).set(9, false);  // dmax
+                    editable_cells.get(lastone).set(13, false); // refine dmax
+                    editable_cells.get(lastone).set(14, false); // refine
+                }
+
             }
         }
+
 
         mainBar.setStringPainted(false);
         mainBar.setIndeterminate(false);
@@ -246,13 +270,14 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
      */
     public boolean isCellEditable(int row, int col) {
         //Note that the data/cell address is constant,
-        //no matter where the cell appears onscreen.
-        //editable 0,2,4,5,6,13,14
-        if (col==0 || col==2 || col==4 || col==5 || col==9 || col==11 || col==12 ||col==13 ||col==14 ||col==15) {
-            return true;
-        } else {
-            return false;
-        }
+        //no matter where the cell appears onscreen
+
+        return editable_cells.get(row).get(col);
+        //if (col==0 || col==2 || col==4 || col==5 || col==9 || col==11 || col==12 ||col==13 ||col==14 ||col==15) {
+        //    return true;
+        //} else {
+        //    return false;
+        //}
     }
 
     private boolean isNumber( String input ) {

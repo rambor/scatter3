@@ -27,9 +27,8 @@ public class LoadedFile {
     public XYSeries allDataError;
     private String ext;
     public String filebase;
-    private ArrayList<String> fileLines;
     private Pattern dataFormat = Pattern.compile("(-?[0-9].[0-9]+[Ee][+-]?[0-9]+)|(-?[0-9]+.[0-9]+)");
-    private Pattern nonDataFormat = Pattern.compile("[A-Z]+");
+    //private Pattern nonDataFormat = Pattern.compile("[A-Z]+");
     private DataLine dataPoints;
 
 
@@ -45,6 +44,7 @@ public class LoadedFile {
         if (loc.toString().equals("en_GB") || loc.toString().equals("en_US")){
             isUSUK = true;
         }
+        System.out.println("Default location " + Locale.getDefault(Locale.Category.FORMAT) + " isUSUK " + isUSUK);
 
         // get file base and extension
         String[] filename = file.getName().split("\\.(?=[^\\.]+$)");
@@ -146,7 +146,6 @@ public class LoadedFile {
         df.applyPattern("#.##");
         // df.format() returns a string
         // System.out.println("LOCALE " + loc); // en_GB, en_US
-
         if ( ((row.length >= 2 && row.length <= 4) &&
                 !row[0].matches("^[A-Za-z#:_\\/$%*!\\'-].+") &&  // checks for header or footer stuff
                 isNumeric(row[0]) &&                             // check that value can be parsed as Double
@@ -158,10 +157,20 @@ public class LoadedFile {
 
             //Double iofQValue = Double.valueOf(df.format(Double.parseDouble(row[1])));
             if (!isUSUK){
-                data = new DataLine(convertToUS(row[0]), convertToUS(row[1]), 1.0, true);
-                if ((row.length == 3 && isNumeric(row[2])) || (row.length == 4 && isNumeric(row[2]))) {
-                    data.setE(convertToUS(row[2]));
+                System.out.println("Not USUK : may convert format ");
+                if (row[0].contains(",") && row[1].contains(",")){ // convert
+                    System.out.println("Number contains a comma in first column, convert format ");
+                    data = new DataLine(convertToUS(row[0]), convertToUS(row[1]), 1.0, true);
+                    if ((row.length == 3 && isNumeric(row[2])) || (row.length == 4 && isNumeric(row[2]))) {
+                        data.setE(convertToUS(row[2]));
+                    }
+                } else {
+                    data = new DataLine(Double.parseDouble(row[0]), Double.parseDouble(row[1]), 1.0, true);
+                    if ((row.length == 3 && isNumeric(row[2])) || (row.length == 4 && isNumeric(row[2]))) {
+                        data.setE(Double.parseDouble(row[2]));
+                    }
                 }
+
             } else {
                 data = new DataLine(Double.parseDouble(row[0]), Double.parseDouble(row[1]), 1.0, true);
                 if ((row.length == 3 && isNumeric(row[2])) || (row.length == 4 && isNumeric(row[2]))) {
@@ -207,6 +216,7 @@ public class LoadedFile {
 
     private boolean isZero(String str){
         // 0.000 or 0,000 or 0.00E0
+
         if (hasOnlyComma(str) && !isUSUK){
             if (convertToUS(str) <= 0){
                 return true;
@@ -227,11 +237,15 @@ public class LoadedFile {
     private double convertToUS(String str){
         NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
         Number number = null;
+        // data may contain only a decimal point eventhough it is on non-ideal key board
+
         try {
             number = format.parse(str);
         } catch (ParseException e) {
             e.printStackTrace();
         }
+
+        System.out.println("FormatParser : " + str + " => " + number + " parsed => " + number.doubleValue());
         return number.doubleValue();
     }
 

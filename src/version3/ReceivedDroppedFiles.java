@@ -33,6 +33,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
     private DefaultListModel<DataFileElement> dataFilesModel;  // common for all files that are loaded and displayed as a Jlist
     private JList dataFilesList;  // common for all files that are loaded and displayed as a list
     private int panelIndex;
+    private double qmax;
+    private boolean exclude, shortened = false;
 
     public ReceivedDroppedFiles(File[] files, Collection targetCollection, JLabel status, int index, boolean convertNMtoAng, boolean doGuinier, boolean sort, final JProgressBar bar, String workingDirectoryName){
 
@@ -66,7 +68,6 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         for( int i = 0; i < totalFiles; i++ ) {
             // call File loader function
             // if true add loaded file object to collection
-
             if (files[i].isDirectory()){
                 //int sizeOfCollection = targetCollection.getDatasetCount();
 
@@ -88,16 +89,28 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 String filebase = filename[0];
                 if (ext.equals("pdb")){
                     // make Dataset from PDB file and add to collection
+                    status.setText("Reading PDB file " + filebase + " => calculating P(r) - please wait ~ 1 min");
+                    System.out.println("Detected PDB file");
+                    bar.setIndeterminate(true);
+                    PDBFile tempPDB = new PDBFile(files[i], qmax, exclude);
 
+                    int newIndex = targetCollection.getDatasetCount();
+                    targetCollection.addDataset(new Dataset(
+                            tempPDB.getIcalc(),  //data
+                            tempPDB.getError(),  //original
+                            filebase,
+                            newIndex, false ));
+                    targetCollection.getDataset(newIndex).setIsPDB(tempPDB.getPrDistribution(), (int)tempPDB.getDmax(), tempPDB.getRg(), tempPDB.getIzero());
+
+                    bar.setIndeterminate(false);
                 } else {
                     LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
                     addToCollection(temp);
                     System.out.println(i + " Loaded File " + targetCollection.getLast().getFileName());
-
                 }
             }
 
-            status.setText(" Loaded File " + targetCollection.getLast().getFileName());
+            //status.setText(" Loaded File " + targetCollection.getLast().getFileName());
             bar.setValue((int) (i / (double) totalFiles * 100));
         }
 
@@ -154,6 +167,9 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
 
     }
 
+    public void useShortenedConstructor(){
+        this.shortened = true;
+    }
 
     private void addToCollection(LoadedFile tempFile){
         // how to update results? Use a results object
@@ -162,11 +178,19 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
 
         int newIndex = targetCollection.getDatasetCount();
 
-        targetCollection.addDataset(new Dataset(
-                tempFile.allData,       //data
-                tempFile.allDataError,  //original
-                tempFile.filebase,
-                newIndex, doGuinier ));
+        if (shortened){
+            targetCollection.addDataset(new Dataset(
+                    tempFile.allData,       //data
+                    tempFile.allDataError,  //original
+                    tempFile.filebase,
+                    newIndex));
+        } else {
+            targetCollection.addDataset(new Dataset(
+                    tempFile.allData,       //data
+                    tempFile.allDataError,  //original
+                    tempFile.filebase,
+                    newIndex, doGuinier ));
+        }
     }
 
     public File[] finder(String dirName){
@@ -222,4 +246,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         this.sampleBufferFilesModel = bufferFilesModel;
     }
 
+    public void setPDBParams(boolean exclude, double qmax){
+        this.exclude = exclude;
+        this.qmax = qmax;
+    }
 }

@@ -194,6 +194,11 @@ public class RealSpace {
 
     public int getLowerQIndexLimit(){ return lowerQIndexLimit;}
 
+
+    public boolean isPDB(){
+        return this.dataset.getIsPDB();
+    }
+
     /**
      * shoudl match spinner index
      * @param i
@@ -265,9 +270,7 @@ public class RealSpace {
         this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(301));
         this.l1_norm = this.l1_norm_pddr(11);
         this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
-
         // System.out.println("CHI2 " + j + " " + this.kurtosis + " L1 " + this.l1_norm);
-
     }
 
     public float getScale(){
@@ -329,7 +332,10 @@ public class RealSpace {
     }
 
     public void setPrDistribution(XYSeries data){
-        this.prDistribution = data;
+        int totalToSet = data.getItemCount();
+        for (int i=0; i<totalToSet; i++){
+            prDistribution.add(data.getDataItem(i));
+        }
     }
 
     public boolean getSelected(){

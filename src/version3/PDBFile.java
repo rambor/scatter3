@@ -1,5 +1,7 @@
 package version3;
 
+import org.apache.commons.math3.util.FastMath;
+import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import quickhull3d.Point3d;
 import quickhull3d.QuickHull3D;
@@ -13,17 +15,27 @@ import java.util.List;
  * Created by robertrambo on 08/02/2016.
  */
 public class PDBFile {
-    private static ArrayList<double[]> coords = new ArrayList<double[]>();
-    private static ArrayList<String> coordsAtoms = new ArrayList<String>();
-    private int dmax;
+    private int dmax, totalAtomsRead;
     private double qmax;
-    private boolean waters;
+    private int pr_bins;
+    private double delta_r;
+    private boolean useWaters = false;
     private XYSeries pdbdata;
-    public PDBFile(File selectedFile, int index, boolean convert, double qmax, boolean exclude){
+    private XYSeries icalc;
+    private XYSeries error;
+    private ArrayList<PDBAtom> atoms;
+    private String filename;
+    private double izero, rg;
+
+    public PDBFile(File selectedFile, double qmax, boolean exclude){
+        filename = selectedFile.getName();
         FileInputStream fstream = null;
         this.qmax = qmax;
-        this.waters = exclude;
+        this.useWaters = exclude;
+        icalc = new XYSeries(filename);
 
+        atoms = new ArrayList<>();
+        System.out.println("Reading PDB file : " + selectedFile.getName());
         if (selectedFile.length() == 0){
             try {
                 throw new Exception("File PDB Empty");
@@ -40,19 +52,14 @@ public class PDBFile {
             // need the lines that contain ATOM
             // arraylist of x, y, z
 
-            int count=0;
-
             try {
                 while ((strLine = br.readLine()) != null) {
                     if (strLine.matches("^ATOM.*") || (strLine.matches("^HETATM.*HOH.*") ) ){
-                        coords.add(new double[3]);
-                        coords.get(count)[0] = Double.parseDouble(strLine.substring(30,37));
-                        coords.get(count)[1] = Double.parseDouble(strLine.substring(38,45));
-                        coords.get(count)[2] = Double.parseDouble(strLine.substring(46,53));
-                        coordsAtoms.add(strLine.substring(0,5).trim());
-                        count++;
+                        atoms.add(new PDBAtom(strLine));
                     }
                 }
+                totalAtomsRead = atoms.size();
+                System.out.println("Total atoms read " + totalAtomsRead);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -62,53 +69,48 @@ public class PDBFile {
             e.printStackTrace();
         }
 
+        calculatePofR();
+        this.convertPofRToIntensities();
+
 
     }
 
     private void calculatePofR() {
-        int totalAtoms = coords.size();
 
-        if ((totalAtoms < 10)) {
+        if ((totalAtomsRead < 10)) {
             System.err.println("Specify Proper PDB file ");
         } else {
 
             // create working set
-            ArrayList<double[]> workingCoords;
-
-            if (waters) {
-                // remove waters
-                workingCoords = new ArrayList<double[]>();
-                for (int i = 0; i < totalAtoms; i++) {
-                    if (coordsAtoms.get(i).matches("ATOM")) {
-                        workingCoords.add(coords.get(i));
+            ArrayList<PDBAtom> workingCoords = new ArrayList<>();
+            for(int i=0;i<totalAtomsRead; i++){
+                PDBAtom tempAtom = atoms.get(i);
+                if (useWaters){
+                    workingCoords.add(tempAtom);
+                } else {
+                    if (!tempAtom.isWater()){
+                        workingCoords.add(tempAtom);
                     }
                 }
-                totalAtoms = workingCoords.size();
-
-            } else {
-                workingCoords = new ArrayList<double[]>(coords);
             }
 
-
             // determine dmax of pdb file
+            int totalAtoms = workingCoords.size();
             dmax = dmaxFromPDB(workingCoords, totalAtoms);
-
-
             // calculate PofR from workingAtoms
             // use resolution to determine number of Shannon bins
-            //
-            int bins = (int) (dmax * qmax / Math.PI) + 1;
-            bins = 31;
-            double delta = (double) dmax / (double) bins;
-            double inv_delta = 1.0 / (delta);
+            pr_bins = (int)Math.ceil((dmax * qmax / Math.PI)) + 1;
+            pr_bins = 51;
+            delta_r = (double) dmax / (double)pr_bins;
+            double inv_delta = 1.0 /delta_r;
 
-            int[] histo = new int[bins];
+            int[] histo = new int[pr_bins];
             double[] atom, atom2;
             double refx, refy, refz, difx, dify, difz, distance;
             int startIndex, bin;
 
             for (int i = 0; i < totalAtoms; i++) {
-                atom = workingCoords.get(i);
+                atom = workingCoords.get(i).getCoords(); // use different weights for atom type here
                 refx = atom[0];
                 refy = atom[1];
                 refz = atom[2];
@@ -116,50 +118,93 @@ public class PDBFile {
                 startIndex = i + 1;
 
                 while (startIndex < totalAtoms) {
-                    atom2 = workingCoords.get(startIndex);
+                    atom2 = workingCoords.get(startIndex).getCoords();  // use different weights for atom type here
                     difx = refx - atom2[0];
                     dify = refy - atom2[1];
                     difz = refz - atom2[2];
 
-                    distance = Math.sqrt(difx * difx + dify * dify + difz * difz);
+                    distance = FastMath.sqrt(difx * difx + dify * dify + difz * difz);
                     // which bin?
                     bin = (int) (distance * inv_delta); // casting to int is equivalent to floor
 
-                    histo[(bin >= bins) ? bin - 1 : bin] += 1;
+                    histo[(bin >= pr_bins) ? bin - 1 : bin] += 1;
                     startIndex++;
                 }
             }
 
-            pdbdata = new XYSeries("PDB");
+            pdbdata = new XYSeries(filename);
             pdbdata.add(0, 0);
-            for (int i = 0; i < bins; i++) {
-                pdbdata.add((2 * i + 1) * delta * 0.5, histo[i]);
-                // pdbdata.add((i+1)*delta, histo[i]);
+            for (int i = 0; i < pr_bins; i++) {
+                pdbdata.add((2 * i + 1) * delta_r * 0.5, histo[i]);  // middle position of the histogram bin
             }
             pdbdata.add(dmax, 0);
 
             int all = pdbdata.getItemCount();
-            System.out.println("POFR POINTS FROM PDB MODEL (UNSCALED)");
-            for (int i = 0; i < all; i++) {
-                //System.out.println(String.format("%.2f %.6E 0.0", pdbdata.getX(i), pdbdata.getY(i)));
-                System.out.println(Constants.Scientific1dot2e1.format(pdbdata.getX(i).doubleValue()) + "\t" + Constants.Scientific1dot2e1.format(pdbdata.getY(i).doubleValue()) + "\t 0.00 ");
-                //System.out.println(pdbdata.getX(i) + " " + pdbdata.getY(i));
-            }
-            System.out.println("END OF POFR POINTS");
-
             // r, P(r)
-            double invarea = 1.0 / Functions.trapezoid_integrate(pdbdata);
+            izero = Functions.trapezoid_integrate(pdbdata);
+            double invarea = 1.0 / izero, rvalue;
+            XYSeries secondMoment = new XYSeries("second");
+            for (int i = 0; i < all; i++) {
+                XYDataItem tempItem = pdbdata.getDataItem(i);
+                rvalue = tempItem.getXValue();
+                secondMoment.add(rvalue, rvalue*rvalue*tempItem.getYValue());  // middle position of the histogram bin
+            }
 
-            for (int i = 0; i < bins + 1; i++) {
+            rg = Math.sqrt(0.5*Functions.trapezoid_integrate(secondMoment)*invarea);
+
+            // normalize Pr distribution
+            System.out.println("P(R) InvArea " + invarea + " Rg => " + rg);
+
+            for (int i = 0; i < pr_bins + 1; i++) {
                 pdbdata.updateByIndex(i, pdbdata.getY(i).doubleValue() * invarea);
             }
+
+            System.out.println("POFR POINTS FROM PDB MODEL (UNSCALED) : " + all + " <=> " + pr_bins);
+            for (int i = 0; i < all; i++) {
+                System.out.println(String.format("%5.2f %.5E", pdbdata.getX(i).doubleValue(), pdbdata.getY(i).doubleValue()));
+            }
+            System.out.println("END OF POFR POINTS");
         }
     }
 
     /**
-     * convert
+     * convert to I(q) using Integral of P(r) * sin(qr)/qr dr
      */
     private void convertPofRToIntensities(){
+
+        // for a given q calculate intensity
+        double qmin = 0.001;
+        double delta_q = (qmax - qmin)/500;
+        double q_at = qmin, qr;
+        double sum;
+        int totalr = pdbdata.getItemCount();
+
+        double constant = 0.5*dmax/(totalr-1);
+
+        XYDataItem tempItem;
+        while (q_at < qmax){  // integrate using trapezoid rule
+
+            q_at += delta_q;
+            sum = 0;
+            // for a given q, integrate Debye function from r=0 to r=dmax
+            for(int i=1; i<totalr; i++){
+                tempItem = pdbdata.getDataItem(i);
+                qr = tempItem.getXValue()*q_at;
+                sum += 2*( (tempItem.getYValue())* FastMath.sin(qr)/qr);
+            }
+            icalc.add(q_at, constant*sum);
+        }
+
+
+        double max = icalc.getMaxY();
+        int totalcalc = icalc.getItemCount();
+        double rescale = 10.0/max;
+        error = new XYSeries("error for " + filename);
+
+        for(int i=0; i<totalcalc; i++){
+            icalc.update(icalc.getX(i), icalc.getY(i).doubleValue()*rescale);
+            error.add(icalc.getX(i), icalc.getY(i).doubleValue()*rescale*0.05);
+        }
 
     }
 
@@ -169,15 +214,13 @@ public class PDBFile {
  * @param total total number of atoms in randomAtoms
  * @return
  */
-    private int dmaxFromPDB(ArrayList<double[]> randomAtoms, int total) {
-        double sumx=0, sumy=0, sumz=0;
-        double[] atom;
-        double inv_total = 1.0/total;
+    private int dmaxFromPDB(ArrayList<PDBAtom> randomAtoms, int total) {
 
         Point3d[] points = new Point3d[total];
+        double[] atom;
 
         for(int i=0; i<total; i++){
-            atom = randomAtoms.get(i);
+            atom = randomAtoms.get(i).getCoords();
             points[i] = new Point3d(atom[0], atom[1], atom[2]);
         }
 
@@ -196,7 +239,6 @@ public class PDBFile {
             refz = pnt.z;
             startIndex=(i+1);
 
-
             while(startIndex<totalVertices){
                 Point3d pnt2 = vertices[startIndex];
                 difx = refx - pnt2.x;
@@ -214,6 +256,30 @@ public class PDBFile {
         }
 
         return (int)Math.ceil(Math.sqrt(max));
+    }
+
+    public XYSeries getIcalc(){
+        return icalc;
+    }
+
+    public XYSeries getError(){
+        return error;
+    }
+
+    public XYSeries getPrDistribution(){
+        return pdbdata;
+    }
+
+    public double getDmax(){
+        return dmax;
+    }
+
+    public double getRg(){
+        return rg;
+    }
+
+    public double getIzero(){
+        return izero;
     }
 
 }

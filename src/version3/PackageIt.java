@@ -165,14 +165,13 @@ public class PackageIt extends JDialog {
         for(int i=0; i<total; i++){
             if (collection.getDataset(i).getInUse()){
                 Dataset temp = collection.getDataset(i);
-
-                temp.getRealSpaceModel().estimateErrors();
                 // makes copy of the original data
                 temp.copyAndRenameDataset(temp.getFileName(), outputDir);
 
                 ScatterImagesOfData tempImages = new ScatterImagesOfData(temp);
                 // write out real space file
-                if (temp.getRealSpaceModel().getRg() > 0){
+                if (temp.getRealSpaceModel().getRg() > 0 && temp.getRealSpaceModel().getTotalMooreCoefficients() > 1){
+                    temp.getRealSpaceModel().estimateErrors();
                     outputObject.writePRFile(temp, new JLabel(""), temp.getFileName(), outputDir, false);
                     // make pr image
                     tempImages.createAndWritePrChart(temp.getFileName(), outputDir);

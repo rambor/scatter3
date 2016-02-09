@@ -78,7 +78,7 @@ public class FileObject {
             int numberOfDigits;
             for (int n=startAt; n < endAt; n++) {
                 numberOfDigits = getDigits(refData.getX(n).doubleValue());
-                out.write( String.format("%s\t%s\t%s %n", formattedQ(refData.getX(n).doubleValue(), numberOfDigits), Constants.Scientific1dot5e2.format(refData.getY(n).doubleValue()),Constants.Scientific1dot5e2.format(errorValues.getY(n).doubleValue()) ));
+                out.write( String.format("%s\t%s\t%s %n", formattedQ(refData.getX(n).doubleValue(), numberOfDigits), Constants.Scientific1dot5e2.format(refData.getY(n).doubleValue()*data.getScaleFactor()),Constants.Scientific1dot5e2.format(errorValues.getY(n).doubleValue()*data.getScaleFactor()) ));
             }
             out.close();
         } catch (IOException e) {
