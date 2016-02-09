@@ -136,6 +136,7 @@ public class Collection {
     public void removeDataset(int index) {
         datasets.remove(index);
         miniCollection.removeSeries(index);
+        this.totalDatasets = datasets.size();
     }
     /**
      * Returns dataset at specific index
@@ -145,9 +146,6 @@ public class Collection {
         return datasets.get(index);
     }
 
-    public void swapDataset(int index){
-        //Collections.swap();
-    }
 
     /**
      * Returns datasets

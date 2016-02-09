@@ -91,6 +91,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                     // make Dataset from PDB file and add to collection
                     status.setText("Reading PDB file " + filebase + " => calculating P(r) - please wait ~ 1 min");
                     System.out.println("Detected PDB file");
+                    bar.setStringPainted(false);
                     bar.setIndeterminate(true);
                     PDBFile tempPDB = new PDBFile(files[i], qmax, exclude);
 

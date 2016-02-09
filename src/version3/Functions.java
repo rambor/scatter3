@@ -24,13 +24,8 @@ import java.util.*;
  * Created by robertrambo on 05/01/2016.
  */
 public class Functions {
-    //private static ArrayList<Double> result = new ArrayList<Double>();
-
     private static Double[] resultD = new Double[3];
     private static Double[] resultS = new Double[3];
-
-    private static Integer dataLimit;
-
     private static List<Integer> sequence = new ArrayList<Integer>();
     private static Random generator = new Random();
     private static double[] n_pi_squared = {
@@ -1056,7 +1051,7 @@ int cols, rows;
 
         int limit = a_m.length;
         //System.out.println(data.getItemCount() + " AM Length " + a_m.length);
-        dataLimit = data.getItemCount();
+        int dataLimit = data.getItemCount();
         double q;
         double dmax_q2;
         double sin_dmaxq;
@@ -1092,7 +1087,7 @@ int cols, rows;
         ArrayList<Double> residuals = new ArrayList<Double>();
         residuals.clear();
         int limit = a_m.size();
-        dataLimit = data.getItemCount();
+        int dataLimit = data.getItemCount();
         double q;
         for (int i = 0; i < dataLimit; i++){
             resultM = 0.0;
@@ -1934,9 +1929,6 @@ int cols, rows;
             endIndex--;
             forward++;
         }
-
-
-
 
         double rg = Math.sqrt(-3.0*slope);
 
