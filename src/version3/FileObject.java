@@ -19,9 +19,22 @@ public class FileObject {
     private File directoryInfo;
     private String note;
     private String buffer;
+    private JComboBox source;
+    private String instrument = "BENDING MAGNET";
+    private String synchrotron = "Y";
+    private String beamlineManufacturer = "B21 DIAMOND LIGHT SOURCE";
 
     public FileObject(File directory){
         this.directoryInfo = directory;
+    }
+
+    public void setSource(JComboBox box, String nameOf){
+        this.source = box;
+        this.beamlineManufacturer = nameOf;
+        this.instrument = (String)source.getSelectedItem();
+        if (instrument.contains("HOME") || instrument.contains("OTHER")){
+            synchrotron = "N";
+        }
     }
 
     public void writeSAXSFile(String name, Dataset data){
@@ -57,7 +70,7 @@ public class FileObject {
     }
 
     public void writeSingleSAXSFile(String name, Dataset data){
-        int total = data.getAllData().getItemCount();
+
         int startAt = data.getStart()-1;
         int endAt = data.getEnd();
         XYSeries refData = data.getAllData();
@@ -404,13 +417,13 @@ public class FileObject {
         String tempHeader="REMARK 265 \n";
         tempHeader += "REMARK 265 EXPERIMENT TYPE : X-RAY SOLUTION SCATTERING\n";
         tempHeader += "REMARK 265 DATA ACQUISITION\n";
-        tempHeader += "REMARK 265              RADIATION SOURCE : BENDING MAGNET\n";
-        tempHeader += "REMARK 265             SYNCHROTRON (Y/N) : Y\n";
-        tempHeader += "REMARK 265                      BEAMLINE : B21 DIAMOND LIGHT SOURCE\n";
+        tempHeader += String.format("REMARK 265              RADIATION SOURCE : %s %n", instrument);
+        tempHeader += String.format("REMARK 265             SYNCHROTRON (Y/N) : %s %n", synchrotron);
+        tempHeader += String.format("REMARK 265                      BEAMLINE : %s %n", beamlineManufacturer);
         tempHeader += "REMARK 265\n";
-        tempHeader += "REMARK 265       DATA REDUCTION SOFTWARE : SCATTER (v3.0)\n";
+        tempHeader += "REMARK 265       DATA REDUCTION SOFTWARE : SCATTER (v3.0a)\n";
         tempHeader += "REMARK 265               SOFTWARE AUTHOR : RP RAMBO\n";
-        tempHeader += "REMARK 265        DATA ANALYSIS SOFTWARE : SCATTER (v3.0)\n";
+        tempHeader += "REMARK 265        DATA ANALYSIS SOFTWARE : SCATTER (v3.0a)\n";
         tempHeader += "REMARK 265               SOFTWARE AUTHOR : RP RAMBO\n";
         tempHeader += "REMARK 265\n";
         return tempHeader;

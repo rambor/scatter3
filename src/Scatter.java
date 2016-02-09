@@ -187,7 +187,7 @@ public class Scatter {
     private JTextPane damTextPane;
     private JLabel damminLabel;
     private JComboBox comboBoxSource;
-    private JTextField SourceTextField;
+    private JTextField sourceTextField;
     private JScrollPane stdOutPane;
     private JTextPane stdOutText;
     private JScrollPane generalPane;
@@ -1141,6 +1141,7 @@ public class Scatter {
 
                             WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
                             FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                            dataToWrite.setSource(comboBoxSource, sourceTextField.getText());
                             dataToWrite.writeSAXSFile(cleaned, tempDataset);
 
                             //close the output stream
