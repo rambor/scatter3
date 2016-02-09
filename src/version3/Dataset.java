@@ -135,7 +135,7 @@ public class Dataset {
     public Dataset(XYSeries dat, XYSeries err, String fileName, int id){
 
         totalCountInAllData = dat.getItemCount();
-        System.out.println("Short constructor " + totalCountInAllData);
+
         filename=fileName;
         String tempName = fileName + "-" + id;
         scaleFactor=1.000;

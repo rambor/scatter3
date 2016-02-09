@@ -24,32 +24,13 @@ import java.util.*;
  * Created by robertrambo on 05/01/2016.
  */
 public class Functions {
-
-    private static ArrayList<Double> constants = new ArrayList<Double>();
-    private static ArrayList<Double> a_m = new ArrayList<Double>();
-    private static ArrayList<Double> error_am = new ArrayList<Double>();
-    private static ArrayList<Double> diff = new ArrayList<Double>();
-
-    private static ArrayList<Double> residualsFromVector = new ArrayList<Double>();
-    private static double medianValue;
-    private static XYSeries extrapolated = new XYSeries("");
-    private static XYSeries tempXYSeries = new XYSeries("");
-    private static SimpleMatrix tempRef = new SimpleMatrix(1,1);
-    private static SimpleMatrix tempTarget =new SimpleMatrix(1,1);
-    private static ArrayList<Double> result = new ArrayList<Double>();
-    private static SimpleMatrix one = new SimpleMatrix(6, 1);
-    private static SimpleMatrix residualsVector;
+    //private static ArrayList<Double> result = new ArrayList<Double>();
 
     private static Double[] resultD = new Double[3];
     private static Double[] resultS = new Double[3];
 
-
-    private static double tempsum;
-    private static Integer limit;
     private static Integer dataLimit;
-    private static Integer rows;
-    private static Integer cols;
-    private static float scaleFactor;
+
     private static List<Integer> sequence = new ArrayList<Integer>();
     private static Random generator = new Random();
     private static double[] n_pi_squared = {
@@ -676,8 +657,8 @@ public class Functions {
      * @return Residuals using observed and calculated XYSeries as ArrayList
      */
     public static ArrayList<Double> residuals(XYSeries data, XYSeries calc){
-        result.clear();
-        limit = data.getItemCount();
+        ArrayList<Double> result = new ArrayList<Double>();
+        int limit = data.getItemCount();
         for (int i=0; i<limit; i++){
             result.add(data.getY(i).doubleValue() - calc.getY(i).doubleValue());
         }
@@ -694,8 +675,8 @@ public class Functions {
      * @return Absolute value of residuals using observed and calculated XYSeries as ArrayList
      */
     public static ArrayList<Double> residualsAbs(XYSeries data, XYSeries calc){
-        result.clear();
-        limit = data.getItemCount();
+        ArrayList<Double> result = new ArrayList<Double>();
+        int limit = data.getItemCount();
         for (int i=0; i<limit; i++){
             result.add(Math.abs(data.getY(i).doubleValue() - calc.getY(i).doubleValue()));
         }
@@ -804,6 +785,9 @@ public class Functions {
     * Given, q, I(q), sigma I, and dmax, fit to Peter Moore function
     *
     */
+        ArrayList<Double> a_m = new ArrayList<Double>();
+        ArrayList<Double> error_am = new ArrayList<Double>();
+        ArrayList<Double> constants = new ArrayList<Double>();
         ArrayList<ArrayList<Double>> resultsM = new ArrayList<ArrayList<Double>>();
         double i_zero = 0.0;
         double i_zero_error = 0.0;
@@ -820,12 +804,9 @@ public class Functions {
         double q_min = data.getMinX();
         double n_max = data.getMaxX()*dmax/Math.PI;
         int nLimit = (int) Math.round(n_max);
+int cols, rows;
 
 
-        a_m.clear();
-        error_am.clear();
-        constants.clear();
-        resultsM.clear();
     /*
     * Build Design Matrix [m,n]
     * m: rows
@@ -1052,7 +1033,7 @@ public class Functions {
      * a_m includes the zero element which is the background/offset correction
      * Do not a_m[0] in P(r) calculation
      */
-        limit = a_m.size();
+        int limit = a_m.size();
         double pi_dmax_r = Math.PI/dmax*r;
         for(int i=1; i < limit; i++){
             resultM = resultM + a_m.get(i)*Math.sin(pi_dmax_r*i);
@@ -1073,7 +1054,7 @@ public class Functions {
         double resultM;
         ArrayList<Double> residuals = new ArrayList<Double>();
 
-        limit = a_m.length;
+        int limit = a_m.length;
         //System.out.println(data.getItemCount() + " AM Length " + a_m.length);
         dataLimit = data.getItemCount();
         double q;
@@ -1110,7 +1091,7 @@ public class Functions {
         double resultM;
         ArrayList<Double> residuals = new ArrayList<Double>();
         residuals.clear();
-        limit = a_m.size();
+        int limit = a_m.size();
         dataLimit = data.getItemCount();
         double q;
         for (int i = 0; i < dataLimit; i++){
@@ -1146,10 +1127,10 @@ public class Functions {
 
         double tsum = 0.0;
 
-        limit = data.getItemCount() - 1;
-        diff.clear();
-        extrapolated.clear();
-        tempXYSeries.clear();
+        int limit = data.getItemCount() - 1;
+        ArrayList<Double> diff = new ArrayList<Double>();
+        XYSeries extrapolated = new XYSeries("");
+        XYSeries tempXYSeries = new XYSeries("");
 
         for (int i=0; i < limit; i++) {
             diff.add(data.getX(i+1).doubleValue() - data.getX(i).doubleValue());
@@ -1170,6 +1151,7 @@ public class Functions {
     /*
      * Perform trapezoidal rule
      */
+        double tempsum = 0;
         for (int i = 0; i < limit; i++){
             if (i == limit -1){ //last point for trapezoid rule
                 tempsum = tsum + extrapolated.getY(i).doubleValue();
@@ -1194,15 +1176,14 @@ public class Functions {
         double tsum = 0.0;
 
         XYDataItem tempXY;
-        limit = data.getItemCount() - 1;
-        diff.clear();
-        extrapolated.clear();
-        tempXYSeries.clear();
+        int limit = data.getItemCount() - 1;
+        XYSeries tempXYSeries = new XYSeries("");
 
         limit = data.getItemCount();
     /*
      * Perform trapezoidal rule
      */
+        double tempsum;
         for (int i = 0; i < limit; i++){
             tempXY = data.getDataItem(i);
             if (i == limit -1){ //last point for trapezoid rule
@@ -1395,7 +1376,7 @@ public class Functions {
 
         List<Integer> sequenceB = new ArrayList<Integer>();
 
-        limit = (int)(Math.round(binSize*percent)); //Number of elements to grab from each bin
+        int limit = (int)(Math.round(binSize*percent)); //Number of elements to grab from each bin
         System.out.println("     Elements per bin " + limit);
         if (limit == 0){limit = 2;}
         System.out.println("Elements per bin After " + limit);
@@ -1499,6 +1480,7 @@ public class Functions {
         SimpleMatrix c_m = new SimpleMatrix(6,6);
         //this might be (1,6)
         SimpleMatrix z_m = new SimpleMatrix(6,1);
+        SimpleMatrix one = new SimpleMatrix(6, 1);
         for (int m=0; m<6; m++){
             one.set(m, 0, 1);
             double anchor = data.getX(z[m]).doubleValue();
@@ -2233,6 +2215,7 @@ public class Functions {
         SimpleMatrix c_m = new SimpleMatrix(6,6);
         //this might be (1,6)
         SimpleMatrix z_m = new SimpleMatrix(6,1);
+        SimpleMatrix one = new SimpleMatrix(6, 1);
         for (int m=0; m<6; m++){
             one.set(m, 0, 1);
             double anchor = data.getX(z[m]).doubleValue();
@@ -2305,6 +2288,7 @@ public class Functions {
         SimpleMatrix c_m = new SimpleMatrix(6,6);
         //this might be (1,6)
         SimpleMatrix z_m = new SimpleMatrix(6,1);
+        SimpleMatrix one = new SimpleMatrix(6, 1);
         for (int m=0; m<6; m++){
             one.set(m, 0, 1);
             double anchor = data.getX(z[m]).doubleValue();
@@ -2332,86 +2316,6 @@ public class Functions {
 
         return resultS;
 
-    }
-    /**
-     *
-     * @param target
-     * @param errorTarget
-     * @param ref
-     * @return
-     */
-    public static float scaleData(XYSeries target, XYSeries errorTarget, XYSeries ref){
-
-        int samplingLimit;
-        int min = (int)Math.round(ref.getItemCount()*0.045);   //minimum points 6.5% of total
-        int size = ref.getItemCount();
-        int[] randomNumbers;
-        double startRef = ref.getX(0).doubleValue();
-        double endRef = ref.getY(ref.getItemCount()-1).doubleValue();
-        float tempScale;
-        int samplingRounds = 2000; // sets sampling maximum
-        /*
-         * For each round, pick a random set of integers from size of ref dataset
-         */
-
-        for (int i = 0; i < samplingRounds; i++) {
-            //pick random integer
-            samplingLimit = min + (int)(Math.random()*((size - min) + 1));
-            randomNumbers = randomArray(samplingLimit, size);
-
-
-            tempRef.reshape(samplingLimit, 1);
-            tempTarget.reshape(samplingLimit, 1);
-            try {
-                for (int j = 0; j < samplingLimit; j++) {
-
-                    // make sure selected Index is not the first 3 or last 3 in ref
-
-                    tempRef.set(j, 0, ref.getY(randomNumbers[j]).doubleValue());
-
-                    // determine if current q value is present in Target, is so add it, if not interpolate
-                    if (target.indexOf(ref.getX(randomNumbers[j])) > -1) {
-                        tempTarget.set(j, 0, target.getY(target.indexOf(ref.getX(randomNumbers[j]))).doubleValue());
-                    } else { // do the interpolation
-                        Double[] interpolated =  Functions.interpolateOriginal(target, errorTarget, ref.getX(randomNumbers[j]).doubleValue(), 1);
-                        if (!interpolated[1].isNaN()){
-                            tempTarget.set(j, 0, interpolated[1]);
-                        } else {
-                            tempTarget.set(j, 0, target.getY((int)Math.random()*(target.getItemCount()-1)).doubleValue());
-                        }
-                    }
-                }
-            } catch (Exception e) {
-
-            }
-            // Need an exception handler for the solver, get NaN or Inf sometimes
-            // For Ax=b
-            // A.solve(b) => ref*scale = target
-            try {
-                tempScale = (float) tempRef.solve(tempTarget).get(0,0);
-            } catch ( SingularMatrixException e ) {
-                scaleFactor = (float) 1.0;
-                return scaleFactor;
-            }
-
-            //calculate residuals
-            residualsVector = tempRef.scale(tempScale).minus(tempTarget);
-            residualsFromVector.clear();
-            //Squared residual
-            for (int r=0; r < residualsVector.numRows(); r++){
-                residualsFromVector.add(Math.pow(residualsVector.get(r, 0),2));
-            }
-
-            if (i == 0) {
-                medianValue = Statistics.calculateMedian(residualsFromVector, true);
-                scaleFactor = (float)tempScale;
-            } else if (Statistics.calculateMedian(residualsFromVector, true) < medianValue ){
-                medianValue = Statistics.calculateMedian(residualsFromVector, true);
-                scaleFactor = (float)tempScale;
-            }
-        }
-
-        return scaleFactor;
     }
 
 
