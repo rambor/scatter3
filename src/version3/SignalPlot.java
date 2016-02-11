@@ -27,7 +27,7 @@ import java.util.ArrayList;
 /**
  * Created by robertrambo on 18/01/2016.
  */
-public class SignalPlot {
+public class SignalPlot extends SwingWorker<Void, Void> {
 
     private JFreeChart chart;
     private ChartFrame frame;
@@ -35,6 +35,7 @@ public class SignalPlot {
     private XYLineAndShapeRenderer renderer1;
     private XYLineAndShapeRenderer rightRenderer;
     public JList samplesList;
+    private JLabel status;
 
     private Collection samplesCollection;
     private Collection buffersCollection;
@@ -54,13 +55,14 @@ public class SignalPlot {
 
         this.useRg = useRg;
         mainStatus = bar;
-        this.makeBuffer(status);
-        this.makeSamples(status);
-        this.writeData(status);
+        this.status = status;
+        //this.makeBuffer();
+        //this.makeSamples();
+        //this.writeData();
     }
 
 
-    private void writeData(JLabel status){
+    private void writeData(){
         try {
             if (plotMe.getSeriesCount() == 0){
                 throw new Exception("Not enough points in ratio, check q-vales - must match: ");
@@ -95,9 +97,8 @@ public class SignalPlot {
 
     /**
      * creates XYSeries collections used for plotting
-     * @param status
      */
-    private void makeSamples(JLabel status){
+    private void makeSamples(){
         Dataset tempDataset;
         XYDataItem tempXY;
 
@@ -137,6 +138,7 @@ public class SignalPlot {
                 plotMe.getSeries(seriesCount).add(i, area);
 
                 if (useRg){ // make double plot if checked
+                    status.setText("auto-Rg for : " + dataInUse.getFileName());
                     ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
 
                     //izeroRg = Functions.calculateIzeroRg(subtraction.get(0), subtraction.get(1));
@@ -160,8 +162,10 @@ public class SignalPlot {
     }
 
 
-    private void makeBuffer(JLabel status){
-
+    private void makeBuffer(){
+        mainStatus.setIndeterminate(true);
+        mainStatus.setStringPainted(true);
+        mainStatus.setString("Averaging");
         try {
             //total = buffersCollection.getDatasetCount();
             int select = buffersCollection.getTotalSelected();
@@ -181,7 +185,8 @@ public class SignalPlot {
         } catch (Exception ex) {
             status.setText("Must have at least one buffer" + ex.getMessage().toString());
         }
-
+        mainStatus.setIndeterminate(false);
+        mainStatus.setStringPainted(false);
     }
 
     private ArrayList<XYSeries> createMedianAverageXYSeries(Collection collection){
@@ -280,9 +285,12 @@ public class SignalPlot {
         return returnMe;
     }
 
-    public void makePlot(JList samplesList){
+    public void setSampleJList(JList list){
+        this.samplesList = list;
+    }
 
-        this.samplesList = samplesList;
+    public void makePlot(){
+
 
         chart = ChartFactory.createXYLineChart(
                 "Signal Plot",            // chart title
@@ -435,6 +443,21 @@ public class SignalPlot {
 
         frame.pack();
         frame.setVisible(true);
+    }
+
+    @Override
+    protected Void doInBackground() throws Exception {
+
+        status.setText("compiling buffers");
+        this.makeBuffer();
+        status.setText("compiling samples");
+        this.makeSamples();
+        status.setText("Writing Subtracted files");
+        this.writeData();
+        status.setText("Making Plot");
+        this.makePlot();
+        mainStatus.setIndeterminate(false);
+        return null;
     }
 
     private final static class MouseMarker extends MouseAdapter {

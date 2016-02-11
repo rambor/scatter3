@@ -693,7 +693,7 @@
                     <properties>
                       <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-2950918"/>
+                      <foreground color="-2629126"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Scale"/>
@@ -710,7 +710,7 @@
                     <properties>
                       <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-2950918"/>
+                      <foreground color="-2629126"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Scale to I(0)"/>
@@ -727,7 +727,7 @@
                     <properties>
                       <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-2950918"/>
+                      <foreground color="-1257734"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="ScaleMerge"/>

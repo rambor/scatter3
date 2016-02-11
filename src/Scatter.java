@@ -1462,8 +1462,12 @@ public class Scatter {
                     return;
                 }
 
+
                 SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar);
-                tempSignalPlot.makePlot(samplesList);
+                tempSignalPlot.setSampleJList(samplesList);
+
+                Thread temp1 = new Thread(tempSignalPlot);
+                temp1.start();
 
             }
         });
