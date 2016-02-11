@@ -45,11 +45,10 @@ public class FileObject {
         try {
             FileWriter fw = new FileWriter(directoryInfo +"/"+name+".dat");
             BufferedWriter out = new BufferedWriter(fw);
-
-            out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
+            out.write(createScatterHeader());
             out.write(this.createNotesRemark(data));
+            out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
             out.write(this.createBufferRemark(data));
-
             if (data.getGuinierIzero() > 0 && data.getGuinierRg() > 0){
                 out.write(prIqheader(data));
             }
@@ -79,12 +78,16 @@ public class FileObject {
         try {
             FileWriter fw = new FileWriter(directoryInfo +"/"+name+".dat");
             BufferedWriter out = new BufferedWriter(fw);
+
+            out.write(createScatterHeader());
+            out.write(this.createNotesRemark(data));
+            out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
+            out.write(this.createBufferRemark(data));
+
             if (data.getGuinierIzero() > 0 && data.getGuinierRg() > 0){
                 out.write(prIqheader(data));
             }
-            out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
-            out.write(this.createNotesRemark(data));
-            out.write(this.createBufferRemark(data));
+
             out.write(String.format("REMARK 265    COLUMNS : q, I(q), error%n"));
             out.write(String.format("REMARK 265          q : defined in inverse Angstroms%n"));
 
@@ -137,7 +140,12 @@ public class FileObject {
                 fstream = new FileWriter(workingDirectoryName+ "/" + base[0] + "_pr.dat");
             }
             BufferedWriter out = new BufferedWriter(fstream);
+
             out.write(createScatterHeader());
+            out.write(this.createNotesRemark(dataset));
+            out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
+            out.write(this.createBufferRemark(dataset));
+
             out.write("REMARK 265 EXPERIMENTAL REAL SPACE FILE \n");
             out.write("REMARK 265    P(r)-DISTRIBUTION BASED ON : " + dataset.getFileName() + "\n");
             out.write("REMARK 265 \n");
@@ -180,6 +188,10 @@ public class FileObject {
 
             BufferedWriter out = new BufferedWriter(fstream);
             out.write(createScatterHeader());
+            out.write(this.createNotesRemark(dataset));
+            out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
+            out.write(this.createBufferRemark(dataset));
+
             out.write(String.format("REMARK 265  DATASET MAY CONTAIN FEWER POINTS THAN ORIGINAL DATA : %s %n", dataset.getFileName()));
             out.write("REMARK 265  REFINEMENT OR MANUAL TRIMMING OF SCATTERING CURVE MAY PRODUCE FEWER DATA. \n");
 
@@ -235,8 +247,6 @@ public class FileObject {
             System.err.println("Error: " + e.getMessage());
         }
 
-        //status.setText("Files written to " + workingDirectoryName + ", ready to run DAMMIN/F");
-        //runDatGnom(base[0] + "_sx.dat", dataset.getRealRg());
         return sx_filename;
     }
 
@@ -321,9 +331,6 @@ public class FileObject {
         } catch (IOException e1) {
             e1.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
-
-
-
     }
 
 

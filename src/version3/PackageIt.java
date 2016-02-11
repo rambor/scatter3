@@ -116,7 +116,7 @@ public class PackageIt extends JDialog {
             success = outputDirectory.mkdirs();
         }
 
-        System.out.println("Success " + success);
+
         if (success){
             createArchive(outputDirString);
 
@@ -127,12 +127,16 @@ public class PackageIt extends JDialog {
                 fstream = new FileWriter(outputDirString+ "/README");
 
                 BufferedWriter out = new BufferedWriter(fstream);
-                out.write(String.format("README FILE FOR %s %n", archiveName));
-
-                //out.write("REMARK 265    P(r)-DISTRIBUTION BASED ON : " + dataset.getFileName() + "\n");
-                //out.write("REMARK 265 \n");
-                //out.write("REMARK 265 \n");
-                //out.write("REMARK 265  SCALED P(r) DISTRIBUTION \n");
+                out.write(String.format("README FILE FOR : %s %n", archiveName));
+                out.write(String.format("%s %n", textForReadMe));
+                out.write(String.format("%nFILES WRITTEN OUT : %n"));
+                int totalInCollection = collection.getDatasetCount();
+                int count = 1;
+                for (int i=0; i<totalInCollection; i++){
+                    if (collection.getDataset(i).getInUse()){
+                        out.write(String.format("%3d => %s %n", count, collection.getDataset(i).getFileName() ));
+                    }
+                }
 
                 //Close the output stream
                 out.close();
