@@ -72,7 +72,7 @@ public class ScatterImagesOfData {
             chartTitle = "Kratky Plot";
             XYSeries series = new XYSeries(dataset.getFileName());
 
-            int beginAt = dataset.getStart()-1, endAt = dataset.getEnd();
+            int beginAt = dataset.getStart()-1, endAt = dataset.getEnd()-1;
 
             int allDataStart = dataset.getAllData().indexOf(dataset.getOriginalPositiveOnlyData().getX(beginAt));
             int allDataEnd = dataset.getAllData().indexOf(dataset.getOriginalPositiveOnlyData().getX(endAt));
@@ -80,6 +80,9 @@ public class ScatterImagesOfData {
             for (int i=allDataStart; i<allDataEnd; i++){
                 XYDataItem tempItem = dataset.getAllData().getDataItem(i);
                 series.add(tempItem.getX(), tempItem.getYValue()*tempItem.getXValue()*tempItem.getXValue());
+                if (tempItem.getXValue() > 0.25){
+                    break;
+                }
             }
 
             plottedData.addSeries(series);
