@@ -58,13 +58,13 @@ public class Dataset {
     private int indexOfUpperGuinierFit; //belongs to positiveOnlyData
 
     // below are properties of a subtracted dataset
-    private double guinierIZero;
-    private double guinierIZero_sigma;
-    private double guinierRg;
-    private double guinierRG_sigma;
+    private double guinierIZero = 0;
+    private double guinierIZero_sigma = 0;
+    private double guinierRg = 0;
+    private double guinierRG_sigma = 0;
 
-    private double rC;
-    private double rC_sigma;
+    private double rC = 0;
+    private double rC_sigma = 0;
     private double dMax;
     private double porodExponent = 0;
     private double porodExponentError = 0;
@@ -88,7 +88,6 @@ public class Dataset {
     private int massProteinSigmaReal;
     private int massRnaReal;
     private int massRnaSigmaReal;
-    private double chiPr;
     private double invariantQ;
 
     private double[] aM; //Moore Coefficients
@@ -98,12 +97,6 @@ public class Dataset {
     private double realRg;
     private double realRg_sigma;
 
-    private double pdqMax;
-    private double pqMax;
-    private double rqMax;
-    private double pdA;
-    private double pA;
-    private double rA;
     private double maxI;
     private double minI;
     private double maxq;
@@ -670,33 +663,6 @@ public class Dataset {
         return aMSigma;
     }
 
-    public double getRa(){
-        return rA;
-    }
-
-    public double getPa(){
-        return pA;
-    }
-
-    public double getPda(){
-        return pdA;
-    }
-
-    public double getrqMax(){
-        return rqMax;
-    }
-
-    public double getpqMax(){
-        return pqMax;
-    }
-
-    public double getpdqMax(){
-        return pdqMax;
-    }
-
-    public double getChiPr(){
-        return chiPr;
-    }
 
     public int getMassRnaSigmaReal() {
         return massRnaSigmaReal;
@@ -1173,34 +1139,6 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
      */
     public void setAMSigma(double[] aMSigma){
         this.aMSigma = aMSigma;
-    }
-
-    public void setRa(double ra){
-        rA=ra;
-    }
-
-    public void setPa(double pa){
-        pA=pa;
-    }
-
-    public void setPda(double pda){
-        pdA=pda;
-    }
-
-    public void setRqMax(double rqmax){
-        rqMax=rqmax;
-    }
-
-    public void setPqMax(double pqmax){
-        pqMax= pqmax;
-    }
-
-    public void setPdqMax(double pdqmax){
-        pdqMax=pdqmax;
-    }
-
-    public void setChiPr(double chipr){
-        chiPr=chipr;
     }
 
     public void setMassRnaSigmaReal(int massRna){
