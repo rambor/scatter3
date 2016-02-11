@@ -58,14 +58,16 @@ public class VolumePlot {
     static JFrame volumePFrame = new JFrame("SC\u212BTTER \u2263 PARTICLE CHARACTERIZATION");
 
     XYLineAndShapeRenderer renderer1;
+    private AnalysisModel analModel;
     public boolean crosshair = true;
 
     /* A private Constructor prevents any other
      * class from instantiating.
      */
-    public VolumePlot(Dataset data, String workingDirectoryName) {
+    public VolumePlot(Dataset data, String workingDirectoryName, AnalysisModel aModel) {
         this.dataset = data;
         this.workingDirectoryName = workingDirectoryName;
+        this.analModel = aModel;
 
         volumePorodCollection = new XYSeriesCollection();
         volumeKratkyCollection = new XYSeriesCollection();
@@ -461,7 +463,6 @@ public class VolumePlot {
         volumePFrame.getContentPane().add(volumeTabs);
         volumePFrame.pack();
         volumePFrame.setVisible(true);
-
     }
 
     public boolean isVisible() {
@@ -668,6 +669,10 @@ public class VolumePlot {
         porodVolumeExponent.setText(Constants.OneDecPlace.format(-1.0*tempArray[0]));
         dataset.setPorodExponent(-1.0 * tempArray[0]);
         dataset.setPorodExponentError(tempArray[2]);
+
+        // fire table data changed
+        analModel.fireTableDataChanged();
+
     }
 
     private ChartFrame plotVolumePorod(XYSeriesCollection volumeset, double maxq){
