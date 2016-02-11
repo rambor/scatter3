@@ -157,6 +157,7 @@ public class Dataset {
         allDataYError = new YIntervalSeries(tempName);
         plottedData = new XYSeries(tempName);  // actual log10 data that is plotted
 
+        double tempy;
         for(int i=0; i<totalCountInAllData; i++) {
             XYDataItem tempXY = dat.getDataItem(i);
             XYDataItem tempError = err.getDataItem(i);
@@ -164,7 +165,9 @@ public class Dataset {
             allData.add(tempXY);
             allDataError.add(tempError);
             if (tempXY.getYValue() > 0){
-                plottedData.add(tempXY.getX(), Math.log10(tempXY.getYValue()));
+             tempy = tempXY.getYValue();
+                plottedData.add(tempXY.getX(), Math.log10(tempy));
+                //guinierData.add(tempXY.getX().doubleValue()*tempXY.getX().doubleValue(), Math.log(tempy));
             }
         }
 
@@ -300,8 +303,8 @@ public class Dataset {
 
         // if possible do preliminary analysis here
         if (doGuinier){
-            double[] izeroRg = Functions.calculateIzeroRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError);
-
+            //double[] izeroRg = Functions.calculateIzeroRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError);
+            double[] izeroRg = Functions.autoRgTransformIt(this.originalPositiveOnlyData, this.originalPositiveOnlyError, this.startAt);
             if (izeroRg[0] > 0){
                 guinierIZero=izeroRg[0];
                 guinierIZero_sigma = izeroRg[2];

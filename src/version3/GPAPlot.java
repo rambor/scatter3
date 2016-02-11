@@ -4,7 +4,6 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
@@ -87,7 +86,6 @@ public class GPAPlot extends PlotManualGuinier {
 
 
     public void makePlot(final AnalysisModel analysisModel){
-
 
         analysisModel.addTableModelListener(new TableModelListener() {
             @Override
@@ -249,8 +247,9 @@ public class GPAPlot extends PlotManualGuinier {
     private void createTransformedSeries(){
 
         // fitted series will terminate at qRg < 1.5
+        // should terminate at same qlimit as Manual Guinier plot
 
-        double upperLimit = 1.5/guinierRg;
+        double upperLimit = 1.3/guinierRg;
         int count=0;
         for(int i=0; i<datasetInUse.getOriginalPositiveOnlyData().getItemCount(); i++){
             if (datasetInUse.getOriginalPositiveOnlyData().getX(i).doubleValue() > upperLimit){

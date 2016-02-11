@@ -419,7 +419,7 @@
                       <forms defaultalign-horz="false" defaultalign-vert="false"/>
                     </constraints>
                     <properties>
-                      <background color="-4916547"/>
+                      <background color="-5712646"/>
                       <borderPainted value="true"/>
                       <doubleBuffered value="false"/>
                       <enabled value="true"/>
@@ -441,7 +441,7 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
-                      <background color="-4916547"/>
+                      <background color="-5712646"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
@@ -458,7 +458,7 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
-                      <background color="-4916547"/>
+                      <background color="-5712646"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <hideActionText value="false"/>
@@ -476,7 +476,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-4916547"/>
+                      <background color="-5712646"/>
+                      <borderPainted value="true"/>
+                      <contentAreaFilled value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -493,7 +495,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-4916547"/>
+                      <background color="-5712646"/>
+                      <borderPainted value="true"/>
+                      <contentAreaFilled value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -510,7 +514,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-4916547"/>
+                      <background color="-5712646"/>
+                      <borderPainted value="true"/>
+                      <contentAreaFilled value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -527,7 +533,8 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1118482"/>
+                      <background color="-5712646"/>
+                      <borderPainted value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -565,6 +572,7 @@
                     </constraints>
                     <properties>
                       <background color="-5712646"/>
+                      <borderPainted value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -581,9 +589,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1118482"/>
+                      <background color="-5712646"/>
                       <font size="12" style="1"/>
-                      <foreground color="-3919037"/>
+                      <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Errors"/>
@@ -632,9 +640,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1636"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-2950918"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Complex?"/>
@@ -649,9 +657,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1636"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-2950918"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Ratio"/>
@@ -666,9 +674,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-1636"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-16777216"/>
+                      <foreground color="-2950918"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="I(0) : Rg Plot"/>
@@ -683,9 +691,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-750303"/>
+                      <foreground color="-2950918"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Scale"/>
@@ -700,9 +708,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-7250261"/>
+                      <foreground color="-2950918"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Scale to I(0)"/>
@@ -717,9 +725,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10036868"/>
+                      <foreground color="-2950918"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="ScaleMerge"/>
@@ -734,9 +742,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-15648368"/>
+                      <foreground color="-824"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Average"/>
@@ -751,9 +759,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-13135918"/>
+                      <foreground color="-20298"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Median"/>
@@ -768,9 +776,9 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-394753"/>
+                      <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-10987432"/>
+                      <foreground color="-1"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Single"/>
@@ -3586,6 +3594,161 @@
                   </component>
                 </children>
               </scrollpane>
+            </children>
+          </grid>
+          <grid id="28cbb" layout-manager="GridLayoutManager" row-count="7" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+            <margin top="0" left="0" bottom="0" right="0"/>
+            <constraints>
+              <tabbedpane title="About"/>
+            </constraints>
+            <properties>
+              <background color="-7876609"/>
+              <foreground color="-1"/>
+            </properties>
+            <border type="etched"/>
+            <children>
+              <grid id="564da" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <autoscrolls value="true"/>
+                  <background color="-1312001"/>
+                </properties>
+                <border type="etched"/>
+                <children>
+                  <component id="c3d83" class="javax.swing.JLabel">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <font/>
+                      <text value="&lt;html&gt;&#10;&lt;p&gt;&lt;b&gt;(2016) Developed by Robert Rambo  | Diamond Light Source | Didcot, Oxfordshire UK&lt;/b&gt;&lt;/p&gt;&#10;&lt;p&gt;&lt;b&gt;Supported by:&lt;/p&gt;&#10;&lt;ul&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#000099&quot;&gt;Diamond Light Source&lt;/font&gt; &lt;/b&gt; (Oxfordshire, UK)&lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#006600&quot;&gt;SIBYLS Beamline&lt;/font&gt;&lt;/b&gt; (Advanced Light Source, Berkeley, CA)&lt;br&gt;Department of Energy Integrated Diffraction Analysis Technologies (IDAT) program &lt;br&gt; National Institute of Health grant MINOS (R01GM105404) &lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#0066FF&quot;&gt;BRUKER&lt;/font&gt; Corporation&lt;/b&gt; (Karlsruhe, Germany)&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;p&gt;&lt;/p&gt;&lt;/html&gt;"/>
+                    </properties>
+                  </component>
+                  <hspacer id="50716">
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="1" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                  </hspacer>
+                </children>
+              </grid>
+              <component id="befd7" class="javax.swing.JLabel">
+                <constraints>
+                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <background color="-7876609"/>
+                  <font style="1"/>
+                  <foreground color="-1"/>
+                  <text value="Version: 1 (2012-2013) by Robert P. Rambo and Ivan Rodic, Lawrence Berkeley National Laboratory, Berkeley, CA"/>
+                </properties>
+              </component>
+              <component id="3e6c0" class="javax.swing.JLabel">
+                <constraints>
+                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <background color="-7876609"/>
+                  <font style="1"/>
+                  <foreground color="-1"/>
+                  <text value="Version: 2 (2015) by Robert P. Rambo, Diamond Light Source, Didcot, Oxfordshire UK"/>
+                </properties>
+              </component>
+              <grid id="fc646" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <background color="-1"/>
+                </properties>
+                <border type="etched" title="P(r)-distribution">
+                  <font style="1"/>
+                  <title-color color="-60646"/>
+                </border>
+                <children>
+                  <component id="337c" class="javax.swing.JLabel">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                        <minimum-size width="700" height="-1"/>
+                        <preferred-size width="700" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <font size="12" style="1"/>
+                      <text value="&lt;html&gt;&lt;ul&gt;&lt;li&gt;Algorithm uses a regularization method based on the L1-norm&lt;/li&gt;&lt;li&gt;Strength of the regularization can be adjusted by changing &quot;lambda&quot;&lt;/li&gt;&lt;li&gt;Best choice of dmax typically has the smoothest P(r) distribution with chi^2 near 1&lt;/li&gt;&#10;&lt;li&gt;Ideal value should be 1.0(0.0) for Chi^2 column: 0.0 is the sum of kurtosis and second derivative of P(r)&lt;/li&gt;&#10;&lt;li&gt;For noisy data, increase C in settings. &lt;/ul&gt;&lt;/html&gt;"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+              <grid id="f954e" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <background color="-1"/>
+                </properties>
+                <border type="etched" title="Tips">
+                  <font style="1"/>
+                  <title-color color="-16713120"/>
+                </border>
+                <children>
+                  <component id="f628e" class="javax.swing.JLabel">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                        <minimum-size width="700" height="-1"/>
+                        <preferred-size width="700" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <background color="-1"/>
+                      <font size="12" style="1"/>
+                      <text value="&lt;html&gt;&lt;ul&gt;&lt;li&gt;Plots can be un-zoomed by clicking on the plot and moving mouse left or by right-clicking and selecting unzoom.&lt;/li&gt;&lt;li&gt;Input data files should be 3 columns, space delimited. If you have problems loading a file, try removing any header or footer. &lt;/li&gt;&lt;li&gt;For datasets with very small intensities, .e.g. 1e-12, analysis may be problematic, try changing scale factor to something large like 1e12. &lt;/li&gt;&lt;/ul&gt;&lt;/html&gt;"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+              <grid id="193e2" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                <margin top="0" left="0" bottom="0" right="0"/>
+                <constraints>
+                  <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <background color="-1"/>
+                </properties>
+                <border type="etched" title="Graphs and Plots">
+                  <font style="1"/>
+                  <title-color color="-750303"/>
+                </border>
+                <children>
+                  <component id="c469f" class="javax.swing.JLabel">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                        <minimum-size width="700" height="-1"/>
+                        <preferred-size width="700" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <background color="-1"/>
+                      <font size="12" style="1"/>
+                      <text value="&lt;html&gt;&lt;ul&gt;&lt;li&gt;Graphs can be saved in multiple formats including PNG and SVG by right-clicking on the graph and selecting &quot;Save as...&quot;&lt;/li&gt;&lt;li&gt;Graph text and colors can be changed within the graph by selecting &quot;Properties&quot;&lt;/li&gt;&lt;/ul&gt;&lt;/html&gt;"/>
+                    </properties>
+                  </component>
+                </children>
+              </grid>
+              <component id="56ce8" class="javax.swing.JLabel" binding="versionLabel">
+                <constraints>
+                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <font size="14" style="1"/>
+                  <foreground color="-16377094"/>
+                  <text value="Label"/>
+                </properties>
+              </component>
             </children>
           </grid>
         </children>

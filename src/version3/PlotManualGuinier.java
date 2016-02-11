@@ -82,6 +82,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
 
         if (datasetInUse.getGuinierRg() <= 0 && datasetInUse.getGuinierIzero() <= 0){
             double guinierParameters[] = Functions.autoRg(datasetData, datasetError, datasetInUse.getStart());
+            //double guinierParameters[] = Functions.calculateIzeroRg(datasetData, datasetError);
             datasetInUse.setGuinierParameters(guinierParameters[0], guinierParameters[2], guinierParameters[1], guinierParameters[3]);
             rg = datasetInUse.getGuinierRg();
             izero = datasetInUse.getGuinierIzero();

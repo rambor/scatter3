@@ -139,7 +139,10 @@ public class SignalPlot {
                 if (useRg){ // make double plot if checked
                     ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
 
-                    izeroRg = Functions.calculateIzeroRg(subtraction.get(0), subtraction.get(1));
+                    //izeroRg = Functions.calculateIzeroRg(subtraction.get(0), subtraction.get(1));
+                    //XYSeries data, XYSeries errors, int startAt
+                    // has to be guinier data
+                    izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), 1);
 
                     plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
                     plotRg.getSeries(seriesCount).add(i,izeroRg[1]);

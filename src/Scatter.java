@@ -217,8 +217,9 @@ public class Scatter {
     private JButton packageItButton;
     private JTextField qmaxForPDBText;
     private JCheckBox excludeWatersFromInputCheckBox;
+    private JLabel versionLabel;
 
-    private String version = "3.0";
+    private String version = "3.0a";
     private static WorkingDirectory WORKING_DIRECTORY;
     //private static String WORKING_DIRECTORY_NAME;
     private static String OUTPUT_DIR_SUBTRACTION_NAME="";
@@ -282,7 +283,7 @@ public class Scatter {
     private static int cpuCores;
 
     public Scatter() { // constructor
-
+        versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
         //mc.redirectOut();
         //mc.redirectErr(Color.RED, null);
@@ -362,14 +363,7 @@ public class Scatter {
         buffersList.setCellRenderer(new SampleBufferListRenderer());
         buffersList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
-        buffersList.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                super.mouseClicked(e);    //To change body of overridden methods use File | Settings | File Templates.
-                int index = buffersList.locationToIndex(e.getPoint());
-                SampleBufferElement item = (SampleBufferElement)buffersList.getModel().getElementAt(index);
-            }
-        });
+
 
         samplesList.setCellRenderer(new SampleBufferListRenderer());
         samplesList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -760,6 +754,7 @@ public class Scatter {
             }
         });
 
+
         // toggles selected Files in
         buffersList.addMouseListener(new MouseAdapter() {
             @Override
@@ -775,7 +770,6 @@ public class Scatter {
 
                 //Collection inUse = (Collection) collections.get(69); //set dataset in the collection
                 //inUse.getDataset(index).setInUse(item.isSelected());
-
                 list.repaint(list.getCellBounds(index,index));
             }
         });
@@ -1485,16 +1479,7 @@ public class Scatter {
             }
         });
 
-        buffersClearButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                ((Collection)collections.get(69)).removeAllDatasets();
-                // equivalent to bufferCollections.removeAllDatasets();
-                status.setText("Cleared");
-                bufferFilesModel.clear();
-                //buffersList.removeAll();
-            }
-        });
+
 
 
         SVDAverageFilesCheckBox.addActionListener(new ActionListener() {
@@ -1557,7 +1542,7 @@ public class Scatter {
                 // equivalent to bufferCollections.removeAllDatasets();
                 status.setText("Cleared");
                 bufferFilesModel.clear();
-                buffersList.removeAll();
+                //buffersList.removeAll();
             }
         });
 
@@ -2625,7 +2610,7 @@ public class Scatter {
                         programInstance.status.setText("Total Loaded: " + programInstance.bufferFilesModel.getSize());
                         programInstance.buffersList.removeAll();
                         programInstance.buffersList.setModel(programInstance.bufferFilesModel);
-                        programInstance.buffersList.validate();
+                        //programInstance.buffersList.validate();
                         programInstance.buffersList.updateUI();
                     }
                 }.start();

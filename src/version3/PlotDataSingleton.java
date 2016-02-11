@@ -235,7 +235,6 @@ public class PlotDataSingleton {
         mergedRenderer.setBaseShape(elipse6);
         mergedRenderer.setBaseLinesVisible(false);
 
-//        plot.setDataset(1,newDataset);
         plot.setDataset(1,plottedDatasets);
         plot.setRenderer(1,renderer1);
         plot.setDataset(0, mergedDataset);

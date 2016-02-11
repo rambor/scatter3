@@ -256,7 +256,8 @@ public class NormalizedKratkyPlot {
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.pack();
         frame.setVisible(true);
-        frame.setSize(688, 454);
+
+        //frame.setSize(688, 454);
     }
 
     public void clearAll(){
