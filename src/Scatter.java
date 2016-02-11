@@ -2856,7 +2856,7 @@ public class Scatter {
 
 
     private void createVolumePlot(int id){
-        VolumePlot tempPlot = new VolumePlot(collectionSelected.getDataset(id), WORKING_DIRECTORY.getWorkingDirectory());
+        VolumePlot tempPlot = new VolumePlot(collectionSelected.getDataset(id), WORKING_DIRECTORY.getWorkingDirectory(), analysisModel);
         tempPlot.plot();
     }
 

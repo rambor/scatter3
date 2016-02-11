@@ -114,7 +114,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
             } else if (col == 9){
                 dataset.setDmax((Integer)obj);
             }
-            fireTableCellUpdated(row, col);
+           // fireTableCellUpdated(row, col);
 
         } catch(IndexOutOfBoundsException e) {
             System.out.println("Please wait, reindexing PrModel Class" + e);
