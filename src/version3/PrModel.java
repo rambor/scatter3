@@ -273,11 +273,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         //no matter where the cell appears onscreen
 
         return editable_cells.get(row).get(col);
-        //if (col==0 || col==2 || col==4 || col==5 || col==9 || col==11 || col==12 ||col==13 ||col==14 ||col==15) {
-        //    return true;
-        //} else {
-        //    return false;
-        //}
+
     }
 
     private boolean isNumber( String input ) {

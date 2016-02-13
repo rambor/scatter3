@@ -218,6 +218,7 @@ public class Scatter {
     private JTextField qmaxForPDBText;
     private JCheckBox excludeWatersFromInputCheckBox;
     private JLabel versionLabel;
+    private JTextField thresholdField;
 
     private String version = "3.0a";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -285,11 +286,11 @@ public class Scatter {
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-        //mc.redirectOut();
-        //mc.redirectErr(Color.RED, null);
+        mc.redirectOut();
+        mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        //info.redirectOut();
+        info.redirectOut();
 
         //int[] subtractionBins = new int[] {11, 13, 17, 23, 29};
         //comboBoxSubtractBins = new JComboBox(subtractionBins);
@@ -687,8 +688,8 @@ public class Scatter {
         pc.setCellEditor(new PrButtonEditorRenderer("Norm"));
         pc.setCellRenderer(new PrButtonEditorRenderer("Norm"));
         pc = pcm.getColumn(13);  //Norm
-        pc.setCellEditor(new PrButtonEditorRenderer("A"));
-        pc.setCellRenderer(new PrButtonEditorRenderer("A"));
+        pc.setCellEditor(new PrButtonEditorRenderer("SEARCH"));
+        pc.setCellRenderer(new PrButtonEditorRenderer("SEARCH"));
         pc = pcm.getColumn(14);  //Refine
         pc.setCellEditor(new PrButtonEditorRenderer("Refine"));
         pc.setCellRenderer(new PrButtonEditorRenderer("Refine"));
@@ -700,6 +701,8 @@ public class Scatter {
         prTable.getColumnModel().getColumn(5).setPreferredWidth(100);
         prTable.getColumnModel().getColumn(6).setPreferredWidth(170); // I(0)
         prTable.getColumnModel().getColumn(7).setPreferredWidth(160); // Rg
+        prTable.getColumnModel().getColumn(10).setPreferredWidth(160); // chi sk2
+        prTable.getColumnModel().getColumn(10).setMinWidth(160); // chi sk2
        // prTable.getColumnModel().getColumn(14).setPreferredWidth(70);
        // prTable.getColumnModel().getColumn(12).setPreferredWidth(40);
 
@@ -709,6 +712,7 @@ public class Scatter {
         prTable.getColumnModel().getColumn(7).setCellRenderer(centerRenderer);
         prTable.getColumnModel().getColumn(8).setCellRenderer(centerRenderer); // r_ave
         prTable.getColumnModel().getColumn(9).setCellRenderer(centerRenderer); // dmax
+
 
         prScrollPane.add(prTable);
         prScrollPane.setViewportView(prTable);
@@ -849,7 +853,13 @@ public class Scatter {
                 //if (powerLawPlot.frame.isVisible()){
                 //    plotPowerLaw();
                 //}
+
+                dataFilesList.validate();
+                dataFilesList.repaint();
             }
+
+
+
         });
 
         intensityPlotButton.addActionListener(new ActionListener() {
@@ -1463,7 +1473,7 @@ public class Scatter {
                 }
 
 
-                SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar);
+                SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
                 tempSignalPlot.setSampleJList(samplesList);
 
                 Thread temp1 = new Thread(tempSignalPlot);
@@ -1482,8 +1492,6 @@ public class Scatter {
                 //samplesList.removeAll();
             }
         });
-
-
 
 
         SVDAverageFilesCheckBox.addActionListener(new ActionListener() {
@@ -2466,6 +2474,7 @@ public class Scatter {
 
                 collectionButtons.get(0).setSelected(true);
                 miniPlots.get(0).chart.setNotify(false);
+
                 new Thread() {
                     public void run() {
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(0), programInstance.getStatus(), 0, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
@@ -3952,7 +3961,7 @@ public class Scatter {
             } else if (name == "2File"){
                 this.button.setText("2File");
                 this.button.setToolTipText("Write to File");
-            } else if (name == "A"){
+            } else if (name == "SEARCH"){
                 this.button.setText("? d-max");
                 this.button.setToolTipText("Auto-dmax search");
                 //Icon warnIcon = new ImageIcon("src/dmax_logo.png");
@@ -3988,8 +3997,11 @@ public class Scatter {
                 //normalize - divide P(r) by I-Zero
                 double invIzero = 1/prModel.getDataset(rowID).getIzero();
                 prModel.getDataset(rowID).setScale((float) invIzero);
-                prModel.fireTableDataChanged();
+           //     prModel.fireTableDataChanged();
             } else if (this.colID == 13){ // dmax search
+
+
+
 
 
             } else if (this.colID == 14){
@@ -4036,15 +4048,14 @@ public class Scatter {
                         prStatusLabel.setText("Files written to " + WORKING_DIRECTORY.getWorkingDirectory() + ", ready to run DAMMIN/F");
                         runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
                         // run gnom
+                        System.out.println("DONE => firing ");
+                        prModel.fireTableDataChanged();
+                        System.out.println("DONE FIRING ");
                     }
 
                 };
 
                 refineIt.start();
-
-
-
-
 
             } else if (this.colID == 15){
                 // write Pr and Iq distributions toFile

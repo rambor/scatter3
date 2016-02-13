@@ -84,6 +84,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 }
 
             } else {
+
                 String[] filename = files[i].getName().split("\\.(?=[^\\.]+$)");
                 String ext = filename[1];
                 String filebase = filename[0];

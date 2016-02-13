@@ -158,6 +158,7 @@ public class LoadedFile {
             //Double iofQValue = Double.valueOf(df.format(Double.parseDouble(row[1])));
             if (!isUSUK){
                 System.out.println("Not USUK : may convert format ");
+
                 if (row[0].contains(",") && row[1].contains(",")){ // convert
                     System.out.println("Number contains a comma in first column, convert format ");
                     data = new DataLine(convertToUS(row[0]), convertToUS(row[1]), 1.0, true);

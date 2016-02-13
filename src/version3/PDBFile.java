@@ -100,7 +100,7 @@ public class PDBFile {
             // calculate PofR from workingAtoms
             // use resolution to determine number of Shannon bins
             pr_bins = (int)Math.ceil((dmax * qmax / Math.PI)) + 1;
-            pr_bins = 51;
+            pr_bins = 35;
             delta_r = (double) dmax / (double)pr_bins;
             double inv_delta = 1.0 /delta_r;
 

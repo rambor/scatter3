@@ -230,12 +230,14 @@ public class FileObject {
                 for(int i =0; i < realspaceModel.getfittedqIq().getItemCount(); i++){
 
                     tempXY = realspaceModel.getfittedqIq().getDataItem(i);
+                    //tempXY = realspaceModel.getfittedIq().getDataItem(i);
                     tempIndex = dataset.getAllData().indexOf(tempXY.getX());  // gets unscale SAXS curve that originated the P(r)
                     iCalc = realspaceModel.moore_Iq(tempXY.getXValue())*invScaleFactor;
 
                     if (tempIndex > 0) {
                         out.write(Constants.Scientific1dot5e2.format(tempXY.getXValue()) + "\t" +
-                                Constants.Scientific1dot5e2.format(tempXY.getYValue()) + "\t" +
+                                //Constants.Scientific1dot5e2.format(tempXY.getYValue()/tempXY.getXValue()) + "\t" +
+                                Constants.Scientific1dot5e2.format(dataset.getAllData().getY(tempIndex)) + "\t" +
                                 Constants.Scientific1dot5e2.format(dataset.getAllDataError().getY(tempIndex)) + "\t" +
                                 Constants.Scientific1dot5e2.format(iCalc) +  "\n");
                     }

@@ -1571,7 +1571,6 @@ int cols, rows;
                     // get median
                     tempMedian = Statistics.calculateMedian(resList, true);
                     if (tempMedian < median){
-                        System.out.println("FIRST : " + first + " last : " + last + " rg: " + Math.sqrt(tempRg) + " " + tempRg);
                         rgList.add(FastMath.sqrt(tempRg));
                         median = tempMedian;
                     }

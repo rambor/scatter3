@@ -46,8 +46,9 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     private XYSeries buffer = new XYSeries("buffer");
     private XYSeries bufferError = new XYSeries("buffer error");
     private boolean useRg = false;
+    private double threshold;
 
-    public SignalPlot(Collection sampleCollection, Collection bufferCollection, JLabel status, boolean useRg, JProgressBar bar){
+    public SignalPlot(Collection sampleCollection, Collection bufferCollection, JLabel status, boolean useRg, JProgressBar bar, double threshold){
         this.samplesCollection = sampleCollection;
         this.buffersCollection = bufferCollection;
         plotMe = new XYSeriesCollection();
@@ -56,9 +57,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         this.useRg = useRg;
         mainStatus = bar;
         this.status = status;
-        //this.makeBuffer();
-        //this.makeSamples();
-        //this.writeData();
+        this.threshold = threshold;
+
     }
 
 
@@ -84,8 +84,10 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         for(int w=0; w<plotMe.getSeriesCount(); w++){
             XYSeries tempSeries = plotMe.getSeries(w);
             if (useRg){
+
                 XYSeries tempRgSeries = plotRg.getSeries(w);
                 linesToFile.add(String.format("%d %.5f %.3f %s", w, tempSeries.getY(0).doubleValue(), tempRgSeries.getY(0).doubleValue(), tempSeries.getKey()));
+
             } else {
                 linesToFile.add(String.format("%d %.5f %s", w, tempSeries.getY(0).doubleValue(), tempSeries.getKey()));
             }
@@ -112,6 +114,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
         mainStatus.setValue(0);
         mainStatus.setStringPainted(true);
+        mainStatus.setString("Processing");
 
         for(int i=0;i<total; i++){
 
@@ -138,16 +141,17 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                 plotMe.getSeries(seriesCount).add(i, area);
 
                 if (useRg){ // make double plot if checked
+
                     status.setText("auto-Rg for : " + dataInUse.getFileName());
-                    ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
-
-                    //izeroRg = Functions.calculateIzeroRg(subtraction.get(0), subtraction.get(1));
-                    //XYSeries data, XYSeries errors, int startAt
-                    // has to be guinier data
-                    izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), 1);
-
                     plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
-                    plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+                    if (area > threshold){
+                        ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
+                        izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), 1);
+                        plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+                    } else {
+                        plotRg.getSeries(seriesCount).add(i,0);
+                    }
+
                 }
                 seriesCount++;
             }
@@ -165,7 +169,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     private void makeBuffer(){
         mainStatus.setIndeterminate(true);
         mainStatus.setStringPainted(true);
-        mainStatus.setString("Averaging");
+        mainStatus.setString("Reducing Buffer");
         try {
             //total = buffersCollection.getDatasetCount();
             int select = buffersCollection.getTotalSelected();
@@ -364,9 +368,11 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             rangeAxisRight.setLabel(quoteR);
             rangeAxisRight.setLabelFont(new Font("Times", Font.BOLD, 20));
             rangeAxisRight.setLabelPaint(new Color(51, 153, 255));
-            rangeAxisRight.setAutoRange(false);
-            rangeAxisRight.setAutoRangeIncludesZero(true);
+            rangeAxisRight.setAutoRange(true);
+            rangeAxisRight.setAutoRangeIncludesZero(false);
             rangeAxisRight.setAutoRangeStickyZero(false);
+
+            //double minRg = plotRg.getRangeLowerBound(true);
             rangeAxisRight.setRange(0, plotRg.getRangeUpperBound(true) + 0.02*plotRg.getRangeUpperBound(true));
 
             rightRenderer = new XYLineAndShapeRenderer();
@@ -452,7 +458,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         this.makeBuffer();
         status.setText("compiling samples");
         this.makeSamples();
-        status.setText("Writing Subtracted files");
+        status.setText("Writing Signal Plot");
         this.writeData();
         status.setText("Making Plot");
         this.makePlot();

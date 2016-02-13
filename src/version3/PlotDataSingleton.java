@@ -272,7 +272,6 @@ public class PlotDataSingleton {
         jframe.setMinimumSize(new Dimension(640,480));
         Container content = jframe.getContentPane();
         content.add(frame.getChartPanel());
-        //jframe.setLocation(locationOfWindow);
         jframe.setVisible(true);
     }
 

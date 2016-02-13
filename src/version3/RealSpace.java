@@ -267,7 +267,7 @@ public class RealSpace {
 
     public void setChi2(float j){
         chi2 = j;
-        this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(301));
+        this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(0));
         this.l1_norm = this.l1_norm_pddr(11);
         this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
         // System.out.println("CHI2 " + j + " " + this.kurtosis + " L1 " + this.l1_norm);
@@ -421,6 +421,10 @@ public class RealSpace {
 
         try {
             this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
+            //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
+            this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(0));
+            this.l1_norm = this.l1_norm_pddr(11);
+            this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -570,6 +574,11 @@ public class RealSpace {
     }
 
 
+    /**
+     * calculate 2nd derivative at r-values determined by ShannonNumber + 1
+     * @param multiple
+     * @return
+     */
     public double l1_norm_pddr(int multiple){
         double inv_d = 1.0/this.dmax;
         double r_value, pi_r_n_inv_d, pi_r_inv_d, cos_pi_r_n_inv_d, sin_pi_r_n_inv_d;
@@ -612,7 +621,7 @@ public class RealSpace {
             }
             l1_norm += Math.abs(a_i_sum);
         }
-
+        //System.out.println("l1_norm pddr " + l1_norm);
         return l1_norm;
     }
 
@@ -623,14 +632,20 @@ public class RealSpace {
          * Take max of the kurtosis set
          */
 
-        int total = this.fittedIq.getItemCount();
+        //Random newRandom = new Random();
+
+        int total = this.fittedqIq.getItemCount();
+
         int limit = this.getMooreCoefficients().length;
         double[] ratio = new double[total];
+        ArrayList<Double> test_ratios = new ArrayList<Double>();
 
         for (int i=0; i<total; i++){
-            XYDataItem values = this.fittedIq.getDataItem(i);
+            XYDataItem values = this.fittedqIq.getDataItem(i);  // unscale data
             // ratio of calc/obs
-            ratio[i] = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit)/values.getYValue();
+            //ratio[i] = newRandom.nextGaussian();
+            ratio[i] = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit)/values.getYValue()*values.getXValue();
+            test_ratios.add(ratio[i]);
         }
 
         /*
@@ -638,13 +653,16 @@ public class RealSpace {
          * qmax*dmax/PI
          *
          */
-        double qmin = this.fittedIq.getMinX();
-        double qmax = this.fittedIq.getMaxX();
+        //double qmin = this.fittedqIq.getMinX();
+        //double qmax = this.fittedqIq.getMaxX();
 
-        int bins = (int)(Math.round(qmax*dmax/Math.PI)), locale;
+        //int bins = (int)(Math.round(qmax*dmax/Math.PI)), locale;
 
-        ArrayList<Double> test_ratios = new ArrayList<Double>();
-        ArrayList<Double> kurtosises = new ArrayList<Double>();
+        //ArrayList<Double> kurtosises = new ArrayList<Double>();
+
+        // calculate kurtosis
+        double kurtosis = StatMethods.kurtosis(test_ratios);
+        /*
         double delta_q = (qmax-qmin)/bins;
 
         double samplingLimit;
@@ -680,11 +698,11 @@ public class RealSpace {
             // calculate kurtosis
             kurtosises.add(StatMethods.kurtosis(test_ratios));
         }
-
+*/
         // double returnMe = Collections.max(kurtosises);
         // double returnMe = Statistics.calculateMedian(kurtosises);
-
-        return Statistics.calculateMedian(kurtosises);
+        return kurtosis;
+        //return Statistics.calculateMedian(kurtosises);
     }
 
 
