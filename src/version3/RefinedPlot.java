@@ -59,16 +59,17 @@ public class RefinedPlot {
         XYSeries temp = dataset.getRefinedqIData();
         int totalKept = temp.getItemCount();
         XYDataItem tempItem;
+
         for(int i=0; i<totalKept; i++){
             tempItem = temp.getDataItem(i);
-            qiq.add(tempItem.getX(), tempItem.getXValue()*tempItem.getYValue());
+            qiq.add(tempItem.getX(), tempItem.getXValue()*tempItem.getYValue()*dataset.getRescaleFactor());
         }
 
         temp = dataset.getfittedqIq();
-        for(int i=0; i<dataset.getfittedqIq().getItemCount(); i++){
+        for(int i=0; i<dataset.getfittedqIq().getItemCount(); i++){ // scaled data
             tempItem = temp.getDataItem(i);
             if (dataset.getRefinedqIData().indexOf(tempItem.getX()) < 0){ // true means rejected
-                reject.add(tempItem);
+                reject.add(tempItem.getX(), tempItem.getYValue());
             }
         }
 
@@ -76,12 +77,11 @@ public class RefinedPlot {
         scatterCollection.addSeries(reject);
         scatterCollection.addSeries(qiq);
         splineCollection.addSeries(dataset.getCalcqIq());
+        System.out.println("calc size " + dataset.getCalcqIq().getItemCount());
     }
 
 
     public void makePlot(String output){ // qIq plot
-
-        System.out.println("make it");
 
         chart = ChartFactory.createXYLineChart(
                 "",                         // chart title
@@ -143,7 +143,7 @@ public class RefinedPlot {
         pointSize = dataset.getPointSize();
 
         renderer1.setSeriesShape(0, new Ellipse2D.Double(delta*0.9, delta*0.9, pointSize*0.9, pointSize*0.9));
-        renderer1.setSeriesShapesFilled(0, false);
+        renderer1.setSeriesShapesFilled(0, true);
         renderer1.setSeriesLinesVisible(0, false);
         renderer1.setSeriesPaint(0, Color.red);
         renderer1.setSeriesOutlinePaint(0, Color.red);
