@@ -447,7 +447,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         XYSeries keptqIq = new XYSeries("keptqIq-"+dataset.getId());
         // Select final values for fitting
-        dataset.getLogData().clear();
+        //dataset.getLogData().clear();
 
         double iCalc;
         dataset.getCalcIq().clear();
@@ -463,7 +463,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
             if (Math.abs(residual*sigmaM) <= rejectionCutOff){
                 keptSeries.add(tempData);
-                //dataset.getfittedIq().add(tempData);
 
                 keptqIq.add(xObsValue, xObsValue*yObsValue*dataset.getRescaleFactor());  // used in actual fitting must be rescaled if too low or high
                 keptErrorSeries.add(xObsValue, errorActiveSet.getY(i).doubleValue());
@@ -471,7 +470,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 if (yObsValue > 0){ // only positive values
                     tempData = new XYDataItem(xObsValue, Math.log10(yObsValue));
                     dataset.getCalcIq().add(xObsValue, Math.log10(iCalc));
-                    dataset.getLogData().add(tempData);  // plotted I(q)
+                    //dataset.getLogData().add(tempData);  // plotted I(q)
                 }
             }
         }
@@ -505,6 +504,9 @@ public class RefineManager extends SwingWorker<Void, Void> {
             int totalrejected =  totalToFit - keptSeries.getItemCount();
             double percentRejected = (double)totalrejected/(double)totalToFit*100;
             notifyUser(String.format("Rejected %d points (%.1f %%) using cutoff: %.4f => files written to working directory", totalrejected, percentRejected, rejectionCutOff));
+            RefinedPlot refinedPlot = new RefinedPlot(dataset);
+            refinedPlot.makePlot(String.format("Rejected %d points (%.1f %%) using cutoff: %.4f => files written to working directory", totalrejected, percentRejected, rejectionCutOff));
+
         } else { // do nothing if unacceptable, so clear and reload a original
 
             for (int i=0; i<size; i++){
@@ -514,10 +516,10 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
                 //dataset.getfittedIq().add(tempData);
 
-                if (yObsValue > 0){ // only positive values
-                    tempData = new XYDataItem(xObsValue, Math.log10(yObsValue));
-                    dataset.getLogData().add(tempData);  // plotted I(q)
-                }
+//                if (yObsValue > 0){ // only positive values
+//                    tempData = new XYDataItem(xObsValue, Math.log10(yObsValue));
+//                    dataset.getLogData().add(tempData);  // plotted I(q)
+//                }
             }
 
             dataset.calculateIntensityFromModel(useL1);

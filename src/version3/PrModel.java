@@ -205,6 +205,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     public void addDatasetsFromCollection(final Collection collection){
 
         datalist.clear();
+        editable_cells.clear();
         final int total = collection.getDatasetCount();
         mainBar.setStringPainted(true);
         mainBar.setIndeterminate(true);

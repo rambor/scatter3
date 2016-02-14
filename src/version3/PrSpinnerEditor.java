@@ -129,8 +129,9 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     // Prepares the spinner component and returns it.
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
 
-        rowID = row;
         colID = column;
+        rowID = row;
+
         lastValue = prModel.getDataset(rowID).getAllData().getItemCount();
 
         if (colID == 4) {

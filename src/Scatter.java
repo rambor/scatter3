@@ -701,8 +701,9 @@ public class Scatter {
         prTable.getColumnModel().getColumn(5).setPreferredWidth(100);
         prTable.getColumnModel().getColumn(6).setPreferredWidth(170); // I(0)
         prTable.getColumnModel().getColumn(7).setPreferredWidth(160); // Rg
-        prTable.getColumnModel().getColumn(10).setPreferredWidth(160); // chi sk2
-        prTable.getColumnModel().getColumn(10).setMinWidth(160); // chi sk2
+
+        prTable.getColumnModel().getColumn(10).setPreferredWidth(100); // chi sk2
+        prTable.getColumnModel().getColumn(10).setMinWidth(100); // chi sk2
        // prTable.getColumnModel().getColumn(14).setPreferredWidth(70);
        // prTable.getColumnModel().getColumn(12).setPreferredWidth(40);
 
@@ -1926,7 +1927,7 @@ public class Scatter {
                 // reset box before making plot
                 qIQCheckBox.setSelected(false);
 
-                prModel.clear();
+                //prModel.clear();
                 prModel.addDatasetsFromCollection(collectionSelected);
                 prModel.fireTableDataChanged();
                 mainPane.setSelectedIndex(2);

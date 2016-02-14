@@ -164,7 +164,7 @@ public class RealSpace {
             yValue = temp.getYValue();
 
             if (temp.getYValue() > 0){
-                logData.add(xValue, Math.log10(yValue));
+                logData.add(xValue, Math.log10(yValue)); // plotted data
             }
 
             fittedIq.add(temp);
