@@ -4049,9 +4049,7 @@ public class Scatter {
                         prStatusLabel.setText("Files written to " + WORKING_DIRECTORY.getWorkingDirectory() + ", ready to run DAMMIN/F");
                         runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
                         // run gnom
-                        System.out.println("DONE => firing ");
                         prModel.fireTableDataChanged();
-                        System.out.println("DONE FIRING ");
                     }
 
                 };

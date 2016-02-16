@@ -62,6 +62,9 @@ public class NormalizedKratkyPlot {
         int horizontalDisplacement = 200;
 
         plottedData.removeAllSeries();
+        vcDataReciprocal.removeAllSeries();
+        rgDataReal.removeAllSeries();
+        vcDataReal.removeAllSeries();
         //frame.getChartPanel().removeAll();
         // create collection of series to plot
 

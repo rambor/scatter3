@@ -95,9 +95,13 @@ public class PlotDataSingleton {
         // option would be to add datasets to plottedDatasets
         // datasets not checked will be addes as emptySeries
 
+
         inUseCollection = collection;
         int totalSets = collection.getDatasetCount();
-        plottedDatasets = new XYSeriesCollection();  // spinners will always modify the plottedDataset series
+        //plottedDatasets = new XYSeriesCollection();  // spinners will always modify the plottedDataset series
+        plottedDatasets.removeAllSeries();
+        mergedDataset.removeAllSeries();
+
         for (int i=0; i<totalSets; i++){
                 plottedDatasets.addSeries(collection.getDataset(i).getData());
         }

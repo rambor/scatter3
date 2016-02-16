@@ -158,7 +158,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 return index;
             case 6: //I-zero
                 double tempIzero = dataset.getGuinierIzero();
-                return "<html><b><font color=\"#ffA500\">" + scientific.format(dataset.getIzero()).toString() + "</font></b> (<font color=\"#808080\">" + scientific.format(tempIzero).toString() +"</font>)</html>";
+                return "<html><b><font color=\"#ffA500\">" + scientific.format(dataset.getIzero()/dataset.getRescaleFactor()).toString() + "</font></b> (<font color=\"#808080\">" + scientific.format(tempIzero).toString() +"</font>)</html>";
             case 7: //Rg
                 String tempRg = twoDecPlac.format(dataset.getGuinierRg()).toString();
                 return "<html><b><font color=\"#ffA500\">" + twoDecPlac.format(dataset.getRg()).toString()  + "</font></b> (<font color=\"#808080\">" +  tempRg +"</font>)</html>";

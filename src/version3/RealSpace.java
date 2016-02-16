@@ -91,7 +91,6 @@ public class RealSpace {
         // need to rescale allData for fitting?
         double digits = Math.log10(averageIntensity(allData));
 
-
         if (digits < 0){
             rescaleFactor = Math.pow(10,Math.ceil(Math.abs(digits)));
             invRescaleFactor = 1.0/rescaleFactor;
@@ -737,7 +736,6 @@ public class RealSpace {
         rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
         //raverage = dmax3*inv_pi_cube/izero*rsum;
         raverage = 2*dmax3*inv_pi_fourth/izero*rsum;
-
         this.dataset.setRealIzeroRgParameters(izero*invRescaleFactor, 0.1*izero, rg, rg*0.1, raverage);
     }
 
@@ -915,7 +913,7 @@ public class RealSpace {
     }
 
     /**
-     *
+     * assumes I(q) and not q*I(q)
      * Estimates chi-square at the cardinal series
      * @throws Exception
      */

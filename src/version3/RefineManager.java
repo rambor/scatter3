@@ -38,6 +38,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
     private double upperq;
     private int totalToFit;
     private double dmax_pi;
+    private double pi_invDmax;
     private double median;
     private double invReScaleFactor;
     private double totalRoundsForRefinement;
@@ -56,11 +57,15 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         totalRoundsForRefinement = refinementRounds;
         roundsPerCPU = (int)(this.refinementRounds/(double)numberOfCPUs);
-        bins = (int) (Math.round(dataset.getfittedqIq().getMaxX() * dataset.getDmax() / Math.PI));
+
+        bins = (int) (Math.round(dataset.getfittedqIq().getMaxX() * dataset.getDmax() / Math.PI));  // excludes term related constant background
+
         //upperq = dataset.getAllData().getX(dataset.getStop()-1).doubleValue();
         upperq = dataset.getfittedqIq().getMaxX();
         this.dmax = dataset.getDmax();
         this.dmax_pi = Math.PI*dmax;
+        this.pi_invDmax = Math.PI/dmax;
+
 
         invReScaleFactor = 1.0/dataset.getRescaleFactor();
         median = 1000; //medianMooreResidualsQIQ(dataset.getfittedqIq(), dataset.getMooreCoefficients(), dataset.getTotalMooreCoefficients());
@@ -191,7 +196,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
             int[] randomNumbers;
 
             int size = activeSet.getItemCount();
-            double delta_q = upperq/bins;
+            //double delta_q = upperq/bins;
+            double half_delta_ns = 0.5*pi_invDmax;
 
             XYDataItem tempData;
             ArrayList<double[]> results;
@@ -225,7 +231,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
                         binloop:
                         for (int bb=startbb; bb < size; bb++){
-                            if (activeSet.getX(bb).doubleValue() >= (delta_q*b) ){ // what happens on the last bin?
+                            //if (activeSet.getX(bb).doubleValue() >= (delta_q*b) ){ // what happens on the last bin?
+                            if (activeSet.getX(bb).doubleValue() >= (half_delta_ns + b*pi_invDmax) ){ // what happens on the last bin?
                                 upperbb = bb;
                                 break binloop;
                             }
@@ -285,14 +292,16 @@ public class RefineManager extends SwingWorker<Void, Void> {
             for (int b=1; b <= bins; b++) {
                 sumError = 0;
                 sumCount = 0;
-                upperBound = delta_q*b;
+                //upperBound = delta_q*b;
+                upperBound = b*pi_invDmax + 0.5*pi_invDmax;
 
                 binloop:
                 for (int bb=startbb; bb < size; bb++){
 
                     tempCurrent = relativeErrorSeries.getX(bb).doubleValue();
 
-                    if ( (tempCurrent >= (delta_q*(b-1)) ) && (tempCurrent < upperBound) ){
+                    //if ( (tempCurrent >= (delta_q*(b-1)) ) && (tempCurrent < upperBound) ){
+                    if ( (tempCurrent < upperBound) ){
                         sumError += relativeErrorSeries.getY(bb).doubleValue();
                         sumCount += 1.0;
                     } else if (tempCurrent >= upperBound ) {
@@ -426,51 +435,49 @@ public class RefineManager extends SwingWorker<Void, Void> {
         int sizeAm = keptAm.length;
 
         XYDataItem tempData;
-        XYSeries activeIqSet = dataset.getfittedIq();
+        XYSeries activeqIqSet = dataset.getfittedqIq(); // this is scaled data
         XYSeries errorActiveSet = dataset.getfittedError();
-        int size = activeIqSet.getItemCount();
+        int size = activeqIqSet.getItemCount();
 
         for (int i=0; i < size; i++){
-            tempData = activeIqSet.getDataItem(i);
+            tempData = activeqIqSet.getDataItem(i);
             xObsValue = tempData.getXValue();
             yObsValue = tempData.getYValue();
 
-            residual = invReScaleFactor*Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm)-yObsValue;
+            residual = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm)-yObsValue/xObsValue;
+            //System.out.println(i + " : " + Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm) + " <=> " + yObsValue/xObsValue + " " + dataset.getRescaleFactor());
 
             if (Math.abs(residual/this.getS_o()) <= rejectionCutOff){
+                //System.out.println("Initial scale estimate " + Math.abs(residual/this.getS_o()) + "< " + rejectionCutOff);
                 residualsList.add(residual*residual);
             }
         }
 
         int sizeResiduals = residualsList.size();
+
         double sigmaM = 1.0/Math.sqrt(Statistics.calculateMean(residualsList)*sizeResiduals/(sizeResiduals - sizeAm));
 
         XYSeries keptqIq = new XYSeries("keptqIq-"+dataset.getId());
         // Select final values for fitting
-        //dataset.getLogData().clear();
-
         double iCalc;
         dataset.getCalcIq().clear();
-        //dataset.getfittedIq().clear();
 
         for (int i=0; i<size; i++){
-            tempData = activeIqSet.getDataItem(i);
+            tempData = activeqIqSet.getDataItem(i);
             xObsValue = tempData.getXValue();
             yObsValue = tempData.getYValue();
 
-            iCalc = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm)*invReScaleFactor;
-            residual = iCalc-yObsValue;
-
+            iCalc = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm);
+            residual = iCalc*xObsValue-yObsValue; // y-values from qIq is scaled
+            //System.out.println(i + " " + residual + " SIGMAM " + Math.abs(residual*sigmaM) + " <=> " + rejectionCutOff);
             if (Math.abs(residual*sigmaM) <= rejectionCutOff){
-                keptSeries.add(tempData);
+                keptSeries.add(xObsValue, yObsValue/xObsValue);
 
-                keptqIq.add(xObsValue, xObsValue*yObsValue*dataset.getRescaleFactor());  // used in actual fitting must be rescaled if too low or high
+                keptqIq.add(xObsValue, yObsValue);  // used in actual fitting must be rescaled if too low or high
                 keptErrorSeries.add(xObsValue, errorActiveSet.getY(i).doubleValue());
 
-                if (yObsValue > 0){ // only positive values
-                    tempData = new XYDataItem(xObsValue, Math.log10(yObsValue));
-                    dataset.getCalcIq().add(xObsValue, Math.log10(iCalc));
-                    //dataset.getLogData().add(tempData);  // plotted I(q)
+                if (yObsValue > 0) { // only positive values
+                    dataset.getCalcIq().add(xObsValue, Math.log10(iCalc*1.0/dataset.getRescaleFactor())); //plotted data is unscaled, as is from Analysis
                 }
             }
         }
@@ -481,7 +488,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
         if (keptqIq.getItemCount() > 2*bins){ // do final fitting against kepSeries
 
             dataset.updatedRefinedSets(keptSeries, keptErrorSeries);
-            System.out.println("kept qIq Count => " + keptqIq.getItemCount() + " dmax => " + dmax);
             ArrayList<double[]> results;
             // calculate PofR
             PrObject prObject = new PrObject(keptqIq, upperq , dmax, lambda, useL1);
@@ -496,7 +502,16 @@ public class RefineManager extends SwingWorker<Void, Void> {
             dataset.setMooreCoefficients(results.get(0));
 
             try {
-                dataset.chi_estimate(keptSeries, keptErrorSeries);
+                // requires (q, Iq) not (q, q*Iq)
+                // setMooreCoefficients calculates chi over the range of data bounded by spinners
+                // need chi specific to keptSeries
+                int totalKept = keptSeries.getItemCount();
+                for(int i=0; i<totalKept;i++){
+                    tempData = keptSeries.getDataItem(i);
+                    keptSeries.update(tempData.getX(), (tempData.getYValue()*invReScaleFactor));
+                }
+
+                dataset.chi_estimate(keptSeries, keptErrorSeries);  //
             } catch (Exception e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
@@ -510,7 +525,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
         } else { // do nothing if unacceptable, so clear and reload a original
 
             for (int i=0; i<size; i++){
-                tempData = activeIqSet.getDataItem(i);
+                tempData = activeqIqSet.getDataItem(i);
                 xObsValue = tempData.getXValue();
                 yObsValue = tempData.getYValue();
 

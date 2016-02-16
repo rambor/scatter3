@@ -1,9 +1,11 @@
 package version3;
 
+import org.apache.commons.math3.analysis.function.Constant;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
@@ -56,28 +58,31 @@ public class RefinedPlot {
         XYSeries qiq = new XYSeries("keptiqi");
         XYSeries reject = new XYSeries("rejected");
 
+
         XYSeries temp = dataset.getRefinedqIData();
         int totalKept = temp.getItemCount();
         XYDataItem tempItem;
 
         for(int i=0; i<totalKept; i++){
             tempItem = temp.getDataItem(i);
-            qiq.add(tempItem.getX(), tempItem.getXValue()*tempItem.getYValue()*dataset.getRescaleFactor());
+            //qiq.add(tempItem.getX(), tempItem.getXValue()*tempItem.getYValue()*dataset.getRescaleFactor());
+            qiq.add(tempItem.getX(), tempItem.getXValue()*tempItem.getYValue());
         }
 
         temp = dataset.getfittedqIq();
         for(int i=0; i<dataset.getfittedqIq().getItemCount(); i++){ // scaled data
             tempItem = temp.getDataItem(i);
             if (dataset.getRefinedqIData().indexOf(tempItem.getX()) < 0){ // true means rejected
+                //reject.add(tempItem.getX(), tempItem.getYValue()*dataset.getRescaleFactor());
                 reject.add(tempItem.getX(), tempItem.getYValue());
             }
         }
 
-
         scatterCollection.addSeries(reject);
         scatterCollection.addSeries(qiq);
+
+        dataset.calculateIntensityFromModel(true);  //
         splineCollection.addSeries(dataset.getCalcqIq());
-        System.out.println("calc size " + dataset.getCalcqIq().getItemCount());
     }
 
 
@@ -103,8 +108,10 @@ public class RefinedPlot {
         final NumberAxis rangeAxis = new NumberAxis("log [I(q)]");
         domainAxis.setAutoRangeIncludesZero(false);
         domainAxis.setAutoRange(true);
+        domainAxis.setLabelFont(Constants.BOLD_16);
 
         rangeAxis.setLabel("q × I(q)");
+        rangeAxis.setLabelFont(Constants.BOLD_16);
 
         rangeAxis.setAutoRange(true);
         rangeAxis.setAutoRangeStickyZero(false);
@@ -113,8 +120,8 @@ public class RefinedPlot {
         plot.setRangeAxis(rangeAxis);
         plot.setDomainCrosshairLockedOnData(true);
         plot.setBackgroundAlpha(0.0f);
-        plot.setDomainCrosshairVisible(true); //make crosshair visible
-        plot.setRangeCrosshairVisible(true);  //make crosshair visible
+        plot.setDomainCrosshairVisible(true);  //make crosshair visible
+        plot.setRangeCrosshairVisible(true);   //make crosshair visible
 
         plot.setOutlineVisible(false);
 
@@ -122,27 +129,37 @@ public class RefinedPlot {
         renderer1.setBaseShapesVisible(true);
         renderer1.setBaseShapesFilled(false);
 
-        plot.setDataset(0, splineCollection);  //Moore Function
-        plot.setRenderer(0, splineRend);       //render as a line
-        plot.setDataset(1, scatterCollection); //IofQ Data
-        plot.setRenderer(1, renderer1);        //render as points
+        plot.setDataset(0, splineCollection);   //Moore Function
+        plot.setRenderer(0, splineRend);        //render as a line
+        plot.setDataset(1, scatterCollection);  //IofQ Data
+        plot.setRenderer(1, renderer1);         //render as points
         splineRend.setBaseShapesVisible(false);
 
         int n_index = 1;
         double invdmax = Math.PI/dataset.getDmax();
         double qmaxLimit = dataset.getfittedqIq().getMaxX();
         while(n_index*invdmax < qmaxLimit){
-            plot.addDomainMarker(new ValueMarker(n_index*invdmax));
+            Marker temp = new ValueMarker(n_index*invdmax);
+            temp.setLabel(Integer.toString(n_index));
+            temp.setPaint(Constants.DodgerBlue);
+            temp.setLabelFont(Constants.FONT_12);
+            temp.setLabelPaint(Constants.DodgerBlue);
+
+            //plot.addDomainMarker(new ValueMarker(n_index*invdmax));
+            plot.addDomainMarker(temp);
+
             n_index++;
         }
 
         double delta;
         double pointSize;
 
-        delta = -dataset.getPointSize()*0.5;
-        pointSize = dataset.getPointSize();
+        delta = -dataset.getPointSize()*0.5*2;
+        pointSize = dataset.getPointSize()*2;
 
         renderer1.setSeriesShape(0, new Ellipse2D.Double(delta*0.9, delta*0.9, pointSize*0.9, pointSize*0.9));
+        renderer1.setSeriesShape(0, new Ellipse2D.Double(delta*0.9, delta*0.9, pointSize*0.9, pointSize*0.9));
+
         renderer1.setSeriesShapesFilled(0, true);
         renderer1.setSeriesLinesVisible(0, false);
         renderer1.setSeriesPaint(0, Color.red);
@@ -157,8 +174,9 @@ public class RefinedPlot {
         renderer1.setSeriesOutlineStroke(1, dataset.getStroke());
 
         splineRend.setSeriesStroke(0, strokeAt2);
-        splineRend.setSeriesPaint(0, Color.RED); // make color slight darker
+        splineRend.setSeriesPaint(0, Color.BLACK); // make color slight darker
         splineRend.setSeriesVisibleInLegend(0, Boolean.FALSE);
+
 
         outPanel = new ChartPanel(chart){
             @Override
