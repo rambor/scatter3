@@ -219,6 +219,8 @@ public class Scatter {
     private JCheckBox excludeWatersFromInputCheckBox;
     private JLabel versionLabel;
     private JTextField thresholdField;
+    private JButton changeCWDButton;
+    private JButton pdfButton;
 
     private String version = "3.0a";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -606,6 +608,7 @@ public class Scatter {
                 }
             }
         });
+
 
         JTableHeader header = analysisTable.getTableHeader();
         header.setDefaultRenderer(new HeaderRenderer(analysisTable));
@@ -1084,7 +1087,6 @@ public class Scatter {
                             //close the output stream
                             status.setText(cleaned + ".dat written to "+fc.getCurrentDirectory());
 
-
                             collectionSelected.addDataset(tempDataset);
                             collectionSelected.getLast().setColor(Color.red);
                             collectionSelected.getLast().setFileName(cleaned);
@@ -1092,7 +1094,6 @@ public class Scatter {
 
                             analysisModel.addDataset(collectionSelected.getLast());
                             resultsModel.addDataset(collectionSelected.getLast());
-
 
                             int location = dataFilesModel.getSize();
                             dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
@@ -1878,24 +1879,7 @@ public class Scatter {
         workingDirButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                File theCWD = new File(WORKING_DIRECTORY.getWorkingDirectory());
-                JFileChooser chooser = new JFileChooser(theCWD);
-                chooser.setDialogTitle("Select Directory");
-
-                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                chooser.setAcceptAllFileFilterUsed(false);
-
-                if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
-                    //WORKING_DIRECTORY.setWorkingDirectory(chooser.getCurrentDirectory().toString());
-                    if (chooser.getSelectedFile().isDirectory()){
-                        WORKING_DIRECTORY.setWorkingDirectory(chooser.getSelectedFile().toString());
-                    } else {
-                        WORKING_DIRECTORY.setWorkingDirectory(chooser.getCurrentDirectory().toString());
-                    }
-                    workingDirLabel.setText(WORKING_DIRECTORY.getWorkingDirectory());
-                    //WORKING_DIRECTORY.setWorkingDirectory(WORKING_DIRECTORY_NAME);
-                    updateProp();
-                }
+                changeCWD();
             }
         });
 
@@ -2262,12 +2246,44 @@ public class Scatter {
 
             }
         });
+
         exportButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 status.setText("Writing txt file to " + WORKING_DIRECTORY.getWorkingDirectory());
                 FileObject tempObject = new FileObject(new File(WORKING_DIRECTORY.getWorkingDirectory()));
                 tempObject.exportResults(collectionSelected);
+            }
+        });
+
+
+        changeCWDButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                changeCWD();
+            }
+        });
+
+
+
+        pdfButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                Thread makeIt = new Thread(){
+                    public void run() {
+
+                        final PDFBuilder pdfBuilder = new PDFBuilder(collectionSelected, WORKING_DIRECTORY, mainProgressBar);
+
+                        pdfBuilder.setName("this is a name");
+                        pdfBuilder.execute();
+
+                    }
+
+                };
+
+                makeIt.start();
+
             }
         });
     }
@@ -4197,6 +4213,30 @@ public class Scatter {
             //ffCEFileSelectionComboBox.repaint();
         }
     }
+
+    public void changeCWD(){
+        status.setText("CWD : " + WORKING_DIRECTORY.getWorkingDirectory());
+        File theCWD = new File(WORKING_DIRECTORY.getWorkingDirectory());
+        JFileChooser chooser = new JFileChooser(theCWD);
+        chooser.setDialogTitle("Select Directory");
+
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        chooser.setAcceptAllFileFilterUsed(false);
+
+        if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
+            //WORKING_DIRECTORY.setWorkingDirectory(chooser.getCurrentDirectory().toString());
+            if (chooser.getSelectedFile().isDirectory()){
+                WORKING_DIRECTORY.setWorkingDirectory(chooser.getSelectedFile().toString());
+            } else {
+                WORKING_DIRECTORY.setWorkingDirectory(chooser.getCurrentDirectory().toString());
+            }
+            workingDirLabel.setText(WORKING_DIRECTORY.getWorkingDirectory());
+            updateProp();
+        }
+
+        status.setText("CWD Changed to : " + WORKING_DIRECTORY.getWorkingDirectory());
+    }
+
 
 } // end of Scatter class
 

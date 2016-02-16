@@ -784,7 +784,7 @@
                       <text value="Single"/>
                     </properties>
                   </component>
-                  <component id="45db5" class="javax.swing.JButton" default-binding="true">
+                  <component id="45db5" class="javax.swing.JButton" binding="pdfButton">
                     <constraints>
                       <grid row="0" column="14" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>
@@ -817,7 +817,7 @@
                       <text value="PackageIt"/>
                     </properties>
                   </component>
-                  <component id="cd0bb" class="javax.swing.JButton" default-binding="true">
+                  <component id="cd0bb" class="javax.swing.JButton" binding="changeCWDButton">
                     <constraints>
                       <grid row="4" column="14" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false">
                         <preferred-size width="-1" height="29"/>
@@ -826,12 +826,12 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <enabled value="false"/>
+                      <enabled value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-10987432"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
-                      <text value="Save"/>
+                      <text value="CWD"/>
                     </properties>
                   </component>
                 </children>
@@ -3794,6 +3794,7 @@
             <properties>
               <maximumSize width="320" height="20"/>
               <minimumSize width="320" height="20"/>
+              <string value=""/>
               <stringPainted value="true"/>
             </properties>
           </component>

@@ -62,8 +62,8 @@ public class BuffersSamplesPlot {
         // this is really the active datasets,
         // in the constructor for collection, miniCollection is derived from dataset (same pointer)
         //
-        dataSets = new XYSeriesCollection();
-        mergedSets = new XYSeriesCollection();
+        dataSets.removeAllSeries();
+        mergedSets.removeAllSeries();
 
         int total = collection.getDatasets().size();
         String yquote = "I(q)";
