@@ -89,6 +89,7 @@ public class Dataset {
     private int massRnaReal;
     private int massRnaSigmaReal;
     private double invariantQ;
+    private double porodVolumeQmax;
 
     private double[] aM; //Moore Coefficients
     private double[] aMSigma; //Moore Coefficients errors
@@ -1412,5 +1413,13 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
 
     public boolean getIsPDB(){
         return this.isPDB;
+    }
+
+    public double getPorodVolumeQmax() {
+        return porodVolumeQmax;
+    }
+
+    public void setPorodVolumeQmax(double porodVolumeQmax) {
+        this.porodVolumeQmax = porodVolumeQmax;
     }
 }

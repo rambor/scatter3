@@ -57,6 +57,15 @@ public class Similarity implements Runnable {
     private JPanel panelForChart;
     private String directory;
 
+    public Similarity(){
+        commonQValues = new TreeSet<>();
+        keptQvalues = new ArrayList<>();
+        collectionOfkurtosisPerFrame = new XYSeriesCollection();
+        averageValuePerBin = new XYSeriesCollection();
+        collections = new ArrayList<>();
+    }
+
+
     public Similarity(JLabel status, final JProgressBar bar){
 
         this.status = status;
@@ -170,6 +179,14 @@ public class Similarity implements Runnable {
         this.panelForChart = outsidePanel;
     };
 
+    public void setParametersNoPanel(double qmin, double qmax, double bins, int cpus){
+        this.qmin = qmin;
+        this.qmax = qmax;
+        this.bins = bins;
+        this.binWidth = (qmax-qmin)/bins;
+        System.out.println("QMIN to QMAX: " + qmin + " < " + qmax + " BINWIDTH => " + binWidth);
+        this.cpus = cpus;
+    };
 
     /**
      *
@@ -265,7 +282,7 @@ public class Similarity implements Runnable {
      * @param targetSet
      * @return double representing kurtosis of the ratio
      */
-    private double calculateSimFunctionPerSet(Dataset referenceSet, int startPt, int endPt, Dataset targetSet){
+    public double calculateSimFunctionPerSet(Dataset referenceSet, int startPt, int endPt, Dataset targetSet){
 
         XYSeries referenceSeries = referenceSet.getAllData();
         XYSeries referenceError = referenceSet.getAllDataError();

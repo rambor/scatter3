@@ -39,6 +39,70 @@ public class LoadedFile {
     // REMARK   INFO
 
     //Constructor
+    public LoadedFile(File file, int index, boolean convert) throws Exception {
+        if (loc.toString().equals("en_GB") || loc.toString().equals("en_US")){
+            isUSUK = true;
+        }
+        System.out.println("Default location " + Locale.getDefault(Locale.Category.FORMAT) + " isUSUK " + isUSUK);
+
+        // get file base and extension
+        String[] filename = file.getName().split("\\.(?=[^\\.]+$)");
+        filebase = filename[0];
+        ext = filename[1];
+        String keyName = Integer.toString(index) + filebase; // helps keep file names unique so we can load same file multiple times
+
+        allData = new XYSeries(keyName, false, false);
+        allDataError = new XYSeries(keyName, false, false);
+        double tempQValue;
+
+        try {
+            FileInputStream fstream = new FileInputStream(file);
+            DataInputStream in = new DataInputStream(fstream);
+            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+
+            long filesize = file.length();
+
+            if (filesize == 0){
+                throw new Exception("File Empty");
+            }
+
+            if (ext.equals("dat") || ext.equals("int")) { //regular 3 column file space or tab delimited
+                String strLine;
+
+                //Read file line-by-line
+                try {
+
+                    while ((strLine = br.readLine()) != null) {
+                        dataPoints = dataFromText(strLine);
+                        if (dataPoints.getTest()){
+
+                            if (!ext.equals("fit")){
+
+                                tempQValue = (convert) ? dataPoints.getq()/10 : dataPoints.getq();
+
+                                allData.add(tempQValue, dataPoints.getI() );
+                                allDataError.add(tempQValue, dataPoints.getE() );
+
+                            }
+
+                        } else if (checkRemark(strLine)){ // check if header without BUFFER LINE
+
+                        } // move to next line
+                    }
+
+                    //endPtNN = originalNNData.getItemCount();
+                } catch (IOException ex) {
+                    System.out.println("File Index out of bounds");
+                }
+            }
+            // might have a cansas format, open file and read contents
+
+        } catch (FileNotFoundException ex) {
+            System.out.println("Error: " + ex.getMessage());
+        }
+    }
+
+
     public LoadedFile(File file, JLabel jLabel, int ssize, boolean convert) throws Exception{
 
         if (loc.toString().equals("en_GB") || loc.toString().equals("en_US")){

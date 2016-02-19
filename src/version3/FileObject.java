@@ -118,14 +118,28 @@ public class FileObject {
 
         status.setText("Writing P(r) and plotted I(q) to file: " + filename);
 
-        double incr = dmax/101.0;
-        double[] coefs = realspaceModel.getMooreCoefficients();
-        int coefsSize = coefs.length;
+        int coefsSize = 0;
+        double[] coefs;
 
-        for (int r = 0; r*incr <= dmax; r++){
-            double r_incr = r*incr;
-            r_pr.add(r_incr, realspaceModel.calculatePofRAtR(r_incr));
+        if (realspaceModel.isPDB()){
+
+            int totalr = realspaceModel.getPrDistribution().getItemCount();
+            for(int r=0; r<totalr; r++){
+                r_pr.add(realspaceModel.getPrDistribution().getDataItem(r));
+            }
+            coefs = new double[]{0};
+
+        } else {
+            double incr = dmax/101.0;
+            coefs = realspaceModel.getMooreCoefficients();
+            coefsSize = coefs.length;
+
+            for (int r = 0; r*incr <= dmax; r++){
+                double r_incr = r*incr;
+                r_pr.add(r_incr, realspaceModel.calculatePofRAtR(r_incr));
+            }
         }
+
 
         // clean-up file name
         String[] base = filename.split("\\.");

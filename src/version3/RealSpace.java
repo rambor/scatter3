@@ -32,7 +32,6 @@ public class RealSpace {
     private XYSeries refinedIq;           // range of data used for the actual fit, may contain negative values
     private XYSeries refinedError;        //
 
-
     private XYSeries calcIq;          // log of calculate I(q), matches logData
     private XYSeries calcqIq;         // log of calculate I(q), matches logData
     private XYSeries logData;         // only for plotting
@@ -417,6 +416,7 @@ public class RealSpace {
         System.out.println("Background : " + mooreCoefficients[0]);
         // calculate P(r) distribution
         this.calculatePofR();
+        this.qmax = this.fittedqIq.getMaxX();
 
         try {
             this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));

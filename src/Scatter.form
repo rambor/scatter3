@@ -9,8 +9,8 @@
       <xy x="20" y="20" width="935" height="800"/>
     </constraints>
     <properties>
-      <minimumSize width="800" height="630"/>
-      <preferredSize width="800" height="630"/>
+      <minimumSize width="900" height="630"/>
+      <preferredSize width="900" height="630"/>
     </properties>
     <border type="none"/>
     <children>
@@ -403,7 +403,8 @@
                   <forms defaultalign-vert="false"/>
                 </constraints>
                 <properties>
-                  <background color="-1"/>
+                  <background color="-7876609"/>
+                  <enabled value="true"/>
                   <maximumSize width="2147483647" height="90"/>
                   <minimumSize width="-1" height="90"/>
                   <preferredSize width="-1" height="90"/>
@@ -419,7 +420,7 @@
                       <forms defaultalign-horz="false" defaultalign-vert="false"/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <borderPainted value="true"/>
                       <doubleBuffered value="false"/>
                       <enabled value="true"/>
@@ -441,7 +442,7 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
@@ -458,7 +459,7 @@
                       <forms defaultalign-horz="false"/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <hideActionText value="false"/>
@@ -476,7 +477,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <borderPainted value="true"/>
                       <contentAreaFilled value="true"/>
                       <font size="12" style="1"/>
@@ -495,7 +496,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <borderPainted value="true"/>
                       <contentAreaFilled value="true"/>
                       <font size="12" style="1"/>
@@ -514,7 +515,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <borderPainted value="true"/>
                       <contentAreaFilled value="true"/>
                       <font size="12" style="1"/>
@@ -533,7 +534,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <borderPainted value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
@@ -554,7 +555,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -571,7 +572,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <borderPainted value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
@@ -589,7 +590,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -606,7 +607,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -623,7 +624,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <background color="-5712646"/>
+                      <background color="-2688264"/>
                       <font size="12" style="1"/>
                       <foreground color="-16777216"/>
                       <iconTextGap value="0"/>
@@ -642,7 +643,7 @@
                     <properties>
                       <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-2950918"/>
+                      <foreground color="-1312001"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Complex?"/>
@@ -659,7 +660,7 @@
                     <properties>
                       <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-2950918"/>
+                      <foreground color="-1312001"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="Ratio"/>
@@ -676,7 +677,7 @@
                     <properties>
                       <background color="-10987432"/>
                       <font size="12" style="1"/>
-                      <foreground color="-2950918"/>
+                      <foreground color="-1312001"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
                       <text value="I(0) : Rg Plot"/>

@@ -1045,11 +1045,13 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
 
+                averageButton.setEnabled(false);
                 if (collectionSelected.getTotalSelected() < 2){
+                    averageButton.setEnabled(true);
                     status.setText("Select at least two datasets for averaging");
                     return;
                 } else {
-                    averageButton.setEnabled(false);
+
                     Averager tempAverage = new Averager(collectionSelected);
 
                     JFileChooser fc = new JFileChooser(WORKING_DIRECTORY.getWorkingDirectory());
@@ -1103,6 +1105,7 @@ public class Scatter {
                             //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
+
                     averageButton.setEnabled(true);
                 }
 
@@ -1747,7 +1750,6 @@ public class Scatter {
 
                 final double qminFinal = Double.parseDouble(qminSimilarityField.getText());
                 final double qmaxFinal = Double.parseDouble(qmaxSimilarityField.getText());
-                //final double binsFinal = Double.parseDouble(vrBinsBox.getSelectedItem().toString());
                 System.out.println("selected box " + simBinsComboBox.getSelectedItem().toString());
                 final double binsFinal = Double.parseDouble(simBinsComboBox.getSelectedItem().toString());
 
@@ -2284,6 +2286,23 @@ public class Scatter {
 
                 makeIt.start();
 
+            }
+        });
+
+        GNOMOutFileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //Set GNOM out file
+                File theCWD = new File(WORKING_DIRECTORY.getWorkingDirectory());
+                JFileChooser chooser = new JFileChooser(theCWD);
+                chooser.setDialogTitle("Select File");
+
+                chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+                chooser.setAcceptAllFileFilterUsed(false);
+
+                if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
+                    damminLabel.setText(chooser.getSelectedFile().toString());
+                }
             }
         });
     }
@@ -2871,8 +2890,8 @@ public class Scatter {
     }
 
     private void createFlexPlots(){
-        FlexPlots flexplot = new FlexPlots(collectionSelected, WORKING_DIRECTORY.getWorkingDirectory());
-        flexplot.plot();
+        FlexibilityPlots flexplot = new FlexibilityPlots(collectionSelected, WORKING_DIRECTORY);
+        flexplot.makePlot();
     }
 
     private void createVcPlot(){

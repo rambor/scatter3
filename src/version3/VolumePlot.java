@@ -110,17 +110,27 @@ public class VolumePlot {
         powerLawSeries = new XYSeries("Power Law");
 
         int endPoint = dataset.getOriginalPositiveOnlyData().getItemCount() - 1;
+        int qmaxEndPoint = endPoint/2;
+
+        if (dataset.getPorodVolumeQmax() > 0.001){
+            for(int i=0; i<dataset.getOriginalPositiveOnlyData().getItemCount(); i++){
+                if(dataset.getOriginalPositiveOnlyData().getX(i).doubleValue() > dataset.getPorodVolumeQmax()){
+                    qmaxEndPoint = i;
+                    break;
+                }
+            }
+        }
 
         int startPoint =0;
-        double[] volumePorodX = new double[endPoint/2];
-        double[] volumePorodY = new double[endPoint/2];
-        double[] powerLawX = new double[endPoint/2];
-        double[] powerLawY = new double[endPoint/2];
+        double[] volumePorodX = new double[qmaxEndPoint];
+        double[] volumePorodY = new double[qmaxEndPoint];
+        double[] powerLawX = new double[qmaxEndPoint];
+        double[] powerLawY = new double[qmaxEndPoint];
 
         XYDataItem tempXY;
         double q4, tempX, tempY, q4y, q2y, logq, logI;
         for (int i = startPoint; i < endPoint; i++){
-            if (i < endPoint/2) {
+            if (i < qmaxEndPoint) {
                 tempXY = dataset.getOriginalPositiveOnlyDataItem(i);
 
                 tempX = tempXY.getXValue();
@@ -146,7 +156,7 @@ public class VolumePlot {
                 powerLaw2nd.add(logq, logI);
                 powerLawX[i] = logq;
                 powerLawY[i] = logI;
-            } else if (i > endPoint/2) {
+            } else if (i > qmaxEndPoint) {
                 //2nd half used for fitting against model functions
                 tempXY = dataset.getOriginalPositiveOnlyDataItem(i);
 
@@ -192,7 +202,7 @@ public class VolumePlot {
         //split into half
         endPoint = tempSeries2.getItemCount();
         for (int i = 0; i < endPoint; i++){
-            if (i < endPoint/2) {
+            if (i < qmaxEndPoint) {
                 volumeInvariant1st.add(tempSeries2.getX(i), tempSeries2.getY(i));
             } else {
                 volumeInvariant2nd.add(tempSeries2.getX(i), tempSeries2.getY(i));

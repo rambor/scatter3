@@ -1539,7 +1539,7 @@ int cols, rows;
     public static double[] autoRg(XYSeries data, XYSeries errors, int startAt) {
 
         int first = startAt;
-        int last = data.getItemCount()-1;
+        //int last = data.getItemCount()-1;
         double slope, intercept, temp_resi, tempMedian, median = 100000;
         double tempRg, rg=0;
 
@@ -1548,10 +1548,17 @@ int cols, rows;
         ArrayList<Double> resList = new ArrayList<>();
         ArrayList<Double> rgList = new ArrayList<>();
         // calculate line between first and last points
-        double lowerqlimit = 0.18*0.18;
+        int lastAtLimit = 0;
+        double lowerqlimit = 0.12*0.12;
         double qRgLow = 0.2*0.2;
         double qRgUp = 1.3*1.3;
-        while( tempDataItem.getXValue() < lowerqlimit && first < (last-10)){  // minimum line is defined by 5 points
+
+        while(data.getX(lastAtLimit).doubleValue() < lowerqlimit){
+            lastAtLimit++;
+        }
+        int last = lastAtLimit;
+
+        while( tempDataItem.getXValue() < lowerqlimit && first < (lastAtLimit-10)){  // minimum line is defined by 5 points
             // fit line to first and last point, calculate Rg, determine gRg limit
             while (last > first+7) {
                 lastItem = data.getDataItem(last);
@@ -1578,7 +1585,7 @@ int cols, rows;
 
                 last--;
             }
-            last = data.getItemCount()-1;
+            last = lastAtLimit;
             //
             first++;
             tempDataItem = data.getDataItem(first);
@@ -1731,152 +1738,11 @@ int cols, rows;
             rg = Math.sqrt(-3.0 * slope);
             i_zero = Math.exp(intercept);
 
-            //System.out.println("Total time => " + (System.nanoTime() - startTime));
-
-/*
-        if (sizeOfArray > 5){
-
-            double[] keptResiduals = new double[0];
-            int keptStartAt=0;
-            double keptSlope=0, keptIntercept=0;
-            // trim points from start
-            while(sizeOfArray > 5){
-                // fit a line but bring in qmax
-                x_range = new double[sizeOfArray];
-                y_range = new double[sizeOfArray];
-                //w_range = new double[sizeOfArray];
-
-                // create dataset for fitting
-                for (int i = 0; i < sizeOfArray; i++) {
-                    XYDataItem dat = data.getDataItem(i+startAtLimit);
-                    x_range[i] = dat.getXValue();  // q^2
-                    y_range[i] = dat.getYValue();  // ln(I(q))
-                }
-
-                // fit data via sampling
-                int trial = 0, randomIndex, random_length, subsample;
-
-                // random sampling within data range
-                while (trial < 100) {
-
-                    subsample = 5;
-                    int[] random_index = Functions.rand_n(subsample, sizeOfArray - 1);
-
-                    random_length = random_index.length;
-
-                    double[] x_random = new double[random_length];
-                    double[] y_random = new double[random_length];
-
-                    for (int l = 0; l < random_length; l++) {
-                        randomIndex = random_index[l];
-                        x_random[l] = (x_range[randomIndex]);
-                        y_random[l] = (y_range[randomIndex]);
-                    }
-
-                    double[] param3 = Functions.leastSquares(x_random, y_random);
-                    c1 = param3[0];
-                    c0 = param3[1];
-
-                    if (c1 < 0){ // slope has to be negative
-
-                        double tempRgat = Math.sqrt(-3*c1);
-                        tempqmaxLimit = 1.3/tempRgat;
-
-                        if (tempqmaxLimit > qmax13Limit && (tempqmaxLimit*tempqmaxLimit) < x_range[sizeOfArray-1]){
-                            residuals3 = new double[sizeOfArray];
-
-                            for (int v = 0; v < sizeOfArray; v++) {
-                                residuals3[v] = Math.pow((y_range[v] - (c1 * x_range[v] + c0)), 2);
-                            }
-
-                            Arrays.sort(residuals3);
-                            double median_test = Functions.median(residuals3);
-
-                            if (median_test < minResidual) {
-                                minResidual = median_test;
-
-                                keptResiduals = new double[sizeOfArray];
-                                System.arraycopy(residuals3, 0, keptResiduals, 0, sizeOfArray);
-                                arrayIndex = sizeOfArray;
-                                //keptStartAt = startAtLimit;
-                                keptSlope = c1;
-                                keptIntercept = c0;
-                                qmax13Limit = tempqmaxLimit;
-                            }
-                        }
-
-                    }
-                    trial++;
-                }
-
-                sizeOfArray--;
-                startAtLimit++;
-            }
-
-            // do final fit
-            // calculate rejections
-            // create initial scale estimate
-            double s_o = 1.4826 * (1.0 + 5.0 / (endAt - 2 - 1)) * Math.sqrt(minResidual);
-            double inv_s_o = 1.0/s_o;
-
-            // create final dataset for final fit
-            count = 0;
-            ArrayList<Integer> keepers = new ArrayList<Integer>();
-
-            XYDataItem dataItem;
-            for (int i = 0; i < endAt; i++) {
-                //residualAt = Math.pow((data.getY(i).doubleValue() - (keptSlope * data.getX(i).doubleValue() + keptIntercept)), 2);
-                dataItem = data.getDataItem(i);
-                //if (Math.abs((dataItem.getYValue() - (keptSlope * dataItem.getXValue() + keptIntercept))) * inv_sigma < 2.5) {
-                if (Math.abs((dataItem.getYValue() - (keptSlope * dataItem.getXValue() + keptIntercept))) * inv_s_o < 2.5) {
-                    // decide which ln[I(q)] values to keep
-                    keepers.add(i);
-                    count++;
-                }
-            }
-
-            // determines values to keep for fitting to determine Rg and I(zero)
-            double[] final_x = new double[count];
-            double[] final_y = new double[count];
-            //double[] final_w = new double[count];
-            int keep;
-
-            XYDataItem dat;
-            for (int i = 0; i < count; i++) {
-                keep = keepers.get(i);
-                dat=data.getDataItem(keep);
-                final_x[i] = dat.getXValue();
-                final_y[i] = dat.getYValue();
-                //final_w[i] = errors.getY(keep).doubleValue();
-            }
-
-
-            double median_y = Statistics.calculateMedian(forMAD, true);
-            // calculate MAD
-            ArrayList<Double> median_abs_dev = new ArrayList<Double>();
-            for (int i = 0; i < arrayIndex; i++) {
-                median_abs_dev.add(Math.abs(y_range[i] - median_y));
-            }
-
-            double mad = Statistics.calculateMedian(median_abs_dev, true);
-            double ratioOf = Statistics.calculateMedian(median_abs_resi, true);
-            // Robust Coefficient of Determination
-            r2_coeff = 1 - ratioOf * ratioOf / (mad * mad);
-
-
-            double[] param3 = Functions.leastSquares(final_x, final_y);
-            slope = param3[0];
-            intercept = param3[1];
-            errorSlope = param3[2];
-            errorIntercept = param3[3];
-            rg = Math.sqrt(-3.0 * slope);
-            i_zero = Math.exp(intercept);
-*/
-
         } else {
             // ignore first three points, take the next 5 and fit
-            x_range = new double[5];
-            y_range = new double[5];
+            int arrayLimit = 7;
+            x_range = new double[arrayLimit];
+            y_range = new double[arrayLimit];
             //w_range = new double[5];
 
             getDataLoop:
@@ -1885,7 +1751,7 @@ int cols, rows;
                 xvalue = dat.getXValue(); // q^2
                 yvalue = dat.getYValue();
                 //x^2
-                if (arrayIndex < 5) {
+                if (arrayIndex < arrayLimit) {
                     //x_data[i] = Math.pow(xvalue, 2);
                     x_range[arrayIndex] = xvalue;  // q^2
                     //ln(y)
@@ -1913,7 +1779,7 @@ int cols, rows;
         System.out.println("Determined Rg " + rg);
         double[] parameters = new double[6];
 
-        if ((arrayIndex <= 5) || (Double.isNaN(rg) || (Double.isNaN(i_zero)))){
+        if ((arrayIndex <= 7) || (Double.isNaN(rg) || (Double.isNaN(i_zero)))){
             System.out.println("AutoRg failed, too few points in Guinier Region: " + data.getKey());
             parameters[0]=0;
             parameters[1]=0;
@@ -1921,14 +1787,6 @@ int cols, rows;
             parameters[3]=0;
             parameters[4]=0;
             parameters[5]=1; // percent rejected
-           /*
-            parameters[0]=i_zero;
-            parameters[1]=rg;
-            parameters[2]=i_zero*errorIntercept;  //Izero Error
-            parameters[3]=1.5*errorSlope*Math.sqrt(1/3.0*1/rg);  //Rg Error
-            parameters[4]=r2_coeff;
-            parameters[5]=1; // percent rejected
-            */
         } else {
             parameters[0]=i_zero;
             parameters[1]=rg;

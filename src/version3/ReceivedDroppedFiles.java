@@ -48,7 +48,6 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         this.bar = bar;
         this.sortFiles = sort;
         this.workingDirectoryName = workingDirectoryName;
-
     }
 
 

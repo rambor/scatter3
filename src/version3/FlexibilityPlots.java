@@ -12,24 +12,32 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 import java.util.Random;
-import javax.swing.border.EmptyBorder;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 /**
- * Created by robertrambo on 13/01/2016.
+ * Created by robertrambo on 16/02/2016.
  */
-public class FlexPlots implements ChangeListener {
+public class FlexibilityPlots implements ChangeListener {
+    private JPanel panel1;
+    private JSlider zoomSlider;
+    private JLabel qmaxLabel;
+    private JPanel porodPanel;
+    private JPanel porodDebyePanel;
+    private JPanel sibylsPanel;
+    private JPanel kratkyPanel;
+    private WorkingDirectory workingDirectoryName;
+    private Collection collection;
 
     private final XYSeriesCollection porodSeries;
     private final XYSeriesCollection porodDebyeSeries;
     private final XYSeriesCollection kratkyDebyeSeries;
     private final XYSeriesCollection sibylsSeries;
-    private final String workingDirectoryName;
 
     private JFreeChart porodChart;
     private JFreeChart porodDebyeChart;
@@ -37,35 +45,22 @@ public class FlexPlots implements ChangeListener {
     private JFreeChart sibylsChart;
 
     private double delta_q;
-    private Collection inUse;
 
-    JFrame jframe = new JFrame("SC\u212BTTER \u2263 Flexibility Plots");
-
-    public FlexPlots(Collection collection, String dir){
-
-        workingDirectoryName = dir;
-        inUse = collection;
-
-        jframe.setMaximumSize(new Dimension(700,600));
-        jframe.setPreferredSize(new Dimension(700,600));
+    public FlexibilityPlots(Collection collection, WorkingDirectory dir){
+        this.collection = collection;
+        this.workingDirectoryName = dir;
 
         porodSeries = new XYSeriesCollection();
         porodDebyeSeries  = new XYSeriesCollection();
         kratkyDebyeSeries = new XYSeriesCollection();
         sibylsSeries = new XYSeriesCollection();
 
+        this.populateSeries();
+
+        zoomSlider.addChangeListener(this);
     }
 
-
-    public void plot(){
-        JPanel flexGraphs = new JPanel();
-        flexGraphs.setSize(300, 300);
-        flexGraphs.setPreferredSize(new Dimension(300,300));
-
-        GridLayout flexibilityLayout=new GridLayout(2,2);
-        flexGraphs.setLayout(flexibilityLayout);
-        flexibilityLayout.preferredLayoutSize(flexGraphs);
-
+    private void populateSeries(){
         XYDataItem tempData;
         int sizeOf=0;
         int count = 0;
@@ -76,8 +71,8 @@ public class FlexPlots implements ChangeListener {
 
         Random spot = new Random();
 
-        for (int i = 0; i < inUse.getDatasets().size(); i++){
-            Dataset temp = inUse.getDataset(i);
+        for (int i = 0; i < collection.getDatasets().size(); i++){
+            Dataset temp = collection.getDataset(i);
             if (temp.getInUse()){
                 //
                 // use q-values in active dataset
@@ -120,32 +115,297 @@ public class FlexPlots implements ChangeListener {
         }
 
         delta_q = delta_q_sum*(1.0/count);
-
-        int maxValue = (int)(inUse.getMaxq()/delta_q)+1;
-        JSlider zoomSlider = new JSlider(JSlider.HORIZONTAL, 0, 15, 10);
-
-        flexGraphs.add(plotPorod(porodSeries).getChartPanel());
-        flexGraphs.add(plotPorodDebye(porodDebyeSeries).getChartPanel());
-        flexGraphs.add(plotKratkyDebye(kratkyDebyeSeries).getChartPanel());
-        flexGraphs.add(plotSibyls(sibylsSeries).getChartPanel());
-
-        zoomSlider.addChangeListener(this);
+        int maxValue = (int)(collection.getMaxq()/delta_q)+1;
+        //zoomSlider = new JSlider(JSlider.HORIZONTAL, 0, 15, 10);
         zoomSlider.setMaximum(maxValue);
         zoomSlider.setValue(maxValue);
         zoomSlider.setMinimum(0);
-        zoomSlider.setBorder(new EmptyBorder(7,7,7,7));
-
-        jframe.add(flexGraphs, BorderLayout.CENTER);
-        jframe.add(zoomSlider, BorderLayout.SOUTH);
-        jframe.setLocation(50,50);
-        jframe.pack();
-        jframe.setVisible(true);
+        //zoomSlider.setBorder(new EmptyBorder(7,7,7,7));
     }
 
+    public void makePlot(){
+
+        porodPanel.add(plotPorod(porodSeries).getChartPanel());
+        porodDebyePanel.add(plotPorodDebye(porodDebyeSeries).getChartPanel());
+        kratkyPanel.add(plotKratkyDebye(kratkyDebyeSeries).getChartPanel());
+        sibylsPanel.add(plotSibyls(sibylsSeries).getChartPanel());
+
+        JFrame frame = new JFrame("Plot");
+        frame.setContentPane(this.panel1);
+        frame.setPreferredSize(new Dimension(800,600));
+        frame.pack();
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    }
+
+    public ChartFrame plotPorod(XYSeriesCollection dataset) {
+        porodChart = ChartFactory.createXYLineChart(
+                "Porod Plot",                     // chart title
+                "q",                    // domain axis label
+                "q4 * I(q)",                // range axis label
+                dataset,                 // data
+                PlotOrientation.VERTICAL,
+                false,                       // include legend
+                false,
+                false
+        );
+        int limit = collection.getDatasets().size();
+        final XYPlot plot = porodChart.getXYPlot();
+        final NumberAxis domainAxis = new NumberAxis("q");
+        final NumberAxis rangeAxis = new NumberAxis("q^4*I(q)");
+        String quote = "q (\u212B \u207B\u00B9)";
+        domainAxis.setLabel(quote);
+        domainAxis.setLabelFont(Constants.BOLD_16);
+        quote = "q\u2074 \u00D7 I(q)";
+        rangeAxis.setLabelFont(Constants.BOLD_16);
+        rangeAxis.setLabel(quote);
+
+        porodChart.getTitle().setFont(new java.awt.Font("Tahoma", Font.BOLD, 16));
+        porodChart.getTitle().setPaint(Constants.SteelBlue);
+        porodChart.getTitle().setMargin(8, 0, 0, 0);
+
+        plot.setBackgroundPaint(null);
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
+        plot.setDomainCrosshairVisible(true);
+        plot.setRangeCrosshairVisible(true);
+        plot.setRangeGridlinePaint(Color.black);
+        plot.setDomainGridlinePaint(Color.black);
+        plot.getRangeAxis(0).setTickLabelsVisible(false);
+        XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
+        dotRend.setBaseLinesVisible(false);
+        dotRend.setBaseShapesFilled(false);
+        dotRend.setBaseShapesVisible(true);
+
+        // seriesCollection < collection if I unclick a middle dataset
+        int locale=0;
+        double negativePointSize;
+        for(int i=0; i < limit; i++){
+            Dataset temp = collection.getDataset(i);
+            if(temp.getInUse()){
+                negativePointSize = -1*temp.getPointSize();
+                dotRend.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
+                dotRend.setSeriesShapesFilled(locale,temp.getBaseShapeFilled());
+                dotRend.setSeriesLinesVisible(locale, false);
+                dotRend.setSeriesPaint(locale, temp.getColor());
+
+                locale++;
+            }
+        }
+
+        plot.setDataset(0, dataset);
+        plot.setRenderer(0,dotRend);
+
+        ChartFrame porodFrame = new ChartFrame("Porod-Debye", porodChart);
+        porodFrame.getChartPanel().setChart(porodChart);
+        porodFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName.getWorkingDirectory()));
+        porodFrame.pack();
+        porodFrame.getChartPanel().setMouseZoomable(true);
+        return porodFrame;
+    }
+
+    private ChartFrame plotPorodDebye(XYSeriesCollection dataset) {
+        porodDebyeChart = ChartFactory.createXYLineChart(
+                "Porod-Debye Plot",                     // chart title
+                "",                    // domain axis label
+                "",                // range axis label
+                dataset,                 // data
+                PlotOrientation.VERTICAL,
+                false,                       // include legend
+                false,
+                false
+        );
+        int limit = collection.getDatasets().size();
+        final XYPlot plot = porodDebyeChart.getXYPlot();
+        final NumberAxis domainAxis = new NumberAxis("q^4");
+        final NumberAxis rangeAxis = new NumberAxis("q^4*I(q)");
+        String quote = "q\u2074 (\u212B \u207B\u00B9)\u2074";
+        domainAxis.setLabel(quote);
+        domainAxis.setLabelFont(Constants.BOLD_16);
+        quote = "q\u2074 \u00D7 I(q)";
+        rangeAxis.setLabel(quote);
+        rangeAxis.setLabelFont(Constants.BOLD_16);
+        porodDebyeChart.getTitle().setFont(new java.awt.Font("Tahoma", Font.BOLD, 16));
+        porodDebyeChart.getTitle().setPaint(Constants.SteelBlue);
+        porodDebyeChart.getTitle().setMargin(8, 0, 0, 0);
+
+        plot.setBackgroundPaint(null);
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
+        plot.setDomainCrosshairVisible(true);
+        plot.setRangeCrosshairVisible(true);
+        plot.setDomainGridlinesVisible(false);
+        plot.setRangeGridlinesVisible(false);
+        plot.getRangeAxis(0).setTickLabelsVisible(false);
+        XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
+        plot.setDataset(0, dataset);
+        plot.setRenderer(0,dotRend);
+        plot.setOutlineVisible(false);
+
+        dotRend.setBaseLinesVisible(false);
+        dotRend.setBaseShapesFilled(false);
+        dotRend.setBaseShapesVisible(true);
+
+        int locale=0;
+        double negativePointSize;
+        for(int i=0; i < limit; i++){
+            Dataset temp = collection.getDataset(i);
+            if(temp.getInUse()){
+                negativePointSize = -1*temp.getPointSize();
+                dotRend.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
+                dotRend.setSeriesShapesFilled(locale,temp.getBaseShapeFilled());
+                dotRend.setSeriesLinesVisible(locale, false);
+                dotRend.setSeriesPaint(locale, temp.getColor());
+
+                locale++;
+            }
+        }
+
+        ChartFrame porodDebyeFrame = new ChartFrame("Porod-Debye", porodDebyeChart);
+        porodDebyeFrame.getChartPanel().setChart(porodDebyeChart);
+        porodDebyeFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName.getWorkingDirectory()));
+        porodDebyeFrame.pack();
+        porodDebyeFrame.getChartPanel().setMouseZoomable(true);
+        return porodDebyeFrame;
+    }
+
+    private ChartFrame plotKratkyDebye(XYSeriesCollection dataset) {
+        kratkyDebyeChart = ChartFactory.createXYLineChart(
+                "Kratky-Debye Plot",                     // chart title
+                "",                    // domain axis label
+                "",                // range axis label
+                dataset,                 // data
+                PlotOrientation.VERTICAL,
+                false,                       // include legend
+                false,
+                false
+        );
+        //int limit = dataset.getSeriesCount();
+        int limit = collection.getDatasets().size();
+        final XYPlot plot = kratkyDebyeChart.getXYPlot();
+        final NumberAxis domainAxis = new NumberAxis("q^2");
+        final NumberAxis rangeAxis = new NumberAxis("q^2*I(q)");
+        String quote = "q\u00B2 (\u212B \u207B\u00B9)\u00B2";
+        domainAxis.setLabel(quote);
+        domainAxis.setLabelFont(Constants.BOLD_16);
+        quote = "q\u00B2 \u00D7 I(q)";
+        rangeAxis.setLabel(quote);
+        rangeAxis.setLabelFont(Constants.BOLD_16);
+        kratkyDebyeChart.getTitle().setFont(new java.awt.Font("Tahoma", Font.BOLD, 16));
+        kratkyDebyeChart.getTitle().setPaint(Constants.SteelBlue);
+        kratkyDebyeChart.getTitle().setMargin(8, 0, 0, 0);
+
+        plot.setBackgroundPaint(null);
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
+        plot.setDomainCrosshairVisible(true);
+        plot.setRangeCrosshairVisible(true);
+        plot.setDomainGridlinesVisible(false);
+        plot.setRangeGridlinesVisible(false);
+        plot.getRangeAxis(0).setTickLabelsVisible(false);
+        XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
+        plot.setDataset(0, dataset);
+        plot.setRenderer(0,dotRend);
+        plot.setOutlineVisible(false);
+
+        dotRend.setBaseLinesVisible(false);
+        dotRend.setBaseShapesFilled(false);
+        dotRend.setBaseShapesVisible(true);
+
+        int locale=0;
+        double negativePointSize;
+        for(int i=0; i < limit; i++){
+            Dataset temp = collection.getDataset(i);
+            if(temp.getInUse()){
+                negativePointSize = -1*temp.getPointSize();
+                dotRend.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
+                dotRend.setSeriesShapesFilled(locale,temp.getBaseShapeFilled());
+                dotRend.setSeriesLinesVisible(locale, false);
+                dotRend.setSeriesPaint(locale, temp.getColor());
+
+                locale++;
+            }
+        }
+
+        ChartFrame kratkyDebyeFrame = new ChartFrame("Porod-Debye", kratkyDebyeChart);
+        kratkyDebyeFrame.getChartPanel().setChart(kratkyDebyeChart);
+        kratkyDebyeFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName.getWorkingDirectory()));
+        kratkyDebyeFrame.pack();
+        kratkyDebyeFrame.getChartPanel().setMouseZoomable(true);
+        return kratkyDebyeFrame;
+    }
+
+    private ChartFrame plotSibyls(XYSeriesCollection dataset) {
+        sibylsChart = ChartFactory.createXYLineChart(
+                "SIBYLS Plot",                     // chart title
+                "",                    // domain axis label
+                "",                // range axis label
+                dataset,                 // data
+                PlotOrientation.VERTICAL,
+                false,                       // include legend
+                false,
+                false
+        );
+        //int limit = collection.getSeriesCount();
+        int limit = collection.getDatasets().size();
+        final XYPlot plot = sibylsChart.getXYPlot();
+        final NumberAxis domainAxis = new NumberAxis("q^3");
+        final NumberAxis rangeAxis = new NumberAxis("q^3*I(q)");
+        String quote = "q\u00B3 (\u212B \u207B\u00B9)\u00B3";
+        domainAxis.setLabel(quote);
+        domainAxis.setLabelFont(Constants.BOLD_16);
+        quote = "q\u00B3 \u00D7 I(q)";
+        rangeAxis.setLabel(quote);
+        rangeAxis.setLabelFont(Constants.BOLD_16);
+        sibylsChart.getTitle().setFont(new java.awt.Font("Tahoma", Font.BOLD, 16));
+        sibylsChart.getTitle().setPaint(Constants.SteelBlue);
+        sibylsChart.getTitle().setMargin(8, 0, 0, 0);
+
+        plot.setBackgroundPaint(null);
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
+        plot.setDomainCrosshairVisible(true);
+        plot.setRangeCrosshairVisible(true);
+        plot.setDomainGridlinesVisible(false);
+        plot.setRangeGridlinesVisible(false);
+        plot.getRangeAxis(0).setTickLabelsVisible(false);
+        XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
+        plot.setDataset(0, dataset);
+        plot.setRenderer(0,dotRend);
+        plot.setOutlineVisible(false);
+
+        dotRend.setBaseLinesVisible(false);
+        dotRend.setBaseShapesFilled(false);
+        dotRend.setBaseShapesVisible(true);
+
+        int locale=0;
+        double negativePointSize;
+        for(int i=0; i < limit; i++){
+            Dataset temp = collection.getDataset(i);
+
+            if(temp.getInUse()){
+                negativePointSize = -1*temp.getPointSize();
+                dotRend.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
+                dotRend.setSeriesShapesFilled(locale,temp.getBaseShapeFilled());
+                dotRend.setSeriesLinesVisible(locale, false);
+                dotRend.setSeriesPaint(locale, temp.getColor());
+
+                locale++;
+            }
+
+        }
+
+        ChartFrame sibylsFrame = new ChartFrame("Porod-Debye", sibylsChart);
+        sibylsFrame.getChartPanel().setChart(sibylsChart);
+        sibylsFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName.getWorkingDirectory()));
+        sibylsFrame.pack();
+        sibylsFrame.getChartPanel().setMouseZoomable(true);
+        return sibylsFrame;
+    }
 
     @Override
     public void stateChanged(ChangeEvent e) {
-//Slider StateChanged
+
         JSlider source = (JSlider)e.getSource();
 
         double currentQ = delta_q*source.getValue();
@@ -204,6 +464,15 @@ public class FlexPlots implements ChangeListener {
         float qmax2 = (float)(currentQ*currentQ);
         float qmax4 = qmax2*qmax2;
 
+        qmaxLabel.setText(String.format("q_max : %.4f ", currentQ) );
+
+        for (int i = 0; i < collection.getDatasets().size(); i++) {
+            Dataset temp = collection.getDataset(i);
+            if (temp.getInUse()) {
+                temp.setPorodVolumeQmax(currentQ);
+            }
+        }
+
 
         porodChart.getXYPlot().getDomainAxis().setUpperBound(currentQ);
         porodChart.getXYPlot().getRangeAxis().setUpperBound(porodMax + 0.1*porodMax);
@@ -216,263 +485,8 @@ public class FlexPlots implements ChangeListener {
 
         sibylsChart.getXYPlot().getDomainAxis().setUpperBound(qmax2 * currentQ);
         sibylsChart.getXYPlot().getRangeAxis().setUpperBound(ymaxSibyls + 0.1 * ymaxSibyls);
+
+
+
     }
-
-    public ChartFrame plotPorod(XYSeriesCollection dataset) {
-        porodChart = ChartFactory.createXYLineChart(
-                "Porod Plot",                     // chart title
-                "q",                    // domain axis label
-                "q4 * I(q)",                // range axis label
-                dataset,                 // data
-                PlotOrientation.VERTICAL,
-                false,                       // include legend
-                false,
-                false
-        );
-        int limit = inUse.getDatasets().size();
-        final XYPlot plot = porodChart.getXYPlot();
-        final NumberAxis domainAxis = new NumberAxis("q");
-        final NumberAxis rangeAxis = new NumberAxis("q^4*I(q)");
-        String quote = "q (\u212B \u207B\u00B9)";
-        domainAxis.setLabel(quote);
-        quote = "q\u2074 \u00D7 I(q)";
-        rangeAxis.setLabel(quote);
-
-        porodChart.getTitle().setFont(new java.awt.Font("Tahoma", Font.BOLD, 16));
-        porodChart.getTitle().setPaint(Constants.SteelBlue);
-        porodChart.getTitle().setMargin(8, 0, 0, 0);
-
-        plot.setBackgroundPaint(null);
-        plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
-        plot.setDomainCrosshairVisible(true);
-        plot.setRangeCrosshairVisible(true);
-        plot.setRangeGridlinePaint(Color.black);
-        plot.setDomainGridlinePaint(Color.black);
-        plot.getRangeAxis(0).setTickLabelsVisible(false);
-        XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
-        dotRend.setBaseLinesVisible(false);
-        dotRend.setBaseShapesFilled(false);
-        dotRend.setBaseShapesVisible(true);
-
-        // seriesCollection < collection if I unclick a middle dataset
-        int locale=0;
-        double negativePointSize;
-        for(int i=0; i < limit; i++){
-            Dataset temp = inUse.getDataset(i);
-            if(temp.getInUse()){
-                negativePointSize = -1*temp.getPointSize();
-                dotRend.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
-                dotRend.setSeriesShapesFilled(locale,temp.getBaseShapeFilled());
-                dotRend.setSeriesLinesVisible(locale, false);
-                dotRend.setSeriesPaint(locale, temp.getColor());
-
-                locale++;
-            }
-        }
-
-        plot.setDataset(0, dataset);
-        plot.setRenderer(0,dotRend);
-
-        ChartFrame porodFrame = new ChartFrame("Porod-Debye", porodChart);
-        porodFrame.getChartPanel().setChart(porodChart);
-        porodFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
-        porodFrame.pack();
-        porodFrame.getChartPanel().setMouseZoomable(true);
-        return porodFrame;
-    }
-
-    private ChartFrame plotPorodDebye(XYSeriesCollection dataset) {
-        porodDebyeChart = ChartFactory.createXYLineChart(
-                "Porod-Debye Plot",                     // chart title
-                "",                    // domain axis label
-                "",                // range axis label
-                dataset,                 // data
-                PlotOrientation.VERTICAL,
-                false,                       // include legend
-                false,
-                false
-        );
-        int limit = inUse.getDatasets().size();
-        final XYPlot plot = porodDebyeChart.getXYPlot();
-        final NumberAxis domainAxis = new NumberAxis("q^4");
-        final NumberAxis rangeAxis = new NumberAxis("q^4*I(q)");
-        String quote = "q\u2074 (\u212B \u207B\u00B9)\u2074";
-        domainAxis.setLabel(quote);
-        quote = "q\u2074 \u00D7 I(q)";
-        rangeAxis.setLabel(quote);
-        porodDebyeChart.getTitle().setFont(new java.awt.Font("Tahoma", Font.BOLD, 16));
-        porodDebyeChart.getTitle().setPaint(Constants.SteelBlue);
-        porodDebyeChart.getTitle().setMargin(8, 0, 0, 0);
-
-        plot.setBackgroundPaint(null);
-        plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
-        plot.setDomainCrosshairVisible(true);
-        plot.setRangeCrosshairVisible(true);
-        plot.setDomainGridlinesVisible(false);
-        plot.setRangeGridlinesVisible(false);
-        plot.getRangeAxis(0).setTickLabelsVisible(false);
-        XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
-        plot.setDataset(0, dataset);
-        plot.setRenderer(0,dotRend);
-        plot.setOutlineVisible(false);
-
-        dotRend.setBaseLinesVisible(false);
-        dotRend.setBaseShapesFilled(false);
-        dotRend.setBaseShapesVisible(true);
-
-        int locale=0;
-        double negativePointSize;
-        for(int i=0; i < limit; i++){
-            Dataset temp = inUse.getDataset(i);
-            if(temp.getInUse()){
-                negativePointSize = -1*temp.getPointSize();
-                dotRend.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
-                dotRend.setSeriesShapesFilled(locale,temp.getBaseShapeFilled());
-                dotRend.setSeriesLinesVisible(locale, false);
-                dotRend.setSeriesPaint(locale, temp.getColor());
-
-                locale++;
-            }
-        }
-
-        ChartFrame porodDebyeFrame = new ChartFrame("Porod-Debye", porodDebyeChart);
-        porodDebyeFrame.getChartPanel().setChart(porodDebyeChart);
-        porodDebyeFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
-        porodDebyeFrame.pack();
-        porodDebyeFrame.getChartPanel().setMouseZoomable(true);
-        return porodDebyeFrame;
-    }
-
-    private ChartFrame plotKratkyDebye(XYSeriesCollection dataset) {
-        kratkyDebyeChart = ChartFactory.createXYLineChart(
-                "Kratky-Debye Plot",                     // chart title
-                "",                    // domain axis label
-                "",                // range axis label
-                dataset,                 // data
-                PlotOrientation.VERTICAL,
-                false,                       // include legend
-                false,
-                false
-        );
-        //int limit = dataset.getSeriesCount();
-        int limit = inUse.getDatasets().size();
-        final XYPlot plot = kratkyDebyeChart.getXYPlot();
-        final NumberAxis domainAxis = new NumberAxis("q^2");
-        final NumberAxis rangeAxis = new NumberAxis("q^2*I(q)");
-        String quote = "q\u00B2 (\u212B \u207B\u00B9)\u00B2";
-        domainAxis.setLabel(quote);
-        quote = "q\u00B2 \u00D7 I(q)";
-        rangeAxis.setLabel(quote);
-        kratkyDebyeChart.getTitle().setFont(new java.awt.Font("Tahoma", Font.BOLD, 16));
-        kratkyDebyeChart.getTitle().setPaint(Constants.SteelBlue);
-        kratkyDebyeChart.getTitle().setMargin(8, 0, 0, 0);
-
-        plot.setBackgroundPaint(null);
-        plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
-        plot.setDomainCrosshairVisible(true);
-        plot.setRangeCrosshairVisible(true);
-        plot.setDomainGridlinesVisible(false);
-        plot.setRangeGridlinesVisible(false);
-        plot.getRangeAxis(0).setTickLabelsVisible(false);
-        XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
-        plot.setDataset(0, dataset);
-        plot.setRenderer(0,dotRend);
-        plot.setOutlineVisible(false);
-
-        dotRend.setBaseLinesVisible(false);
-        dotRend.setBaseShapesFilled(false);
-        dotRend.setBaseShapesVisible(true);
-
-        int locale=0;
-        double negativePointSize;
-        for(int i=0; i < limit; i++){
-            Dataset temp = inUse.getDataset(i);
-            if(temp.getInUse()){
-                negativePointSize = -1*temp.getPointSize();
-                dotRend.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
-                dotRend.setSeriesShapesFilled(locale,temp.getBaseShapeFilled());
-                dotRend.setSeriesLinesVisible(locale, false);
-                dotRend.setSeriesPaint(locale, temp.getColor());
-
-                locale++;
-            }
-        }
-
-        ChartFrame kratkyDebyeFrame = new ChartFrame("Porod-Debye", kratkyDebyeChart);
-        kratkyDebyeFrame.getChartPanel().setChart(kratkyDebyeChart);
-        kratkyDebyeFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
-        kratkyDebyeFrame.pack();
-        kratkyDebyeFrame.getChartPanel().setMouseZoomable(true);
-        return kratkyDebyeFrame;
-    }
-
-    private ChartFrame plotSibyls(XYSeriesCollection dataset) {
-        sibylsChart = ChartFactory.createXYLineChart(
-                "SIBYLS Plot",                     // chart title
-                "",                    // domain axis label
-                "",                // range axis label
-                dataset,                 // data
-                PlotOrientation.VERTICAL,
-                false,                       // include legend
-                false,
-                false
-        );
-        //int limit = collection.getSeriesCount();
-        int limit = inUse.getDatasets().size();
-        final XYPlot plot = sibylsChart.getXYPlot();
-        final NumberAxis domainAxis = new NumberAxis("q^3");
-        final NumberAxis rangeAxis = new NumberAxis("q^3*I(q)");
-        String quote = "q\u00B3 (\u212B \u207B\u00B9)\u00B3";
-        domainAxis.setLabel(quote);
-        quote = "q\u00B3 \u00D7 I(q)";
-        rangeAxis.setLabel(quote);
-        sibylsChart.getTitle().setFont(new java.awt.Font("Tahoma", Font.BOLD, 16));
-        sibylsChart.getTitle().setPaint(Constants.SteelBlue);
-        sibylsChart.getTitle().setMargin(8, 0, 0, 0);
-
-        plot.setBackgroundPaint(null);
-        plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
-        plot.setDomainCrosshairVisible(true);
-        plot.setRangeCrosshairVisible(true);
-        plot.setDomainGridlinesVisible(false);
-        plot.setRangeGridlinesVisible(false);
-        plot.getRangeAxis(0).setTickLabelsVisible(false);
-        XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
-        plot.setDataset(0, dataset);
-        plot.setRenderer(0,dotRend);
-        plot.setOutlineVisible(false);
-
-        dotRend.setBaseLinesVisible(false);
-        dotRend.setBaseShapesFilled(false);
-        dotRend.setBaseShapesVisible(true);
-
-        int locale=0;
-        double negativePointSize;
-        for(int i=0; i < limit; i++){
-            Dataset temp = inUse.getDataset(i);
-
-            if(temp.getInUse()){
-                negativePointSize = -1*temp.getPointSize();
-                dotRend.setSeriesShape(locale, new Ellipse2D.Double(negativePointSize, negativePointSize, temp.getPointSize(), temp.getPointSize()));
-                dotRend.setSeriesShapesFilled(locale,temp.getBaseShapeFilled());
-                dotRend.setSeriesLinesVisible(locale, false);
-                dotRend.setSeriesPaint(locale, temp.getColor());
-
-                locale++;
-            }
-
-        }
-
-        ChartFrame sibylsFrame = new ChartFrame("Porod-Debye", sibylsChart);
-        sibylsFrame.getChartPanel().setChart(sibylsChart);
-        sibylsFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
-        sibylsFrame.pack();
-        sibylsFrame.getChartPanel().setMouseZoomable(true);
-        return sibylsFrame;
-    }
-
 }
