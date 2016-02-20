@@ -182,9 +182,11 @@ public class PDBFile {
         double constant = 0.5*dmax/(totalr-1);
 
         XYDataItem tempItem;
+
         while (q_at < qmax){  // integrate using trapezoid rule
 
             q_at += delta_q;
+
             sum = 0;
             // for a given q, integrate Debye function from r=0 to r=dmax
             for(int i=1; i<totalr; i++){

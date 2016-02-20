@@ -2599,14 +2599,16 @@
                 <children>
                   <scrollpane id="df576" binding="damScrollPane">
                     <constraints>
-                      <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                      <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="8" fill="2" indent="0" use-parent-layout="false"/>
                     </constraints>
                     <properties/>
                     <border type="none"/>
                     <children>
                       <component id="896f4" class="javax.swing.JTextPane" binding="damTextPane">
                         <constraints/>
-                        <properties/>
+                        <properties>
+                          <maximumSize width="-1" height="-1"/>
+                        </properties>
                       </component>
                     </children>
                   </scrollpane>

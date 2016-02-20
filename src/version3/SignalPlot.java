@@ -17,6 +17,8 @@ import sun.misc.Signal;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
@@ -295,7 +297,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
     public void makePlot(){
 
-
         chart = ChartFactory.createXYLineChart(
                 "Signal Plot",            // chart title
                 "sample",                 // domain axis label
@@ -427,18 +428,19 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
         frame.getChartPanel().setRangeZoomable(false);
         frame.getChartPanel().setDomainZoomable(false);
+        frame.getChartPanel().setHorizontalAxisTrace(true);
 
         // add mouse listener for getting values
 
+        //frame.getChartPanel().addKeyListener();
         frame.getChartPanel().addMouseListener(new MouseMarker(frame.getChartPanel(), samplesList));
-
         frame.getChartPanel().addChartMouseListener(new ChartMouseListener() {
             private Double markerStart = Double.NaN;
             private Double markerEnd = Double.NaN;
 
             @Override
             public void chartMouseClicked(ChartMouseEvent chartMouseEvent) {
-                System.out.println("Hello from click");
+                System.out.println("Setting frame min ");
             }
 
             @Override
@@ -448,6 +450,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         });
 
         frame.pack();
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setVisible(true);
     }
 
@@ -528,7 +531,11 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         @Override
         public void mousePressed(MouseEvent e) {
             markerStart = getPosition(e);
+
+            // if key pressed
         }
+
+
     }
 
 

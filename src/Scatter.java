@@ -288,11 +288,11 @@ public class Scatter {
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-        mc.redirectOut();
-        mc.redirectErr(Color.RED, null);
+        //mc.redirectOut();
+        //mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        info.redirectOut();
+        //info.redirectOut();
 
         //int[] subtractionBins = new int[] {11, 13, 17, 23, 29};
         //comboBoxSubtractBins = new JComboBox(subtractionBins);
@@ -2552,6 +2552,7 @@ public class Scatter {
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
                         Thread temp1 = new Thread(rec1);
                         temp1.start();
                         try {
@@ -2586,6 +2587,7 @@ public class Scatter {
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
                         Thread temp1 = new Thread(rec1);
                         temp1.start();
                         try {
@@ -2620,6 +2622,7 @@ public class Scatter {
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
                         Thread temp1 = new Thread(rec1);
                         temp1.start();
                         try {

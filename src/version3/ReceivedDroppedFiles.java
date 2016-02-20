@@ -96,11 +96,13 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                     PDBFile tempPDB = new PDBFile(files[i], qmax, exclude);
 
                     int newIndex = targetCollection.getDatasetCount();
+
                     targetCollection.addDataset(new Dataset(
                             tempPDB.getIcalc(),  //data
                             tempPDB.getError(),  //original
                             filebase,
                             newIndex, false ));
+
                     targetCollection.getDataset(newIndex).setIsPDB(tempPDB.getPrDistribution(), (int)tempPDB.getDmax(), tempPDB.getRg(), tempPDB.getIzero());
 
                     bar.setIndeterminate(false);
