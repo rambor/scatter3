@@ -96,6 +96,9 @@ public class LoadedFile {
                 }
             }
             // might have a cansas format, open file and read contents
+            br.close();
+            in.close();
+            fstream.close();
 
         } catch (FileNotFoundException ex) {
             System.out.println("Error: " + ex.getMessage());

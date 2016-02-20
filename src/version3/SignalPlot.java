@@ -428,7 +428,9 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
         frame.getChartPanel().setRangeZoomable(false);
         frame.getChartPanel().setDomainZoomable(false);
+        frame.getChartPanel().setMouseZoomable(false);
         frame.getChartPanel().setHorizontalAxisTrace(true);
+
 
         // add mouse listener for getting values
 
