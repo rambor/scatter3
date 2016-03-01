@@ -27,7 +27,7 @@ import java.util.*;
  */
 public class Functions {
 
-    private static Double[] resultS = new Double[3];
+
     private static List<Integer> sequence = new ArrayList<Integer>();
     private static Random generator = new Random();
     private static double[] n_pi_squared = {
@@ -1492,6 +1492,7 @@ int cols, rows;
 
         double mu = ((one.transpose().mult(c_m.invert())).mult(z_m).get(0))/(one.transpose().mult(c_m.invert().mult(one))).get(0);
 
+        Double[] resultS = new Double[3];
         resultS[0]=point;
         resultS[1]=mu+(d_m.transpose().mult(c_m.invert()).mult(z_m.minus(one.scale(mu)))).get(0);
         resultS[1]=resultS[1]*scaleFactor; //returning log10 data
@@ -2272,6 +2273,7 @@ int cols, rows;
 
         double mu = ((one.transpose().mult(c_m.invert())).mult(z_m).get(0))/(one.transpose().mult(c_m.invert().mult(one))).get(0);
 
+        Double[] resultS = new Double[3];
         resultS[0]=point;
         resultS[1]=mu+(d_m.transpose().mult(c_m.invert()).mult(z_m.minus(one.scale(mu)))).get(0);
 
