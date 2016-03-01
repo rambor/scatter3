@@ -26,7 +26,7 @@ import java.util.*;
  * Created by robertrambo on 05/01/2016.
  */
 public class Functions {
-    private static Double[] resultD = new Double[3];
+
     private static Double[] resultS = new Double[3];
     private static List<Integer> sequence = new ArrayList<Integer>();
     private static Random generator = new Random();
@@ -2198,6 +2198,7 @@ int cols, rows;
 
         double mu = ((one.transpose().mult(c_m.invert())).mult(z_m).get(0))/(one.transpose().mult(c_m.invert().mult(one))).get(0);
 
+        Double[] resultD = new Double[3];
         resultD[0]=point;
         resultD[1]=mu+(d_m.transpose().mult(c_m.invert()).mult(z_m.minus(one.scale(mu)))).get(0);
 
