@@ -153,6 +153,14 @@ public class Measurement {
     }
 
 
+    /**
+     * write the datasets that passed the cutoff to file in specified directory
+     * @return
+     */
+    public boolean writeDatasetsToFile(){
+
+        return true;
+    }
 
     public double getPercentMerged(){return percentMerged;}
 

@@ -7,6 +7,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,6 +36,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
     private int panelIndex;
     private double qmax;
     private boolean exclude, shortened = false;
+    private Comparator<File> fileComparator;
 
     public ReceivedDroppedFiles(File[] files, Collection targetCollection, JLabel status, int index, boolean convertNMtoAng, boolean doGuinier, boolean sort, final JProgressBar bar, String workingDirectoryName){
 
@@ -48,6 +50,31 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         this.bar = bar;
         this.sortFiles = sort;
         this.workingDirectoryName = workingDirectoryName;
+
+
+        fileComparator = new Comparator<File>() {
+            @Override
+            public int compare(File o1, File o2) {
+                int n1 = extractNumber(o1.getName());
+                int n2 = extractNumber(o2.getName());
+                return n1 - n2;
+            }
+
+            private int extractNumber(String name) {
+                int i = 0;
+                try {
+                    //int s = name.indexOf('_')+1;
+                    int s = name.lastIndexOf('_')+1;
+                    int e = name.lastIndexOf('.');
+                    String number = name.substring(s, e);
+                    i = Integer.parseInt(number);
+                } catch(Exception e) {
+                    i = 0; // if filename does not match the format
+                    // then default to 0
+                }
+                return i;
+            }
+        };
     }
 
 
@@ -61,7 +88,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         bar.setValue(0);
 
         if (sortFiles){ // sort the name of directories first and then proceed to loading files
-            Arrays.sort(files, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
+            Arrays.sort(files, fileComparator);
         }
 
         for( int i = 0; i < totalFiles; i++ ) {
@@ -74,7 +101,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
 
                 // sort
                 if (sortFiles){
-                    Arrays.sort(tempFiles, NameFileComparator.NAME_INSENSITIVE_COMPARATOR);
+                    Arrays.sort(tempFiles, fileComparator);
                 }
 
                 for (int j=0; j < tempFiles.length; j++){

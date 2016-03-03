@@ -1646,7 +1646,6 @@ public class Scatter {
                 final boolean scaleBefore = scaleThenMergeCheckBox.isSelected();
                 final boolean svd = SVDAverageFilesCheckBox.isSelected();
 
-
                 final boolean finalSingles = singles;
                 new Thread() {
                     public void run() {
