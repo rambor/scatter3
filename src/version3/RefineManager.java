@@ -448,7 +448,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
             //System.out.println(i + " : " + Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm) + " <=> " + yObsValue/xObsValue + " " + dataset.getRescaleFactor());
 
             if (Math.abs(residual/this.getS_o()) <= rejectionCutOff){
-                //System.out.println("Initial scale estimate " + Math.abs(residual/this.getS_o()) + "< " + rejectionCutOff);
                 residualsList.add(residual*residual);
             }
         }
@@ -468,8 +467,9 @@ public class RefineManager extends SwingWorker<Void, Void> {
             yObsValue = tempData.getYValue();
 
             iCalc = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm);
-            residual = iCalc*xObsValue-yObsValue; // y-values from qIq is scaled
-            //System.out.println(i + " " + residual + " SIGMAM " + Math.abs(residual*sigmaM) + " <=> " + rejectionCutOff);
+            residual = iCalc-yObsValue/xObsValue;
+            //residual = iCalc*xObsValue-yObsValue; // y-values from qIq is scaled
+            //System.out.println(i + " residual : " + residual + " SIGMAM " + Math.abs(residual*sigmaM) + " <=> " + rejectionCutOff);
             if (Math.abs(residual*sigmaM) <= rejectionCutOff){
                 keptSeries.add(xObsValue, yObsValue/xObsValue);
 
