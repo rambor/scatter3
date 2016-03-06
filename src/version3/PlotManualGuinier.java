@@ -201,7 +201,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         combinedPlot = new CombinedDomainXYPlot(new NumberAxis("2"));
         combinedPlot.setDomainAxis(domainAxis);
         combinedPlot.setGap(10.0);
-        combinedPlot.add(plot, 1);
+        combinedPlot.add(plot, 2);
         combinedPlot.add(residuals, 1);
         combinedPlot.setOrientation(PlotOrientation.VERTICAL);
 

@@ -218,7 +218,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 RealSpace temp = collection.getDataset(i).getRealSpaceModel();
                 temp.setColor(collection.getDataset(i).getColor());
 
-                if ((temp.getRg() == 0 && temp.getIzero() == 0) || temp.getDmax() == 0) {
+                if (temp.getDmax() == 0 || (temp.getRg() == 0 && temp.getIzero() == 0)) {
                             temp.resetStartStop();
                             fireTableDataChanged();
                             temp.setDmax((int) dmaxStart.getValue());

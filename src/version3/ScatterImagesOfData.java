@@ -1,9 +1,11 @@
 package version3;
 
 import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
@@ -145,7 +147,7 @@ public class ScatterImagesOfData {
         renderer1.setSeriesOutlinePaint(0, dataset.getColor());
         renderer1.setSeriesOutlineStroke(0, dataset.getStroke());
 
-        String outputName = directory + "/" + name + "_kratkyPlot.png";
+        String outputName = directory + "/" + name + "_KratkyPlot.png";
 
         try {
             ChartUtilities.saveChartAsPNG(new File(outputName), kratkyChart, 800, 600);
@@ -153,6 +155,153 @@ public class ScatterImagesOfData {
             e.printStackTrace();
         }
 
+    }
+
+
+    /**
+     * create Guinier Chart
+     * @param name
+     * @param directory
+     */
+    public void createAndWriteGuinierChart(String name, String directory){
+
+        double rg = dataset.getGuinierRg();
+        double izero = dataset.getGuinierIzero();
+        XYSeries datasetData = dataset.getGuinierData();
+        XYSeries yIsZero = new XYSeries("Y-axis at zero");
+
+        int startAt = dataset.getStart()-1;
+        int itemCount = datasetData.getItemCount();
+        XYDataItem tempData;
+        double slope = rg*rg/(-3.0);
+        double intercept = Math.log(izero);
+        XYSeries plottedData = new XYSeries(dataset.getFileName());
+        XYSeries plottedResiduals = new XYSeries(dataset.getFileName());
+
+        XYSeriesCollection guinierCollection = new XYSeriesCollection();
+        XYSeriesCollection residualsDataset = new XYSeriesCollection();
+
+
+        double rg2 = rg*rg;
+        double onepoint3 = 1.3*1.3;
+
+        for(int i=startAt; i<itemCount; i++){
+            tempData = datasetData.getDataItem(i);
+
+            if (tempData.getXValue()*rg2 <= onepoint3){
+                plottedData.add(tempData);
+                plottedResiduals.add(tempData.getX(), tempData.getYValue() - (slope*tempData.getXValue()+intercept));
+                yIsZero.add(tempData.getX(), 0);
+            } else {
+                break;
+            }
+        }
+
+        guinierCollection.addSeries(new XYSeries("GUINIER MODEL LINE"));
+        // create residual series and line fits
+
+        guinierCollection.getSeries(0).add(plottedData.getMinX(), slope*plottedData.getMinX()+intercept);
+        guinierCollection.getSeries(0).add(plottedData.getMaxX(), slope*plottedData.getMaxX()+intercept);
+
+        guinierCollection.addSeries(plottedData);
+        // add next series which is the data used in the fit
+        residualsDataset.addSeries(plottedResiduals);
+        residualsDataset.addSeries(yIsZero);
+
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "SC\u212BTTER \u2263 Guinier fit",                // chart title
+                "",                       // domain axis label
+                "ln I(q)",                // range axis label
+                guinierCollection,               // data
+                PlotOrientation.VERTICAL,
+                true,                     // include legend
+                true,
+                false
+        );
+
+        JFreeChart residualsChart = ChartFactory.createXYLineChart(
+                "Residuals",                // chart title
+                "",                    // domain axis label
+                "residuals",                  // range axis label
+                residualsDataset,               // data
+                PlotOrientation.VERTICAL,
+                true,                     // include legend
+                true,
+                false
+        );
+
+        final XYPlot residuals = residualsChart.getXYPlot();
+        final XYPlot plot = chart.getXYPlot();
+        final NumberAxis domainAxis = new NumberAxis("");
+        final NumberAxis rangeAxis = new NumberAxis("ln [I(q)]");
+
+        Font fnt = new Font("SansSerif", Font.BOLD, 15);
+        domainAxis.setLabelFont(fnt);
+        rangeAxis.setLabelFont(fnt);
+        domainAxis.setAutoRangeIncludesZero(false);
+        rangeAxis.setAutoRangeIncludesZero(false);
+        domainAxis.setAutoRangeStickyZero(false);
+        String quote = "q\u00B2 (\u212B \u207B\u00B2)";
+        domainAxis.setLabel(quote);
+
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
+        residuals.setDomainAxis(domainAxis);
+        plot.setBackgroundPaint(null);
+        residuals.setBackgroundPaint(null);
+
+        XYLineAndShapeRenderer renderer1;
+        XYLineAndShapeRenderer renderer2;
+
+        renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
+        renderer1.setBaseShapesVisible(true);
+        renderer1.setBaseShapesFilled(false);
+        renderer1.setSeriesLinesVisible(1, false);
+        renderer1.setSeriesShapesVisible(0, true);
+        renderer1.setSeriesShapesVisible(0, false);
+        renderer1.setSeriesPaint(0, Color.red);
+        renderer1.setSeriesStroke(0, dataset.getStroke());
+
+        renderer1.setSeriesPaint(1, dataset.getColor());
+        renderer1.setSeriesShape(1, new Ellipse2D.Double(-5, -5, 10.0, 10.0));
+        renderer1.setSeriesOutlinePaint(1, dataset.getColor());
+        renderer1.setSeriesOutlineStroke(1, dataset.getStroke());
+
+
+        renderer2 = (XYLineAndShapeRenderer) residuals.getRenderer();
+        renderer2.setBaseShapesVisible(true);
+        renderer2.setBaseShapesFilled(false);
+        renderer2.setSeriesLinesVisible(0, false);
+        renderer2.setSeriesShapesVisible(1, true);
+        renderer2.setSeriesShapesVisible(1, false);
+        renderer2.setSeriesPaint(1, Color.red);
+        renderer2.setSeriesStroke(1, dataset.getStroke());
+        renderer2.setSeriesPaint(0, Color.BLACK);
+        renderer2.setSeriesShape(0, new Ellipse2D.Double(-4, -4, 8.0, 8.0));
+
+        plot.getAnnotations().size();
+
+        CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot(new NumberAxis("2"));
+        combinedPlot.setDomainAxis(domainAxis);
+        combinedPlot.setGap(10.0);
+        combinedPlot.add(plot, 2);
+
+        combinedPlot.add(residuals, 1);
+        combinedPlot.setOrientation(PlotOrientation.VERTICAL);
+
+        JFreeChart combChart = new JFreeChart("Guinier Plot", JFreeChart.DEFAULT_TITLE_FONT, combinedPlot, true);
+
+        //  combChart.addSubtitle(qRgLimits);
+        combChart.removeLegend();
+        combChart.setBackgroundPaint(Color.WHITE);
+
+        String outputName = directory + "/" + name + "_GuinierPlot.png";
+
+        try {
+            ChartUtilities.saveChartAsPNG(new File(outputName), combChart, 800, 600);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -214,7 +363,7 @@ public class ScatterImagesOfData {
         splineRend.setSeriesStroke(0, new BasicStroke(4.0f));
         splineRend.setSeriesPaint(0, dataset.getColor().darker()); // make color slight darker
 
-        String outputName = directory + "/" + name + "_prPlot.png";
+        String outputName = directory + "/" + name + "_PrPlot.png";
 
         try {
             ChartUtilities.saveChartAsPNG(new File(outputName), prChart, 800, 600);

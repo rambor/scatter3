@@ -181,6 +181,10 @@ public class PackageIt extends JDialog {
                     tempImages.createAndWritePrChart(temp.getFileName(), outputDir);
                 }
 
+                if (temp.getGuinierRg() > 0 && temp.getGuinierIzero() > 0){
+                    tempImages.createAndWriteGuinierChart(temp.getFileName(), outputDir);
+                }
+
                 // Kratky
                 tempImages.createAndWriteKratkyChart(temp.getFileName(), outputDir);
                 // qIq plot
