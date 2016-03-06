@@ -132,7 +132,7 @@ public class RealSpace {
         baseShapeFilled = false;
         //for spinners
         //this.startAt = dataset.getStart(); // spinner value in reference to non-negative data
-        int startAll = dataset.getStart();
+        int startAll = dataset.getStart() - 1;
         //int startAll = dataset.getAllData().indexOf(dataset.getData().getMinX());
         int stopAll = dataset.getAllData().indexOf(dataset.getData().getMaxX());
 
@@ -170,7 +170,8 @@ public class RealSpace {
             fittedqIq.add(originalqIq.getDataItem(i));   // fitted data, spinners will add and remove from this XYSeries
         }
 
-        lowerQIndexLimit++; // increment to set to value for spinner
+        lowerQIndexLimit++; // increment to set to value for spinner, fixed for the real-space model
+        // spinners in real-space Tab are in reference to allData
         startAt=lowerQIndexLimit;
         stopAt=originalqIq.getItemCount();
         maxCount = originalqIq.getItemCount();
@@ -756,12 +757,18 @@ public class RealSpace {
                 logData.delete(0, stopHere);
             }
         } else {
-            int stopHere = logData.indexOf(currentQ);
+
+            // spinner value displays the first or last value plotted
+            // if spinnervalue is 10, we are showing the value in array position 9
+            int stopHere = logData.indexOf(allData.getX(spinnerValue-1));
+
             int totalminus = total-1;
             fittedqIq.delete(0,totalminus);
-            logData.delete(0,stopHere);
+            logData.delete(0,stopHere - 1);
+            //int totalminus = total-1;
+            //fittedqIq.delete(0,totalminus);
+            //logData.delete(0,stopHere);
         }
-
     }
 
 
