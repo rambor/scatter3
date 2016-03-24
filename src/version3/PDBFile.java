@@ -54,6 +54,7 @@ public class PDBFile {
 
             try {
                 while ((strLine = br.readLine()) != null) {
+
                     if (strLine.matches("^ATOM.*") || (strLine.matches("^HETATM.*HOH.*") ) ){
                         atoms.add(new PDBAtom(strLine));
                     }

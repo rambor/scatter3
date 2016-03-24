@@ -43,17 +43,26 @@ public class PDBAtom {
         this.zpos = Double.parseDouble(line.substring(46,54).trim());
 
         coords = new double[]{xpos, ypos, zpos};
-        this.atom = line.substring(76,78).trim();
+
+        int  stringLength = line.length();
+
+        if (stringLength >= 60){
+            this.occ = Double.parseDouble(line.substring(54,60).trim());
+        }
+
+        if (stringLength >= 66){
+            this.temp = Double.parseDouble(line.substring(60,66).trim());
+        }
+
+        if (stringLength >= 78){
+            this.atom = line.substring(76,78).trim();
+        }
+
         this.residue = tempResidue;
 
         if (this.residue.equals("HOH")){
             isWater = true;
         }
-
-        //this.residueType = resiType.toUpperCase();
-
-        this.occ = Double.parseDouble(line.substring(54,60).trim());
-        this.temp = Double.parseDouble(line.substring(60,66).trim());
 
     }
 
