@@ -130,7 +130,7 @@ public class DammiNFManager {
                 if (i ==0){
                     executor.execute(modeler);
                 } else {
-                    executor.schedule(modeler, i*100, TimeUnit.MILLISECONDS); // need a delay in execution so random seeds are different
+                    executor.schedule(modeler, i*1000, TimeUnit.MILLISECONDS); // need a delay in execution so random seeds are different
                 }
             }
 

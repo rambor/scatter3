@@ -221,6 +221,8 @@ public class Scatter {
     private JTextField thresholdField;
     private JButton changeCWDButton;
     private JButton pdfButton;
+    private JButton TRACEButton;
+    private JButton SETBUFFERButton;
 
     private String version = "3.0a";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -1473,10 +1475,9 @@ public class Scatter {
                     }
                 }
 
-                if (selectB <1 || selectS < 1){
+                if (selectB < 1 || selectS < 1){
                     return;
                 }
-
 
                 SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
                 tempSignalPlot.setSampleJList(samplesList);
@@ -2303,6 +2304,72 @@ public class Scatter {
                     damminLabel.setText(chooser.getSelectedFile().toString());
                 }
             }
+        });
+
+        TRACEButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Collection sampleCollection = (Collection) collections.get(96);
+                Collection bufferCollection = new Collection();
+                sampleCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                bufferCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+
+                int total = sampleFilesModel.getSize();
+                int selectS=0;
+                for(int i=0;i<total; i++){
+                    if (sampleFilesModel.get(i).isSelected()){
+                        sampleCollection.getDataset(i).setInUse(true);
+                        selectS++;
+                    } else {
+                        sampleCollection.getDataset(i).setInUse(false);
+                    }
+                }
+
+                if (selectS < 1){
+
+                    return;
+                }
+
+                SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+                tempSignalPlot.setSampleJList(samplesList);
+
+                Thread temp1 = new Thread(tempSignalPlot);
+                temp1.start();
+            }
+        });
+
+
+        // for frames in sampleslist, copy to bufferlist and use as buffer
+        SETBUFFERButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                // go through samplesList and highlight selected
+
+                int total = sampleFilesModel.getSize();
+
+                int newIndex = bufferCollections.getDatasetCount();
+                Dataset tempDataset;
+
+                for(int i=0;i<total; i++){
+
+                    if (sampleFilesModel.get(i).isSelected()){ // if selected, make copy and put in bufferFilesModel
+
+                        System.out.println("SELECTED AS BUFFER " + sampleFilesModel.get(i).getFilename());
+                        // add buffers to collection.get(69)
+                        tempDataset = sampleFilesModel.get(i).dataset;
+                        bufferCollections.addDataset(new Dataset(tempDataset));
+                        bufferFilesModel.addElement(new SampleBufferElement(tempDataset.getFileName(), newIndex, bufferCollections.getDataset(newIndex).getColor(), bufferCollections.getDataset(newIndex)));
+                        newIndex++;
+                    }
+                }
+
+                buffersList.removeAll();
+                buffersList.setModel(bufferFilesModel);
+                buffersList.updateUI();
+            }
+
+
         });
     }
 

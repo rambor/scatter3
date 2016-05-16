@@ -1,5 +1,6 @@
 package version3;
 
+import org.apache.commons.math3.stat.StatUtils;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.labels.XYToolTipGenerator;
@@ -25,6 +26,9 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.TreeSet;
+import java.util.Set;
 
 /**
  * Created by robertrambo on 18/01/2016.
@@ -43,6 +47,9 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     private Collection buffersCollection;
     private XYSeriesCollection plotMe;
     private XYSeriesCollection plotRg;
+
+    private Number minQvalueInCommon;
+    private Number maxQvalueInCommon;
 
     private JProgressBar mainStatus;
     private XYSeries buffer = new XYSeries("buffer");
@@ -109,7 +116,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         XYSeries ratio = new XYSeries("ratio"), tempData;
 
         int total = samplesCollection.getDatasetCount();
-        int select=0, totalXY, bufferIndex;
+        int totalXY, bufferIndex;
         int seriesCount=0;
         double area;
         double[] izeroRg;
@@ -124,8 +131,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             ratio.clear();
             tempData = tempDataset.getAllData();
             totalXY = tempData.getItemCount();
-            // create XY Series using ratio to buffer then integrate
 
+            // create XY Series using ratio to buffer then integrate
             for(int q=0; q < totalXY; q++){
                 tempXY = tempData.getDataItem(q);
                 bufferIndex = buffer.indexOf(tempXY.getX());
@@ -175,8 +182,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         try {
             //total = buffersCollection.getDatasetCount();
             int select = buffersCollection.getTotalSelected();
-
-            int ref=0;
 
             if (select == 1){
                 buffer = buffersCollection.getLast().getAllData();
@@ -291,6 +296,10 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         return returnMe;
     }
 
+    /**
+     * Set list of files to be used by MouseOver event
+     * @param list
+     */
     public void setSampleJList(JList list){
         this.samplesList = list;
     }
@@ -315,7 +324,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                 super.restoreAutoRangeBounds();
                 super.getChart().getXYPlot().getRangeAxis().setAutoRange(false);
                 int seriesCount = super.getChart().getXYPlot().getDataset(0).getSeriesCount();
-                int maxIndex;
+
                 double min = 1000;
                 double max = -10;
                 double minX = 10;
@@ -459,8 +468,18 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     @Override
     protected Void doInBackground() throws Exception {
 
-        status.setText("compiling buffers");
-        this.makeBuffer();
+
+        int select = buffersCollection.getTotalSelected();
+        int sampleSize = samplesCollection.getTotalSelected();
+
+        if (select > 0){
+            status.setText("compiling buffers");
+            this.makeBuffer();
+        } else if (sampleSize > 2) {
+            // if buffer size is zero, estimate background from samples
+            this.estimateBackgroundFrames();
+        }
+
         status.setText("compiling samples");
         this.makeSamples();
         status.setText("Writing Signal Plot");
@@ -468,8 +487,224 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         status.setText("Making Plot");
         this.makePlot();
         mainStatus.setIndeterminate(false);
+
         return null;
     }
+
+    /**
+     * estimate frames to be used as background and set
+     * find large continuous sets of frames to be background
+     * Signal will have a I(qmin)
+     */
+    private void estimateBackgroundFrames() {
+
+        int total = samplesCollection.getDatasetCount();
+
+        this.findLeastCommonQvalue();
+        this.findMaximumCommonQvalue();
+
+        int upperIndex = samplesCollection.getDataset(0).getAllData().indexOf(maxQvalueInCommon);
+        int lowerIndex = samplesCollection.getDataset(0).getAllData().indexOf(minQvalueInCommon);
+
+        int totalN = upperIndex-lowerIndex+1;
+
+        double noSignal = (maxQvalueInCommon.doubleValue() - minQvalueInCommon.doubleValue())*(totalN+1)/(double)totalN;
+
+        // set window
+        int window = 7;
+
+        //
+        TreeSet<Integer> keepers = new TreeSet<Integer>();
+
+        for (int w=window; w < (total - window); w++){
+
+           // calculate average curve in window and do ratio integral
+            Collection collectionWindow = new Collection();
+
+            for (int m=(w - window); m < w; m++){
+                collectionWindow.addDataset(samplesCollection.getDataset(m));
+            }
+
+            if (calculateAverageAndVarianceOfAllPairWiseRatiosInWindow(collectionWindow, noSignal)){
+                System.out.println("----------------------- keepers");
+                for (int m=(w-window); m < w; m++){
+                    keepers.add(m);
+                    System.out.println(" KEPT => " + m + " (" + keepers.size()+")");
+                }
+            }
+        }
+
+        System.out.println("Preliminary baseline set size : " + keepers.size());
+
+
+        Iterator<Integer> iterator = keepers.iterator();
+        Collection keptCollection = new Collection();
+        int totalInKept = keepers.size();
+        int count=1;
+        // Displaying the Tree set data
+        while (iterator.hasNext()) {
+            Dataset tempDataset = samplesCollection.getDataset(iterator.next());
+            keptCollection.addDataset(tempDataset);
+            System.out.println(count + "(" + totalInKept + ")" + " => Kept as buffer : " + tempDataset.getFileName());
+            count++;
+        }
+
+        System.out.println(" => Calculating average for baseline ");
+        Averager averagedEstimatedBackground = new Averager(keptCollection);
+
+        averagedEstimatedBackground.getAveraged();
+        buffer = averagedEstimatedBackground.getAveraged();
+        bufferError = averagedEstimatedBackground.getAveragedError();
+        // create trace using averagedEstimatedBackground
+    }
+
+
+    private boolean calculateAverageAndVarianceOfAllPairWiseRatiosInWindow(Collection collection, double ideal){
+
+        boolean keep = false;
+
+        int windowSize = collection.getDatasetCount();
+        double[] values = new double [windowSize*(windowSize-1)/2];
+
+        int firstLimit = windowSize-1;
+        int totalXY, foundIndex;
+        Dataset refDataset, targetDataset;
+
+        XYSeries ratio = new XYSeries("ratio"), tempData, refData;
+
+        XYDataItem refXY;
+
+        int count=0;
+        for(int i=0; i<firstLimit; i++){
+
+            refDataset = collection.getDataset(i);
+            refData = refDataset.getAllData();
+            totalXY = refData.getItemCount();
+
+            for(int j=(i+1); j<windowSize; j++){
+                targetDataset = collection.getDataset(j);
+                tempData = targetDataset.getAllData();
+
+                ratio.clear();
+                // go through each q-value in reference
+                for (int q = 0; q < totalXY; q++) {
+                    refXY = refData.getDataItem(q);
+                    foundIndex = tempData.indexOf(refXY.getX());
+                    if (foundIndex > -1 ) {
+                        ratio.add(refXY.getX(), refXY.getYValue() / tempData.getY(foundIndex).doubleValue());
+                    }
+                }
+
+                values[count] = (Functions.trapezoid_integrate(ratio));
+                count++;
+            }
+        }
+
+        double average = StatUtils.mean(values);
+        double variance = StatUtils.variance(values);
+
+        if (Math.abs(ideal-average)/Math.sqrt(variance) < 1.25){
+            return true;
+        }
+
+        return keep;
+    }
+
+
+
+
+
+    /**
+     *
+     */
+    private void findLeastCommonQvalue(){
+
+        boolean isCommon;
+
+        Dataset firstSet = samplesCollection.getDataset(0);
+        Dataset tempDataset;
+        int totalInSampleSet = samplesCollection.getTotalSelected();
+        XYSeries referenceData = firstSet.getAllData(), tempData;
+        XYDataItem refItem;
+        int startAt;
+        minQvalueInCommon = 10;
+
+        outerloop:
+        for(int j=0; j < referenceData.getItemCount(); j++){
+
+            refItem = referenceData.getDataItem(j); // is refItem found in all sets
+            minQvalueInCommon = refItem.getX();
+            isCommon = true;
+
+            startAt = 1;
+            innerloop:
+            for(; startAt < totalInSampleSet; startAt++) {
+
+
+                tempDataset = samplesCollection.getDataset(startAt);
+                tempData = tempDataset.getAllData();
+                // check if refItem q-value is in tempData
+                // if true, check next value
+                if (tempData.indexOf(refItem.getX()) < 0) {
+                    isCommon = false;
+                    break innerloop;
+                }
+            }
+
+            if (startAt == totalInSampleSet && isCommon){
+                break outerloop;
+            }
+        }
+
+        System.out.println("Minimum Common q-value : " + minQvalueInCommon);
+    }
+
+
+    /**
+     *
+     */
+    private void findMaximumCommonQvalue(){
+
+        boolean isCommon;
+
+        Dataset firstSet = samplesCollection.getDataset(0);
+        Dataset tempDataset;
+        int totalInSampleSet = samplesCollection.getTotalSelected();
+        XYSeries referenceData = firstSet.getAllData(), tempData;
+        XYDataItem refItem;
+        int startAt;
+        maxQvalueInCommon = 0;
+
+        outerloop:
+        for(int j=(referenceData.getItemCount()-1); j > -1; j--){
+
+            refItem = referenceData.getDataItem(j); // is refItem found in all sets
+            maxQvalueInCommon = refItem.getX();
+            isCommon = true;
+
+            startAt = 1;
+            innerloop:
+            for(; startAt < totalInSampleSet; startAt++) {
+
+
+                tempDataset = samplesCollection.getDataset(startAt);
+                tempData = tempDataset.getAllData();
+                // check if refItem q-value is in tempData
+                // if true, check next value
+                if (tempData.indexOf(refItem.getX()) < 0) {
+                    isCommon = false;
+                    break innerloop;
+                }
+            }
+
+            if (startAt == totalInSampleSet && isCommon){
+                break outerloop;
+            }
+        }
+
+        System.out.println("Maximum Common q-value : " + maxQvalueInCommon);
+    }
+
 
     private final static class MouseMarker extends MouseAdapter {
         private Marker marker;
