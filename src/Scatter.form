@@ -1546,7 +1546,7 @@
                             </constraints>
                             <properties>
                               <font style="1"/>
-                              <text value="1. Drag frames (in order) in SAMPLES box"/>
+                              <text value="1. Drag frames (in order) to SAMPLES on left (wait)"/>
                             </properties>
                           </component>
                           <component id="d6756" class="javax.swing.JLabel">
@@ -3360,6 +3360,14 @@
                             </constraints>
                             <properties>
                               <text value="B21 Diamond Light Source"/>
+                            </properties>
+                          </component>
+                          <component id="5afd" class="javax.swing.JButton" binding="UPDATEButton" default-binding="true">
+                            <constraints>
+                              <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value="UPDATE"/>
                             </properties>
                           </component>
                         </children>

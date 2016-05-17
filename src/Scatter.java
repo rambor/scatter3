@@ -223,11 +223,14 @@ public class Scatter {
     private JButton pdfButton;
     private JButton TRACEButton;
     private JButton SETBUFFERButton;
+    private JButton UPDATEButton;
 
     private String version = "3.0a";
     private static WorkingDirectory WORKING_DIRECTORY;
     //private static String WORKING_DIRECTORY_NAME;
     private static String OUTPUT_DIR_SUBTRACTION_NAME="";
+    private static String BEAMLINEMANUFACTURER="";
+    private static String XRAYSOURCE="";
     private static String ATSAS_DIRECTORY="";
 
     private static DefaultListModel<DataFileElement> dataFilesModel;
@@ -757,10 +760,12 @@ public class Scatter {
                 // Get index of clicked item
                 int index = list.locationToIndex(event.getPoint());
                 // Toggle selected state
-                DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
-                // Repaint cell
-                item.setSelected(! item.isSelected());
-                list.repaint(list.getCellBounds(index,index));
+                if (index > -1){
+                    DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
+                    // Repaint cell
+                    item.setSelected(! item.isSelected());
+                    list.repaint(list.getCellBounds(index,index));
+                }
             }
         });
 
@@ -774,13 +779,15 @@ public class Scatter {
                 // Get index of clicked item
                 int index = list.locationToIndex(event.getPoint());
                 // Toggle selected state
-                DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
-                // Repaint cell
-                item.setSelected(! item.isSelected());
+                if (index > -1){
+                    DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
+                    // Repaint cell
+                    item.setSelected(! item.isSelected());
 
-                //Collection inUse = (Collection) collections.get(69); //set dataset in the collection
-                //inUse.getDataset(index).setInUse(item.isSelected());
-                list.repaint(list.getCellBounds(index,index));
+                    //Collection inUse = (Collection) collections.get(69); //set dataset in the collection
+                    //inUse.getDataset(index).setInUse(item.isSelected());
+                    list.repaint(list.getCellBounds(index,index));
+                }
             }
         });
 
@@ -793,14 +800,14 @@ public class Scatter {
                 // Get index of clicked item
                 int index = list.locationToIndex(event.getPoint());
                 // Toggle selected state
-                DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
-                // Repaint cell
-                item.setSelected(!item.isSelected());
-
-                //Collection inUse = (Collection) collections.get(96); // set dataset in the collection
-                //inUse.getDataset(index).setInUse(item.isSelected());
-
-                list.repaint(list.getCellBounds(index, index));
+                if (index > -1){
+                    DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
+                    // Repaint cell
+                    item.setSelected(!item.isSelected());
+                    //Collection inUse = (Collection) collections.get(96); // set dataset in the collection
+                    //inUse.getDataset(index).setInUse(item.isSelected());
+                    list.repaint(list.getCellBounds(index, index));
+                }
             }
         });
 
@@ -1086,7 +1093,9 @@ public class Scatter {
                             WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
 
                             FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                            dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                             dataToWrite.writeSAXSFile(cleaned, tempDataset);
+
 
                             //close the output stream
                             status.setText(cleaned + ".dat written to "+fc.getCurrentDirectory());
@@ -1152,7 +1161,7 @@ public class Scatter {
 
                             WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
                             FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
-                            dataToWrite.setSource(comboBoxSource, sourceTextField.getText());
+                            dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                             dataToWrite.writeSAXSFile(cleaned, tempDataset);
 
                             //close the output stream
@@ -1214,6 +1223,7 @@ public class Scatter {
                         System.out.println("WORKING DIRECTORY SET TO : " + WORKING_DIRECTORY.getWorkingDirectory());
 
                         FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                        dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                         dataToWrite.writeSingleSAXSFile(cleaned, tempData);
 
                         //close the output stream
@@ -1313,6 +1323,7 @@ public class Scatter {
                         WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
 
                         FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                        dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                         dataToWrite.writeSAXSFile(cleaned, tempDataset);
 
                         //close the output stream
@@ -1646,12 +1657,23 @@ public class Scatter {
 
                 final boolean scaleBefore = scaleThenMergeCheckBox.isSelected();
                 final boolean svd = SVDAverageFilesCheckBox.isSelected();
-
                 final boolean finalSingles = singles;
+
+                Collection tempCollectionForSubtraction = new Collection();
+
+                int total = sampleCollections.getDatasetCount();
+
+                for (int i = 0; i < total; i++) {
+                    if (sampleCollections.getDataset(i).getInUse()) {
+                        //int newIndex = subtractedCollection.getDatasetCount();
+                        tempCollectionForSubtraction.addDataset( new Dataset(sampleCollections.getDataset(i)));
+                    }
+                }
+
                 new Thread() {
                     public void run() {
                         //Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage,  boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar){
-                        Subtraction subTemp = new Subtraction(bufferCollections, sampleCollections, finalQmin, finalQmax, mergeByAverage, finalSingles, scaleBefore, svd, cpuCores, status, mainProgressBar);
+                        Subtraction subTemp = new Subtraction(bufferCollections, tempCollectionForSubtraction, finalQmin, finalQmax, mergeByAverage, finalSingles, scaleBefore, svd, cpuCores, status, mainProgressBar);
                         // add other attributes and then run
                         // Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString())/100.00;
                         subTemp.setBinsAndCutoff(Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString()), Double.parseDouble(subtractionCutOff.getSelectedItem().toString()));
@@ -2254,6 +2276,7 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 status.setText("Writing txt file to " + WORKING_DIRECTORY.getWorkingDirectory());
                 FileObject tempObject = new FileObject(new File(WORKING_DIRECTORY.getWorkingDirectory()));
+                tempObject.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                 tempObject.exportResults(collectionSelected);
             }
         });
@@ -2326,7 +2349,6 @@ public class Scatter {
                 }
 
                 if (selectS < 1){
-
                     return;
                 }
 
@@ -2371,6 +2393,16 @@ public class Scatter {
 
 
         });
+
+        UPDATEButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                BEAMLINEMANUFACTURER = sourceTextField.getText();
+                XRAYSOURCE = String.valueOf(comboBoxSource.getSelectedIndex());
+                updateProp();
+            }
+        });
     }
 
     public static void updateProp(){
@@ -2384,6 +2416,8 @@ public class Scatter {
             prop.setProperty("workingDirectory", WORKING_DIRECTORY.getWorkingDirectory());
             prop.setProperty("atsasDirectory", ATSAS_DIRECTORY);
             prop.setProperty("subtractionDirectory", OUTPUT_DIR_SUBTRACTION_NAME);
+            prop.setProperty("xraysource", XRAYSOURCE);
+            prop.setProperty("beamlineOrManufacturer", BEAMLINEMANUFACTURER);
             // save properties to project root folder
             prop.store(output, null);
 
@@ -2516,6 +2550,15 @@ public class Scatter {
                     OUTPUT_DIR_SUBTRACTION_NAME = prop.getProperty("subtractionDirectory");
                 }
 
+                if (prop.getProperty("xraysource") != null) {
+                    XRAYSOURCE = prop.getProperty("xraysource");
+                }
+
+                if (prop.getProperty("beamlineOrManufacturer") != null) {
+                    BEAMLINEMANUFACTURER = prop.getProperty("beamlineOrManufacturer");
+                }
+
+
             } catch (IOException ex) {
                 ex.printStackTrace();
             } finally {
@@ -2536,11 +2579,11 @@ public class Scatter {
         }
 
         JFrame frame = new JFrame("ScÅtter: Software for SAXS Analysis");
-        System.out.println("WORKING DIR NAME " + WORKING_DIRECTORY.getWorkingDirectory());
-
         final Scatter programInstance = new Scatter();
         frame.setContentPane(programInstance.panel1);
 
+        // set source
+        //programInstance.comboBoxSource.setSelectedIndex(Integer.parseInt(XRAYSOURCE));
         // Drag-n-Drop listeners attached to SWING components here
         // Create FileDrop listeners
         // Load Files from Files Tab Panel 1
@@ -2551,19 +2594,26 @@ public class Scatter {
        //     WORKING_DIRECTORY = new WorkingDirectory("user.dir");
        // }
         programInstance.workingDirLabel.setText(WORKING_DIRECTORY.getWorkingDirectory());
+        System.out.println("WORKING DIR NAME => " + WORKING_DIRECTORY.getWorkingDirectory());
 
         theDir = new File(programInstance.ATSAS_DIRECTORY);
         if (!theDir.exists()) {
             ATSAS_DIRECTORY = System.getProperty("user.dir");
+
         }
+        System.out.println("ATSAS DIRECTORY => " + ATSAS_DIRECTORY);
         programInstance.atsasDirLabel.setText(ATSAS_DIRECTORY);
 
         theDir = new File(programInstance.OUTPUT_DIR_SUBTRACTION_NAME);
+
         if (!theDir.exists()) {
             OUTPUT_DIR_SUBTRACTION_NAME = System.getProperty("user.dir");
         }
+
+        System.out.println("SUBTRACTION DIRECTORY => " + OUTPUT_DIR_SUBTRACTION_NAME);
         programInstance.subtractOutPutDirectoryLabel.setText(OUTPUT_DIR_SUBTRACTION_NAME);
 
+        programInstance.sourceTextField.setText(BEAMLINEMANUFACTURER);
 
         new FileDrop( programInstance.getLoadPanel(1), new FileDrop.Listener() {
             @Override
@@ -3993,6 +4043,7 @@ public class Scatter {
             this.limit = limit;
             this.upperlower=uorl;
         }
+
         @Override
         public void run() {
             //To change body of implemented methods use File | Settings | File Templates.
@@ -4143,6 +4194,7 @@ public class Scatter {
                         }
 
                         FileObject tempFile = new FileObject(new File(WORKING_DIRECTORY.getWorkingDirectory()));
+                        tempFile.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                         String newname = tempFile.writePRFile(collectionSelected.getDataset(prModel.getDataset(rowID).getId()),
                                 prStatusLabel,
                                 collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getFileName(),
@@ -4168,6 +4220,7 @@ public class Scatter {
 
                 if (tempSave.getFileName().length() > 2){
                     FileObject tempFile = new FileObject(tempSave.getCurrentDir());
+                    tempFile.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                     String newname = tempFile.writePRFile(collectionSelected.getDataset(prModel.getDataset(rowID).getId()),
                                                                        prStatusLabel,
                                                                        tempSave.getFileName(),

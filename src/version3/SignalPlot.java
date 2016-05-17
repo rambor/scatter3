@@ -497,6 +497,9 @@ public class SignalPlot extends SwingWorker<Void, Void> {
      * Signal will have a I(qmin)
      */
     private void estimateBackgroundFrames() {
+        mainStatus.setIndeterminate(true);
+        mainStatus.setStringPainted(true);
+        mainStatus.setString("Estimating Background Frames");
 
         int total = samplesCollection.getDatasetCount();
 
@@ -516,6 +519,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         //
         TreeSet<Integer> keepers = new TreeSet<Integer>();
 
+        // multithread this part
         for (int w=window; w < (total - window); w++){
 
            // calculate average curve in window and do ratio integral
@@ -526,16 +530,13 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             }
 
             if (calculateAverageAndVarianceOfAllPairWiseRatiosInWindow(collectionWindow, noSignal)){
-                System.out.println("----------------------- keepers");
                 for (int m=(w-window); m < w; m++){
                     keepers.add(m);
-                    System.out.println(" KEPT => " + m + " (" + keepers.size()+")");
                 }
             }
         }
 
         System.out.println("Preliminary baseline set size : " + keepers.size());
-
 
         Iterator<Integer> iterator = keepers.iterator();
         Collection keptCollection = new Collection();
@@ -556,6 +557,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         buffer = averagedEstimatedBackground.getAveraged();
         bufferError = averagedEstimatedBackground.getAveragedError();
         // create trace using averagedEstimatedBackground
+        mainStatus.setIndeterminate(false);
+        mainStatus.setStringPainted(false);
     }
 
 
@@ -609,7 +612,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
         return keep;
     }
-
 
 
 

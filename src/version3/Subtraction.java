@@ -43,6 +43,18 @@ private int refId, scaleToID;
 
     public Subtraction(Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage, boolean singles, boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar){
         this.samples = samples;
+        //this.samples = new Collection();
+
+        //int total = samples.getDatasetCount();
+        //for (int i = 0; i < total; i++) {
+        //    if (samples.getDataset(i).getInUse()) {
+                //int newIndex = subtractedCollection.getDatasetCount();
+        //        this.samples.addDataset( new Dataset(samples.getDataset(i)));
+        //    }
+        //}
+
+
+
         this.buffers = buffers;
 
         if (buffers.getDatasetCount() > 1){
@@ -94,23 +106,23 @@ private int refId, scaleToID;
         status.setText("Subtracting " + total + " files");
 
         for (int i = 0; i < total; i++) {
+
             if (samples.getDataset(i).getInUse()) {
 
                 ArrayList<XYSeries> subtraction = subtract(samples.getDataset(i).getAllData(), samples.getDataset(i).getAllDataError(), averageBuffer, averageBufferError);
 
-                int newIndex = subtractedCollection.getDatasetCount();
-
+                //int newIndex = subtractedCollection.getDatasetCount();
                 subtractedCollection.addDataset( new Dataset(
-                        subtraction.get(0),       //data
-                        subtraction.get(1),  //original
+                        subtraction.get(0),  //data
+                        subtraction.get(1),  //error
                         samples.getDataset(i).getFileName()+"_sub",
-                        newIndex, false ));
+                        subtractedCollection.getDatasetCount(), false ));
 
                 subtractedCollection.getLast().setMinq(subtraction.get(0).getMinX());
                 subtractedCollection.getLast().setMaxq(subtraction.get(0).getMaxX());
 
                 if (i == refId){
-                    scaleToID = subtractedCollection.getDatasetCount()-1; //sets refID relative to the new subtracted collection dataset that will get scaled
+                    scaleToID = subtractedCollection.getDatasetCount() - 1; //sets refID relative to the new subtracted collection dataset that will get scaled
                 }
             }
             bar.setValue((int) (i / (double) total * 100));
@@ -524,9 +536,6 @@ private int refId, scaleToID;
         return returnMe;
     }
 
-    // Buffer : subtract from average, median or single
-
-    //
 
     private ArrayList<XYSeries> createMedianAverageXYSeries(Collection collection){
         ArrayList<XYSeries> returnMe = new ArrayList<XYSeries>();
