@@ -293,11 +293,11 @@ public class Scatter {
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-        mc.redirectOut();
-        mc.redirectErr(Color.RED, null);
+        //mc.redirectOut();
+        //mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        info.redirectOut();
+        //info.redirectOut();
 
         //int[] subtractionBins = new int[] {11, 13, 17, 23, 29};
         //comboBoxSubtractBins = new JComboBox(subtractionBins);
@@ -4156,8 +4156,41 @@ public class Scatter {
            //     prModel.fireTableDataChanged();
             } else if (this.colID == 13){ // dmax search
 
+                this.button.setBackground(Color.WHITE);
+                this.button.setForeground(Color.GREEN);
+                status.setText("");
+                prStatusLabel.setText("Starting dmax search of " + prModel.getDataset(rowID).getFilename());
+                // PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()));
+                //prModel.getDataset(rowID).estimateDmax(Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()));
 
+                Thread refineIt = new Thread(){
+                    public void run() {
 
+                        final DmaxManager refineMe = new DmaxManager(prModel.getDataset(rowID), (cpuCores-1),
+                                Double.parseDouble(lambdaBox.getSelectedItem().toString()),
+                                l1NormCheckBox.isSelected());
+
+                        prStatusLabel.setText("");
+
+                        //refineMe.setBar(progressBar1, prStatusLabel);
+                        refineMe.execute();
+/*
+                        synchronized (refineMe) {
+                            if (!refineMe.getIsFinished()) {
+                                try {
+                                    refineMe.wait();
+                                } catch (InterruptedException ee) {
+                                    // handle it somehow
+                                    System.out.println("Catch " + ee.getMessage());
+                                }
+                            }
+                        }
+                        */
+                    }
+
+                };
+
+                refineIt.start();
 
 
             } else if (this.colID == 14){
@@ -4179,7 +4212,6 @@ public class Scatter {
 
                         prStatusLabel.setText("");
                         refineMe.setBar(progressBar1, prStatusLabel);
-
                         refineMe.execute();
 
                         synchronized (refineMe) {

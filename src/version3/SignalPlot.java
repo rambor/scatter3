@@ -474,6 +474,9 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         } else if (sampleSize > 2) {
             // if buffer size is zero, estimate background from samples
             this.estimateBackgroundFrames();
+            // make a Runnable class that operates on windows of the data and updates treeset
+
+
         }
 
         status.setText("compiling samples");
@@ -511,10 +514,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
         // set window
         int window = 7;
-
         //
         TreeSet<Integer> keepers = new TreeSet<Integer>();
-
         // multithread this part
         for (int w=window; w < (total - window); w++){
 
@@ -771,6 +772,21 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         }
 
 
+    }
+
+
+
+    public class Estimator implements Runnable {
+
+        public Estimator(){
+
+        }
+
+
+        @Override
+        public void run() {
+
+        }
     }
 
 

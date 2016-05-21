@@ -255,7 +255,6 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
             }
         }
 
-
         mainBar.setStringPainted(false);
         mainBar.setIndeterminate(false);
         mainStatus.setText("");

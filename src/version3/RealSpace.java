@@ -1,5 +1,6 @@
 package version3;
 
+import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
@@ -7,8 +8,9 @@ import org.jfree.data.xy.XYSeries;
 import net.jafama.FastMath;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.*;
+
+import static org.apache.commons.math3.stat.StatUtils.mean;
 
 /**
  * Created by robertrambo on 05/01/2016.
@@ -60,6 +62,7 @@ public class RealSpace {
     private int lowerQIndexLimit=0;
     private final int maxCount;
     private final static double invPi = 1.0/Math.PI;
+    private boolean negativeValuesInModel=false;
 
     // rescale the data when loading analysisModel
 
@@ -73,7 +76,6 @@ public class RealSpace {
         int totalAllData = dataset.getAllData().getItemCount();
 
         //allData = new XYSeries("rescale data");
-
         try {
             allData = dataset.getAllData().createCopy(0, totalAllData-1);
         } catch (CloneNotSupportedException e) {
@@ -86,7 +88,6 @@ public class RealSpace {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
 
-
         // need to rescale allData for fitting?
         double digits = Math.log10(averageIntensity(allData));
 
@@ -94,11 +95,11 @@ public class RealSpace {
             rescaleFactor = Math.pow(10,Math.ceil(Math.abs(digits)));
             invRescaleFactor = 1.0/rescaleFactor;
             originalqIq = new XYSeries("orignal qIq data");
+
             for(int i=0; i<totalAllData; i++){
                 XYDataItem tempItem = allData.getDataItem(i);
                 originalqIq.add(tempItem.getX(), tempItem.getYValue()*rescaleFactor*tempItem.getXValue());
             }
-
         } else {
             originalqIq = dataset.getQIQData();
         }
@@ -413,8 +414,10 @@ public class RealSpace {
         totalMooreCoefficients = values.length;
         this.mooreCoefficients = new double[totalMooreCoefficients];
         System.arraycopy(values, 0, this.mooreCoefficients, 0, totalMooreCoefficients);
+        negativeValuesInModel = false;
+
         saxs_invariants();
-        System.out.println("Background : " + mooreCoefficients[0]);
+
         // calculate P(r) distribution
         this.calculatePofR();
         this.qmax = this.fittedqIq.getMaxX();
@@ -422,9 +425,11 @@ public class RealSpace {
         try {
             this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
             //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
-            this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(0));
+            this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(7));
             this.l1_norm = this.l1_norm_pddr(11);
+            System.out.println("Background : " + mooreCoefficients[0] + " L1: " + this.l1_norm);
             this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
+            //this.kurt_l1_sum = 0.9*this.l1_norm;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -447,6 +452,7 @@ public class RealSpace {
         double pi_dmax_r;
         double r_value;
         prDistribution.add(0.0d, 0.0d);
+        negativeValuesInModel = false;
 
         for (int j=1; j < r_limit; j++){
 
@@ -459,7 +465,12 @@ public class RealSpace {
             }
 
             prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
+
+            if (resultM < 0){
+                negativeValuesInModel = true;
+            }
         }
+
         prDistribution.add(dmax,0);
     }
 
@@ -631,19 +642,20 @@ public class RealSpace {
          * Determine kurtosis from a random sample of the ratio of I_calc to I_obs based on the binning
          * Take max of the kurtosis set
          */
-
         //Random newRandom = new Random();
-
-        int total = this.fittedqIq.getItemCount();
+        int total = this.fittedqIq.getItemCount(); // fittedqIq is scaled for fitting
 
         int limit = this.getMooreCoefficients().length;
         double[] ratio = new double[total];
         ArrayList<Double> test_ratios = new ArrayList<Double>();
 
+        System.out.println("KURTOSIS");
+
         for (int i=0; i<total; i++){
             XYDataItem values = this.fittedqIq.getDataItem(i);  // unscale data
             // ratio of calc/obs
             //ratio[i] = newRandom.nextGaussian();
+
             ratio[i] = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit)/values.getYValue()*values.getXValue();
             test_ratios.add(ratio[i]);
         }
@@ -659,13 +671,15 @@ public class RealSpace {
         //int bins = (int)(Math.round(qmax*dmax/Math.PI)), locale;
 
         //ArrayList<Double> kurtosises = new ArrayList<Double>();
-
+        double[] kurtosises = new double[rounds];
         // calculate kurtosis
-        double kurtosis = StatMethods.kurtosis(test_ratios);
-        /*
-        double delta_q = (qmax-qmin)/bins;
+        //double kurtosis = StatMethods.kurtosis(test_ratios);
+        //double kurtosis = StatMethods.prunedKurtosis(test_ratios);
+        double qmin = this.fittedqIq.getMinX();
+        double bins = this.mooreCoefficients.length*3.0;
+        double delta_q = (this.fittedqIq.getMaxX()-qmin)/bins;
 
-        double samplingLimit;
+        double samplingLimit, lowerLimit;
         Random randomGenerator = new Random();
         int[] randomNumbers;
 
@@ -678,30 +692,31 @@ public class RealSpace {
                 // find upper q in bin
                 // SAMPLE randomly per bin
                 samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
+                lowerLimit = (delta_q * b + qmin);
 
                 binloop:
                 for (int j = startbb; j < total; j++) {
-                    if (this.fittedIq.getX(j).doubleValue() >= (delta_q * b + qmin)) {
+                    if (this.fittedqIq.getX(j).doubleValue() >= lowerLimit) {
                         upperbb = j;
                         break binloop;
                     }
                 }
+
                 // grab indices inbetween startbb and upperbb
                 randomNumbers = Functions.randomIntegersBounded(startbb, upperbb, samplingLimit);
                 startbb = upperbb;
 
                 for(int h=0; h < randomNumbers.length; h++){
-                    locale = randomNumbers[h];
-                    test_ratios.add(ratio[locale]);
+                    test_ratios.add(ratio[randomNumbers[h]]);
                 }
             }
             // calculate kurtosis
-            kurtosises.add(StatMethods.kurtosis(test_ratios));
+            kurtosises[i] = StatMethods.kurtosis(test_ratios);
         }
-*/
+
         // double returnMe = Collections.max(kurtosises);
-        // double returnMe = Statistics.calculateMedian(kurtosises);
-        return kurtosis;
+        return StatUtils.mean(kurtosises);
+        //return kurtosis;
         //return Statistics.calculateMedian(kurtosises);
     }
 
@@ -1001,6 +1016,7 @@ public class RealSpace {
     public double getRescaleFactor(){
         return rescaleFactor;
     }
+    public double getReciprocalSpaceScaleFactor(){ return dataset.getScaleFactor();}
 
     public void estimateErrors(){
         // given set of Moore coefficients
@@ -1096,7 +1112,7 @@ public class RealSpace {
                 } // end of checking if bin is empty
             }
             // calculate PofR
-            PrObject prObject = new PrObject(randomSeries, upperq, dmax, 0.001, false);
+            PrObject prObject = new PrObject(this, randomSeries, upperq, dmax, 0.001, false);
             results = prObject.moore_coeffs_L1();
 
             // calculate Izero and Rg
@@ -1126,6 +1142,217 @@ public class RealSpace {
 
         this.dataset.updateRealSpaceErrors(rgStat.getStandardDeviation()/rgStat.getMean(), izeroStat.getStandardDeviation()/izeroStat.getMean());
 
+    }
+
+    // auto-Dmax ?
+    // throw exception if no Guiner region
+
+    public void estimateDmax(double lambda, boolean usel1, int cBox){
+        // make q*I(q) dataset with extrapolated values from Guinier
+        // perform integral sine transform
+        XYSeries qIq = new XYSeries("qIQ for integral transform");
+
+        double startq = fittedqIq.getMinX();
+        double guinierRg = dataset.getGuinierRg();
+        double guinierIzero = dataset.getGuinierIzero();
+
+        if (startq > 1.5/guinierRg){
+
+        }
+
+        java.util.List delq = new ArrayList();
+        int itemCount = fittedqIq.getItemCount();
+
+        for (int j = 1; j < (itemCount-1); j++){
+            delq.add(Math.abs(fittedqIq.getX(j - 1).doubleValue() - fittedqIq.getX(j).doubleValue()));
+        }
+
+        double averageq = Statistics.calculateMean(delq);
+        //Use deltaq to extrapolate
+        double javerageq, javerageq2;
+        double rg23 = guinierRg*guinierRg/3.0;
+        double scaleFactor = dataset.getScaleFactor();
+
+        // create extrapolation using Guinier estimates
+        for (int j=0; j*averageq < startq; j++){
+            javerageq = j*averageq;
+            javerageq2 = (javerageq)*guinierIzero*Math.exp(-rg23*javerageq*javerageq);
+            qIq.add(javerageq, javerageq2*scaleFactor);
+        }
+
+        // Add rest of the values
+        XYDataItem tempqIqDataItem;
+        double xValue, xyValue;
+        for (int j=0; j < fittedqIq.getItemCount(); j++) {
+            tempqIqDataItem = fittedqIq.getDataItem(j);
+
+            xValue = tempqIqDataItem.getXValue();
+            xyValue = tempqIqDataItem.getYValue()*invRescaleFactor;
+            qIq.add(xValue, xyValue * scaleFactor);
+        }
+
+        double lastqvalue = qIq.getMaxX();
+        int totalqIqValues = qIq.getItemCount();
+
+        int startAt=0;
+        if (lastqvalue > 0.1){
+            for (int q=0; q<totalqIqValues; q++){
+                if (qIq.getX(q).doubleValue() > 0.1){
+                    startAt = q;
+                    break;
+                }
+            }
+        }
+
+        double startRvalue, nextRvalue;
+
+        XYSeries tempSeries = new XYSeries("temp");
+
+        for(int qm=0; qm < startAt; qm++){
+            tempSeries.add(qIq.getDataItem(qm));
+        }
+
+        int q = startAt, qlimit;
+        boolean changed;
+
+        ArrayList<String> score = new ArrayList<>();
+        int countOfScore = 1;
+        while(q < totalqIqValues){
+
+            startRvalue = 41;
+            changed = false;
+
+            for (int round=0; round < 1000; round++){
+
+                nextRvalue = startRvalue - integralTransform(startRvalue, tempSeries)/finiteDifferencesDerivative(startRvalue, tempSeries);
+                //System.out.println(round + " " + startRvalue + " <=> " + nextRvalue);
+                if (integralTransform(nextRvalue, tempSeries) < 0.000000001){
+                    startRvalue = nextRvalue;
+                    changed = true;
+                    break;
+                }
+
+                startRvalue = nextRvalue;
+            }
+            // fit P(r) using startRvalue and calculate chi and sk2
+            if (changed && startRvalue > 10 && startRvalue < 1000){
+                this.dmax = (int)startRvalue;
+                PrObject tempPr = new PrObject(this, lambda, usel1, cBox);
+                tempPr.run();
+                //this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
+                //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
+                //this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(0));
+                //this.l1_norm = this.l1_norm_pddr(11);
+                //this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
+                if (this.chi2 < 4 && !negativeValuesInModel){
+                    score.add(countOfScore + "\t" + this.dmax  + "\t" + this.chi2 + "\t" + this.kurt_l1_sum + "\t" + tempSeries.getMaxX());
+                    countOfScore++;
+                }
+            }
+
+            //tempSeries.add(qIq.getDataItem(q));
+            // add next 5 values
+            qlimit = q + 7;
+            if (qlimit < totalqIqValues){
+                for(int qi=q; qi < qlimit; qi++){
+                    tempSeries.add(qIq.getDataItem(qi));
+                }
+            }
+            q = qlimit;
+        }
+
+
+        for(int s=0; s<score.size(); s++){
+            System.out.println(score.get(s));
+        }
+
+        /*
+        for(int q=startAt; q < qIq.getItemCount(); q++){
+
+            startRvalue = 30;
+            System.out.println("MAX Q : " + tempSeries.getMaxX());
+
+            for (int round=0; round < 1000; round++){
+
+                nextRvalue = startRvalue - integralTransform(startRvalue, qIq)/finiteDifferencesDerivative(startRvalue, qIq);
+
+                System.out.println(round + " " + startRvalue + " <=> " + nextRvalue);
+
+                if (integralTransform(nextRvalue, qIq) < 0.00000001){
+                    System.out.println("FINISHED " + nextRvalue);
+                    startRvalue = nextRvalue;
+                    break;
+                }
+
+                startRvalue = nextRvalue;
+            }
+            // fit P(r) using startRvalue and calculate chi and sk2
+            if (startRvalue > 10 && startRvalue < 1000){
+                this.dmax = (int)startRvalue;
+                PrObject tempPr = new PrObject(this, lambda, usel1, cBox);
+                tempPr.run();
+            }
+
+            tempSeries.add(qIq.getDataItem(q));
+        }
+*/
+
+
+        // qIq dataset is complete upto qmax with extrapolated low-q data
+        //double startRvalue = 30, nextRvalue;
+/*
+        System.out.println("MAX Q : " + lastqvalue);
+
+        for (int round=0; round<1000; round++){
+
+            nextRvalue = startRvalue - integralTransform(startRvalue, qIq)/finiteDifferencesDerivative(startRvalue, qIq);
+
+            System.out.println(round + " " + startRvalue + " <=> " + nextRvalue);
+
+            if (integralTransform(nextRvalue, qIq) < 0.00000001){
+                System.out.println("FINISHED " + nextRvalue);
+                break;
+            }
+
+            startRvalue = nextRvalue;
+        }
+*/
+    }
+
+
+    private double integralTransform(double rvalue, XYSeries extrapolatedQIqSeries){
+
+        // create XYSeries
+        XYSeries transformedSeries = new XYSeries("Sine Transformed");
+        XYDataItem tempqIqDataItem;
+
+        for (int i=0; i< extrapolatedQIqSeries.getItemCount(); i++){
+            tempqIqDataItem = extrapolatedQIqSeries.getDataItem(i);
+            transformedSeries.add(tempqIqDataItem.getX(), tempqIqDataItem.getYValue()*Math.sin(tempqIqDataItem.getXValue()*rvalue));
+        }
+
+        // trapezoid rule integration
+        return Functions.trapezoid_integrate(transformedSeries);
+    }
+
+    /**
+     * Use forward difference approximation to 2nd order to approximate derivative of P(r)-distribution
+     * @param rvalue
+     * @param extrapolatedQIqSeries
+     * @return
+     */
+    private double finiteDifferencesDerivative(double rvalue, XYSeries extrapolatedQIqSeries){
+        double h_increment = 0.7;
+
+        // Centered
+        //double sumIt = -integralTransform(rvalue+2*h_increment, extrapolatedQIqSeries) + 8*integralTransform(rvalue+h_increment, extrapolatedQIqSeries) - 8*integralTransform(rvalue-h_increment, extrapolatedQIqSeries) + integralTransform(rvalue-2*h_increment, extrapolatedQIqSeries);
+        // Forward
+        // double sumIt = -integralTransform(rvalue+2*h_increment, extrapolatedQIqSeries) + 4*integralTransform(rvalue+h_increment, extrapolatedQIqSeries) - 3*integralTransform(rvalue, extrapolatedQIqSeries);
+        // Reverse
+        double sumIt = 3*integralTransform(rvalue, extrapolatedQIqSeries) - 4*integralTransform(rvalue - h_increment, extrapolatedQIqSeries) + integralTransform(rvalue - 2*h_increment, extrapolatedQIqSeries);
+
+        //return sumIt/(12*h_increment);
+        return sumIt/(2*h_increment);
     }
 
 }

@@ -48,7 +48,7 @@ public class VcPlot {
         XYSeriesCollection qIqIntegratedDatasets = new XYSeriesCollection();
 
         XYSeries tempqIqData;
-        XYDataItem tempXY;
+
         XYDataItem tempqIqDataItem;
 
         ArrayList<JLabel> area2Label = new ArrayList<JLabel>();

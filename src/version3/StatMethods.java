@@ -34,6 +34,50 @@ public class StatMethods {
         return kurtosis;
     }
 
+
+    public static double prunedKurtosis(ArrayList<Double> values){
+        int pointsToUse = values.size();
+
+        double[] meanVariance = mean_variance_array_list(values);
+        double mean = meanVariance[0];
+        double invStdev = 1.0/Math.sqrt(meanVariance[1]);
+
+        ArrayList<Double> keepers = new ArrayList<>();
+
+        double xvalue;
+        for (int i=0; i<pointsToUse; i++){
+            xvalue = values.get(i);
+            if (Math.abs(xvalue - mean)*invStdev < 2.5){
+                keepers.add(xvalue);
+            }
+        }
+
+        return kurtosis(keepers);
+    }
+
+
+    public static double[] mean_variance_array_list(ArrayList<Double> values){
+
+        int total = values.size();
+        double sum = 0;
+        double sum2 = 0;
+        double xvalue;
+        double[] valuesToReturn = new double[2];
+
+        for (int i=0; i< total; i++){
+            xvalue = values.get(i);
+            sum2 += xvalue*xvalue;
+            sum += xvalue;
+        }
+
+        double invTotal = 1.0/(double)total;
+        valuesToReturn[0] = sum*invTotal;
+        valuesToReturn[1] = sum2*invTotal - valuesToReturn[0]*valuesToReturn[0];
+
+        return valuesToReturn;
+    }
+
+
     public static double mean_array_list(ArrayList<Double> values){
         int total = values.size();
         double sum = 0;

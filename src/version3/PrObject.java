@@ -290,7 +290,16 @@ public class PrObject implements Runnable {
         //System.out.println("Use L1 Norm of Second Derivate => " + useL1);
     }
 
-    public PrObject(XYSeries fittedqIq, double qmax, double dmax, double lambda, boolean useL1Coefficients){
+    public PrObject(XYSeries fittedqIq, double qmax, double dmax, double lambda){
+        data = fittedqIq;
+        this.qmax = qmax;
+        this.dmax = dmax;
+        this.lambda = lambda;
+    }
+
+
+    public PrObject(RealSpace dataset, XYSeries fittedqIq, double qmax, double dmax, double lambda, boolean useL1Coefficients){
+        this.dataset = dataset;
         data = fittedqIq;
         this.qmax = qmax;
         this.dmax = dmax;

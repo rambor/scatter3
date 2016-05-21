@@ -224,7 +224,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                         if (averageStoNPerBin.get(b-1) < 1.25){ // increase more points if S-to-N is less than
                             samplingNumber = 36;
                         } else {
-                            samplingNumber = 5;
+                            samplingNumber = 2;
                         }
 
                         samplingLimit = (1.0 + randomGenerator.nextInt(samplingNumber))/100.0;  // return a random percent up to ...
@@ -243,7 +243,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
                         startbb = upperbb;
 
-                        for(int h=0; h<randomNumbers.length; h++){
+                        for(int h=0; h < randomNumbers.length; h++){
                             locale = randomNumbers[h];
                             tempData = activeSet.getDataItem(locale);
                             randomSeries.add(tempData);
@@ -254,7 +254,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 }
 
                 // calculate PofR
-                PrObject prObject = new PrObject(randomSeries, upperq, dmax, lambda, useL1);
+                PrObject prObject = new PrObject(randomSeries, upperq, dmax, lambda);
+
                 if (useL1){
                     // fixed q range
                     results = prObject.moore_pr_L1();
@@ -263,17 +264,20 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 }
 
                 // Calculate Residuals
-                tempMedian = medianMooreResiduals(activeSet, results.get(0));
+                tempMedian = medianMooreResiduals(activeSet, results.get(0)); // squared residual
 
-                if (tempMedian < getMedian()){
+                if (tempMedian < getMedian()){ // minimize on medium residual in activeset
                     // keep current values
                     notifyUser(String.format("Improved fit, new median residual %1.7E < %1.7E at round %d", tempMedian, median, i));
                     //status.setText("Improved fit, new median residual: " + tempMedian + " < " + median + " at round " + i );
-
                     sizeAm = results.get(0).length;
                     setkeptAm(results.get(0), sizeAm);
                     setMedian(tempMedian);
-                    setS_o(1.4826*(1.0+5.0/(size - sizeAm))*Math.sqrt(median));
+
+                    //setS_o( 1.4826*(1.0 + 5.0/(size - sizeAm - 1))*Math.sqrt(median) ); // size is number of elements in active set
+                    setS_o( 1.4826*(1.0 + 5.0/(size - sizeAm - 1))*Math.sqrt(median) ); // size is number of elements in active set
+                    //setS_o( 1.4826*Math.sqrt(median) ); // size is number of elements in active set
+                    // MAD = 1.4826*median_deviation
                 }
                 this.increment();
             }
@@ -286,7 +290,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
             // for each bin determine average signal to noise
             int startbb = 0;
             double sumError, sumCount, tempCurrent, upperBound;
-            double delta_q = upperq/bins;
+            //double delta_q = upperq/bins;
             int size = relativeErrorSeries.getItemCount();
 
             for (int b=1; b <= bins; b++) {
@@ -373,8 +377,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
          * @return Median residual as float
          */
         private double medianMooreResiduals(XYSeries data, double[] a_m){
-            double medianResidual;
-            ArrayList<Double> residuals = new ArrayList<Double>();
+
+            List<Double> residuals = new ArrayList<Double>();
 
             int dataLimit = data.getItemCount();
             double q;
@@ -400,8 +404,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 //residuals.add( Math.abs(tempitem.getYValue() - resultM) );  //squaring the difference
             }
 
-            medianResidual = Statistics.calculateMedian(residuals);
-            return medianResidual;
+            return Statistics.calculateMedian(residuals);
         }
 
     } // end of runnable class
@@ -428,38 +431,53 @@ public class RefineManager extends SwingWorker<Void, Void> {
         keptSeries=new XYSeries("reduced refinedset");
         keptErrorSeries=new XYSeries("reduced refinedset");
 
-        double xObsValue, yObsValue;
+        double xObsValue, yObsValue, iCalc;
         double residual;
         List residualsList = new ArrayList();
         double[] keptAm = this.getKeptAM();
         int sizeAm = keptAm.length;
 
         XYDataItem tempData;
-        XYSeries activeqIqSet = dataset.getfittedqIq(); // this is scaled data
-        XYSeries errorActiveSet = dataset.getfittedError();
+        //XYSeries keptqIq = new XYSeries("keptqIq-"+dataset.getId());
+        XYSeries activeqIqSet = dataset.getfittedqIq();      // this is scaled data
+        XYSeries errorActiveSet = dataset.getfittedError();  // these errors are unscaled
+        dataset.getCalcIq().clear();
+
         int size = activeqIqSet.getItemCount();
 
         for (int i=0; i < size; i++){
-            tempData = activeqIqSet.getDataItem(i);
+            tempData = activeqIqSet.getDataItem(i); // potentially scaled data
             xObsValue = tempData.getXValue();
             yObsValue = tempData.getYValue();
 
-            residual = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm)-yObsValue/xObsValue;
+            iCalc = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm);
+            //residual = iCalc - yObsValue/xObsValue;
+            residual = iCalc*xObsValue - yObsValue;
             //System.out.println(i + " : " + Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm) + " <=> " + yObsValue/xObsValue + " " + dataset.getRescaleFactor());
+            //setS_o( 1.4826*(1.0 + 5.0/(size - sizeAm - 1))*Math.sqrt(median) ); // size is number of elements in active set
 
             if (Math.abs(residual/this.getS_o()) <= rejectionCutOff){
+                //System.out.println(Math.abs(residual/this.getS_o()) + " <= " + rejectionCutOff);
+
                 residualsList.add(residual*residual);
+
+                //keptSeries.add(xObsValue, yObsValue/xObsValue);
+
+                //keptqIq.add(xObsValue, yObsValue);  // used in actual fitting must be rescaled if too low or high
+                //keptErrorSeries.add(xObsValue, errorActiveSet.getY(i).doubleValue());
+
+                //if (yObsValue > 0) { // only positive values
+                //    dataset.getCalcIq().add(xObsValue, Math.log10(iCalc * invReScaleFactor)); //plotted data is unscaled, as is from Analysis
+                //}
+
             }
         }
 
         int sizeResiduals = residualsList.size();
-
         double sigmaM = 1.0/Math.sqrt(Statistics.calculateMean(residualsList)*sizeResiduals/(sizeResiduals - sizeAm));
 
         XYSeries keptqIq = new XYSeries("keptqIq-"+dataset.getId());
         // Select final values for fitting
-        double iCalc;
-        dataset.getCalcIq().clear();
 
         for (int i=0; i<size; i++){
             tempData = activeqIqSet.getDataItem(i);
@@ -467,20 +485,22 @@ public class RefineManager extends SwingWorker<Void, Void> {
             yObsValue = tempData.getYValue();
 
             iCalc = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm);
-            residual = iCalc-yObsValue/xObsValue;
+            residual = iCalc*xObsValue-yObsValue;
             //residual = iCalc*xObsValue-yObsValue; // y-values from qIq is scaled
             //System.out.println(i + " residual : " + residual + " SIGMAM " + Math.abs(residual*sigmaM) + " <=> " + rejectionCutOff);
-            if (Math.abs(residual*sigmaM) <= rejectionCutOff){
+            if ( Math.abs(residual*sigmaM) <= rejectionCutOff){
                 keptSeries.add(xObsValue, yObsValue/xObsValue);
 
                 keptqIq.add(xObsValue, yObsValue);  // used in actual fitting must be rescaled if too low or high
                 keptErrorSeries.add(xObsValue, errorActiveSet.getY(i).doubleValue());
 
                 if (yObsValue > 0) { // only positive values
-                    dataset.getCalcIq().add(xObsValue, Math.log10(iCalc*1.0/dataset.getRescaleFactor())); //plotted data is unscaled, as is from Analysis
+                    dataset.getCalcIq().add(xObsValue, Math.log10(iCalc * invReScaleFactor)); //plotted data is unscaled, as is from Analysis
                 }
             }
         }
+
+
         // update spinner with new limits of of keptSeries
         // estimate errors on invariants using sampling algorithm off of keptSeries
         // if keptqIq > bin*2 , then calculate PofR
@@ -490,7 +510,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
             dataset.updatedRefinedSets(keptSeries, keptErrorSeries);
             ArrayList<double[]> results;
             // calculate PofR
-            PrObject prObject = new PrObject(keptqIq, upperq , dmax, lambda, useL1);
+            PrObject prObject = new PrObject(keptqIq, upperq , dmax, lambda);
 
             if (useL1){
                 // fixed q range

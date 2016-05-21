@@ -53,8 +53,6 @@ private int refId, scaleToID;
         //    }
         //}
 
-
-
         this.buffers = buffers;
 
         if (buffers.getDatasetCount() > 1){
