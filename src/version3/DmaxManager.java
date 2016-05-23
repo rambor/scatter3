@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DmaxManager extends SwingWorker<Void, Void> {
 
+    private final double piinv2 = Math.PI*0.5;
     private final boolean useL1;
     private RealSpace realSet;
     private XYSeries fittedqIq;           // range of data used for the actual fit, may contain negative values
@@ -29,6 +30,7 @@ public class DmaxManager extends SwingWorker<Void, Void> {
     private int startAt=0;
     private XYSeriesCollection prDistributions;
     private int numberOfCPUs=1;
+    private double extrapolatedArea;
     double lambda;
 
 
@@ -63,6 +65,7 @@ public class DmaxManager extends SwingWorker<Void, Void> {
 
         // 1. make extrapolated dataset
         extrapolateDataSet();
+        extrapolateDataSetQ2I2();
         // unextrapolated data
         System.out.println("FINISHED EXTRAPOLATING");
         double qmax = qIq.getMaxX();
@@ -85,7 +88,7 @@ public class DmaxManager extends SwingWorker<Void, Void> {
             XYSeries tempXYBlock = new XYSeries("block");
 
             for(int j=0; j < totalqiq; j++){
-                if (qIq.getX(j).doubleValue() >= upperq){
+                if (qIq.getX(j).doubleValue() > upperq){
                     nextStart = j;
                     break;
                 }
@@ -97,11 +100,10 @@ public class DmaxManager extends SwingWorker<Void, Void> {
             XYSeries unextrapolatedqIqError = new XYSeries("UnextrapolatedError");
 
             for(int j=0; j < fittedqIq.getItemCount(); j++){
-                if (fittedqIq.getX(j).doubleValue() >= upperq){
+                if (fittedqIq.getX(j).doubleValue() > upperq){
                     nextStart = j;
                     break;
                 }
-                //unextrapolatedqIq.add(fittedqIq.getX(j),  fittedqIq.getY(j).doubleValue()/fittedqIq.getX(j).doubleValue() );
                 unextrapolatedqIq.add(fittedqIq.getX(j),  fittedqIq.getY(j).doubleValue() );
                 unextrapolatedqIqError.add(errorFittedqIq.getDataItem(j));
             }
@@ -231,10 +233,14 @@ public class DmaxManager extends SwingWorker<Void, Void> {
                         //chi2 = this.chi_estimate(results.get(0), startRvalue, fittedSeries, fittedErrorSeries);
                         chi2 = this.chi_estimate(results.get(0), startRvalue, fittedSeries, fittedErrorSeries);
 
-                        if (results.get(0).length > 3 && chi2 > 0.7 && chi2 < 2 && !calculatePofR(startRvalue, results.get(0))){
+                        if (results.get(0).length > 3 && chi2 > 0.7 && chi2 < 2 && !calculatePofR(startRvalue, results.get(0)) && !testParsevalsTheorem(startRvalue, results.get(0), fittedSeries)){
+
                             // if true add prDistribution to collection
                             // update plots in thread safe way so use process?
                             System.out.println("CHI2 : " + chi2 + "  => " + startRvalue + " qmax : " + tempSeries.getMaxX());
+
+                            //testParsevalsTheorem(startRvalue, results.get(0), fittedSeries);
+
                             addPrDistributions(prDistribution, (int)startRvalue, tempSeries.getMaxX());
                         }
 
@@ -251,12 +257,14 @@ public class DmaxManager extends SwingWorker<Void, Void> {
                     }
                 }
 
+
                 checkq = tempSeries.getMaxX();
                 for(int i=stoppedAt; i < qIqUnextrapolated.getItemCount(); i++){
                     if (qIqUnextrapolated.getX(i).doubleValue() > checkq){
                         stoppedAt=i;
                         break;
                     }
+
                     fittedSeries.add(qIqUnextrapolated.getDataItem(i));
                     fittedErrorSeries.add(unextrapolatedError.getDataItem(i));
                 }
@@ -266,8 +274,57 @@ public class DmaxManager extends SwingWorker<Void, Void> {
         }
 
 
-        /*
-         * create P(r) plot
+        /**
+         * Data should be interpolated to zero q
+         * Integrated data should be >= sum of squared coefficients (Bessel's inequality)
+         * @param dmax
+         * @param mooreCoefficients
+         * @param data
+         * @return
+         */
+        private boolean testParsevalsTheorem(double dmax, double[] mooreCoefficients, XYSeries data){
+            boolean testFailed = false;
+
+            XYSeries q2I2 = new XYSeries("q2I2");
+            int totalData = data.getItemCount();
+            XYDataItem tempItem;
+
+            double x, y;
+            for(int i=0; i<totalData; i++){
+                tempItem = data.getDataItem(i);
+                x = tempItem.getXValue(); // q
+                y = tempItem.getYValue(); // q*I(q)
+                q2I2.add(tempItem.getX(), y*y);
+            }
+
+            double integration = piinv2*(1.0/dmax*(Functions.trapezoid_integrate(q2I2) + extrapolatedArea));
+            int totalMoore = mooreCoefficients.length;
+
+            double squaredSum=0;
+            for (int i=1; i<totalMoore; i++){
+                squaredSum += mooreCoefficients[i]*mooreCoefficients[i];
+            }
+
+            squaredSum = 0.25*mooreCoefficients[0]*mooreCoefficients[0] + 0.5*squaredSum;
+
+            double diff = (integration - squaredSum)/(integration + squaredSum)*0.5;
+            if (diff < 0){
+                testFailed = true;
+            }
+
+            //System.out.println("Integrated: " + integration + " => squared coefficients " + squaredSum + " DIFF " + diff);
+
+            return testFailed;
+
+        }
+
+
+
+        /**
+         *
+         * @param dmax
+         * @param mooreCoefficients
+         * @return
          */
         private boolean calculatePofR(double dmax, double[] mooreCoefficients){
             prDistribution.clear();
@@ -522,5 +579,19 @@ public class DmaxManager extends SwingWorker<Void, Void> {
             }
         }
     }
+
+
+    /**
+     * extrapolate as a triangle
+     */
+    private void extrapolateDataSetQ2I2(){
+
+        double endPointq = fittedqIq.getX(0).doubleValue(); // q
+        double endPointIntensity = fittedqIq.getY(0).doubleValue(); // q*I(q)
+
+        double endPointIntensitySquared = endPointIntensity*endPointIntensity;
+        extrapolatedArea = 0.5*endPointq*endPointIntensitySquared;
+    }
+
 
 }
