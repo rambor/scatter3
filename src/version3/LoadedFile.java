@@ -154,7 +154,7 @@ public class LoadedFile {
 
                             } else { // if fit file, switch columns
 
-                                tempQValue = (convert) ? dataPoints.getq()/10 : dataPoints.getq();
+                                //tempQValue = (convert) ? dataPoints.getq()/10 : dataPoints.getq();
 
                                 allData.add(dataPoints.getq(), dataPoints.getE() );
                                 allDataError.add(dataPoints.getq(), dataPoints.getE()*0.05);
@@ -227,7 +227,7 @@ public class LoadedFile {
                 System.out.println("Not USUK : may convert format ");
 
                 if (row[0].contains(",") && row[1].contains(",")){ // convert
-                    System.out.println("Number contains a comma in first column, convert format ");
+                    //System.out.println("Number contains a comma in first column, convert format ");
                     data = new DataLine(convertToUS(row[0]), convertToUS(row[1]), 1.0, true);
                     if ((row.length == 3 && isNumeric(row[2])) || (row.length == 4 && isNumeric(row[2]))) {
                         data.setE(convertToUS(row[2]));

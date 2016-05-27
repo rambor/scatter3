@@ -224,6 +224,8 @@ public class Scatter {
     private JButton TRACEButton;
     private JButton SETBUFFERButton;
     private JButton UPDATEButton;
+    private JButton SETPLOTRANGEButton;
+    private JButton RESETRANGEButton;
 
     private String version = "3.0a";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -269,6 +271,9 @@ public class Scatter {
     private DoubleValue dmaxHigh;
     private DoubleValue dmaxStart;
 
+    private int firstIndexInSignalPlot;
+    private int lastIndexInSignalPlot;
+
     // singleton plots
     public PlotDataSingleton log10IntensityPlot;
     public KratkyPlot kratky;
@@ -293,18 +298,18 @@ public class Scatter {
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-        //mc.redirectOut();
-        //mc.redirectErr(Color.RED, null);
+        mc.redirectOut();
+        mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        //info.redirectOut();
+        info.redirectOut();
 
         //int[] subtractionBins = new int[] {11, 13, 17, 23, 29};
         //comboBoxSubtractBins = new JComboBox(subtractionBins);
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(2);
         simBinsComboBox.setSelectedIndex(0);
-        lambdaBox.setSelectedIndex(0);
+        lambdaBox.setSelectedIndex(2);
         cBox.setSelectedIndex(1);
 
 
@@ -1466,6 +1471,7 @@ public class Scatter {
 
                 int total = sampleFilesModel.getSize();
                 int selectS=0;
+                /*
                 for(int i=0;i<total; i++){
                     if (sampleFilesModel.get(i).isSelected()){
                         sampleCollection.getDataset(i).setInUse(true);
@@ -1474,6 +1480,22 @@ public class Scatter {
                         sampleCollection.getDataset(i).setInUse(false);
                     }
                 }
+*/
+                if (lastIndexInSignalPlot < 0){
+                    lastIndexInSignalPlot = total;
+                }
+
+                // sampleCollection should only contain files in use
+
+                for(int i=0;i<total; i++){
+                    if (sampleFilesModel.get(i).isSelected() && i >= firstIndexInSignalPlot && i < lastIndexInSignalPlot){
+                        sampleCollection.getDataset(i).setInUse(true);
+                        selectS++;
+                    } else {
+                        sampleCollection.getDataset(i).setInUse(false);
+                    }
+                }
+
 
                 int totalBuffers = bufferFilesModel.getSize();
                 int selectB=0;
@@ -1491,6 +1513,10 @@ public class Scatter {
                 }
 
                 SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+
+
+
+
                 tempSignalPlot.setSampleJList(samplesList);
 
                 Thread temp1 = new Thread(tempSignalPlot);
@@ -2403,6 +2429,86 @@ public class Scatter {
                 updateProp();
             }
         });
+
+        SETPLOTRANGEButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // set frames to use in making signal plot
+                int total = sampleFilesModel.getSize();
+                boolean first = false;
+                boolean last = false;
+
+                lastIndexInSignalPlot = total -1;
+                firstIndexInSignalPlot = 0;
+
+                for(int i=0;i<total; i++){
+                    if (sampleFilesModel.get(i).isSelected() && !first){
+                        first = true;
+                        firstIndexInSignalPlot = i;
+                    } else if (!(sampleFilesModel.get(i).isSelected()) && first && !last) {
+                        lastIndexInSignalPlot = i;
+                        break;
+                    }
+                }
+                System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
+                System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
+            }
+        });
+
+        RESETRANGEButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                lastIndexInSignalPlot = -1;
+                firstIndexInSignalPlot = 0;
+            }
+        });
+
+
+        damminRadioButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dammifRadioButton.setSelected(false);
+                //damminRadioButton.setEnabled(true);
+            }
+        });
+
+        dammifRadioButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                damminRadioButton.setSelected(false);
+                damRefineCheckBox.setSelected(false);
+                //damminRadioButton.setEnabled(true);
+            }
+        });
+
+        fastRadioButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                slowRadioButton.setSelected(false);
+            }
+        });
+
+        slowRadioButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                fastRadioButton.setSelected(false);
+            }
+        });
+
+
+        damRefineCheckBox.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (damRefineCheckBox.isSelected()){
+                    // uncheck dammif
+                    dammifRadioButton.setSelected(false);
+                    damminRadioButton.setSelected(true);
+                }
+            }
+
+        });
+
     }
 
     public static void updateProp(){
@@ -4031,6 +4137,36 @@ public class Scatter {
             { return filename.endsWith(".dat"); }
         } );
 
+    }
+
+    public static Float getRetinaScaleFactor(){
+        Object obj = Toolkit.getDefaultToolkit().getDesktopProperty("apple.awt.contentScaleFactor");
+        if(obj != null){
+            if(obj instanceof Float)
+                return (Float) obj;
+        }
+        return null;
+    }
+
+
+    public static boolean hasRetinaDisplay(){
+        Float fRetinaFactor = getRetinaScaleFactor();
+        if(fRetinaFactor != null){
+            if(fRetinaFactor > 0){
+                int nScale = fRetinaFactor.intValue();
+                return (nScale == 2); // 1 indicates a regular mac display, 2 is for retina
+            }
+        }
+        return false;
+    }
+
+
+    private static float getResulationFactor(){
+        float fResolutionFactor = ((float) Toolkit.getDefaultToolkit().getScreenResolution() / 96f);
+        if(hasRetinaDisplay()){
+            fResolutionFactor = fResolutionFactor * getRetinaScaleFactor().floatValue();
+        }
+        return fResolutionFactor;
     }
 
 

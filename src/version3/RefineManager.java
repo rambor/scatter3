@@ -58,7 +58,8 @@ public class RefineManager extends SwingWorker<Void, Void> {
         totalRoundsForRefinement = refinementRounds;
         roundsPerCPU = (int)(this.refinementRounds/(double)numberOfCPUs);
 
-        bins = (int) (Math.round(dataset.getfittedqIq().getMaxX() * dataset.getDmax() / Math.PI));  // excludes term related constant background
+        bins = dataset.getTotalMooreCoefficients();
+        //bins = (int) (Math.round(dataset.getfittedqIq().getMaxX() * dataset.getDmax() / Math.PI));  // excludes term related constant background
 
         //upperq = dataset.getAllData().getX(dataset.getStop()-1).doubleValue();
         upperq = dataset.getfittedqIq().getMaxX();

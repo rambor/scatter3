@@ -78,7 +78,7 @@ public class DammiNFManager {
             boolean testDir = newDir.mkdir();
             if (!testDir){
                 try {
-                    throw new DamminRunException("CANNOT_CREATE_DAM_DIRECTORY");
+                    throw new DamminRunException("CANNOT_CREATE_DAM_DIRECTORY " + workingDir + " " + testDir);
                 } catch (DamminRunException e) {
                     System.out.println(e.getErrorMessage());
                     e.printStackTrace();
@@ -91,7 +91,7 @@ public class DammiNFManager {
             newDir.renameTo(new File(workingDir + "/damf_"+symm+"_"+sdf.format(now)));
             if (!newDir.mkdir()){
                 try {
-                    throw new DamminRunException("CANNOT_CREATE_DAM_DIRECTORY");
+                    throw new DamminRunException("CANNOT_CREATE_DAM_DIRECTORY " + workingDir + "/damf_"+symm);
                 } catch (DamminRunException e) {
                     System.out.println(e.getErrorMessage());
                     e.printStackTrace();

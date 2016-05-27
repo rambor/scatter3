@@ -335,7 +335,7 @@ public class PrObject implements Runnable {
         ArrayList<double[]> results = new ArrayList<>(2);
 
         int ns = (int) Math.round(qmax*dmax*INV_PI); //
-        int coeffs_size = ns + 1;   //+1 for constant background
+        int coeffs_size = ns + 2;   //+1 for constant background
         //int coeffs_size = ns // no background correction
 
         double incr = 2.0;
@@ -696,7 +696,7 @@ public class PrObject implements Runnable {
 
         int ns = (int) Math.round(qmax*dmax*INV_PI); //
 
-        int coeffs_size = ns + 1;   //+1 for constant background
+        int coeffs_size = ns + 2;   //+1 for constant background
         //int coeffs_size = ns;
 
         double incr = cBoxValue; // sets the number of points to calculate second derivative

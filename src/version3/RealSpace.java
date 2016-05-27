@@ -1016,6 +1016,7 @@ public class RealSpace {
     public double getRescaleFactor(){
         return rescaleFactor;
     }
+
     public double getReciprocalSpaceScaleFactor(){ return dataset.getScaleFactor();}
 
     public void estimateErrors(){
