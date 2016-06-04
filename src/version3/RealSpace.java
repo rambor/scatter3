@@ -44,13 +44,17 @@ public class RealSpace {
     private double izero;
     private double rg;
     private double[] mooreCoefficients;
+
+    private ArrayList<Double> rValuesDirectFT;
+    private ArrayList<Double> directFT;
+
     private int dmax;
     private double qmax;
     private double rescaleFactor = 1;
     private double invRescaleFactor =1;
     private double raverage;
     private double chi2;
-    private float scale;
+    private float scale=1.0f;
     private Color color;
     private boolean baseShapeFilled;
     private int pointSize;
@@ -410,6 +414,40 @@ public class RealSpace {
         return mooreCoefficients;
     }
 
+    public void setPrDistributionDirectFT(double[] rvalues, double[] fittedValues, double[] modelqIq){
+        directFT = new ArrayList<>();
+        rValuesDirectFT = new ArrayList<>();
+
+        int totalR = rvalues.length;
+        int totalFitted = fittedValues.length;
+
+        for(int i=0; i< totalR; i++){
+            rValuesDirectFT.add(rvalues[i]);
+        }
+
+        for(int i=0; i< totalFitted; i++){
+            directFT.add(scale*fittedValues[i]);
+        }
+
+        prDistribution.clear();
+        prDistribution.add(0,0);
+        for (int j=1; j < totalFitted; j++){
+            prDistribution.add( rValuesDirectFT.get(j-1), directFT.get(j) );
+        }
+        prDistribution.add(dmax,0);
+
+
+        calcqIq.clear();
+        //iterate over each q value and calculate I(q)
+        int startHere = startAt - 1;
+        int count=0;
+        for (int j=startHere; j < stopAt; j++){
+            calcqIq.add(allData.getX(j), modelqIq[count]);
+            count++;
+        }
+
+    }
+
     public void setMooreCoefficients(double[] values){
         totalMooreCoefficients = values.length;
         this.mooreCoefficients = new double[totalMooreCoefficients];
@@ -433,6 +471,45 @@ public class RealSpace {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+    public void calculatePofRDirect(){
+        /*
+         * create P(r) plot
+         */
+        prDistribution.clear();
+        double totalPrPoints = (Math.ceil(fittedqIq.getMaxX()*dmax*invPi)*3);
+        int r_limit = (int)totalPrPoints -1;
+        double deltar = dmax/totalPrPoints;
+
+        double resultM;
+        double inv_d = 1.0/dmax;
+        double pi_dmax = Math.PI*inv_d;
+        double inv_2d = 0.5*inv_d;
+        double pi_dmax_r;
+        double r_value;
+        prDistribution.add(0.0d, 0.0d);
+        negativeValuesInModel = false;
+
+        for (int j=1; j < r_limit; j++){
+
+            r_value = j*deltar;
+            pi_dmax_r = pi_dmax*r_value;
+            resultM = 0;
+
+            for(int i=1; i < totalMooreCoefficients; i++){
+                resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
+            }
+
+            prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
+
+            if (resultM < 0){
+                negativeValuesInModel = true;
+            }
+        }
+
+        prDistribution.add(dmax,0);
     }
 
 
@@ -1148,7 +1225,7 @@ public class RealSpace {
     // auto-Dmax ?
     // throw exception if no Guiner region
 
-    public void estimateDmax(double lambda, boolean usel1, int cBox){
+    public void estimateDmax(double lambda, boolean usel1, int cBox, boolean useDirect){
         // make q*I(q) dataset with extrapolated values from Guinier
         // perform integral sine transform
         XYSeries qIq = new XYSeries("qIQ for integral transform");
@@ -1235,16 +1312,18 @@ public class RealSpace {
 
                 startRvalue = nextRvalue;
             }
+
             // fit P(r) using startRvalue and calculate chi and sk2
             if (changed && startRvalue > 10 && startRvalue < 1000){
                 this.dmax = (int)startRvalue;
-                PrObject tempPr = new PrObject(this, lambda, usel1, cBox);
+                PrObject tempPr = new PrObject(this, lambda, usel1, cBox, useDirect);
                 tempPr.run();
                 //this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
                 //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
                 //this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(0));
                 //this.l1_norm = this.l1_norm_pddr(11);
                 //this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
+                //System.out.println(countOfScore + " dmax " + this.dmax + " chi2 => " + this.chi2 + "\t" + tempSeries.getMaxX());
                 if (this.chi2 < 4 && !negativeValuesInModel){
                     score.add(countOfScore + "\t" + this.dmax  + "\t" + this.chi2 + "\t" + this.kurt_l1_sum + "\t" + tempSeries.getMaxX());
                     countOfScore++;

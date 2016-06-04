@@ -232,8 +232,9 @@ public class DmaxManager extends SwingWorker<Void, Void> {
 
                         //chi2 = this.chi_estimate(results.get(0), startRvalue, fittedSeries, fittedErrorSeries);
                         chi2 = this.chi_estimate(results.get(0), startRvalue, fittedSeries, fittedErrorSeries);
+                        //System.out.println("CHI2 : " + chi2 + "  => " + startRvalue + " qmax : " + tempSeries.getMaxX());
 
-                        if (results.get(0).length > 3 && chi2 > 0.7 && chi2 < 2 && !calculatePofR(startRvalue, results.get(0)) && !testParsevalsTheorem(startRvalue, results.get(0), fittedSeries)){
+                        if (results.get(0).length > 3 && chi2 > 0.7 && chi2 < 2.1 && !calculatePofR(startRvalue, results.get(0)) && !testParsevalsTheorem(startRvalue, results.get(0), fittedSeries)){
 
                             // if true add prDistribution to collection
                             // update plots in thread safe way so use process?

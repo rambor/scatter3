@@ -260,6 +260,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                 if (useL1){
                     // fixed q range
                     results = prObject.moore_pr_L1();
+                    //results = prObject.moore_pr_L1_noBG();
                 } else {
                     results = prObject.moore_coeffs_L1();
                 }
@@ -515,7 +516,9 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
             if (useL1){
                 // fixed q range
+                System.out.println("FINAL REFINEMENT USING L1 " + useL1);
                 results = prObject.moore_pr_L1();
+                //results = prObject.moore_pr_L1_noBG();
             } else {
                 results = prObject.moore_coeffs_L1();
             }

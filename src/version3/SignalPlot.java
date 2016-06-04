@@ -43,6 +43,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     private Collection buffersCollection;
     private XYSeriesCollection plotMe;
     private XYSeriesCollection plotRg;
+    private int firstFrame;
+    private int lastFrame;
 
     private Number minQvalueInCommon;
     private Number maxQvalueInCommon;
@@ -120,47 +122,54 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         mainStatus.setValue(0);
         mainStatus.setStringPainted(true);
         mainStatus.setString("Processing");
+        System.out.println("FIRST : " + firstFrame + " LAST : " + lastFrame);
 
-        for(int i=0;i<total; i++){
+        if (lastFrame <= 0 || lastFrame <= firstFrame){
+            lastFrame = total;
+        }
 
-            tempDataset = samplesCollection.getDataset(i);
-            ratio.clear();
-            tempData = tempDataset.getAllData();
-            totalXY = tempData.getItemCount();
 
-            // create XY Series using ratio to buffer then integrate
-            for(int q=0; q < totalXY; q++){
-                tempXY = tempData.getDataItem(q);
-                bufferIndex = buffer.indexOf(tempXY.getX());
-                if (bufferIndex >= 0){
-                    ratio.add(tempXY.getX(), tempXY.getYValue()/buffer.getY(bufferIndex).doubleValue());
-                }
-            }
+        for(int i=0; i < total; i++){
 
-            // if number of points is less than 100, skip
-            if (ratio.getItemCount() > 100){
-                // integrate
-                Dataset dataInUse = samplesCollection.getDataset(i);
-                plotMe.addSeries(new XYSeries(dataInUse.getFileName()));
-                area = Functions.trapezoid_integrate(ratio);
-                plotMe.getSeries(seriesCount).add(i, area);
+            if (i >= firstFrame && i < lastFrame){
+                tempDataset = samplesCollection.getDataset(i);
+                ratio.clear();
+                tempData = tempDataset.getAllData();
+                totalXY = tempData.getItemCount();
 
-                if (useRg){ // make double plot if checked
-
-                    status.setText("auto-Rg for : " + dataInUse.getFileName());
-                    plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
-                    if (area > threshold){
-                        ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
-                        izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), 1);
-                        plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
-                    } else {
-                        plotRg.getSeries(seriesCount).add(i,0);
+                // create XY Series using ratio to buffer then integrate
+                for(int q=0; q < totalXY; q++){
+                    tempXY = tempData.getDataItem(q);
+                    bufferIndex = buffer.indexOf(tempXY.getX());
+                    if (bufferIndex >= 0){
+                        ratio.add(tempXY.getX(), tempXY.getYValue()/buffer.getY(bufferIndex).doubleValue());
                     }
-
                 }
-                seriesCount++;
-            }
 
+                // if number of points is less than 100, skip
+                if (ratio.getItemCount() > 100){
+                    // integrate
+                    Dataset dataInUse = samplesCollection.getDataset(i);
+                    plotMe.addSeries(new XYSeries(dataInUse.getFileName()));
+                    area = Functions.trapezoid_integrate(ratio);
+                    plotMe.getSeries(seriesCount).add(i, area);
+
+                    if (useRg){ // make double plot if checked
+
+                        status.setText("auto-Rg for : " + dataInUse.getFileName());
+                        plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
+                        if (area > threshold){
+                            ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
+                            izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), 1);
+                            plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+                        } else {
+                            plotRg.getSeries(seriesCount).add(i,0);
+                        }
+
+                    }
+                    seriesCount++;
+                }
+            }
             mainStatus.setValue((int) (i / (double) total * 100));
         }
 
@@ -436,9 +445,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         frame.getChartPanel().setMouseZoomable(false);
         frame.getChartPanel().setHorizontalAxisTrace(true);
 
-
         // add mouse listener for getting values
-
         //frame.getChartPanel().addKeyListener();
         frame.getChartPanel().addMouseListener(new MouseMarker(frame.getChartPanel(), samplesList));
         frame.getChartPanel().addChartMouseListener(new ChartMouseListener() {
@@ -475,8 +482,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             // if buffer size is zero, estimate background from samples
             this.estimateBackgroundFrames();
             // make a Runnable class that operates on windows of the data and updates treeset
-
-
         }
 
         status.setText("compiling samples");
@@ -612,7 +617,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
 
 
-
     /**
      *
      */
@@ -704,6 +708,11 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         System.out.println("Maximum Common q-value : " + maxQvalueInCommon);
     }
 
+
+    public void setFirstLastFrame(int firstFrame, int lastFrame){
+        this.firstFrame = firstFrame;
+        this.lastFrame = lastFrame;
+    }
 
     private final static class MouseMarker extends MouseAdapter {
         private Marker marker;

@@ -226,6 +226,7 @@ public class Scatter {
     private JButton UPDATEButton;
     private JButton SETPLOTRANGEButton;
     private JButton RESETRANGEButton;
+    private JCheckBox checkBoxDirect;
 
     private String version = "3.0a";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -298,18 +299,18 @@ public class Scatter {
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-        mc.redirectOut();
-        mc.redirectErr(Color.RED, null);
+        //mc.redirectOut();
+        //mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        info.redirectOut();
+        //info.redirectOut();
 
         //int[] subtractionBins = new int[] {11, 13, 17, 23, 29};
         //comboBoxSubtractBins = new JComboBox(subtractionBins);
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(2);
         simBinsComboBox.setSelectedIndex(0);
-        lambdaBox.setSelectedIndex(2);
+        lambdaBox.setSelectedIndex(1);
         cBox.setSelectedIndex(1);
 
 
@@ -665,7 +666,7 @@ public class Scatter {
         dmaxStart = new DoubleValue(97);
 
         //Pr Table JLabel status, WorkingDirectory cwd, Double lambda
-        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox));
+        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox, checkBoxDirect));
 
         prModel = (PrModel) prTable.getModel();
 
@@ -673,11 +674,11 @@ public class Scatter {
         TableColumnModel pcm = prTable.getColumnModel();
 
         TableColumn pc = pcm.getColumn(4);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, checkBoxDirect));
         pc = pcm.getColumn(5);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, checkBoxDirect));
         pc = pcm.getColumn(9);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, checkBoxDirect));
 
         pc = pcm.getColumn(2);
         pc.setCellEditor(new CheckBoxCellEditorRenderer());
@@ -1471,7 +1472,7 @@ public class Scatter {
 
                 int total = sampleFilesModel.getSize();
                 int selectS=0;
-                /*
+
                 for(int i=0;i<total; i++){
                     if (sampleFilesModel.get(i).isSelected()){
                         sampleCollection.getDataset(i).setInUse(true);
@@ -1480,13 +1481,22 @@ public class Scatter {
                         sampleCollection.getDataset(i).setInUse(false);
                     }
                 }
-*/
-                if (lastIndexInSignalPlot < 0){
+
+                System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
+                System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
+
+                if (lastIndexInSignalPlot <= 0){
+                    System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
+                    System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
                     lastIndexInSignalPlot = total;
+                } else {
+                    if (firstIndexInSignalPlot < lastIndexInSignalPlot && lastIndexInSignalPlot < total){
+
+                    }
                 }
 
                 // sampleCollection should only contain files in use
-
+/*
                 for(int i=0;i<total; i++){
                     if (sampleFilesModel.get(i).isSelected() && i >= firstIndexInSignalPlot && i < lastIndexInSignalPlot){
                         sampleCollection.getDataset(i).setInUse(true);
@@ -1495,7 +1505,7 @@ public class Scatter {
                         sampleCollection.getDataset(i).setInUse(false);
                     }
                 }
-
+*/
 
                 int totalBuffers = bufferFilesModel.getSize();
                 int selectB=0;
@@ -1514,8 +1524,7 @@ public class Scatter {
 
                 SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
 
-
-
+                tempSignalPlot.setFirstLastFrame(firstIndexInSignalPlot, lastIndexInSignalPlot);
 
                 tempSignalPlot.setSampleJList(samplesList);
 
@@ -2430,6 +2439,7 @@ public class Scatter {
             }
         });
 
+
         SETPLOTRANGEButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -2438,7 +2448,7 @@ public class Scatter {
                 boolean first = false;
                 boolean last = false;
 
-                lastIndexInSignalPlot = total -1;
+                lastIndexInSignalPlot = total-1;
                 firstIndexInSignalPlot = 0;
 
                 for(int i=0;i<total; i++){
@@ -2454,6 +2464,7 @@ public class Scatter {
                 System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
             }
         });
+
 
         RESETRANGEButton.addActionListener(new ActionListener() {
             @Override
@@ -2509,6 +2520,30 @@ public class Scatter {
 
         });
 
+
+        checkBoxDirect.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                l1NormCheckBox.setSelected(false);
+
+                if (checkBoxDirect.isSelected()){
+                    checkBoxDirect.setSelected(true);
+                } else {
+                    checkBoxDirect.setSelected(false);
+                }
+
+            }
+        });
+
+        l1NormCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (checkBoxDirect.isSelected()){
+                    checkBoxDirect.setSelected(false);
+                }
+            }
+        });
     }
 
     public static void updateProp(){

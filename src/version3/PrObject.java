@@ -1,6 +1,7 @@
 package version3;
 
 import net.jafama.FastMath;
+import org.apache.commons.math3.analysis.function.Gaussian;
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.ops.CommonOps;
 import org.ejml.simple.SimpleMatrix;
@@ -271,12 +272,15 @@ public class PrObject implements Runnable {
 
     private double qmax, dmax, lambda=0.001;
     private final double INV_PI = 1.0/Math.PI;
+    private final double TWO_INV_PI = 2.0/Math.PI;
     private boolean useL1;
+    private boolean useDirectFT = false;
     private XYSeries data;
     private RealSpace dataset;
     private int cBoxValue=2;
 
-    public PrObject(RealSpace dataset, double lambda, boolean useL1, int cBoxValue){
+
+    public PrObject(RealSpace dataset, double lambda, boolean useL1, int cBoxValue, boolean useDirectFt){
 
         // create real space object for each dataset in use
         // XYSeries data, double dmax, double lambda, double qmax
@@ -287,6 +291,7 @@ public class PrObject implements Runnable {
         this.useL1 = useL1;
         data = dataset.getfittedqIq();
         this.cBoxValue = cBoxValue;
+        this.useDirectFT = useDirectFt;
         //System.out.println("Use L1 Norm of Second Derivate => " + useL1);
     }
 
@@ -312,17 +317,350 @@ public class PrObject implements Runnable {
     public void run() {
 
         ArrayList<double[]> tempResults;
-        //System.out.println("lambda " + lambda);
-        if (useL1){
-            tempResults = moore_pr_L1();  // minimize on second derivative
+        lambda = 0.00001;
+        System.out.println("lambda " + lambda + " useL1 " + useL1);
+
+        if (useDirectFT) {
+            tempResults = rambo_coeffs_L1();
+            this.dataset.setPrDistributionDirectFT(tempResults.get(1), tempResults.get(0), tempResults.get(2));
+            System.out.println("L1-norm DirectFT ");
         } else {
-            //System.out.println("Using L1-norm Coefficients");
-            tempResults = moore_coeffs_L1();  // minimize on coefficients
+            if (useL1){
+                tempResults = moore_pr_L1();  // minimize on second derivative
+                System.out.println("L1-norm Minimizing Smoothness ");
+                //tempResults = moore_pr_L1_noBG();
+            } else {
+                //System.out.println("Using L1-norm Coefficients");
+                tempResults = moore_coeffs_L1();  // minimize on coefficients
+            }
+
+            //update realspace dataset
+            this.dataset.setMooreCoefficients(tempResults.get(0));
+            this.dataset.calculateIntensityFromModel(useL1);
         }
 
-        //update realspace dataset
-        this.dataset.setMooreCoefficients(tempResults.get(0));
-        this.dataset.calculateIntensityFromModel(useL1);
+    }
+
+
+    /**
+     *
+     * @return ArrayList<double[]> [coeffs] [r-values]
+     */
+    public ArrayList<double[]> rambo_coeffs_L1(){
+
+        ArrayList<double[]> results = new ArrayList<>(2);
+
+        int ns = (int) Math.round(qmax*dmax*INV_PI) + 1;  //
+        int coeffs_size = ns + 1;   //+1 for constant background, +1 to include dmax in r_vector list
+
+        //double incr = 2.0;
+        //int r_limit = (int)incr*ns-1;
+        int r_limit = ns; // +1 to include dmax in r_vector list
+
+        double del_r = dmax/((double)ns+1);
+        double[] r_vector = new double[r_limit];
+
+        for(int i=0; i < r_limit; i++){
+            //r_vector[i] = i*del_r;
+            r_vector[i] = (i+1)*del_r;
+            System.out.println(i + " => " + r_vector[i] + " del " + del_r + " dmax " + dmax);
+        }
+
+
+        XYDataItem tempData;
+        /*
+         * Interior Point Parameters
+         */
+        int MU = 2;                    // updating parameter of t
+        int max_nt_iter = 500;         // maximum IPM (Newton) iteration
+
+        /*
+         * LINE SEARCH PARAMETERS
+         */
+        double alpha = 0.01;            // minimum fraction of decrease in the objective
+        double beta  = 0.5;             // stepsize decrease factor
+        int max_ls_iter = 400;          // maximum backtracking line search iteration
+
+        int m = data.getItemCount();    // rows
+
+        int hessian_size = coeffs_size;
+
+        double t0 = Math.min(Math.max(1, 1.0/lambda), coeffs_size/0.001);
+        double reltol = 0.001;
+        double eta = 0.001;
+        int pcgmaxi = 5000;
+
+        double dobj = Double.NEGATIVE_INFINITY;
+        double pobj = Double.POSITIVE_INFINITY;
+        double s = Double.POSITIVE_INFINITY;
+        double pitr = 0, pflg = 0, gap;
+
+        double t = t0;
+        double tau = 0.01;
+
+        //Hessian and preconditioner
+        SimpleMatrix d1 = new SimpleMatrix(coeffs_size,coeffs_size);
+
+        SimpleMatrix hessian;
+
+        //SimpleMatrix dxu = new SimpleMatrix(hessian_size,1);
+
+        ArrayList<SimpleMatrix> answers;
+
+        SimpleMatrix p_am_r2;
+
+        /*
+         * initialize u vector with 1's
+         * size must include a_o and r_limit
+         */
+        DenseMatrix64F utemp = new DenseMatrix64F(coeffs_size,1);
+        CommonOps.fill(utemp,1);
+        //SimpleMatrix u = SimpleMatrix.wrap(utemp);
+
+        SimpleMatrix y = new SimpleMatrix(m,1);
+
+        //
+        // Initialize and guess am => P(r) values
+        //
+        double inv_t;
+
+        SimpleMatrix am = new SimpleMatrix(coeffs_size,1);  // am is 0 column
+        am.set(0,0,0.000000001); // set background, initial guess could be Gaussian
+
+        Gaussian guess = new Gaussian(dmax*0.5, 0.2*dmax);
+
+        for (int i=1; i < coeffs_size; i++){
+            am.set(i, 0, guess.value(r_vector[i-1]));
+            //am.set(i, 0, 0.01); // initialize coefficient vector a_m to zero
+        }
+
+        /*
+         * create A matrix (design Matrix)
+         */
+        SimpleMatrix a_matrix = new SimpleMatrix(m,coeffs_size);
+
+        for(int row=0; row < m; row++){ //rows, length is size of data
+            tempData = data.getDataItem(row);
+
+            for(int col=0; col < coeffs_size; col++){
+                if (col == 0){ // constant background term
+                    // a_matrix.set(r, 0, tempData.getXValue());
+                    a_matrix.set(row, 0, 1);
+                } else {
+                    //pi_sq_n = n_pi_squared[c];
+                    //if ( col == 1 ){
+                    //    a_matrix.set(row, col, 1); // for r = 0 => sin(0)/0 is 1
+                    //} else {
+                        double r_value = r_vector[col-1];
+                    //System.out.println(col + " " + coeffs_size);
+                        a_matrix.set(row, col, FastMath.sin(r_value*tempData.getXValue()) / r_value);
+                    //}
+                }
+            }
+            y.set(row,0,tempData.getYValue()); //set data vector
+        }
+
+        SimpleMatrix a_transpose = a_matrix.transpose();
+        SimpleMatrix gradphi0;
+        SimpleMatrix gradx = new SimpleMatrix(hessian_size,1);
+
+        SimpleMatrix laplacian = (a_transpose.mult(a_matrix)).scale(2.0);
+        SimpleMatrix dx = new SimpleMatrix(coeffs_size,1);
+
+        /*
+         * Backtracking Line Search
+         */
+        SimpleMatrix z;
+        SimpleMatrix nu;
+
+        SimpleMatrix new_z;
+        SimpleMatrix new_x = new SimpleMatrix(coeffs_size,1);
+
+        SimpleMatrix f;
+        f = new SimpleMatrix(coeffs_size,1);
+        for (int i=0; i < coeffs_size; i++){
+            f.set(i,0,-1*am.get(i));
+        }
+        SimpleMatrix new_f = new SimpleMatrix(coeffs_size,1);
+
+        int lsiter;
+        double maxAtnu;
+        double normL1;
+
+        double phi, new_phi, logfSum, gdx, normg, pcgtol;
+        double invdiff;
+
+        String status;
+
+        calculationLoop:
+        for (int ntiter=0; ntiter < max_nt_iter; ntiter++){
+
+            z = (a_matrix.mult(am)).minus(y);
+
+            //------------------------------------------------------------
+            // Calculate Duality Gap
+            //------------------------------------------------------------
+            nu = z.scale(2.0);
+
+            // get max of At*nu
+            // maxAtnu = max(vec);
+            maxAtnu = inf_norm(a_transpose.mult(nu));
+
+            if (maxAtnu > lambda){
+                nu = nu.scale(lambda/(maxAtnu));
+            }
+
+            /*
+             * calculate second derivative P(r) at specified r-values
+             * length is the size of r_limit
+             * ignore first element, a_0, of am vector (constant background)             *
+             */
+
+            normL1 = normL1(am);
+            pobj = (z.transpose().mult(z)).get(0,0) + (lambda * normL1);
+
+            /*
+             *  dobj  =  max(-0.25*nu'*nu-nu'*y,dobj);
+             */
+            dobj = Math.max(( (nu.transpose().mult(nu)).get(0,0)*(-0.25) - ((nu.transpose().mult(y))).get(0,0) ), dobj);
+
+            // dobj = Math.max(( (nu.transpose().mult(nu)).get(0,0)*(-0.25) - ((nu.transpose().mult(y))).get(0,0) ), dobj);
+            gap   = pobj - dobj;
+
+            //System.out.println("GAP: " + gap + " : " + " | ratio " + gap/dobj + " reltol " + reltol);
+            //------------------------------------------------------------
+            //       Shall we Stop?
+            //------------------------------------------------------------
+            if (gap/dobj < reltol) {
+                status = "Solved";
+                break calculationLoop;
+            }
+
+            //------------------------------------------------------------
+            //       UPDATE t
+            //------------------------------------------------------------
+            if (s >= 0.5){
+                //t = Math.max(Math.min(2*coeffs_size*MU/gap, MU*t), t);
+                t = Math.max(Math.min(coeffs_size*MU/gap, MU*t), t);
+            }
+            inv_t = 1.0/t;
+
+            //------------------------------------------------------------
+            //      CALCULATE NEWTON STEP
+            //------------------------------------------------------------
+            //
+
+            p_am_r2 = am.elementMult(am);
+
+            /*
+             * Partitioned Matrix terms for Hessian
+             * D1: n x n
+             */
+            for(int row=0; row < coeffs_size; row++){
+                invdiff = 1.0/p_am_r2.get(row,0)*inv_t;
+                d1.set(row,row, invdiff);
+            }
+
+            /*
+             * Gradient
+             * gradphi = [At*(z*2) + lambda  - 1/t*1/x; lambda*ones(n,1)-(q1+q2)/t];
+             */
+            gradphi0 = a_transpose.mult(z.scale(2.0));
+
+            for (int row=0; row < coeffs_size; row++){
+                invdiff = inv_t/am.get(row,0);
+                gradx.set(row, 0, gradphi0.get(row,0) + lambda - invdiff);
+            }
+
+            normg = gradx.normF();
+
+            pcgtol = Math.min(0.1, eta*gap/Math.min(1,normg));
+
+            if (ntiter != 0 && pitr == 0){
+                pcgtol = 0.1*pcgtol;
+                //System.out.println("Updating PCG tolerance: " + pcgtol);
+            }
+
+            hessian = hessphi_coeffs_positivity_constrained(laplacian, d1, coeffs_size);
+            /*
+             *
+             */
+            answers = linearPCGPositiveOnly(hessian, gradx.scale(-1.0), dx, d1, pcgtol, pcgmaxi);
+
+            dx = answers.get(0);
+            pitr = answers.get(2).get(0,0);
+
+            /*
+             *----------------------------------------------
+             * Backtrack Line search
+             *----------------------------------------------
+             */
+            logfSum = 0.0;
+            for(int fi=0; fi < f.numRows(); fi++){
+                logfSum += FastMath.log(-f.get(fi));
+            }
+
+            phi = (z.transpose().mult(z)).get(0,0) + lambda * am.elementSum() - logfSum*inv_t;
+
+            s=1.0;
+            gdx = (gradx.transpose()).mult(dx).get(0,0);
+
+            backtrackLoop:
+            for (lsiter=0; lsiter < max_ls_iter; lsiter++){
+
+                new_x = am.plus(dx.scale(s));
+
+                for(int ff=0; ff < coeffs_size; ff++){
+                    new_f.set(ff, 0, -new_x.get(ff,0));
+                }
+
+                if (max(new_f) < 0){
+
+                    new_z = (a_matrix.mult(new_x)).minus(y);
+                    logfSum = 0.0;
+
+                    for(int fi=0; fi<new_f.getNumElements(); fi++){
+                        logfSum += FastMath.log(-new_f.get(fi));
+                    }
+
+                    new_phi = (new_z.transpose().mult(new_z)).get(0,0)+lambda*new_x.elementSum()-logfSum*inv_t;
+
+                    if (new_phi-phi <= alpha*s*gdx){
+                        //System.out.println("Breaking BackTrackLoop");
+                        break backtrackLoop;
+                    }
+                }
+                s = beta*s;
+            } // end backtrack loop
+
+            if (lsiter == max_ls_iter){
+                System.out.println("Max LS iteration: Failed");
+                break calculationLoop;
+            }
+
+            f = new_f.copy();
+            am = new_x.copy();
+        }
+
+
+        results.add(new double[coeffs_size]);
+        results.add(r_vector);
+
+        for (int j=0; j < coeffs_size; j++){
+            results.get(0)[j] = am.get(j,0);
+            //if (j>0){
+            //    System.out.println(r_vector[j-1] + " " + am.get(j,0));
+            //}
+        }
+
+        SimpleMatrix modelIq = a_matrix.mult(am);
+
+        results.add(new double[m]);
+        for(int i=0; i<m; i++){
+            results.get(2)[i] = modelIq.get(i,0);
+        }
+
+        return results;
     }
 
 
@@ -334,8 +672,8 @@ public class PrObject implements Runnable {
 
         ArrayList<double[]> results = new ArrayList<>(2);
 
-        int ns = (int) Math.round(qmax*dmax*INV_PI); //
-        int coeffs_size = ns + 2;   //+1 for constant background
+        int ns = (int) Math.round(qmax*dmax*INV_PI) + 1; //
+        int coeffs_size = ns + 1;   //+1 for constant background
         //int coeffs_size = ns // no background correction
 
         double incr = 2.0;
@@ -343,8 +681,10 @@ public class PrObject implements Runnable {
         double del_r = dmax/(double)ns/incr;
         double[] r_vector = new double[r_limit];
 
+        // does not include 0 or dmax
         for(int i=0; i< r_limit; i++){
             r_vector[i] = (i+1)*del_r;
+            //System.out.println(i + " => " + r_vector[i] + " delr " + del_r);
         }
 
         double pi_d = Math.PI*dmax;
@@ -369,7 +709,7 @@ public class PrObject implements Runnable {
         int hessian_size = coeffs_size*2;
 
         double t0 = Math.min(Math.max(1, 1.0/lambda), 2*n/0.001);
-        double reltol = 0.01;
+        double reltol = 0.001;
         double eta = 0.001;
         int pcgmaxi = 5000;
 
@@ -422,7 +762,6 @@ public class PrObject implements Runnable {
         SimpleMatrix a_matrix = new SimpleMatrix(m,n);
 
         double qd2;
-        double twodivpi = 2.0/Math.PI;
 
         for(int r=0; r<m; r++){ //rows, length is size of data
             tempData = data.getDataItem(r);
@@ -435,7 +774,7 @@ public class PrObject implements Runnable {
                     a_matrix.set(r, 0, 1);
                 } else {
                     //pi_sq_n = n_pi_squared[c];
-                    a_matrix.set(r, c, twodivpi*pi_d * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (n_pi_squared[c] - qd2));
+                    a_matrix.set(r, c, TWO_INV_PI*pi_d * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (n_pi_squared[c] - qd2));
                 }
             }
             y.set(r,0,tempData.getYValue()); //set data vector
@@ -559,7 +898,7 @@ public class PrObject implements Runnable {
              */
             gradphi0 = a_transpose.mult(z.scale(2.0));
 
-            for (int row=0; row<u_size; row++){
+            for (int row=0; row < u_size; row++){
                 am_value = am.get(row,0);
                 u_value = u.get(row,0);
                 invdiff = 2*inv_t/(p_u_r2.get(row,0) - p_am_r2.get(row,0));
@@ -582,7 +921,7 @@ public class PrObject implements Runnable {
             /*
              *
              */
-            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, d2, pcgtol, pcgmaxi, t*tau);
+            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, pcgtol, pcgmaxi, t*tau);
 
             dx = answers.get(0);
             du = answers.get(1);
@@ -658,6 +997,25 @@ public class PrObject implements Runnable {
         return results;
     }
 
+    private SimpleMatrix hessphi_coeffs_positivity_constrained(SimpleMatrix ata, SimpleMatrix d1, int coeffs_size) {
+
+        SimpleMatrix hessian = new SimpleMatrix(coeffs_size, coeffs_size);
+
+        SimpleMatrix t_ata;
+        t_ata =  ata.plus(d1);
+
+        for (int r=0; r < coeffs_size; r++){
+
+            for(int c=0; c < coeffs_size; c++){
+                hessian.set(r,c, t_ata.get(r,c));
+            }
+
+        }
+        return hessian;
+    }
+
+
+
     private static SimpleMatrix hessphi_coeffs(SimpleMatrix ata, SimpleMatrix d1, SimpleMatrix d2, int hessian_size, int coeffs_size, int u_size) {
 
         int n = ata.numCols();
@@ -694,9 +1052,9 @@ public class PrObject implements Runnable {
         double inv_d = 1.0/dmax;
         //  double inv_2d = 0.5*inv_d;
 
-        int ns = (int) Math.round(qmax*dmax*INV_PI); //
+        int ns = (int) Math.round(qmax*dmax*INV_PI) ; //
 
-        int coeffs_size = ns + 2;   //+1 for constant background
+        int coeffs_size = ns + 1;   //+1 for constant background
         //int coeffs_size = ns;
 
         double incr = cBoxValue; // sets the number of points to calculate second derivative
@@ -726,13 +1084,13 @@ public class PrObject implements Runnable {
 
         int m = data.getItemCount();  // rows
 
-        int n = coeffs_size;          // columns
+        //int n = coeffs_size;          // columns
         int u_size = r_limit + 1;
         int hessian_size = coeffs_size + u_size;
 
         //double delq = (qmax-qmin)/ns;
 
-        double t0 = Math.min(Math.max(1, 1.0/lambda), n/0.001);
+        double t0 = Math.min(Math.max(1, 1.0/lambda), coeffs_size/0.001);
         double reltol = 0.01;
         double eta = 0.001;
         int pcgmaxi = 5000;
@@ -746,8 +1104,8 @@ public class PrObject implements Runnable {
         double tau = 0.01;
 
         //Hessian and Preconditioner
-        SimpleMatrix d1 = new SimpleMatrix(n,n);
-        SimpleMatrix d2 = new SimpleMatrix(n,u_size);
+        SimpleMatrix d1 = new SimpleMatrix(coeffs_size, coeffs_size);
+        SimpleMatrix d2 = new SimpleMatrix(coeffs_size, u_size);
         SimpleMatrix d3;
 
         SimpleMatrix hessian;
@@ -757,7 +1115,7 @@ public class PrObject implements Runnable {
         SimpleMatrix dxu = SimpleMatrix.wrap(dxutemp.copy());
 
 
-        double[][] n_onesArray = new double[n][1];
+        double[][] n_onesArray = new double[coeffs_size][1];
 
         for (double[] row : n_onesArray) {
             Arrays.fill(row, 1);
@@ -789,25 +1147,19 @@ public class PrObject implements Runnable {
         //
         double qd, inv_t;
 
-        SimpleMatrix am = new SimpleMatrix(n,1);// am is 0 column
-        am.set(0,0,0);
+        SimpleMatrix am = new SimpleMatrix(coeffs_size,1);// am is 0 column
+        am.set(0,0,0.000000000001);
 
-        double guess = data.getMaxY();
-        for (int i=1; i < n; i++){
-            //q = delq*0.5 + delq*(i-1);
-            //qd = q*dmax;
-            //am.set(i, 0, 0); // initialize coefficient vector a_m to zero
+        for (int i=1; i < coeffs_size; i++){
             am.set(i, 0, 0);
-            //am.set(i,0,(q*slope + izero)*q/pi_d/i/Math.pow(-1,i+1)*(Math.pow(Math.PI*i,2) - Math.pow(qd, 2))/Math.sin(qd));
         }
 
         /*
          * create A matrix (design Matrix)
          */
-        SimpleMatrix a_matrix = new SimpleMatrix(m,n);
+        SimpleMatrix a_matrix = new SimpleMatrix(m,coeffs_size);
 
         double qd2, pi_sq_n, q;
-        double twodivpi = 2.0/Math.PI;
 
         for(int r=0; r<m; r++){ //rows, length is size of data
             tempData = data.getDataItem(r);
@@ -816,13 +1168,13 @@ public class PrObject implements Runnable {
             qd = q*dmax;
             qd2 = qd*qd;
 
-            for(int c=0; c < n; c++){
+            for(int c=0; c < coeffs_size; c++){
                 if (c == 0){
                     a_matrix.set(r, 0, 1);
                     //a_matrix.set(r, 0, tempData.getXValue());
                 } else {
                     pi_sq_n = n_pi_squared[c];
-                    a_matrix.set(r, c, twodivpi*pi_d * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (pi_sq_n - qd2));
+                    a_matrix.set(r, c, TWO_INV_PI*pi_d * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (pi_sq_n - qd2));
                 }
 
             }
@@ -842,7 +1194,7 @@ public class PrObject implements Runnable {
         /*
          * BackTrack Line Search
          */
-        SimpleMatrix new_u = new SimpleMatrix(n,1);
+        SimpleMatrix new_u = new SimpleMatrix(coeffs_size,1);
         SimpleMatrix new_x = new SimpleMatrix(u_size,1);
 
         SimpleMatrix f;
@@ -913,7 +1265,7 @@ public class PrObject implements Runnable {
             //------------------------------------------------------------
 
             if (s >= 0.5){
-                t = Math.max(Math.min(2*n*MU/gap, MU*t), t);
+                t = Math.max(Math.min(2*coeffs_size*MU/gap, MU*t), t);
             }
             inv_t = 1.0/t;
 
@@ -1088,7 +1440,7 @@ public class PrObject implements Runnable {
              *
              *
              */
-            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, d2, pcgtol, pcgmaxi, t*tau);
+            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, pcgtol, pcgmaxi, t*tau);
 
             dx = answers.get(0);
             du = answers.get(1);
@@ -1176,7 +1528,7 @@ public class PrObject implements Runnable {
         for (int j=0;j < r_limit;j++){
             double pi_dmax_r = Math.PI/dmax*r_vector[j];
             resultM = 0;
-            for(int i=1; i < n; i++){
+            for(int i=1; i < coeffs_size; i++){
                 //System.out.println(i + " " + am.get(i,0));
                 resultM += am.get(i,0)*FastMath.sin(pi_dmax_r*i);
             }
@@ -1187,8 +1539,542 @@ public class PrObject implements Runnable {
     }
 
 
+    /**
+     * minimize on smoothness of P(r) distribution
+     * Smoothness is carried by u-vector and its size is the rlimit + 1
+     * @return ArrayList<double[]> [coeffs] [r-values]
+     */
+//    public ArrayList<double[]> moore_pr_L1_noBG(){
+//
+//        ArrayList<double[]> results = new ArrayList<double[]>(2);
+//
+//        double inv_d = 1.0/dmax;
+//        //  double inv_2d = 0.5*inv_d;
+//
+//        int ns = (int) Math.round(qmax*dmax*INV_PI); //
+//
+//        int coeffs_size = ns + 1;   //
+//
+//        double incr = cBoxValue; // sets the number of points to calculate second derivative
+//        int r_limit = (int)(incr*ns)-1;
+//        double del_r = dmax/(ns*incr);
+//        double[] r_vector = new double[r_limit];
+//
+//        for(int i=0; i < r_limit; i++){
+//            r_vector[i] = (i+1)*del_r;
+//            //System.out.println(i + " r-value => " + r_vector[i]);
+//        }
+//
+//        double pi_d = Math.PI*dmax;
+//        XYDataItem tempData;
+//
+//        /*
+//         * Interior Point Parameters
+//         */
+//        int MU = 2;            // updating parameter of t
+//        int max_nt_iter = 400; // maximum IPM (Newton) iteration
+//
+//        /*
+//         * LINE SEARCH PARAMETERS
+//         */
+//        double alpha = 0.01;          // minimum fraction of decrease in the objective
+//        double beta  = 0.5;           // stepsize decrease factor
+//        int max_ls_iter = 400;        // maximum backtracking line search iteration
+//
+//        int m = data.getItemCount();  // rows
+//        int u_size = r_limit; // smoothness vector
+//        int hessian_size = coeffs_size + u_size;
+//
+//        //double delq = (qmax-qmin)/ns;
+//
+//        double t0 = Math.min(Math.max(1, 1.0/lambda), coeffs_size/0.001);
+//        double reltol = 0.01;
+//        double eta = 0.001;
+//        int pcgmaxi = 5000;
+//
+//        double dobj = Double.NEGATIVE_INFINITY;
+//        double pobj = Double.POSITIVE_INFINITY;
+//        double s = Double.POSITIVE_INFINITY;
+//        double pitr = 0, pflg = 0, gap;
+//
+//        double t = t0;
+//        double tau = 0.01;
+//
+//        //Hessian and Preconditioner
+//        SimpleMatrix d1 = new SimpleMatrix(coeffs_size,coeffs_size);
+//        SimpleMatrix d2 = new SimpleMatrix(coeffs_size,u_size);
+//        SimpleMatrix d3;
+//
+//        SimpleMatrix hessian;
+//
+//        DenseMatrix64F dxutemp = new DenseMatrix64F(hessian_size,1);
+//        CommonOps.fill(dxutemp,1);
+//        SimpleMatrix dxu = SimpleMatrix.wrap(dxutemp.copy());
+//
+//
+//        double[][] n_onesArray = new double[coeffs_size][1];
+//
+//        for (double[] row : n_onesArray) {
+//            Arrays.fill(row, 1);
+//        }
+//
+//        ArrayList<SimpleMatrix> answers;
+//
+//        SimpleMatrix p_u_r2;
+//        SimpleMatrix p_am_r2;
+//
+//        /*
+//         * initialize u vector with 1's
+//         * size must include a_o and r_limit
+//         */
+//        DenseMatrix64F utemp = new DenseMatrix64F(u_size,1);
+//        CommonOps.fill(utemp,1);
+//
+//        SimpleMatrix u_elements = SimpleMatrix.wrap(utemp);
+//
+//        SimpleMatrix y = new SimpleMatrix(m,1);
+//
+//        SimpleMatrix p_dd_r_of_am;
+//        SimpleMatrix p_dd_r_new;
+//        SimpleMatrix z;  // = new SimpleMatrix(m,1);
+//        SimpleMatrix new_z;  // = new SimpleMatrix(m,1);
+//        SimpleMatrix nu; // = new SimpleMatrix(m,1);
+//
+//        //
+//        // Initialize and guess am
+//        //
+//        double qd, inv_t;
+//
+//        SimpleMatrix am = new SimpleMatrix(coeffs_size,1);// am is 0 column
+//
+//        for (int i=0; i < coeffs_size; i++){
+//            //q = delq*0.5 + delq*(i-1);
+//            //qd = q*dmax;
+//            am.set(i, 0, 0); // initialize coefficient vector a_m to zero
+//            //am.set(i,0,(q*slope + izero)*q/pi_d/i/Math.pow(-1,i+1)*(Math.pow(Math.PI*i,2) - Math.pow(qd, 2))/Math.sin(qd));
+//        }
+//
+//        /*
+//         * create A matrix (design Matrix)
+//         * no background so c indices are starting from zero here
+//         */
+//        SimpleMatrix a_matrix = new SimpleMatrix(m,coeffs_size);
+//        double qd2, pi_sq_n, q;
+//
+//        for(int r=0; r < m; r++){ //rows, length is size of data
+//            tempData = data.getDataItem(r);
+//
+//            q = tempData.getXValue();
+//            qd = q*dmax;
+//            qd2 = qd*qd;
+//
+//            for(int c=0; c < coeffs_size; c++){
+//                pi_sq_n = n_pi_squared[c+1];
+//                a_matrix.set(r, c, TWO_INV_PI*pi_d * (c+1) * FastMath.pow(-1.0, c + 2) * FastMath.sin(qd) / (pi_sq_n - qd2));
+//            }
+//
+//            y.set(r, 0, tempData.getYValue());
+//        }
+//
+//        SimpleMatrix a_transpose = a_matrix.transpose();
+//        SimpleMatrix gradphi0;
+//        SimpleMatrix gradux = new SimpleMatrix(hessian_size,1);
+//
+//        //SimpleMatrix diagAtA;
+//        SimpleMatrix laplacian = a_transpose.mult(a_matrix).scale(2.0);
+//
+//        SimpleMatrix dx;// = new SimpleMatrix(n,1);
+//        SimpleMatrix du;// = new SimpleMatrix(u_size,1);
+//
+//        /*
+//         * BackTrack Line Search
+//         */
+//        SimpleMatrix new_u = new SimpleMatrix(coeffs_size,1);
+//        SimpleMatrix new_x = new SimpleMatrix(u_size,1);
+//
+//        SimpleMatrix f;
+//        f = new SimpleMatrix(u_size*2,1);
+//        for (int i=0; i < u_size*2; i++){
+//            f.set(i,0,-1);
+//        }
+//        SimpleMatrix new_f = new SimpleMatrix(u_size*2,1);
+//
+//        int lsiter;
+//        double maxAtnu;
+//        double normL1;
+//        double[] d3Array = new double[u_size];
+//        double phi, new_phi, logfSum, gdx, normg, pcgtol;
+//        double am_value, u_value, invdiff2, cnir_row, cnir_col, value_at_g1, value_at_g2, sum, diff, value_at_d1;
+//        //initialize f
+//
+//        String status;
+//
+//        calculationLoop:
+//        for (int ntiter=0; ntiter < max_nt_iter; ntiter++){
+//
+//            z = (a_matrix.mult(am)).minus(y);
+//
+//            //------------------------------------------------------------
+//            // Calculate Duality Gap
+//            //------------------------------------------------------------
+//            nu = z.scale(2.0);
+//            // get max of At*nu
+//            // maxAtnu = max(vec);
+//            maxAtnu = inf_norm(a_transpose.mult(nu));
+//
+//            if (maxAtnu > lambda){
+//                nu = nu.scale(lambda/(maxAtnu));
+//            }
+//
+//            /*
+//             * calculate second derivative P(r) at specified r-values
+//             * length is the size of r_limit
+//             * ignore first element, a_0, of am vector (constant background)             *
+//             */
+//
+//            p_dd_r_of_am = p_dd_r_noBG(am, r_vector, inv_d);
+//            normL1 = normL1(p_dd_r_of_am) ; //+ Math.abs(am.get(0,0));
+//            pobj = (z.transpose().mult(z)).get(0,0) + (lambda * normL1);
+//
+//            /*
+//             *  dobj  =  max(-0.25*nu'*nu-nu'*y,dobj);
+//             */
+//            dobj = Math.max(( (nu.transpose().mult(nu)).get(0,0)*(-0.25) - ( (nu.transpose().mult(y))).get(0,0) ), dobj);
+//            gap   =  pobj - dobj;
+//
+//            //------------------------------------------------------------
+//            //       Shall we Stop?
+//            //------------------------------------------------------------
+//            if (gap/dobj < reltol) {
+//                //status = "Solved";
+//                //System.out.println("Solved " + gap/dobj);
+//                break calculationLoop;
+//            }
+//
+//
+//            //------------------------------------------------------------
+//            //       UPDATE t
+//            //------------------------------------------------------------
+//
+//            if (s >= 0.5){
+//                t = Math.max(Math.min(2*coeffs_size*MU/gap, MU*t), t);
+//            }
+//            inv_t = 1.0/t;
+//
+//            //------------------------------------------------------------
+//            //      CALCULATE NEWTON STEP
+//            //------------------------------------------------------------
+//            //
+//            // gradphi = [At*(z*2)-(q1-q2)/t; lambda*ones(n,1)-(q1+q2)/t];
+//            // p_am_r = p_dd_r_of_am.extractVector(false,0);
+//
+//            p_am_r2 = p_dd_r_of_am.elementMult(p_dd_r_of_am);
+//            p_u_r2 = u_elements.elementMult(u_elements);
+//
+//            /*
+//             * Partitioned Matrix terms for Hessian
+//             * D1: n x n
+//             * D2: n x u_size
+//             */
+//            for(int row=0; row < u_size; row++) {
+//
+//                for(int col=0; col < u_size; col++){
+//
+//                    if ((col < coeffs_size) && (row < coeffs_size)) { // d1 matrix
+//                        //assemble nxn d1 matrix of mixed partials
+//                        value_at_d1 = 0.0;
+//                        // first element is gradient of a_o which does not depend on
+//
+//                        for(int r=0; r < r_limit; r++){
+//                            // first element of r_vector is nonzero
+//                            cnir_row = c_ni_r(row, r_vector[r], inv_d);
+//                            cnir_col = c_ni_r(col, r_vector[r], inv_d);
+//
+//                            diff = p_u_r2.get(r,0) - p_am_r2.get(r,0);
+//                            invdiff2 = 1.0/(diff*diff);
+//
+//                            sum = p_u_r2.get(r,0) + p_am_r2.get(r,0);
+//                            value_at_d1 += 2*cnir_row*cnir_col*sum*invdiff2;
+//                        }
+//
+//                        diff = p_u_r2.get(row,0) - p_am_r2.get(row,0);
+//                        invdiff2 = 1.0/(diff*diff);
+//
+//                        d1.set(row,col, value_at_d1*inv_t); // d1 only indexes to row length (coeffs)
+//                        d2.set(row,col, -4*c_ni_r(row, r_vector[row], inv_d)*p_dd_r_of_am.get(row,0)*u_elements.get(col,0)*invdiff2*inv_t);
+//
+//                    } else {
+//                           /*
+//                            * u_vector is r_limit + 1
+//                            * r_vector is r_limit
+//                            * +1 is from a_0 term (constant background)
+//                            */
+//                        diff = p_u_r2.get(row,0) - p_am_r2.get(row,0);
+//
+//                        invdiff2 = 1.0/(diff*diff);
+//                        if (row < coeffs_size){
+//                            d2.set(row, col, -4*c_ni_r(row, r_vector[row], inv_d)*p_dd_r_of_am.get(row,0)*u_elements.get(col,0)*invdiff2*inv_t);
+//                        }
+//                    }
+//
+//                }
+//
+//                /*
+//                * D3 Matrix
+//                * D3: u_size x u_size
+//                * u_vector is r_limit + 1
+//                * r_vector is r_limit
+//                * +1 is from a_0 term (constant background)
+//                */
+//
+//                diff = p_u_r2.get(row,0) - p_am_r2.get(row,0);
+//                sum = p_u_r2.get(row,0) + p_am_r2.get(row,0);
+//
+//                invdiff2 = 1.0/(diff*diff)*inv_t;
+//                d3Array[row] = 2*sum*invdiff2;
+//            }
+//
+//            d3 = SimpleMatrix.diag(d3Array);
+//
+//            // gradient
+//            gradphi0 = a_transpose.mult(z.scale(2.0));
+//
+//            for (int row=0; row < u_size; row++){
+//
+//                value_at_g1 = 0.0;
+//
+//                if (row < coeffs_size){
+//
+//                    for(int r=0; r < r_limit; r++){
+//                        cnir_row = c_ni_r(row, r_vector[r], inv_d);
+//                        diff = p_u_r2.get(r,0) - p_am_r2.get(r,0);
+//                        invdiff2 = 1/(diff*diff);
+//
+//                        sum = p_u_r2.get(r,0) + p_am_r2.get(r,0);
+//                        value_at_g1 += 2*cnir_row*sum*invdiff2;
+//                    }
+//
+//                    gradux.set(row, 0, gradphi0.get(row,0) + value_at_g1*inv_t);
+//                }
+//
+//                diff = p_u_r2.get(row,0) - p_am_r2.get(row,0); // same length which is rlimit
+//
+//                u_value = u_elements.get(row,0);
+//
+//                value_at_g2 = -2*u_value/diff;
+//
+//                gradux.set(row + coeffs_size, 0, lambda + value_at_g2*inv_t);
+//            }
+//
+//            normg = gradux.normF();
+//            pcgtol = Math.min(0.1, eta*gap/Math.min(1,normg));
+//
+//            if (ntiter != 0 && pitr == 0){
+//                pcgtol = 0.1*pcgtol;
+//            }
+//
+//            hessian = hessphi(laplacian, d1, d2, d3);
+//
+//            /*
+//             *
+//             *
+//             */
+//            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, pcgtol, pcgmaxi, t*tau);
+//
+//            dx = answers.get(0);
+//            du = answers.get(1);
+//            dxu = answers.get(2);
+//            pitr = answers.get(3).get(0,0);
+//
+//            /*
+//             *----------------------------------------------
+//             * Backtrack Line search
+//             *----------------------------------------------
+//             */
+//            logfSum = 0.0;
+//            for(int fi=0; fi < f.numRows(); fi++){
+//                logfSum += FastMath.log(-1*f.get(fi));
+//            }
+//
+//            phi = (z.transpose().mult(z)).get(0,0)+lambda*u_elements.elementSum() - logfSum*inv_t;
+//
+//            s=1.0;
+//            gdx = gradux.transpose().mult(dxu).get(0,0);
+//
+//            backtrackLoop:
+//            for (lsiter=0; lsiter < max_ls_iter; lsiter++){
+//                /*
+//                 * using new_x, calculate new p_dd_r
+//                 */
+//                new_x = am.plus(dx.scale(s));
+//                p_dd_r_new = p_dd_r(new_x, r_vector, inv_d);
+//                new_u = u_elements.plus(du.scale(s));
+//
+//                for(int ff=0; ff<u_size; ff++){
+//                    am_value = p_dd_r_new.get(ff,0);
+//                    u_value = new_u.get(ff,0);
+//                    new_f.set(ff,0, am_value - u_value);
+//                    new_f.set(u_size+ff,0, -am_value - u_value);
+//                }
+//
+//
+//                if (max(new_f) < 0){
+//
+//                    new_z = (a_matrix.mult(new_x)).minus(y);
+//                    logfSum = 0.0;
+//
+//                    for(int fi=0; fi<new_f.numRows(); fi++){
+//                        logfSum += FastMath.log(-1*new_f.get(fi));
+//                    }
+//
+//                    new_phi = (new_z.transpose().mult(new_z)).get(0,0) + lambda*new_u.elementSum() - logfSum*inv_t;
+//
+//                    if (new_phi-phi <= alpha*s*gdx){
+//                        break backtrackLoop;
+//                    }
+//                }
+//                s = beta*s;
+//            } // end backtrack loop
+//
+//            if (lsiter == max_ls_iter){
+//                //System.out.println("Max LS iteration ");
+//                break calculationLoop;
+//            }
+//
+//            f.set(new_f);
+//            am.set(new_x);
+//            u_elements.set(new_u);
+//        }
+//
+//
+//        // make first element background and set to zero
+//        results.add(new double[coeffs_size + 1]);
+//        results.add(r_vector);
+//
+//        for (int j=0; j < coeffs_size; j++){
+//            results.get(0)[j+1] = am.get(j,0);
+//        }
+//
+//        results.get(0)[0] = 0;
+///*
+//        for (int j=0;j < r_limit;j++){
+//            double pi_dmax_r = Math.PI/dmax*r_vector[j];
+//            resultM = 0;
+//            for(int i=0; i < coeffs_size; i++){
+//                //System.out.println(i + " " + am.get(i,0));
+//                resultM += am.get(i,0)*FastMath.sin(pi_dmax_r*(i+1));
+//            }
+//            //System.out.println(r_vector[j] + " " + 1/Math.PI*0.5*r_vector[j]*resultM);
+//        }
+//        */
+//        return results;
+//
+//    }
 
-    private ArrayList<SimpleMatrix> linearPCG(SimpleMatrix designMatrix, SimpleMatrix bMatrix, SimpleMatrix initial, SimpleMatrix d1, SimpleMatrix d2, double pcgtol, int pcgmaxi, double tauT){
+
+    private ArrayList<SimpleMatrix> linearPCGPositiveOnly(SimpleMatrix designMatrix, SimpleMatrix bMatrix, SimpleMatrix initial, SimpleMatrix d1, double pcgtol, int pcgmaxi){
+
+        ArrayList<SimpleMatrix> returnElements = new ArrayList<SimpleMatrix>();
+
+        int i=0;
+
+        SimpleMatrix r = bMatrix.minus(designMatrix.mult(initial)); // residual
+        SimpleMatrix r_plus_1;
+        SimpleMatrix preConditioner = designMatrix.copy();
+
+        int n = d1.numCols();
+        /*
+         * P = M  D2
+         *     D2 D3
+         * Preconditioner, P is Hessian with first block set to:
+         * M = 2*diagATA + D1
+         *
+         */
+        for(int row=0; row < n; row++){
+
+            for(int col=0; col< n; col++){
+
+                if (row == col){
+                    //preConditioner.set(row,row,2*designMatrix.get(row,row)+d1.get(row,row));
+                    preConditioner.set(row, row, 2+d1.get(row,row));
+                    // d3.set(row,row,2+d1.get(row,row));
+                }
+
+                if (row != col){ // preserve diagonal entries and just add D1
+                    preConditioner.set(row, col, d1.get(row, col));
+                }
+            }
+        }
+
+        SimpleMatrix invertM = preConditioner.invert();
+        SimpleMatrix z = invertM.mult(r); // search direction
+        SimpleMatrix p = z.copy();
+
+        SimpleMatrix q;
+
+        SimpleMatrix xu_vector = initial.copy();
+        int xu_size = xu_vector.getNumElements();
+
+        SimpleMatrix z_plus_1 ;//= new SimpleMatrix(xu_size,1);
+
+        SimpleMatrix x_vector = new SimpleMatrix(n, 1);
+
+        double alpha;
+        // stopping criteria
+        double rkTzk = r.transpose().mult(z).get(0);
+
+        double beta;
+        //double stop = rkTzk*pcgtol*pcgtol;
+        double stop = pcgtol;
+
+        while( (i < pcgmaxi) && (rkTzk > stop) ){
+
+            q = designMatrix.mult(p);
+            alpha = rkTzk/(p.transpose().mult(q)).get(0);
+
+            // invert each element of dTq;
+            xu_vector = xu_vector.plus(p.scale(alpha));
+
+            if (i < 50){
+                r_plus_1 = bMatrix.minus(designMatrix.mult(xu_vector));
+            } else {
+                r_plus_1 = r.minus(q.scale(alpha)); // r_k+1 = r_k - alpha_k * A*p_k
+            }
+
+            z_plus_1 = invertM.mult(r_plus_1);
+
+            //Polak-Ribiere Beta
+            beta = z_plus_1.transpose().mult(r_plus_1.minus(r)).get(0,0)/(z.transpose().mult(r)).get(0,0);
+            //Fletcher Reeves
+            //beta = z_plus_1.transpose().mult(r_plus_1).get(0,0)*(z.transpose().mult(r)).get(0,0);
+
+            /*
+             * k => k + 1
+             */
+            p = z_plus_1.plus(p.scale(beta));
+            r = r_plus_1.copy();
+            rkTzk = r.transpose().mult(z_plus_1).get(0);
+            z = z_plus_1.copy();
+            i++;
+        }
+
+        // System.out.println("PCG STOP: " + stop + " > " + rkTzk + " at " + i);
+
+        for(int ii=0; ii < xu_size; ii++){
+                x_vector.set(ii, 0, xu_vector.get(ii));
+        }
+
+        // set final iterate number
+        SimpleMatrix pitr = new SimpleMatrix(1,1);
+        pitr.set(0,0,i);
+
+        returnElements.add(x_vector);  // 0
+        returnElements.add(xu_vector); // 1
+        returnElements.add(pitr);      // 2
+        return returnElements;
+    }
+
+    private ArrayList<SimpleMatrix> linearPCG(SimpleMatrix designMatrix, SimpleMatrix bMatrix, SimpleMatrix initial, SimpleMatrix d1, double pcgtol, int pcgmaxi, double tauT){
 
         ArrayList<SimpleMatrix> returnElements = new ArrayList<SimpleMatrix>();
 
@@ -1332,6 +2218,7 @@ public class PrObject implements Runnable {
 
             u_vector.set(ii,0,xu_vector.get(ii+n));
         }
+
         // set final iterate number
         SimpleMatrix pitr = new SimpleMatrix(1,1);
         pitr.set(0,0,i);
@@ -1403,7 +2290,7 @@ public class PrObject implements Runnable {
 
     /**
      * value of second derivative calculated at points in r_vector
-     * @param am Moore coefficients
+     * @param am Moore coefficients, assume am[0] is constant backgroud
      * @param r_vector set of equally distributions points along dmax
      * @param inv_d 1/dmax
      * @return
@@ -1412,7 +2299,6 @@ public class PrObject implements Runnable {
 
         double r_value, pi_r_n_inv_d, pi_r_inv_d, cos_pi_r_n_inv_d, sin_pi_r_n_inv_d;
         double pi_inv_d = Math.PI*inv_d;
-        double inv_2d = inv_d*0.5;
         double a_i;
 
         int r_limit = r_vector.length;
@@ -1421,7 +2307,8 @@ public class PrObject implements Runnable {
 
         int coeffs_size = am.getNumElements();
 
-        double a_i_sum, product;
+        double a_i_sum, pi_inv_d_n;
+        double cubed;
 
         for (int r=0; r < r_limit; r++){
             r_value = r_vector[r];
@@ -1430,17 +2317,69 @@ public class PrObject implements Runnable {
 
             for(int n=1; n < coeffs_size; n++){
                 a_i = am.get(n,0);
+
+                pi_inv_d_n = pi_inv_d*n;
                 pi_r_n_inv_d = pi_r_inv_d*n;
-                cos_pi_r_n_inv_d = inv_d*n*FastMath.cos(pi_r_n_inv_d);
-                sin_pi_r_n_inv_d = FastMath.sin(pi_r_n_inv_d);
-                product = pi_r_inv_d*inv_2d*n*n*sin_pi_r_n_inv_d;
-                a_i_sum += a_i*cos_pi_r_n_inv_d + a_i*product;
+
+                cubed = a_i*pi_inv_d_n*pi_inv_d_n*pi_inv_d_n;
+                cos_pi_r_n_inv_d = FastMath.cos(pi_r_n_inv_d);
+                sin_pi_r_n_inv_d = FastMath.sin(pi_r_n_inv_d); // if r_value is ZERO, sine is ZERO
+                a_i_sum += -4*cubed*cos_pi_r_n_inv_d + r_value*(cubed*pi_inv_d_n)*sin_pi_r_n_inv_d;
             }
             p_dd_r.set(r,0, a_i_sum);
         }
 
         return p_dd_r;
     }
+
+
+    /**
+     * value of second derivative calculated at points in r_vector
+     * @param am Moore coefficients no Background
+     * @param r_vector set of equally distributions points along dmax
+     * @param inv_d 1/dmax
+     * @return
+     */
+    public SimpleMatrix p_dd_r_noBG(SimpleMatrix am, double[] r_vector, double inv_d){
+
+        double r_value, pi_r_n_inv_d, pi_r_inv_d, cos_pi_r_n_inv_d, sin_pi_r_n_inv_d;
+        double pi_inv_d = Math.PI*inv_d;
+        double pi_inv_d_n;
+        double inv_2d = inv_d*0.5;
+        double a_i;
+
+        int r_limit = r_vector.length;
+
+        SimpleMatrix p_dd_r = new SimpleMatrix(r_limit,1);
+        int coeffs_size = am.getNumElements();
+
+        double a_i_sum, product;
+
+        for (int r=0; r < r_limit; r++){
+            r_value = r_vector[r];
+
+            pi_r_inv_d = pi_inv_d*r_value;
+            a_i_sum = 0;
+
+            for(int n=1; n <= coeffs_size; n++){
+
+                pi_inv_d_n = pi_inv_d*n;
+                a_i = am.get(n-1,0);
+                pi_r_n_inv_d = pi_r_inv_d*n;
+                cos_pi_r_n_inv_d = pi_inv_d_n*FastMath.cos(pi_r_n_inv_d);
+                sin_pi_r_n_inv_d = FastMath.sin(pi_r_n_inv_d); // if r_value is ZERO, sine is ZERO
+                //product = pi_r_inv_d*inv_2d*n*n*sin_pi_r_n_inv_d;
+                product = r_value*pi_inv_d_n*pi_inv_d_n*sin_pi_r_n_inv_d;
+                a_i_sum += 2*a_i*cos_pi_r_n_inv_d - a_i*product;
+            }
+
+            p_dd_r.set(r,0, a_i_sum);
+        }
+
+        return p_dd_r;
+    }
+
+
 
 
     public static double normL1(SimpleMatrix vec){
@@ -1482,7 +2421,5 @@ public class PrObject implements Runnable {
 
         return initial;
     }
-
-
 
 }
