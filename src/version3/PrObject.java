@@ -770,8 +770,8 @@ public class PrObject implements Runnable {
             qd2 = qd*qd;
             for(int c=0; c < n; c++){
                 if (c == 0){
-                    // a_matrix.set(r, 0, tempData.getXValue());
-                    a_matrix.set(r, 0, 1);
+                    a_matrix.set(r, 0, tempData.getXValue());
+                    //a_matrix.set(r, 0, 1);
                 } else {
                     //pi_sq_n = n_pi_squared[c];
                     a_matrix.set(r, c, TWO_INV_PI*pi_d * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (n_pi_squared[c] - qd2));
@@ -1170,8 +1170,8 @@ public class PrObject implements Runnable {
 
             for(int c=0; c < coeffs_size; c++){
                 if (c == 0){
-                    a_matrix.set(r, 0, 1);
-                    //a_matrix.set(r, 0, tempData.getXValue());
+                    //a_matrix.set(r, 0, 1);
+                    a_matrix.set(r, 0, tempData.getXValue());
                 } else {
                     pi_sq_n = n_pi_squared[c];
                     a_matrix.set(r, c, TWO_INV_PI*pi_d * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (pi_sq_n - qd2));

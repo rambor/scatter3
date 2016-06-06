@@ -502,7 +502,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
             }
         }
 
-
         // update spinner with new limits of of keptSeries
         // estimate errors on invariants using sampling algorithm off of keptSeries
         // if keptqIq > bin*2 , then calculate PofR
@@ -510,20 +509,20 @@ public class RefineManager extends SwingWorker<Void, Void> {
         if (keptqIq.getItemCount() > 2*bins){ // do final fitting against kepSeries
 
             dataset.updatedRefinedSets(keptSeries, keptErrorSeries);
-            ArrayList<double[]> results;
+           // ArrayList<double[]> results;
             // calculate PofR
-            PrObject prObject = new PrObject(keptqIq, upperq , dmax, lambda);
+          //  PrObject prObject = new PrObject(keptqIq, upperq , dmax, lambda);
 
-            if (useL1){
-                // fixed q range
-                System.out.println("FINAL REFINEMENT USING L1 " + useL1);
-                results = prObject.moore_pr_L1();
-                //results = prObject.moore_pr_L1_noBG();
-            } else {
-                results = prObject.moore_coeffs_L1();
-            }
-
-            dataset.setMooreCoefficients(results.get(0));
+//            if (useL1){
+//                // fixed q range
+//                System.out.println("FINAL REFINEMENT USING L1 " + useL1);
+//                results = prObject.moore_pr_L1();
+//                //results = prObject.moore_pr_L1_noBG();
+//            } else {
+//                results = prObject.moore_coeffs_L1();
+//            }
+//
+//            dataset.setMooreCoefficients(results.get(0));
 
             try {
                 // requires (q, Iq) not (q, q*Iq)

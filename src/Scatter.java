@@ -1970,7 +1970,13 @@ public class Scatter {
                 // reset box before making plot
                 qIQCheckBox.setSelected(false);
 
-                //prModel.clear();
+                prTable.clearSelection();
+                if (prTable.isEditing()){
+                    prTable.getCellEditor().stopCellEditing();
+                    prTable.validate();
+                }
+
+                prModel.clear();
                 prModel.addDatasetsFromCollection(collectionSelected);
                 prModel.fireTableDataChanged();
                 mainPane.setSelectedIndex(2);
@@ -1982,7 +1988,6 @@ public class Scatter {
                 PofRPlot pofRplot = PofRPlot.getInstance();
                 pofRplot.clear();
                 pofRplot.plot(collectionSelected, WORKING_DIRECTORY, prDistribution);
-
             }
         });
 

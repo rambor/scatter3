@@ -631,14 +631,15 @@ public class RealSpace {
         double dmaxq = dmax*q;
         //double pi2 = Math.PI*Math.PI;
 
-        double resultM = mooreCoefficients[0];
+        //double resultM = mooreCoefficients[0];
+        double resultM = 0;
         //double twodivpi = 2.0/Math.PI;
 
         for(int i=1; i < totalMooreCoefficients; i++){
             resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
         }
 
-        return resultM*invq;
+        return resultM*invq + mooreCoefficients[0];
     }
 
 
@@ -652,7 +653,7 @@ public class RealSpace {
         double dmaxPi = dmax*Math.PI;
         double dmaxq = dmax*q;
 
-        double resultM = mooreCoefficients[0];
+        double resultM = mooreCoefficients[0]*q;
         for(int i=1; i < totalMooreCoefficients; i++){
             //resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
             resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);

@@ -198,7 +198,9 @@
                   </grid>
                   <component id="cb156" class="javax.swing.JRadioButton" binding="radioButtonLoad2">
                     <constraints>
-                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false">
+                        <preferred-size width="44" height="23"/>
+                      </grid>
                     </constraints>
                     <properties>
                       <background color="-2727818"/>
@@ -238,7 +240,9 @@
                   </grid>
                   <component id="9c0b2" class="javax.swing.JRadioButton" binding="radioButtonLoad3">
                     <constraints>
-                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false">
+                        <preferred-size width="44" height="23"/>
+                      </grid>
                     </constraints>
                     <properties>
                       <background color="-3362583"/>
@@ -278,7 +282,9 @@
                   </grid>
                   <component id="cf93" class="javax.swing.JRadioButton" binding="radioButtonLoad4">
                     <constraints>
-                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false">
+                        <preferred-size width="44" height="23"/>
+                      </grid>
                     </constraints>
                     <properties>
                       <background color="-5712646"/>

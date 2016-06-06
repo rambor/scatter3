@@ -157,6 +157,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 return index;
             case 5: //spinner
                 index = dataset.getStop();
+                System.out.println("Stop Index " + index);
                 return index;
             case 6: //I-zero
                 double tempIzero = dataset.getGuinierIzero();
