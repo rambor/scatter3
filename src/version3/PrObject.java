@@ -363,7 +363,7 @@ public class PrObject implements Runnable {
         for(int i=0; i < r_limit; i++){
             //r_vector[i] = i*del_r;
             r_vector[i] = (i+1)*del_r;
-            System.out.println(i + " => " + r_vector[i] + " del " + del_r + " dmax " + dmax);
+            //System.out.println(i + " => " + r_vector[i] + " del " + del_r + " dmax " + dmax);
         }
 
 
@@ -444,8 +444,8 @@ public class PrObject implements Runnable {
 
             for(int col=0; col < coeffs_size; col++){
                 if (col == 0){ // constant background term
-                    // a_matrix.set(r, 0, tempData.getXValue());
-                    a_matrix.set(row, 0, 1);
+                    a_matrix.set(row, 0, tempData.getXValue());
+                    //a_matrix.set(row, 0, 1);
                 } else {
                     //pi_sq_n = n_pi_squared[c];
                     //if ( col == 1 ){
