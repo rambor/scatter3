@@ -2756,6 +2756,8 @@
                         <constraints/>
                         <properties>
                           <maximumSize width="-1" height="-1"/>
+                          <minimumSize width="-1" height="-1"/>
+                          <preferredSize width="-1" height="-1"/>
                         </properties>
                       </component>
                     </children>

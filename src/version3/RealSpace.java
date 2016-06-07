@@ -570,10 +570,12 @@ public class RealSpace {
      */
     public void calculateIntensityFromModel(boolean isqIq){
 
-        if (isqIq) {
-            this.calculateQIQ();
-        } else {
-            this.calculateIofQ();
+        if (!this.isPDB()){
+            if (isqIq) {
+                this.calculateQIQ();
+            } else {
+                this.calculateIofQ();
+            }
         }
     }
 
@@ -586,10 +588,15 @@ public class RealSpace {
         XYDataItem temp;
         //iterate over each q value and calculate I(q)
         int startHere = startAt -1;
-        for (int j=startHere; j<stopAt; j++){
-            temp = allData.getDataItem(j); // allData gives q-value
-            calcqIq.add(temp.getX(), moore_qIq(temp.getXValue()));
+        if (this.isPDB()){
+
+        } else {
+            for (int j=startHere; j<stopAt; j++){
+                temp = allData.getDataItem(j); // allData gives q-value
+                calcqIq.add(temp.getX(), moore_qIq(temp.getXValue()));
+            }
         }
+
     }
 
     /**
@@ -609,12 +616,18 @@ public class RealSpace {
         XYDataItem temp;
         //iterate over each q value and calculate I(q)
         int startHere = startAt -1;
-        for (int j=startHere; j<stopAt; j++){
-            temp = allData.getDataItem(j);
-            iofq = moore_Iq(temp.getXValue())*invRescaleFactor;
 
-            if (iofq > 0){
-                calcIq.add(temp.getXValue(), FastMath.log10(iofq));
+        if (this.isPDB()){
+
+        } else {
+
+            for (int j = startHere; j < stopAt; j++) {
+                temp = allData.getDataItem(j);
+                iofq = moore_Iq(temp.getXValue()) * invRescaleFactor;
+
+                if (iofq > 0) {
+                    calcIq.add(temp.getXValue(), FastMath.log10(iofq));
+                }
             }
         }
     }

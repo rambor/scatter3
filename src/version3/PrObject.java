@@ -317,8 +317,6 @@ public class PrObject implements Runnable {
     public void run() {
 
         ArrayList<double[]> tempResults;
-        lambda = 0.00001;
-        System.out.println("lambda " + lambda + " useL1 " + useL1);
 
         if (useDirectFT) {
             tempResults = rambo_coeffs_L1();
@@ -673,7 +671,7 @@ public class PrObject implements Runnable {
         ArrayList<double[]> results = new ArrayList<>(2);
 
         int ns = (int) Math.round(qmax*dmax*INV_PI) + 1; //
-        int coeffs_size = ns + 1;   //+1 for constant background
+        int coeffs_size = ns;   //+1 for constant background
         //int coeffs_size = ns // no background correction
 
         double incr = 2.0;
@@ -1052,7 +1050,7 @@ public class PrObject implements Runnable {
         double inv_d = 1.0/dmax;
         //  double inv_2d = 0.5*inv_d;
 
-        int ns = (int) Math.round(qmax*dmax*INV_PI) ; //
+        int ns = (int) Math.round(qmax*dmax*INV_PI); //
 
         int coeffs_size = ns + 1;   //+1 for constant background
         //int coeffs_size = ns;
@@ -1149,9 +1147,11 @@ public class PrObject implements Runnable {
 
         SimpleMatrix am = new SimpleMatrix(coeffs_size,1);// am is 0 column
         am.set(0,0,0.000000000001);
+        Gaussian guess = new Gaussian(dmax*0.5, 0.2*dmax);
 
         for (int i=1; i < coeffs_size; i++){
-            am.set(i, 0, 0);
+            am.set(i, 0, guess.value(r_vector[i-1]));
+            //am.set(i, 0, 0);
         }
 
         /*

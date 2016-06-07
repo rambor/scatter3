@@ -299,16 +299,16 @@ public class Scatter {
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-        //mc.redirectOut();
-        //mc.redirectErr(Color.RED, null);
+        mc.redirectOut();
+        mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        //info.redirectOut();
+        info.redirectOut();
 
         //int[] subtractionBins = new int[] {11, 13, 17, 23, 29};
         //comboBoxSubtractBins = new JComboBox(subtractionBins);
         refinementRoundsBox.setSelectedIndex(0);
-        rejectionCutOffBox.setSelectedIndex(2);
+        rejectionCutOffBox.setSelectedIndex(3);
         simBinsComboBox.setSelectedIndex(0);
         lambdaBox.setSelectedIndex(1);
         cBox.setSelectedIndex(1);

@@ -58,7 +58,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
         totalRoundsForRefinement = refinementRounds;
         roundsPerCPU = (int)(this.refinementRounds/(double)numberOfCPUs);
 
-        bins = dataset.getTotalMooreCoefficients();
+        bins = dataset.getTotalMooreCoefficients() - 1;
         //bins = (int) (Math.round(dataset.getfittedqIq().getMaxX() * dataset.getDmax() / Math.PI));  // excludes term related constant background
 
         //upperq = dataset.getAllData().getX(dataset.getStop()-1).doubleValue();
@@ -139,17 +139,10 @@ public class RefineManager extends SwingWorker<Void, Void> {
     public class Refiner implements Runnable {
 
         private XYSeries activeSet;
-        //private XYSeries activeIqSet;
         private XYSeries errorActiveSet;
         private XYSeries relativeErrorSeries;
         //private boolean useNotify = false;
-
-
-        //private double upperq;
         private int totalRuns;
-
-        //private double median;
-
         private int sizeAm;
 
         private ArrayList<Integer> countsPerBin;
@@ -197,7 +190,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
             int[] randomNumbers;
 
             int size = activeSet.getItemCount();
-            //double delta_q = upperq/bins;
             double half_delta_ns = 0.5*pi_invDmax;
 
             XYDataItem tempData;
@@ -225,7 +217,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
                         if (averageStoNPerBin.get(b-1) < 1.25){ // increase more points if S-to-N is less than
                             samplingNumber = 36;
                         } else {
-                            samplingNumber = 2;
+                            samplingNumber = 10;
                         }
 
                         samplingLimit = (1.0 + randomGenerator.nextInt(samplingNumber))/100.0;  // return a random percent up to ...
@@ -233,14 +225,18 @@ public class RefineManager extends SwingWorker<Void, Void> {
                         binloop:
                         for (int bb=startbb; bb < size; bb++){
                             //if (activeSet.getX(bb).doubleValue() >= (delta_q*b) ){ // what happens on the last bin?
+                            // b*pi_invDmax is cardinal point in reciprocal space
                             if (activeSet.getX(bb).doubleValue() >= (half_delta_ns + b*pi_invDmax) ){ // what happens on the last bin?
                                 upperbb = bb;
                                 break binloop;
+                            } else {
+                                upperbb = size-1;
                             }
                         }
 
                         // grab indices inbetween startbb and upperbb
                         randomNumbers = this.randomIntegersBounded(startbb, upperbb, samplingLimit);
+                        //System.out.println("bin : " + b + " => startbb " + startbb + " upper " + upperbb + " " + size + " " + samplingLimit + " length " + randomNumbers.length);
 
                         startbb = upperbb;
 
@@ -292,13 +288,11 @@ public class RefineManager extends SwingWorker<Void, Void> {
             // for each bin determine average signal to noise
             int startbb = 0;
             double sumError, sumCount, tempCurrent, upperBound;
-            //double delta_q = upperq/bins;
             int size = relativeErrorSeries.getItemCount();
 
             for (int b=1; b <= bins; b++) {
                 sumError = 0;
                 sumCount = 0;
-                //upperBound = delta_q*b;
                 upperBound = b*pi_invDmax + 0.5*pi_invDmax;
 
                 binloop:
@@ -440,7 +434,6 @@ public class RefineManager extends SwingWorker<Void, Void> {
         int sizeAm = keptAm.length;
 
         XYDataItem tempData;
-        //XYSeries keptqIq = new XYSeries("keptqIq-"+dataset.getId());
         XYSeries activeqIqSet = dataset.getfittedqIq();      // this is scaled data
         XYSeries errorActiveSet = dataset.getfittedError();  // these errors are unscaled
         dataset.getCalcIq().clear();
@@ -453,24 +446,21 @@ public class RefineManager extends SwingWorker<Void, Void> {
             yObsValue = tempData.getYValue();
 
             iCalc = Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm);
-            //residual = iCalc - yObsValue/xObsValue;
             residual = iCalc*xObsValue - yObsValue;
             //System.out.println(i + " : " + Functions.moore_Iq(keptAm, dmax, xObsValue, sizeAm) + " <=> " + yObsValue/xObsValue + " " + dataset.getRescaleFactor());
             //setS_o( 1.4826*(1.0 + 5.0/(size - sizeAm - 1))*Math.sqrt(median) ); // size is number of elements in active set
 
             if (Math.abs(residual/this.getS_o()) <= rejectionCutOff){
                 //System.out.println(Math.abs(residual/this.getS_o()) + " <= " + rejectionCutOff);
-
                 residualsList.add(residual*residual);
-
-                //keptSeries.add(xObsValue, yObsValue/xObsValue);
-
-                //keptqIq.add(xObsValue, yObsValue);  // used in actual fitting must be rescaled if too low or high
-                //keptErrorSeries.add(xObsValue, errorActiveSet.getY(i).doubleValue());
-
-                //if (yObsValue > 0) { // only positive values
-                //    dataset.getCalcIq().add(xObsValue, Math.log10(iCalc * invReScaleFactor)); //plotted data is unscaled, as is from Analysis
-                //}
+//                keptSeries.add(xObsValue, yObsValue/xObsValue);
+//
+//                keptqIq.add(xObsValue, yObsValue);  // used in actual fitting must be rescaled if too low or high
+//                keptErrorSeries.add(xObsValue, errorActiveSet.getY(i).doubleValue());
+//
+//                if (yObsValue > 0) { // only positive values
+//                    dataset.getCalcIq().add(xObsValue, Math.log10(iCalc * invReScaleFactor)); //plotted data is unscaled, as is from Analysis
+//                }
 
             }
         }
@@ -480,8 +470,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
 
         XYSeries keptqIq = new XYSeries("keptqIq-"+dataset.getId());
         // Select final values for fitting
-
-        for (int i=0; i<size; i++){
+        for (int i=0; i < size; i++){
             tempData = activeqIqSet.getDataItem(i);
             xObsValue = tempData.getXValue();
             yObsValue = tempData.getYValue();
@@ -509,27 +498,27 @@ public class RefineManager extends SwingWorker<Void, Void> {
         if (keptqIq.getItemCount() > 2*bins){ // do final fitting against kepSeries
 
             dataset.updatedRefinedSets(keptSeries, keptErrorSeries);
-           // ArrayList<double[]> results;
+            ArrayList<double[]> results;
             // calculate PofR
-          //  PrObject prObject = new PrObject(keptqIq, upperq , dmax, lambda);
+            PrObject prObject = new PrObject(keptqIq, keptqIq.getMaxX() , dmax, lambda);
+            //System.out.println("QMAX FINAL : " + upperq + " " + keptqIq.getMaxX());
+            if (useL1){
+                // fixed q range
+                System.out.println("FINAL REFINEMENT USING L1 " + useL1);
+                results = prObject.moore_pr_L1();
+                //results = prObject.moore_pr_L1_noBG();
+            } else {
+                results = prObject.moore_coeffs_L1();
+            }
 
-//            if (useL1){
-//                // fixed q range
-//                System.out.println("FINAL REFINEMENT USING L1 " + useL1);
-//                results = prObject.moore_pr_L1();
-//                //results = prObject.moore_pr_L1_noBG();
-//            } else {
-//                results = prObject.moore_coeffs_L1();
-//            }
-//
-//            dataset.setMooreCoefficients(results.get(0));
+            dataset.setMooreCoefficients(results.get(0));
 
             try {
                 // requires (q, Iq) not (q, q*Iq)
                 // setMooreCoefficients calculates chi over the range of data bounded by spinners
                 // need chi specific to keptSeries
                 int totalKept = keptSeries.getItemCount();
-                for(int i=0; i<totalKept;i++){
+                for(int i=0; i < totalKept;i++){
                     tempData = keptSeries.getDataItem(i);
                     keptSeries.update(tempData.getX(), (tempData.getYValue()*invReScaleFactor));
                 }
@@ -542,6 +531,7 @@ public class RefineManager extends SwingWorker<Void, Void> {
             int totalrejected =  totalToFit - keptSeries.getItemCount();
             double percentRejected = (double)totalrejected/(double)totalToFit*100;
             notifyUser(String.format("Rejected %d points (%.1f %%) using cutoff: %.4f => files written to working directory", totalrejected, percentRejected, rejectionCutOff));
+
             RefinedPlot refinedPlot = new RefinedPlot(dataset);
             refinedPlot.makePlot(String.format("Rejected %d points (%.1f %%) using cutoff: %.4f => files written to working directory", totalrejected, percentRejected, rejectionCutOff));
 
