@@ -243,7 +243,7 @@ public class Scatter {
     private JLabel labelPipelineMessages;
     private JButton SAVETODIRECTORYSubtractButton;
 
-    private String version = "3.0c";
+    private String version = "3.0d";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
