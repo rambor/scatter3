@@ -1,3 +1,4 @@
+import com.sun.xml.internal.ws.api.pipe.FiberContextSwitchInterceptor;
 import net.iharder.dnd.FileDrop;
 import org.jfree.data.xy.XYSeries;
 import version3.*;
@@ -227,9 +228,25 @@ public class Scatter {
     private JButton SETPLOTRANGEButton;
     private JButton RESETRANGEButton;
     private JCheckBox checkBoxDirect;
+    private JButton setPipelineDataDirButton;
+    private JButton setPipelineOutputDirButton;
+    private JButton setXMLFileButton;
+    private JButton STARTPipelineButton;
+    private JButton STOPButton;
+    private JProgressBar progressBar2;
+    private JButton DEPOSITButton;
+    private JPanel panelPipelineTable;
+    private JButton CLEARButton;
+    private JLabel labelPipelineDir;
+    private JLabel labelOutputDirPipeline;
+    private JLabel labelXML;
+    private JLabel labelPipelineMessages;
+    private JButton SAVETODIRECTORYSubtractButton;
 
-    private String version = "3.0a";
+    private String version = "3.0c";
     private static WorkingDirectory WORKING_DIRECTORY;
+    private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
+    private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
     //private static String WORKING_DIRECTORY_NAME;
     private static String OUTPUT_DIR_SUBTRACTION_NAME="";
     private static String BEAMLINEMANUFACTURER="";
@@ -2547,6 +2564,57 @@ public class Scatter {
                 if (checkBoxDirect.isSelected()){
                     checkBoxDirect.setSelected(false);
                 }
+            }
+        });
+
+        setPipelineDataDirButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // check if Directory exists and can be written to
+
+                File theCWD = new File(PIPELINE_DATA_DIRECTORY.getWorkingDirectory());
+
+                JFileChooser chooser = new JFileChooser(theCWD);
+                chooser.setDialogTitle("Select Directory");
+                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                chooser.setAcceptAllFileFilterUsed(false);
+
+                if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
+                    //WORKING_DIRECTORY.setWorkingDirectory(chooser.getCurrentDirectory().toString());
+
+                    if (chooser.getSelectedFile().isDirectory() ){
+                        //File f = new File(chooser.getSelectedFile().isDirectory() + "/test.txt");
+                        PIPELINE_DATA_DIRECTORY.setWorkingDirectory(chooser.getSelectedFile().toString());
+                    } else {
+                        PIPELINE_DATA_DIRECTORY.setWorkingDirectory(chooser.getCurrentDirectory().toString());
+                    }
+
+                    labelPipelineDir.setText(PIPELINE_DATA_DIRECTORY.getWorkingDirectory());
+                   // updateProp();
+                }
+
+
+            }
+        });
+
+
+        SAVETODIRECTORYSubtractButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //Set working directory
+                if (sampleCollections.getTotalSelected() < 1){
+                    Toolkit.getDefaultToolkit().beep();
+                    JOptionPane optionPane = new JOptionPane("Need at least one file selected",JOptionPane.WARNING_MESSAGE);
+                    JDialog dialog = optionPane.createDialog("Warning!");
+                    dialog.setAlwaysOnTop(true);
+                    dialog.setVisible(true);
+                    status.setText("Select More than one file to make zip ");
+                    return;
+                }
+
+                SECArchive packageIt = new SECArchive(sampleCollections, bufferCollections, WORKING_DIRECTORY);
+                packageIt.pack();
+                packageIt.setVisible(true);
             }
         });
     }

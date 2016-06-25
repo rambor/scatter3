@@ -44,6 +44,9 @@ public class DammiNFManager {
         this.symm = symm;
         this.damstartFile = damstartFile;
 
+        supcombFile = new File("");
+        System.out.println("File exists: " + supcombFile.exists());
+
         if (damRefine && damStartStatus && this.isDammin){
             this.damRefine = true;
         }

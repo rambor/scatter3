@@ -50,6 +50,7 @@ public class Dataset {
 
     private XYSeries calcI;
     private String filename;
+    private String originalFilename;
 
     private final int totalCountInAllData;
     private final int totalCountInPositiveData;
@@ -1397,7 +1398,8 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
 
     public void copyAndRenameDataset(String newName, String cwd){
         String base = newName.replaceAll("\\W","_");
-        this.appendExperimentalNotes("COPIED FROM " + this.filename);
+        this.appendExperimentalNotes("ORIGINAL FILE : " + this.filename);
+        this.originalFilename = this.filename;
         this.setFileName(base);
         FileObject dataToWrite = new FileObject(new File(cwd));
         dataToWrite.writeSAXSFile(base, this);
@@ -1410,6 +1412,8 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
         this.realSpace.setRg(rg);
         this.realSpace.setIzero(izero);
     }
+
+    public String getOriginalFilename(){return this.originalFilename;}
 
     public boolean getIsPDB(){
         return this.isPDB;
