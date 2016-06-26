@@ -22,13 +22,16 @@ public class SECArchive extends JDialog {
 
     private Collection collection;
     private Collection buffersCollection;
+    private JLabel label;
 
-    public SECArchive(Collection samplesCollection, Collection buffersCollection, WorkingDirectory workingDirectory) {
+    public SECArchive(Collection samplesCollection, Collection buffersCollection, WorkingDirectory workingDirectory, JLabel label) {
 
         this.collection = samplesCollection;
         this.buffersCollection = buffersCollection;
 
         this.workingDirectory = workingDirectory;
+        this.label = label;
+
         outputDirLabel.setText(workingDirectory.getWorkingDirectory());
 
         setContentPane(contentPane);
@@ -113,6 +116,7 @@ public class SECArchive extends JDialog {
         // sanitize the name
         // create directory
         String outputDirString = workingDirectory.getWorkingDirectory() + "/" + archiveName;
+        label.setText(outputDirString);
 
         ProgressBarWriter progressBarWriter = new ProgressBarWriter(progressBar1, outputDirString, archiveName);
         progressBarWriter.execute();

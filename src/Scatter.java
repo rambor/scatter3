@@ -113,7 +113,6 @@ public class Scatter {
     private JPanel headerPanel;
     private JButton izeroRgPlot;
     private JButton setOutputDirectoryButton;
-    private JLabel subtractInfoLabel;
     private JLabel subtractOutPutDirectoryLabel;
     private JButton buffersClearButton;
     private JCheckBox onDropConvertNmCheckBox;
@@ -2612,9 +2611,12 @@ public class Scatter {
                     return;
                 }
 
-                SECArchive packageIt = new SECArchive(sampleCollections, bufferCollections, WORKING_DIRECTORY);
+                SECArchive packageIt = new SECArchive(sampleCollections, bufferCollections, WORKING_DIRECTORY, subtractOutPutDirectoryLabel);
                 packageIt.pack();
                 packageIt.setVisible(true);
+
+                updateProp();
+
             }
         });
     }

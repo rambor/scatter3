@@ -9,8 +9,8 @@
       <xy x="20" y="20" width="935" height="800"/>
     </constraints>
     <properties>
-      <minimumSize width="900" height="630"/>
-      <preferredSize width="900" height="630"/>
+      <minimumSize width="900" height="715"/>
+      <preferredSize width="900" height="715"/>
     </properties>
     <border type="none"/>
     <children>
@@ -26,6 +26,7 @@
           <preferredSize width="800" height="591"/>
           <tabLayoutPolicy value="0"/>
           <tabPlacement value="1"/>
+          <visible value="true"/>
         </properties>
         <border type="none"/>
         <children>
@@ -50,9 +51,7 @@
                   <grid id="754e5" binding="dataFilesPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                     <margin top="0" left="0" bottom="0" right="0"/>
                     <constraints>
-                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false">
-                        <preferred-size width="0" height="445"/>
-                      </grid>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                     </constraints>
                     <properties/>
                     <border type="none"/>
@@ -1033,19 +1032,8 @@
             <children>
               <grid id="a983b" layout-manager="FormLayout">
                 <rowspec value="center:max(d;4px):noGrow"/>
-                <rowspec value="top:3dlu:noGrow"/>
-                <rowspec value="center:max(d;4px):noGrow"/>
-                <rowspec value="top:3dlu:noGrow"/>
-                <rowspec value="center:d:grow"/>
-                <rowspec value="top:3dlu:noGrow"/>
-                <rowspec value="center:max(d;4px):noGrow"/>
-                <rowspec value="top:3dlu:noGrow"/>
-                <rowspec value="center:max(d;4px):noGrow"/>
-                <rowspec value="top:3dlu:noGrow"/>
-                <rowspec value="center:max(d;4px):noGrow"/>
-                <rowspec value="top:3dlu:noGrow"/>
-                <rowspec value="center:max(d;4px):noGrow"/>
-                <rowspec value="top:3dlu:noGrow"/>
+                <rowspec value="center:159px:noGrow"/>
+                <rowspec value="center:383px:noGrow"/>
                 <rowspec value="center:max(d;4px):noGrow"/>
                 <colspec value="fill:d:grow"/>
                 <colspec value="left:4dlu:noGrow"/>
@@ -1061,7 +1049,7 @@
                   <grid id="fde5b" binding="leftSubtractionPanel" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                     <margin top="0" left="0" bottom="0" right="0"/>
                     <constraints>
-                      <grid row="0" column="0" row-span="13" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                      <grid row="0" column="0" row-span="3" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
                         <preferred-size width="24" height="607"/>
                       </grid>
                       <forms defaultalign-horz="false" defaultalign-vert="false"/>
@@ -1073,7 +1061,7 @@
                     <children>
                       <scrollpane id="e9832" binding="samples">
                         <constraints>
-                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties/>
                         <border type="none"/>
@@ -1094,7 +1082,7 @@
                   <grid id="33aca" binding="rightSubtractionPanel" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                     <margin top="0" left="0" bottom="0" right="0"/>
                     <constraints>
-                      <grid row="0" column="4" row-span="13" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                      <grid row="0" column="4" row-span="3" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
                         <preferred-size width="24" height="607"/>
                       </grid>
                       <forms defaultalign-vert="false"/>
@@ -1106,7 +1094,7 @@
                     <children>
                       <scrollpane id="e06ef" binding="buffers">
                         <constraints>
-                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties/>
                         <border type="none"/>
@@ -1124,10 +1112,10 @@
                       </component>
                     </children>
                   </grid>
-                  <grid id="11d4f" binding="centerPanel" layout-manager="GridLayoutManager" row-count="6" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                  <grid id="11d4f" binding="centerPanel" layout-manager="GridLayoutManager" row-count="7" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                     <margin top="0" left="0" bottom="0" right="0"/>
                     <constraints>
-                      <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="1" fill="0" indent="0" use-parent-layout="false"/>
+                      <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="1" fill="0" indent="0" use-parent-layout="false"/>
                       <forms defaultalign-vert="false"/>
                     </constraints>
                     <properties/>
@@ -1148,7 +1136,7 @@
                       <grid id="9546b" layout-manager="GridLayoutManager" row-count="1" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
-                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
                             <preferred-size width="249" height="30"/>
                           </grid>
                         </constraints>
@@ -1202,7 +1190,7 @@
                       <grid id="32b44" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
-                          <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
                             <preferred-size width="249" height="24"/>
                           </grid>
                         </constraints>
@@ -1230,7 +1218,7 @@
                       <grid id="caaf8" layout-manager="GridLayoutManager" row-count="6" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
-                          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false">
                             <preferred-size width="249" height="179"/>
                           </grid>
                         </constraints>
@@ -1376,20 +1364,57 @@
                           </component>
                         </children>
                       </grid>
-                      <component id="715e8" class="javax.swing.JButton" binding="SAVETODIRECTORYSubtractButton">
+                      <component id="7e6c3" class="javax.swing.JCheckBox" binding="onDropConvertNmCheckBox" default-binding="true">
                         <constraints>
-                          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                          <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <font style="1"/>
-                          <text value="SAVE TO DIRECTORY"/>
+                          <text value="&lt;html&gt;on drop : convert nm&lt;sup&gt;-1&lt;/sup&gt; to Angstroms&lt;sup&gt;-1&lt;/sup&gt;&lt;/html&gt;"/>
+                        </properties>
+                      </component>
+                      <grid id="4555a" layout-manager="GridBagLayout">
+                        <constraints>
+                          <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="b7619" class="javax.swing.JButton" binding="setOutputDirectoryButton" default-binding="true">
+                            <constraints>
+                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+                              <gridbag weightx="1.0" weighty="1.0"/>
+                            </constraints>
+                            <properties>
+                              <font style="1"/>
+                              <foreground color="-3203840"/>
+                              <text value="Set Output Directory"/>
+                            </properties>
+                          </component>
+                          <component id="715e8" class="javax.swing.JButton" binding="SAVETODIRECTORYSubtractButton">
+                            <constraints>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                              <gridbag weightx="1.0" weighty="1.0"/>
+                            </constraints>
+                            <properties>
+                              <font style="1"/>
+                              <text value="SAVE TO DIRECTORY"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </grid>
+                      <component id="ea78d" class="javax.swing.JLabel" binding="subtractOutPutDirectoryLabel">
+                        <constraints>
+                          <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <text value=""/>
                         </properties>
                       </component>
                     </children>
                   </grid>
                   <grid id="b299d" layout-manager="GridBagLayout">
                     <constraints>
-                      <grid row="14" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
+                      <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false">
                         <minimum-size width="-1" height="120"/>
                         <preferred-size width="-1" height="120"/>
                         <maximum-size width="-1" height="120"/>
@@ -1446,7 +1471,7 @@
                   </grid>
                   <grid id="5e302" layout-manager="GridBagLayout">
                     <constraints>
-                      <grid row="14" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                      <grid row="3" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                       <forms defaultalign-vert="false"/>
                     </constraints>
                     <properties>
@@ -1487,57 +1512,10 @@
                       </component>
                     </children>
                   </grid>
-                  <component id="1ec8" class="javax.swing.JLabel" binding="subtractInfoLabel">
-                    <constraints>
-                      <grid row="14" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                      <forms/>
-                    </constraints>
-                    <properties>
-                      <text value=""/>
-                    </properties>
-                  </component>
-                  <component id="ea78d" class="javax.swing.JLabel" binding="subtractOutPutDirectoryLabel">
-                    <constraints>
-                      <grid row="10" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                      <forms/>
-                    </constraints>
-                    <properties>
-                      <text value=""/>
-                    </properties>
-                  </component>
-                  <component id="b7619" class="javax.swing.JButton" binding="setOutputDirectoryButton" default-binding="true">
-                    <constraints>
-                      <grid row="8" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
-                      <forms defaultalign-vert="false"/>
-                    </constraints>
-                    <properties>
-                      <foreground color="-3203840"/>
-                      <text value="Set Output Directory"/>
-                    </properties>
-                  </component>
-                  <grid id="c0aac" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                    <margin top="0" left="0" bottom="0" right="0"/>
-                    <constraints>
-                      <grid row="6" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                      <forms/>
-                    </constraints>
-                    <properties/>
-                    <border type="none"/>
-                    <children>
-                      <component id="7e6c3" class="javax.swing.JCheckBox" binding="onDropConvertNmCheckBox" default-binding="true">
-                        <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <text value="&lt;html&gt;on drop : convert nm&lt;sup&gt;-1&lt;/sup&gt; to Angstroms&lt;sup&gt;-1&lt;/sup&gt;&lt;/html&gt;"/>
-                        </properties>
-                      </component>
-                    </children>
-                  </grid>
                   <grid id="8b8c2" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                     <margin top="0" left="0" bottom="0" right="0"/>
                     <constraints>
-                      <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
+                      <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                       <forms defaultalign-vert="false"/>
                     </constraints>
                     <properties>
@@ -1660,7 +1638,11 @@
             <constraints>
               <tabbedpane title="Pipeline"/>
             </constraints>
-            <properties/>
+            <properties>
+              <enabled value="false"/>
+              <focusable value="false"/>
+              <visible value="false"/>
+            </properties>
             <border type="none"/>
             <children>
               <grid id="74cd" layout-manager="GridLayoutManager" row-count="5" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -1747,7 +1729,8 @@
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="Label"/>
+                          <foreground color="-57060"/>
+                          <text value="NOT FUNCTIONAL"/>
                         </properties>
                       </component>
                     </children>
@@ -1851,7 +1834,11 @@
             <constraints>
               <tabbedpane title="FormFactCE"/>
             </constraints>
-            <properties/>
+            <properties>
+              <enabled value="false"/>
+              <opaque value="true"/>
+              <visible value="false"/>
+            </properties>
             <border type="none"/>
             <children>
               <grid id="3f0f6" layout-manager="GridLayoutManager" row-count="1" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
@@ -2002,8 +1989,8 @@
                             <margin top="0" left="0" bottom="0" right="0"/>
                             <constraints>
                               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="2" fill="1" indent="0" use-parent-layout="false">
-                                <preferred-size width="-1" height="220"/>
-                                <maximum-size width="-1" height="220"/>
+                                <preferred-size width="-1" height="100"/>
+                                <maximum-size width="-1" height="100"/>
                               </grid>
                             </constraints>
                             <properties/>
@@ -3958,7 +3945,7 @@
               </scrollpane>
             </children>
           </grid>
-          <grid id="28cbb" layout-manager="GridLayoutManager" row-count="7" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+          <grid id="28cbb" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
             <margin top="0" left="0" bottom="0" right="0"/>
             <constraints>
               <tabbedpane title="About"/>
@@ -3982,11 +3969,11 @@
                 <children>
                   <component id="c3d83" class="javax.swing.JLabel">
                     <constraints>
-                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="1" use-parent-layout="false"/>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="2" indent="1" use-parent-layout="false"/>
                     </constraints>
                     <properties>
                       <font/>
-                      <text value="&lt;html&gt;&#10;&lt;p&gt;&lt;b&gt;(2016) Developed by Robert Rambo  | Diamond Light Source | Didcot, Oxfordshire UK&lt;/b&gt;&lt;/p&gt;&#10;&lt;p&gt;&lt;b&gt;Supported by:&lt;/p&gt;&#10;&lt;ul&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#000099&quot;&gt;Diamond Light Source&lt;/font&gt; &lt;/b&gt; (Oxfordshire, UK)&lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#006600&quot;&gt;SIBYLS Beamline&lt;/font&gt;&lt;/b&gt; (Advanced Light Source, Berkeley, CA)&lt;br&gt;Department of Energy Integrated Diffraction Analysis Technologies (IDAT) program &lt;br&gt; National Institute of Health grant MINOS (R01GM105404) &lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#0066FF&quot;&gt;BRUKER&lt;/font&gt; Corporation&lt;/b&gt; (Karlsruhe, Germany)&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;p&gt;&lt;/p&gt;&lt;/html&gt;"/>
+                      <text value="&lt;html&gt;&#10;&lt;p&gt;&lt;b&gt;(2016) Developed by Robert Rambo  | Diamond Light Source | Didcot, Oxfordshire UK&lt;/b&gt;&lt;/p&gt;&#10;&lt;p&gt;&lt;b&gt;Supported by:&lt;/p&gt;&#10;&lt;ul&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#000099&quot;&gt;Diamond Light Source&lt;/font&gt; &lt;/b&gt; (Oxfordshire, UK)&lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#006600&quot;&gt;SIBYLS Beamline&lt;/font&gt;&lt;/b&gt; (Advanced Light Source, Berkeley, CA)&lt;br&gt;Department of Energy Integrated Diffraction Analysis Technologies (IDAT) program &lt;br&gt; National Institute of Health grant MINOS (R01GM105404) &lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#0066FF&quot;&gt;BRUKER&lt;/font&gt; Corporation&lt;/b&gt; (Karlsruhe, Germany)&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;p&gt;Version 1 (2012-2013) by Robert P. Rambo and Ivan Rodic, Lawrence Berkeley National Laboratory, Berkeley, California&lt;/p&gt;&lt;/html&gt;"/>
                     </properties>
                   </component>
                   <hspacer id="50716">
@@ -3996,59 +3983,10 @@
                   </hspacer>
                 </children>
               </grid>
-              <component id="befd7" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                </constraints>
-                <properties>
-                  <background color="-7876609"/>
-                  <font style="1"/>
-                  <foreground color="-1"/>
-                  <text value="Version: 1 (2012-2013) by Robert P. Rambo and Ivan Rodic, Lawrence Berkeley National Laboratory, Berkeley, CA"/>
-                </properties>
-              </component>
-              <component id="3e6c0" class="javax.swing.JLabel">
-                <constraints>
-                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                </constraints>
-                <properties>
-                  <background color="-7876609"/>
-                  <font style="1"/>
-                  <foreground color="-1"/>
-                  <text value="Version: 2 (2015) by Robert P. Rambo, Diamond Light Source, Didcot, Oxfordshire UK"/>
-                </properties>
-              </component>
-              <grid id="fc646" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                <margin top="0" left="0" bottom="0" right="0"/>
-                <constraints>
-                  <grid row="6" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                </constraints>
-                <properties>
-                  <background color="-1"/>
-                </properties>
-                <border type="etched" title="P(r)-distribution">
-                  <font style="1"/>
-                  <title-color color="-60646"/>
-                </border>
-                <children>
-                  <component id="337c" class="javax.swing.JLabel">
-                    <constraints>
-                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
-                        <minimum-size width="700" height="-1"/>
-                        <preferred-size width="700" height="-1"/>
-                      </grid>
-                    </constraints>
-                    <properties>
-                      <font size="12" style="1"/>
-                      <text value="&lt;html&gt;&lt;ul&gt;&lt;li&gt;Algorithm uses a regularization method based on the L1-norm&lt;/li&gt;&lt;li&gt;Strength of the regularization can be adjusted by changing &quot;lambda&quot;&lt;/li&gt;&lt;li&gt;Best choice of dmax typically has the smoothest P(r) distribution with chi^2 near 1&lt;/li&gt;&#10;&lt;li&gt;Ideal value should be 1.0(0.0) for Chi^2 column: 0.0 is the sum of kurtosis and second derivative of P(r)&lt;/li&gt;&#10;&lt;li&gt;For noisy data, increase C in settings. &lt;/ul&gt;&lt;/html&gt;"/>
-                    </properties>
-                  </component>
-                </children>
-              </grid>
               <grid id="f954e" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                 <margin top="0" left="0" bottom="0" right="0"/>
                 <constraints>
-                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
                   <background color="-1"/>
@@ -4076,7 +4014,7 @@
               <grid id="193e2" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                 <margin top="0" left="0" bottom="0" right="0"/>
                 <constraints>
-                  <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="1" fill="1" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
                   <background color="-1"/>
