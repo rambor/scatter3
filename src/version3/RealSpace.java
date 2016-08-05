@@ -596,7 +596,6 @@ public class RealSpace {
                 calcqIq.add(temp.getX(), moore_qIq(temp.getXValue()));
             }
         }
-
     }
 
     /**

@@ -124,23 +124,21 @@ public class LoadedFile {
         double tempQValue;
 
         try {
+            long start = System.nanoTime();
             FileInputStream fstream = new FileInputStream(file);
             DataInputStream in = new DataInputStream(fstream);
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
             long filesize = file.length();
-
             if (filesize == 0){
                 throw new Exception("File Empty");
             }
-
 
             if (ext.equals("dat") || ext.equals("fit") || ext.equals("int")) { //regular 3 column file space or tab delimited
                 String strLine;
 
                 //Read file line-by-line
                 try {
-
                     while ((strLine = br.readLine()) != null) {
                         dataPoints = dataFromText(strLine);
                         if (dataPoints.getTest()){
@@ -164,7 +162,6 @@ public class LoadedFile {
 
                         } // move to next line
                     }
-
                     //endPtNN = originalNNData.getItemCount();
                 } catch (IOException ex) {
                     System.out.println("File Index out of bounds");
@@ -225,7 +222,6 @@ public class LoadedFile {
             //Double iofQValue = Double.valueOf(df.format(Double.parseDouble(row[1])));
             if (!isUSUK){
                 System.out.println("Not USUK : may convert format ");
-
                 if (row[0].contains(",") && row[1].contains(",")){ // convert
                     //System.out.println("Number contains a comma in first column, convert format ");
                     data = new DataLine(convertToUS(row[0]), convertToUS(row[1]), 1.0, true);

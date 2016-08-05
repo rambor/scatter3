@@ -749,6 +749,11 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             Point2D p = panel.translateScreenToJava2D( e.getPoint());
             Rectangle2D plotArea = panel.getScreenDataArea();
             XYPlot plot = (XYPlot) chart.getPlot();
+
+           // int mouseX = e.getX();
+           // int onscreen = e.getXOnScreen();
+           // System.out.println("x = " + mouseX + " onscreen " + onscreen);
+
             return plot.getDomainAxis().java2DToValue(p.getX(), plotArea, plot.getDomainAxisEdge());
         }
 

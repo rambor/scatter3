@@ -241,8 +241,9 @@ public class Scatter {
     private JLabel labelXML;
     private JLabel labelPipelineMessages;
     private JButton SAVETODIRECTORYSubtractButton;
+    private JButton SECFactorAnalysisICAButton;
 
-    private String version = "3.0d";
+    private String version = "3.0e";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -2492,6 +2493,14 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 lastIndexInSignalPlot = -1;
                 firstIndexInSignalPlot = 0;
+
+                int total = sampleFilesModel.getSize();
+
+                for(int i=0;i<total; i++){
+                    sampleFilesModel.get(i).setSelected(true);
+                }
+
+                samplesList.repaint();
             }
         });
 
@@ -3009,7 +3018,9 @@ public class Scatter {
                 final int panel = 96;
                 new Thread() {
                     public void run() {
+                        long start = System.nanoTime();
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                        System.out.println("INSTANTIATE RECEIVEDDROPPEDFILES => " + (System.nanoTime() - start)/1000);
                         // add other attributes and then run
                         rec1.setSampleBufferModels(programInstance.sampleFilesModel);
                         rec1.useShortenedConstructor();

@@ -121,6 +121,11 @@ public class FileObject {
         int coefsSize = 0;
         double[] coefs;
 
+        if (dataset.getRealSpaceModel().getRg() > 0 && dataset.getRealSpaceModel().getIzero() > 0){
+            dataset.getRealSpaceModel().estimateErrors();
+        }
+
+
         if (realspaceModel.isPDB()){
 
             int totalr = realspaceModel.getPrDistribution().getItemCount();
