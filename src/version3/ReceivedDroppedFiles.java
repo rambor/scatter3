@@ -87,6 +87,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         bar.setStringPainted(true);
         bar.setValue(0);
 
+        System.out.println("TOTAL FILES " + totalFiles);
+
         if (sortFiles && totalFiles > 1){ // sort the name of directories first and then proceed to loading files
             Arrays.sort(files, fileComparator);
         }
@@ -96,22 +98,15 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
             // if true add loaded file object to collection
             if (files[i].isDirectory()){
                 //int sizeOfCollection = targetCollection.getDatasetCount();
-                long start = System.nanoTime();
                 File[] tempFiles = finder(files[i].getAbsolutePath());
-                System.out.println("\nFINDER tempFILES => " + (System.nanoTime() - start)/1000);
 
                 // sort
                 if (sortFiles){
-                    start = System.nanoTime();
                     Arrays.sort(tempFiles, fileComparator);
-                    System.out.println("\n     SORT => " + (System.nanoTime() - start));
-                    System.out.println("\nSORT SIZE => " + tempFiles.length);
                 }
 
                 for (int j=0; j < tempFiles.length; j++){
-                    start = System.nanoTime();
                     LoadedFile temp = loadDroppedFile(tempFiles[j], targetCollection.getDatasetCount());
-                    System.out.println(j + " LOADDROPPEDFILE => " + (System.nanoTime() - start)/1000);
                     addToCollection(temp);
                 }
 
@@ -140,7 +135,6 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
 
                     bar.setIndeterminate(false);
                 } else {
-
                     LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
                     addToCollection(temp);
                     System.out.println(i + " Loaded File " + targetCollection.getLast().getFileName());
@@ -262,9 +256,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 temp = new LoadedFile(tempFile, status, size, convertToAng);
 
             } else if (ext.equals("dat") || ext.equals("fit") || ext.equals("Adat")) {
-                long start = System.nanoTime();
+
                 temp = new LoadedFile(file, status, size, convertToAng);
-                System.out.println(currentFile + " LOADEDFILE => " + (System.nanoTime() - start)/1000);
             } else {
                 // throw exception - incorrect file format
                 throw new Exception("Incorrect file format: Use either brml, dat, fit, Adat, or Bdat file formats: " + currentFile);

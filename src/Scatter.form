@@ -787,7 +787,7 @@
                       <foreground color="-1"/>
                       <iconTextGap value="0"/>
                       <margin top="0" left="0" bottom="0" right="0"/>
-                      <text value="Single"/>
+                      <text value="SAVE Curve"/>
                     </properties>
                   </component>
                   <component id="45db5" class="javax.swing.JButton" binding="pdfButton">
@@ -1348,6 +1348,14 @@
                             </constraints>
                             <properties>
                               <text value="RESET RANGE"/>
+                            </properties>
+                          </component>
+                          <component id="693a6" class="javax.swing.JLabel" binding="rangeSetLabel">
+                            <constraints>
+                              <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <text value=":"/>
                             </properties>
                           </component>
                         </children>

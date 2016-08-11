@@ -242,8 +242,9 @@ public class Scatter {
     private JLabel labelPipelineMessages;
     private JButton SAVETODIRECTORYSubtractButton;
     private JButton SECFactorAnalysisICAButton;
+    private JLabel rangeSetLabel;
 
-    private String version = "3.0e";
+    private String version = "3.0f";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -2484,6 +2485,7 @@ public class Scatter {
                 }
                 System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
                 System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
+                rangeSetLabel.setText(firstIndexInSignalPlot + " : " + lastIndexInSignalPlot);
             }
         });
 
@@ -2499,8 +2501,8 @@ public class Scatter {
                 for(int i=0;i<total; i++){
                     sampleFilesModel.get(i).setSelected(true);
                 }
-
                 samplesList.repaint();
+                rangeSetLabel.setText(":");
             }
         });
 
@@ -2626,6 +2628,27 @@ public class Scatter {
 
                 updateProp();
 
+            }
+        });
+
+
+        SECFactorAnalysisICAButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // buffers can not be empty
+                if (bufferFilesModel.getSize() == 0){
+
+                    return;
+                } else {
+
+                    Collection sampleCollection = (Collection) collections.get(96);
+                    Collection bufferCollection = (Collection) collections.get(69);
+                    sampleCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                    bufferCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+
+                    FactorAnalysis tempFactorAnalysis = new FactorAnalysis(sampleCollection, bufferCollection);
+
+                }
             }
         });
     }
@@ -3018,9 +3041,7 @@ public class Scatter {
                 final int panel = 96;
                 new Thread() {
                     public void run() {
-                        long start = System.nanoTime();
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        System.out.println("INSTANTIATE RECEIVEDDROPPEDFILES => " + (System.nanoTime() - start)/1000);
                         // add other attributes and then run
                         rec1.setSampleBufferModels(programInstance.sampleFilesModel);
                         rec1.useShortenedConstructor();

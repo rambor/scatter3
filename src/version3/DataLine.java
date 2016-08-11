@@ -4,10 +4,11 @@ package version3;
  * Created by robertrambo on 05/01/2016.
  */
 public class DataLine {
-    public double qvalue;
-    public double intensity;
-    public double error;
-    public boolean isData;
+    private double qvalue;
+    private double intensity;
+    private double error;
+    private boolean isData;
+
     public DataLine (double nqvalue, double nintensity, double nerror, boolean nisData){
         qvalue = nqvalue;
         intensity = nintensity;

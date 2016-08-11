@@ -29,7 +29,6 @@ public class LoadedFile {
     public String filebase;
     private Pattern dataFormat = Pattern.compile("(-?[0-9].[0-9]+[Ee][+-]?[0-9]+)|(-?[0-9]+.[0-9]+)");
     //private Pattern nonDataFormat = Pattern.compile("[A-Z]+");
-    private DataLine dataPoints;
 
 
     private Locale loc = Locale.getDefault(Locale.Category.FORMAT);
@@ -40,9 +39,11 @@ public class LoadedFile {
 
     //Constructor
     public LoadedFile(File file, int index, boolean convert) throws Exception {
+
         if (loc.toString().equals("en_GB") || loc.toString().equals("en_US")){
             isUSUK = true;
         }
+
         System.out.println("Default location " + Locale.getDefault(Locale.Category.FORMAT) + " isUSUK " + isUSUK);
 
         // get file base and extension
@@ -71,7 +72,7 @@ public class LoadedFile {
 
                 //Read file line-by-line
                 try {
-
+                    DataLine dataPoints;
                     while ((strLine = br.readLine()) != null) {
                         dataPoints = dataFromText(strLine);
                         if (dataPoints.getTest()){
@@ -124,7 +125,7 @@ public class LoadedFile {
         double tempQValue;
 
         try {
-            long start = System.nanoTime();
+
             FileInputStream fstream = new FileInputStream(file);
             DataInputStream in = new DataInputStream(fstream);
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
@@ -139,29 +140,44 @@ public class LoadedFile {
 
                 //Read file line-by-line
                 try {
-                    while ((strLine = br.readLine()) != null) {
-                        dataPoints = dataFromText(strLine);
-                        if (dataPoints.getTest()){
 
-                            if (!ext.equals("fit")){
+                    if (ext.equals("fit")){
 
-                                tempQValue = (convert) ? dataPoints.getq()/10 : dataPoints.getq();
+                        DataLine dataPoint;
+                        while ((strLine = br.readLine()) != null) {
+                            dataPoint = dataFromText(strLine);
+                            if (dataPoint.getTest()) {
+                                tempQValue = (convert) ? dataPoint.getq() / 10 : dataPoint.getq();
 
-                                allData.add(tempQValue, dataPoints.getI() );
-                                allDataError.add(tempQValue, dataPoints.getE() );
+                                allData.add(tempQValue, dataPoint.getE() ); // third column is actual model intensity (2nd is data)
+                                allDataError.add(tempQValue, dataPoint.getE()*0.05);
 
-                            } else { // if fit file, switch columns
-
-                                //tempQValue = (convert) ? dataPoints.getq()/10 : dataPoints.getq();
-
-                                allData.add(dataPoints.getq(), dataPoints.getE() );
-                                allDataError.add(dataPoints.getq(), dataPoints.getE()*0.05);
+                                //allData.add(tempQValue, dataPoint.getI());
+                                //allDataError.add(dataPoint.getq(), dataPoint.getE()*0.05);
+                                //allDataError.add(tempQValue, dataPoint.getE());
                             }
+                        }
 
-                        } else if (checkRemark(strLine)){ // check if header without BUFFER LINE
+                    } else {
 
-                        } // move to next line
+                        long start = System.nanoTime();
+                        int count = 1;
+                        DataLine dataPoint;
+                        while ((strLine = br.readLine()) != null) {
+                            dataPoint = dataFromText(strLine);
+                            if (dataPoint.getTest()){
+                                tempQValue = (convert) ? dataPoint.getq() / 10 : dataPoint.getq();
+                                allData.add(tempQValue, dataPoint.getI() );
+                                allDataError.add(tempQValue, dataPoint.getE());
+                            }
+                            count++;
+//                            else if (checkRemark(strLine)){ // check if header without BUFFER LINE
+//
+//                            } // move to next line
+                        }
+                        System.out.println("READ " + count + " LINES in => " + (System.nanoTime() - start)/1000 + " nanoseconds");
                     }
+
                     //endPtNN = originalNNData.getItemCount();
                 } catch (IOException ex) {
                     System.out.println("File Index out of bounds");
@@ -205,9 +221,9 @@ public class LoadedFile {
         // if row[0] and row[1] contain commas, then we are assuming comma is a decimal delimiter
         // Denmark, Sweden, Finland, Netherlands, Spain, Germany, France use comma
 
-        NumberFormat nf = NumberFormat.getNumberInstance(loc);
-        DecimalFormat df = (DecimalFormat)nf;
-        df.applyPattern("#.##");
+        //NumberFormat nf = NumberFormat.getNumberInstance(loc);
+        //DecimalFormat df = (DecimalFormat)nf;
+        //df.applyPattern("#.##");
         // df.format() returns a string
         // System.out.println("LOCALE " + loc); // en_GB, en_US
         if ( ((row.length >= 2 && row.length <= 4) &&
@@ -221,9 +237,10 @@ public class LoadedFile {
 
             //Double iofQValue = Double.valueOf(df.format(Double.parseDouble(row[1])));
             if (!isUSUK){
-                System.out.println("Not USUK : may convert format ");
+                //System.out.println("Not USUK : may convert format ");
+
                 if (row[0].contains(",") && row[1].contains(",")){ // convert
-                    //System.out.println("Number contains a comma in first column, convert format ");
+                    System.out.println("Number contains a comma in first column, convert format " + line);
                     data = new DataLine(convertToUS(row[0]), convertToUS(row[1]), 1.0, true);
                     if ((row.length == 3 && isNumeric(row[2])) || (row.length == 4 && isNumeric(row[2]))) {
                         data.setE(convertToUS(row[2]));
@@ -236,7 +253,10 @@ public class LoadedFile {
                 }
 
             } else {
+                // default error is 1.0
+                // if 2nd row present, we set to value in row[2]
                 data = new DataLine(Double.parseDouble(row[0]), Double.parseDouble(row[1]), 1.0, true);
+                // if data file is only [q, I(q)], then missing row[2]
                 if ((row.length == 3 && isNumeric(row[2])) || (row.length == 4 && isNumeric(row[2]))) {
                     data.setE(Double.parseDouble(row[2]));
                 }
@@ -247,6 +267,7 @@ public class LoadedFile {
         }
         return data;
     }
+
 
     private boolean isNumeric(String str) {
 
@@ -299,6 +320,7 @@ public class LoadedFile {
      * @return
      */
     private double convertToUS(String str){
+        //NumberFormat format = NumberFormat.getInstance(new Locale("es", "ES"));
         NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
         Number number = null;
         // data may contain only a decimal point eventhough it is on non-ideal key board
@@ -309,7 +331,7 @@ public class LoadedFile {
             e.printStackTrace();
         }
 
-        System.out.println("FormatParser : " + str + " => " + number + " parsed => " + number.doubleValue());
+        //System.out.println("FormatParser : " + str + " => " + number + " parsed => " + number.doubleValue());
         return number.doubleValue();
     }
 
