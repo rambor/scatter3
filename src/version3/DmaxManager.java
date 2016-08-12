@@ -21,7 +21,7 @@ public class DmaxManager extends SwingWorker<Void, Void> {
     private final double piinv2 = Math.PI*0.5;
     private final boolean useL1;
     private RealSpace realSet;
-    private XYSeries fittedqIq;           // range of data used for the actual fit, may contain negative values
+    private XYSeries fittedqIq;                // range of data used for the actual fit, may contain negative values
     private XYSeries errorFittedqIq;           // range of data used for the actual fit, may contain negative values
     private double invRescaleFactor;
     private XYSeries dmaxQmax;
@@ -79,6 +79,17 @@ public class DmaxManager extends SwingWorker<Void, Void> {
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
         int startHere = startAt;
         int nextStart = startHere;
+
+
+        float tempChi2 = 100000;
+        
+
+
+
+
+
+
+
 
         System.out.println("OPTIMIZING DMAX PLEASE WAIT");
         for (int i=0; i < numberOfCPUs; i++){
@@ -155,7 +166,6 @@ public class DmaxManager extends SwingWorker<Void, Void> {
             this.qIqUnextrapolated = qIqUnextrapolated;
             this.unextrapolatedError = qIqUnextrapolatedError;
 
-
             qmaxOfBlock = qIqBlock.getMaxX();
             prDistribution = new XYSeries("PR");
         }
@@ -192,63 +202,107 @@ public class DmaxManager extends SwingWorker<Void, Void> {
 
             while(q < totalqIqValues){
 
-                startRvalue = 41;
-                changed = false;
+//                startRvalue = 41;
+//                changed = false;
+//
+//                // perform Newton root search
+//                for (int round=0; round < 1000; round++){
+//
+//                    nextRvalue = startRvalue - integralTransform(startRvalue, tempSeries)/finiteDifferencesDerivative(startRvalue, tempSeries);
+//
+//                    if (integralTransform(nextRvalue, tempSeries) < 0.000000001){
+//                        startRvalue = nextRvalue;
+//                        changed = true;
+//                        break;
+//                    }
+//
+//                    startRvalue = nextRvalue;
+//                }
 
-                // perform Newton root search
-                for (int round=0; round < 1000; round++){
+                // start at 21
+                double tempDmax = 21;
 
-                    nextRvalue = startRvalue - integralTransform(startRvalue, tempSeries)/finiteDifferencesDerivative(startRvalue, tempSeries);
+                while (tempDmax < 650){
+                        // PrObject tempPr = new PrObject(this, lambda, usel1, cBox);
+                        // fit un-interpolated data
+                        // tempSeries must be q*Iq
+                        // fit un-interpolated datasets
+                        double tempLambda = 0.00001;
+                        while (tempLambda < 0.0001){
 
-                    if (integralTransform(nextRvalue, tempSeries) < 0.000000001){
-                        startRvalue = nextRvalue;
-                        changed = true;
-                        break;
-                    }
+                            PrObject tempPr = new PrObject(fittedSeries, tempSeries.getMaxX(), tempDmax, tempLambda);
+                            ArrayList<double[]> results;
 
-                    startRvalue = nextRvalue;
-                }
+                            if (useL1){
+                                // fixed q range
+                                results = tempPr.moore_pr_L1();
+                            } else {
+                                results = tempPr.moore_coeffs_L1();
+                            }
 
-                // fit P(r) using startRvalue and calculate chi and sk2
-                if (changed && startRvalue > 10 && startRvalue < 1000){
+                            // calculate chi
+                            try {
 
-                    // PrObject tempPr = new PrObject(this, lambda, usel1, cBox);
-                    // fit un-interpolated data
-                    // tempSeries must be q*Iq
-                    //PrObject tempPr = new PrObject(tempSeries, tempSeries.getMaxX(), startRvalue, lambda);
-                    // fit un-interpolated datasets
-                    PrObject tempPr = new PrObject(fittedSeries, tempSeries.getMaxX(), startRvalue, lambda);
-                    ArrayList<double[]> results;
-
-                    if (useL1){
-                        // fixed q range
-                        results = tempPr.moore_pr_L1();
-                    } else {
-                        results = tempPr.moore_coeffs_L1();
-                    }
-
-                    // calculate chi
-                    try {
-
-                        //chi2 = this.chi_estimate(results.get(0), startRvalue, fittedSeries, fittedErrorSeries);
-                        chi2 = this.chi_estimate(results.get(0), startRvalue, fittedSeries, fittedErrorSeries);
-                        //System.out.println("CHI2 : " + chi2 + "  => " + startRvalue + " qmax : " + tempSeries.getMaxX());
-
-                        if (results.get(0).length > 3 && chi2 > 0.7 && chi2 < 2.1 && !calculatePofR(startRvalue, results.get(0)) && !testParsevalsTheorem(startRvalue, results.get(0), fittedSeries)){
-
-                            // if true add prDistribution to collection
-                            // update plots in thread safe way so use process?
-                            System.out.println("CHI2 : " + chi2 + "  => " + startRvalue + " qmax : " + tempSeries.getMaxX());
-
-                            //testParsevalsTheorem(startRvalue, results.get(0), fittedSeries);
-
-                            addPrDistributions(prDistribution, (int)startRvalue, tempSeries.getMaxX());
+                                chi2 = this.chi_estimate(results.get(0), tempDmax, fittedSeries, fittedErrorSeries);
+                                //System.out.println("CHI2 : " + chi2 + "  => " + tempDmax + " qmax : " + tempSeries.getMaxX() + " lambda " + tempLambda);
+                                if (results.get(0).length > 3 && chi2 > 0.9 && chi2 < 1.5 && !calculatePofR(tempDmax, results.get(0))){
+                                    // if true add prDistribution to collection
+                                    // update plots in thread safe way so use process?
+                                    System.out.println("CHI2 : " + chi2 + "  => " + tempDmax + " qmax : " + tempSeries.getMaxX() + " lambda : " + tempLambda);
+                                    addPrDistributions(prDistribution, (int)tempDmax, tempSeries.getMaxX());
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            tempLambda *= 1.4;
                         }
 
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    tempDmax += 1;
                 }
+
+
+                // fit P(r) using startRvalue and calculate chi and sk2
+//                if (changed && startRvalue > 10 && startRvalue < 1000){
+//                    // PrObject tempPr = new PrObject(this, lambda, usel1, cBox);
+//                    // fit un-interpolated data
+//                    // tempSeries must be q*Iq
+//                    // PrObject tempPr = new PrObject(tempSeries, tempSeries.getMaxX(), startRvalue, lambda);
+//                    // fit un-interpolated datasets
+//                    double tempLambda = 0.00001;
+//                    while (tempLambda < 0.0001){
+//
+//                        PrObject tempPr = new PrObject(fittedSeries, tempSeries.getMaxX(), startRvalue, tempLambda);
+//                        ArrayList<double[]> results;
+//
+//                        if (useL1){
+//                            // fixed q range
+//                            results = tempPr.moore_pr_L1();
+//                        } else {
+//                            results = tempPr.moore_coeffs_L1();
+//                        }
+//
+//                        // calculate chi
+//                        try {
+//
+//                            //chi2 = this.chi_estimate(results.get(0), startRvalue, fittedSeries, fittedErrorSeries);
+//                            chi2 = this.chi_estimate(results.get(0), startRvalue, fittedSeries, fittedErrorSeries);
+//                            //System.out.println("CHI2 : " + chi2 + "  => " + startRvalue + " qmax : " + tempSeries.getMaxX() + " lambda " + tempLambda);
+//
+//                            if (results.get(0).length > 3 && chi2 > 0.9 && chi2 < 1.5 && !calculatePofR(startRvalue, results.get(0)) && !testParsevalsTheorem(startRvalue, results.get(0), fittedSeries)){
+//                                // if true add prDistribution to collection
+//                                // update plots in thread safe way so use process?
+//                                System.out.println("CHI2 : " + chi2 + "  => " + startRvalue + " qmax : " + tempSeries.getMaxX() + " lambda : " + tempLambda);
+//                                //testParsevalsTheorem(startRvalue, results.get(0), fittedSeries);
+//                                addPrDistributions(prDistribution, (int)startRvalue, tempSeries.getMaxX());
+//                            }
+//
+//                        } catch (Exception e) {
+//                            e.printStackTrace();
+//                        }
+//
+//                        tempLambda *= 1.4;
+//                    }
+//                }
 
                 // add next 5 values
                 qlimit = q + 7;
@@ -257,7 +311,6 @@ public class DmaxManager extends SwingWorker<Void, Void> {
                         tempSeries.add(dataBlock.getDataItem(qi));
                     }
                 }
-
 
                 checkq = tempSeries.getMaxX();
                 for(int i=stoppedAt; i < qIqUnextrapolated.getItemCount(); i++){
@@ -290,10 +343,9 @@ public class DmaxManager extends SwingWorker<Void, Void> {
             int totalData = data.getItemCount();
             XYDataItem tempItem;
 
-            double x, y;
+            double y;
             for(int i=0; i<totalData; i++){
                 tempItem = data.getDataItem(i);
-                x = tempItem.getXValue(); // q
                 y = tempItem.getYValue(); // q*I(q)
                 q2I2.add(tempItem.getX(), y*y);
             }
@@ -318,7 +370,6 @@ public class DmaxManager extends SwingWorker<Void, Void> {
             return testFailed;
 
         }
-
 
 
         /**

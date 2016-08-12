@@ -1011,7 +1011,7 @@
                               <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
                             </constraints>
                             <properties>
-                              <text value="Use Direct FT"/>
+                              <text value="Use 2nd Deriv"/>
                             </properties>
                           </component>
                         </children>
@@ -1063,7 +1063,9 @@
                         <constraints>
                           <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
-                        <properties/>
+                        <properties>
+                          <foreground color="-57060"/>
+                        </properties>
                         <border type="none"/>
                         <children/>
                       </scrollpane>
@@ -1355,6 +1357,7 @@
                               <grid row="2" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
                             </constraints>
                             <properties>
+                              <foreground color="-57060"/>
                               <text value=":"/>
                             </properties>
                           </component>
@@ -3810,13 +3813,14 @@
                             </constraints>
                             <properties>
                               <model>
+                                <item value="0.0001"/>
+                                <item value="0.0003"/>
+                                <item value="0.0007"/>
                                 <item value="0.001"/>
+                                <item value="0.003"/>
                                 <item value="0.005"/>
+                                <item value="0.007"/>
                                 <item value="0.01"/>
-                                <item value="0.02"/>
-                                <item value="0.05"/>
-                                <item value="0.07"/>
-                                <item value="0.1"/>
                               </model>
                             </properties>
                           </component>

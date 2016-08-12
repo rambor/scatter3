@@ -17,18 +17,18 @@ public class StatMethods {
         double kurtosis = 0;
         int pointsToUse = values.size();
 
-        double m2=0, m4=0, m, mm;
+        double m2=0, m4=0, diff, mm;
         double mean = mean_array_list(values);
         double inverse_n = 1.0/pointsToUse;
 
         for (int i=0; i<pointsToUse; i++){
-            m = (values.get(i) - mean);
-            mm = m*m;
+            diff = (values.get(i) - mean);
+            mm = diff*diff;
             m2 += mm;
             m4 += mm*mm;
         }
 
-        double quotient = inverse_n*m2;
+        double quotient = inverse_n*m2; // standard deviation squared => variance
         kurtosis = inverse_n*m4/(quotient*quotient) - 3;
 
         return kurtosis;

@@ -739,16 +739,15 @@ public class RealSpace {
         double[] ratio = new double[total];
         ArrayList<Double> test_ratios = new ArrayList<Double>();
 
-        System.out.println("KURTOSIS");
-
+        //System.out.println("KURTOSIS");
         for (int i=0; i<total; i++){
             XYDataItem values = this.fittedqIq.getDataItem(i);  // unscale data
             // ratio of calc/obs
-            //ratio[i] = newRandom.nextGaussian();
-
-            ratio[i] = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit)/values.getYValue()*values.getXValue();
+            ratio[i] = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit) - values.getYValue()/values.getXValue();
             test_ratios.add(ratio[i]);
         }
+
+        double tempKurtosises = StatMethods.kurtosis(test_ratios);
 
         /*
          * bin the ratio
@@ -761,52 +760,54 @@ public class RealSpace {
         //int bins = (int)(Math.round(qmax*dmax/Math.PI)), locale;
 
         //ArrayList<Double> kurtosises = new ArrayList<Double>();
-        double[] kurtosises = new double[rounds];
-        // calculate kurtosis
-        //double kurtosis = StatMethods.kurtosis(test_ratios);
-        //double kurtosis = StatMethods.prunedKurtosis(test_ratios);
-        double qmin = this.fittedqIq.getMinX();
-        double bins = this.mooreCoefficients.length*3.0;
-        double delta_q = (this.fittedqIq.getMaxX()-qmin)/bins;
+//        double[] kurtosises = new double[rounds];
+//        // calculate kurtosis
+//        //double kurtosis = StatMethods.kurtosis(test_ratios);
+//        //double kurtosis = StatMethods.prunedKurtosis(test_ratios);
+//        double qmin = this.fittedqIq.getMinX();
+//        double bins = this.mooreCoefficients.length*3.0;
+//        double delta_q = (this.fittedqIq.getMaxX()-qmin)/bins;
+//
+//        double samplingLimit, lowerLimit;
+//        Random randomGenerator = new Random();
+//        int[] randomNumbers;
 
-        double samplingLimit, lowerLimit;
-        Random randomGenerator = new Random();
-        int[] randomNumbers;
 
-        for (int i=0; i<rounds; i++){
-            // for each round, get a random set of values from ratio
-            int startbb = 0, upperbb = 0;
-            test_ratios.clear();
-
-            for (int b=1; b < bins; b++) {
-                // find upper q in bin
-                // SAMPLE randomly per bin
-                samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
-                lowerLimit = (delta_q * b + qmin);
-
-                binloop:
-                for (int j = startbb; j < total; j++) {
-                    if (this.fittedqIq.getX(j).doubleValue() >= lowerLimit) {
-                        upperbb = j;
-                        break binloop;
-                    }
-                }
-
-                // grab indices inbetween startbb and upperbb
-                randomNumbers = Functions.randomIntegersBounded(startbb, upperbb, samplingLimit);
-                startbb = upperbb;
-
-                for(int h=0; h < randomNumbers.length; h++){
-                    test_ratios.add(ratio[randomNumbers[h]]);
-                }
-            }
-            // calculate kurtosis
-            kurtosises[i] = StatMethods.kurtosis(test_ratios);
-        }
-
-        // double returnMe = Collections.max(kurtosises);
-        return StatUtils.mean(kurtosises);
-        //return kurtosis;
+//        for (int i=0; i<rounds; i++){
+//            // for each round, get a random set of values from ratio
+//            int startbb = 0, upperbb = 0;
+//            test_ratios.clear();
+//
+//            for (int b=1; b < bins; b++) {
+//                // find upper q in bin
+//                // SAMPLE randomly per bin
+//                samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
+//                lowerLimit = (delta_q * b + qmin);
+//
+//                binloop:
+//                for (int j = startbb; j < total; j++) {
+//                    if (this.fittedqIq.getX(j).doubleValue() >= lowerLimit) {
+//                        upperbb = j;
+//                        break binloop;
+//                    }
+//                }
+//
+//                // grab indices inbetween startbb and upperbb
+//                randomNumbers = Functions.randomIntegersBounded(startbb, upperbb, samplingLimit);
+//                startbb = upperbb;
+//
+//                for(int h=0; h < randomNumbers.length; h++){
+//                    test_ratios.add(ratio[randomNumbers[h]]);
+//                }
+//            }
+//            // calculate kurtosis
+//            kurtosises[i] = StatMethods.kurtosis(test_ratios);
+//        }
+//
+//        // double returnMe = Collections.max(kurtosises);
+//        return StatUtils.mean(kurtosises);
+        //System.out.println("Sample Kurtosis " + tempKurtosises);
+        return tempKurtosises;
         //return Statistics.calculateMedian(kurtosises);
     }
 

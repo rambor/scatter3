@@ -2557,14 +2557,13 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                l1NormCheckBox.setSelected(false);
+                l1NormCheckBox.setSelected(true);
 
                 if (checkBoxDirect.isSelected()){
                     checkBoxDirect.setSelected(true);
                 } else {
                     checkBoxDirect.setSelected(false);
                 }
-
             }
         });
 

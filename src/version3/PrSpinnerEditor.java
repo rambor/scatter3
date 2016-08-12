@@ -121,7 +121,8 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         status.setText("Analyzing, please wait");
 
         // calculte new Fit
-        PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()), useDirectFT.isSelected());
+        //PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()), useDirectFT.isSelected());
+        PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()), false);
         tempPr.run();
 
         prDataset.calculateIntensityFromModel(qIqFit.isSelected());
