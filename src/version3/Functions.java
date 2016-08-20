@@ -320,78 +320,7 @@ public class Functions {
     }
 
 
-    /**
-     *
-     * @param data
-     * @param moore_coeffs
-     * @param error
-     * @param dmax
-     * @return
-     * @throws Exception
-     */
-    public static double chi_estimate(XYSeries data, double[] moore_coeffs, XYSeries error, int dmax) throws Exception{
-        // how well does the fit estimate the cardinal series (shannon points)
-        double chi=0;
-        double inv_card;
-        final double inv_dmax = 1.0/(double)dmax;
 
-        // n*PI/qmax
-        final double pi_dmax = inv_dmax*Math.PI;
-        double error_value;
-
-        // int bins = (int)(Math.round(qmax*dmax/Math.PI));
-        // Number of Shannon bins, excludes the a_o
-        int bins = moore_coeffs.length - 1, count=0, total = data.getItemCount();
-
-        double df = 0; //1.0/(double)(bins-1);
-        double cardinal, test_q = 0, diff;
-
-        Double[] values;
-
-        // see if q-value exists but to what significant figure?
-        // if low-q is truncated and is missing must exclude from calculation
-
-        for (int i=1; i <= bins; i++){
-
-            cardinal = i*pi_dmax;
-            inv_card = 1.0/cardinal;
-
-            searchLoop:
-            while ( (test_q < cardinal) && (count < total) ){
-                test_q = data.getX(count).doubleValue();
-                // find first value >= shannon cardinal value
-                if (test_q >= cardinal){
-                    break searchLoop;
-                }
-                count++;
-            }
-
-            // if either differences is less than 0.1% use the measured value
-            if (count != 0){
-                if ((count > 0) && (Math.abs(data.getX(count-1).doubleValue() - cardinal)*inv_card < 0.001)) {
-                    error_value = 1.0/error.getY(count - 1).doubleValue();
-                    diff = data.getY(count-1).doubleValue() - moore_Iq(moore_coeffs, (double) dmax, data.getX(count - 1).doubleValue(), bins + 1);
-                    chi += (diff*diff)*(error_value*error_value);
-                    df += 1.0;
-                } else if ((count < total) && (Math.abs(data.getX(count).doubleValue() - cardinal)*inv_card < 0.001)) {
-                    error_value = 1.0/error.getY(count).doubleValue();
-                    diff = data.getY(count).doubleValue() - moore_Iq(moore_coeffs, (double)dmax, data.getX(count).doubleValue(), bins + 1 );
-                    chi += (diff*diff)*(error_value*error_value);
-                    df += 1.0;
-                } else if (count > 0) { // if difference is greater than 0.1% interpolate and also the cardinal is bounded
-                    values = interpolateOriginal(data, error, cardinal, 1.0);
-                    diff = values[1] - (moore_coeffs[0] + moore_coeffs[i]*dmax*0.5)*inv_card;
-                    chi += (diff*diff)/(values[2]*values[2]);
-                    df += 1.0;
-                }
-            }
-            // System.out.println(dmax + " index " + i + " " + df + " " + chi);
-        }
-
-        System.out.println(dmax + " SUM " + chi + " " + (moore_coeffs.length - df) + " " + moore_coeffs.length + " " + df);
-        //return chi*1.0/(df-1);
-        return chi*1.0/(moore_coeffs.length-1);
-    }
 
     /**
      * Calculate Chi-free for Moore fit
@@ -513,85 +442,7 @@ public class Functions {
         return returnSeries;
     }
 
-    /**
-     *
-     * @param dmax Integer
-     * @param results ArrayList<double[]>
-     * @param locale Integer
-     * @param data XYSeries, contains q-values
-     * @return XYSeries of log10 Intensities
-     */
-    public static XYSeries createIofQ(int dmax, ArrayList<double[]> results, int locale, XYSeries data){
-        XYSeries returnSeries = new XYSeries("IofQ-"+locale);
 
-        int n = results.get(0).length;
-        int qs = data.getItemCount();
-        double iofq;
-        XYDataItem temp;
-        //iterate over each q value and calculate I(q)
-
-        for (int j=0; j < qs; j++){
-
-            temp = data.getDataItem(j);
-            iofq = Functions.moore_Iq(results.get(0), dmax, temp.getXValue(), n);
-
-            if (iofq > 0){
-                returnSeries.add(temp.getXValue(), Math.log10(iofq));
-            }
-        }
-        return returnSeries;
-    }
-
-    /**
-     *
-     * @param dmax Integer
-     * @param results ArrayList<double[]>
-     * @param locale Integer
-     * @param data XYSeries, contains q-values
-     * @return XYSeries of log10 Intensities
-     */
-    public static XYSeries createIofQAntiLog(int dmax, ArrayList<double[]> results, int locale, XYSeries data){
-        XYSeries returnSeries = new XYSeries("IofQ-"+locale);
-
-        int n = results.get(0).length;
-        int qs = data.getItemCount();
-        double iofq;
-        XYDataItem temp;
-        //iterate over each q value and calculate I(q)
-
-        for (int j=0; j < qs; j++){
-            temp = data.getDataItem(j);
-            iofq = Functions.moore_Iq(results.get(0), dmax, temp.getXValue(), n);
-            returnSeries.add(temp.getXValue(), iofq);
-        }
-        return returnSeries;
-    }
-
-    /**
-     *
-     * @param dmax Integer
-     * @param results ArrayList<double[]>
-     * @param locale Integer
-     * @param data XYSeries, contains q-values
-     * @return XYSeries of log10 Intensities
-     */
-    public static XYSeries createIofQall(int dmax, ArrayList<double[]> results, int locale, XYSeries data){
-        XYSeries returnSeries = new XYSeries("IofQ-"+locale);
-
-        int n = results.get(0).length;
-        int qs = data.getItemCount();
-        double iofq;
-        XYDataItem temp;
-        //iterate over each q value and calculate I(q)
-
-        for (int j=0; j < qs; j++){
-            temp = data.getDataItem(j);
-            iofq = Functions.moore_Iq(results.get(0), dmax, temp.getXValue(), n);
-            returnSeries.add(temp.getXValue(), iofq);
-        }
-
-        return returnSeries;
-    }
 
     /**
      * Calculates ChiFree and ChiSquare from Fit Files (CRYSOL or FOXS).
@@ -987,18 +838,19 @@ int cols, rows;
      * @param q single scattering vector point
      * @return Intensity I(q)
      */
-    public static double moore_Iq(double[] a_m, double dmax, double q, int limit){
+    public static double moore_Iq(double[] a_m, double dmax, double q, int limit, double standardizationMean, double standardizationStDev){
         double invq = 1/q;
 
         double dmaxq = dmax*q;
         double sin_dmaxq = Math.sin(dmaxq);
 
-        double resultM=a_m[0];
+        double resultM=0;
         for(int i=1; i < limit; i++){
                 resultM = resultM + Constants.TWO_DIV_PI*a_m[i]*Math.PI*i*dmax*Math.pow(-1,i+1)*sin_dmaxq/(Math.pow(Math.PI*i, 2) - dmaxq*dmaxq);
         }
 
-        return resultM*invq;
+        return ((resultM*invq + a_m[0])*standardizationStDev + standardizationMean);
+        //return resultM*invq;
     }
 
     public static double moore_Iq_L(ArrayList<Double> a_m, double dmax, double q, int limit, boolean background){
@@ -2217,10 +2069,9 @@ int cols, rows;
      * @param data
      * @param error
      * @param point
-     * @param scaleFactor
      * @return
      */
-    public static Double[] interpolateOriginal(XYSeries data, XYSeries error, double point, double scaleFactor){
+    public static Double[] interpolateOriginal(XYSeries data, XYSeries error, double point){
         //Kriging interpolation, use input log10 data
         int [] z = new int[6];
         int index=0;
@@ -2252,6 +2103,8 @@ int cols, rows;
 
         double scale = data.getX(z[5]).doubleValue() - data.getX(z[0]).doubleValue();
 
+        double stdev_esitmate = 0;
+
         SimpleMatrix c_m = new SimpleMatrix(6,6);
         //this might be (1,6)
         SimpleMatrix z_m = new SimpleMatrix(6,1);
@@ -2261,11 +2114,14 @@ int cols, rows;
             double anchor = data.getX(z[m]).doubleValue();
             //Use anti-log data
             z_m.set(m, 0, data.getY(z[m]).doubleValue());
+            stdev_esitmate += error.getY(z[m]).doubleValue();
+
             for (int n=0; n<6; n++){
                 c_m.set(m, n, 0.96*Math.exp(-1*(Math.pow(( (anchor - data.getX(z[n]).doubleValue())/scale),2))));
 
             }
         }
+
         SimpleMatrix d_m = new SimpleMatrix(6,1);
         for (int m=0; m < 6; m++){
             d_m.set(m, 0, 0.96*Math.exp( -1*(Math.pow(((point-data.getX(z[m]).doubleValue())/scale),2))));
@@ -2280,10 +2136,10 @@ int cols, rows;
         double sigma_2 = ((z_m.minus(one.scale(resultS[1]))).transpose().mult(c_m.invert()).mult(z_m.minus(one.scale(resultS[1])))).get(0)/6;
         double sigma_d = ((d_m.transpose().mult(c_m.invert())).mult(d_m)).get(0);
         double tmp1 = sigma_2*(1-sigma_d);
-        resultS[2]=Math.sqrt(tmp1);
+        //resultS[2]=Math.sqrt(tmp1); // stdev
+        resultS[2] = stdev_esitmate/6.0;
 
         return resultS;
-
     }
 
 

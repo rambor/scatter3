@@ -50,8 +50,6 @@ public class RealSpace {
 
     private int dmax;
     private double qmax;
-    private double rescaleFactor = 1;
-    private double invRescaleFactor =1;
     private double raverage;
     private double chi2;
     private float scale=1.0f;
@@ -67,6 +65,8 @@ public class RealSpace {
     private final int maxCount;
     private final static double invPi = 1.0/Math.PI;
     private boolean negativeValuesInModel=false;
+    private double standardizationMean;
+    private double standardizationStDev;
 
     // rescale the data when loading analysisModel
 
@@ -95,20 +95,14 @@ public class RealSpace {
         // need to rescale allData for fitting?
         double digits = Math.log10(averageIntensity(allData));
 
-        if (digits < 0){
-            rescaleFactor = Math.pow(10,Math.ceil(Math.abs(digits)));
-            invRescaleFactor = 1.0/rescaleFactor;
-            originalqIq = new XYSeries("orignal qIq data");
+        originalqIq = new XYSeries("orignal qIq data");
 
-            for(int i=0; i<totalAllData; i++){
-                XYDataItem tempItem = allData.getDataItem(i);
-                originalqIq.add(tempItem.getX(), tempItem.getYValue()*rescaleFactor*tempItem.getXValue());
-            }
-        } else {
-            originalqIq = dataset.getQIQData();
+        for(int i=0; i<totalAllData; i++){
+            XYDataItem tempItem = allData.getDataItem(i);
+            originalqIq.add(tempItem.getX(), tempItem.getYValue()*tempItem.getXValue());
         }
 
-        System.out.println("Average I " + averageIntensity(allData) + " digits " + digits);
+        //System.out.println("Average I " + averageIntensity(allData) + " digits " + digits);
 
         fittedIq = new XYSeries(Integer.toString(this.id) + " Iq-" + filename);
         fittedqIq = new XYSeries(Integer.toString(this.id) + " qIq-" + filename);
@@ -461,12 +455,14 @@ public class RealSpace {
         this.qmax = this.fittedqIq.getMaxX();
 
         try {
+            // calculate chi over all the data bounded by Spinners
             this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
             //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
             this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(7));
-            this.l1_norm = this.l1_norm_pddr(11);
-            System.out.println("Background : " + mooreCoefficients[0] + " L1: " + this.l1_norm);
-            this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
+            this.l1_norm = this.l1_norm_pddr(3);
+
+            System.out.println("SETTING MOORE COEFFICIENTS " + totalMooreCoefficients + " L1 : " + this.l1_norm + " K :" + this.kurtosis);
+            this.kurt_l1_sum = 0.1*this.kurtosis + 1000*this.l1_norm;
             //this.kurt_l1_sum = 0.9*this.l1_norm;
         } catch (Exception e) {
             e.printStackTrace();
@@ -622,7 +618,7 @@ public class RealSpace {
 
             for (int j = startHere; j < stopAt; j++) {
                 temp = allData.getDataItem(j);
-                iofq = moore_Iq(temp.getXValue()) * invRescaleFactor;
+                iofq = moore_Iq(temp.getXValue());
 
                 if (iofq > 0) {
                     calcIq.add(temp.getXValue(), FastMath.log10(iofq));
@@ -641,17 +637,18 @@ public class RealSpace {
 
         double dmaxPi = dmax*Math.PI;
         double dmaxq = dmax*q;
-        //double pi2 = Math.PI*Math.PI;
 
-        //double resultM = mooreCoefficients[0];
-        double resultM = 0;
+        double resultM = mooreCoefficients[0];
+        //double resultM = 0;
         //double twodivpi = 2.0/Math.PI;
 
         for(int i=1; i < totalMooreCoefficients; i++){
             resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
         }
 
-        return resultM*invq + mooreCoefficients[0];
+        //data.add(tempData.getX(), (tempData.getYValue() - standardizedMin)*invstdev);
+        //return (resultM*invq + mooreCoefficients[0])*standardizationStDev + standardizationMean;
+        return (resultM*standardizationStDev + standardizationMean)*invq;
     }
 
 
@@ -665,13 +662,14 @@ public class RealSpace {
         double dmaxPi = dmax*Math.PI;
         double dmaxq = dmax*q;
 
-        double resultM = mooreCoefficients[0]*q;
+        double resultM = mooreCoefficients[0];
+
         for(int i=1; i < totalMooreCoefficients; i++){
             //resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
             resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
         }
 
-        return resultM;
+        return resultM*standardizationStDev + standardizationMean;
     }
 
 
@@ -723,7 +721,7 @@ public class RealSpace {
             l1_norm += Math.abs(a_i_sum);
         }
         //System.out.println("l1_norm pddr " + l1_norm);
-        return l1_norm;
+        return l1_norm/shannon;
     }
 
     public double max_kurtosis_shannon_sampled(int rounds){
@@ -737,17 +735,42 @@ public class RealSpace {
 
         int limit = this.getMooreCoefficients().length;
         double[] ratio = new double[total];
+        double squared = 0;
+        double sumMean = 0;
         ArrayList<Double> test_ratios = new ArrayList<Double>();
 
         //System.out.println("KURTOSIS");
+        double tempVar;
         for (int i=0; i<total; i++){
             XYDataItem values = this.fittedqIq.getDataItem(i);  // unscale data
             // ratio of calc/obs
-            ratio[i] = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit) - values.getYValue()/values.getXValue();
-            test_ratios.add(ratio[i]);
+            tempVar = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit, standardizationMean, standardizationStDev) - values.getYValue()/values.getXValue();
+            ratio[i] = tempVar;
+            sumMean += tempVar;
+            squared += tempVar*tempVar;
         }
 
-        double tempKurtosises = StatMethods.kurtosis(test_ratios);
+        double[] centered = new double[total];
+
+        double invtotal = 1.0/(double)total;
+        double standardizedMean = sumMean*invtotal;
+        double stdev = Math.sqrt(squared*invtotal - standardizedMean*standardizedMean);
+        double invstdev = 1.0/stdev;
+        // center the residuals
+
+        for (int i=0; i<total; i++){
+            centered[i] = (ratio[i] - standardizedMean)*invstdev;
+        }
+
+        // compute covariance matrix
+        // calculate variance-covariance matrix
+        // sum of eigen values restricted to Shannon Number
+
+
+
+
+
+//        double tempKurtosises = StatMethods.kurtosis(test_ratios);
 
         /*
          * bin the ratio
@@ -758,56 +781,58 @@ public class RealSpace {
         //double qmax = this.fittedqIq.getMaxX();
 
         //int bins = (int)(Math.round(qmax*dmax/Math.PI)), locale;
-
         //ArrayList<Double> kurtosises = new ArrayList<Double>();
-//        double[] kurtosises = new double[rounds];
-//        // calculate kurtosis
-//        //double kurtosis = StatMethods.kurtosis(test_ratios);
-//        //double kurtosis = StatMethods.prunedKurtosis(test_ratios);
-//        double qmin = this.fittedqIq.getMinX();
-//        double bins = this.mooreCoefficients.length*3.0;
-//        double delta_q = (this.fittedqIq.getMaxX()-qmin)/bins;
-//
-//        double samplingLimit, lowerLimit;
-//        Random randomGenerator = new Random();
-//        int[] randomNumbers;
+        double[] kurtosises = new double[rounds];
+        // calculate kurtosis
+        //double kurtosis = StatMethods.kurtosis(test_ratios);
+        //double kurtosis = StatMethods.prunedKurtosis(test_ratios);
+        double qmin = this.fittedqIq.getMinX();
+        double bins = this.mooreCoefficients.length*3.0;
+        double delta_q = (this.fittedqIq.getMaxX()-qmin)/bins;
+
+        double samplingLimit, lowerLimit;
+        Random randomGenerator = new Random();
+        int[] randomNumbers;
 
 
-//        for (int i=0; i<rounds; i++){
-//            // for each round, get a random set of values from ratio
-//            int startbb = 0, upperbb = 0;
-//            test_ratios.clear();
-//
-//            for (int b=1; b < bins; b++) {
-//                // find upper q in bin
-//                // SAMPLE randomly per bin
-//                samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
-//                lowerLimit = (delta_q * b + qmin);
-//
-//                binloop:
-//                for (int j = startbb; j < total; j++) {
-//                    if (this.fittedqIq.getX(j).doubleValue() >= lowerLimit) {
-//                        upperbb = j;
-//                        break binloop;
-//                    }
-//                }
-//
-//                // grab indices inbetween startbb and upperbb
-//                randomNumbers = Functions.randomIntegersBounded(startbb, upperbb, samplingLimit);
-//                startbb = upperbb;
-//
-//                for(int h=0; h < randomNumbers.length; h++){
-//                    test_ratios.add(ratio[randomNumbers[h]]);
-//                }
-//            }
-//            // calculate kurtosis
-//            kurtosises[i] = StatMethods.kurtosis(test_ratios);
-//        }
-//
-//        // double returnMe = Collections.max(kurtosises);
-//        return StatUtils.mean(kurtosises);
+        for (int i=0; i<rounds; i++){
+            // for each round, get a random set of values from ratio
+            int startbb = 0, upperbb = 0;
+            test_ratios.clear();
+
+            for (int b=1; b < bins; b++) {
+                // find upper q in bin
+                // SAMPLE randomly per bin
+                samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
+                lowerLimit = (delta_q * b + qmin);
+
+                binloop:
+                for (int j = startbb; j < total; j++) {
+                    if (this.fittedqIq.getX(j).doubleValue() >= lowerLimit) {
+                        upperbb = j;
+                        break binloop;
+                    }
+                }
+
+                // grab indices inbetween startbb and upperbb
+                randomNumbers = Functions.randomIntegersBounded(startbb, upperbb, samplingLimit);
+                startbb = upperbb;
+
+                for(int h=0; h < randomNumbers.length; h++){
+                    test_ratios.add(ratio[randomNumbers[h]]);
+                }
+            }
+            // calculate kurtosis
+            kurtosises[i] = StatMethods.kurtosis(test_ratios);
+            //System.out.println(i + " KURT : " + kurtosises[i]);
+        }
+
+        // double returnMe = Collections.max(kurtosises);
+        Arrays.sort(kurtosises);
+        return kurtosises[3];
+        //return StatUtils.mean(kurtosises);
         //System.out.println("Sample Kurtosis " + tempKurtosises);
-        return tempKurtosises;
+        //return tempKurtosises;
         //return Statistics.calculateMedian(kurtosises);
     }
 
@@ -834,16 +859,17 @@ public class RealSpace {
         double dmax2 = dmax*dmax;
         double dmax3 = dmax2*dmax;
         double dmax4 = dmax2*dmax2;
-        double inv_pi_cube = 1/(pi_sq*Math.PI);
-        double inv_pi_fourth = inv_pi_cube*1/Math.PI;
+        double inv_pi_cube = 1.0/(pi_sq*Math.PI);
+        double inv_pi_fourth = inv_pi_cube/Math.PI;
         double twodivPi = 2.0/Math.PI;
 
-        izero = twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0];
+        izero = standardizationStDev*(twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0]);
         //rg = Math.sqrt(dmax4*inv_pi_cube/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
-        rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
+        double izero_temp = (twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0]);
+        rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero_temp*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
         //raverage = dmax3*inv_pi_cube/izero*rsum;
-        raverage = 2*dmax3*inv_pi_fourth/izero*rsum;
-        this.dataset.setRealIzeroRgParameters(izero*invRescaleFactor, 0.1*izero, rg, rg*0.1, raverage);
+        raverage = 2*dmax3*inv_pi_fourth/izero_temp*rsum;
+        this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);
     }
 
     public void decrementLow(int spinnerValue){
@@ -1035,6 +1061,7 @@ public class RealSpace {
         double chi=0;
         double inv_card;
         final double inv_dmax = 1.0/(double)dmax;
+        final double dmax_inv_pi = dmax/Math.PI;
         // n*PI/qmax
         final double pi_dmax = inv_dmax*Math.PI;
         double error_value;
@@ -1067,28 +1094,32 @@ public class RealSpace {
             if (count > 0 && count < total){
                 priorValue = data.getDataItem(count-1);
                 postValue = data.getDataItem(count);
-                if (Math.abs(priorValue.getXValue() - cardinal)*inv_card < 0.001) {// check if difference is smaller pre-cardinal
+                if ((cardinal - priorValue.getXValue())*inv_card < 0.0001) {// check if difference is smaller pre-cardinal
                     error_value = 1.0/error.getY(count - 1).doubleValue();
-                    diff = priorValue.getYValue() - moore_Iq(priorValue.getXValue())*invRescaleFactor;
+                    diff = priorValue.getYValue() - moore_Iq(priorValue.getXValue());
                     chi += (diff*diff)*(error_value*error_value);
                     df += 1.0;
-                } else if ( Math.abs(postValue.getXValue() - cardinal)*inv_card < 0.001) {// check if difference is smaller post-cardinal
+                } else if ( Math.abs(postValue.getXValue() - cardinal)*inv_card < 0.0001) {// check if difference is smaller post-cardinal
                     error_value = 1.0/error.getY(count).doubleValue();
-                    diff = postValue.getYValue() - moore_Iq(postValue.getXValue())*invRescaleFactor;  // residual
+                    diff = postValue.getYValue() - moore_Iq(postValue.getXValue());  // residual
                     chi += (diff*diff)*(error_value*error_value);
                     df += 1.0;
                 } else { // if difference is greater than 0.1% interpolate and also the cardinal is bounded
-                    values = Functions.interpolateOriginal(data, error, cardinal, 1.0);
-                    diff = values[1] - (mooreCoefficients[0] + mooreCoefficients[i]*dmax*0.5)*invRescaleFactor;
+                    values = Functions.interpolateOriginal(data, error, cardinal);
+                    diff = values[1] - (standardizationStDev*(mooreCoefficients[0] + mooreCoefficients[i]*dmax_inv_pi) + standardizationMean)*inv_card;
+                    //System.out.println(i + " " + cardinal + " " + values[1] + " " + (((mooreCoefficients[0] + mooreCoefficients[i]*dmax_inv_pi)*standardizationStDev + standardizationMean)*inv_card) );
+                    //System.out.println(i + " " + cardinal + " obs " + values[1] + "( "+ values[2] + " )  calc => " + (standardizationStDev*(mooreCoefficients[0] + mooreCoefficients[i]*dmax_inv_pi*inv_card) + standardizationMean));
                     chi += (diff*diff)/(values[2]*values[2]);
                     df += 1.0;
                 }
             }
         }
 
+        double delta = totalMooreCoefficients - df;
+
         System.out.println("dmax => " + dmax + " SUM " + chi + " " + (totalMooreCoefficients - df) + " (a_m).size : " + totalMooreCoefficients + " df : " + df);
         //return chi*1.0/(df-1);
-        chi2 = chi*1.0/(totalMooreCoefficients-1);
+        chi2 = chi*1.0/(df - 1 - delta);
     }
 
     public int getTotalMooreCoefficients(){
@@ -1104,9 +1135,6 @@ public class RealSpace {
         return sum/(double)total;
     }
 
-    public double getRescaleFactor(){
-        return rescaleFactor;
-    }
 
     public double getReciprocalSpaceScaleFactor(){ return dataset.getScaleFactor();}
 
@@ -1141,6 +1169,11 @@ public class RealSpace {
         int startbb = 0;
 
         // determine counts per bin to draw from
+
+        // standardize data using specified mean and stdev
+        double invStdev = 1.0/standardizationStDev;
+
+
         for (int b=1; b <= bins; b++) {
             int sumCount = 0;
             double upperBound = delta_q*b;
@@ -1199,12 +1232,13 @@ public class RealSpace {
                     for(int h=0; h<randomNumbers.length; h++){
                         locale = randomNumbers[h];
                         tempData = fittedqIq.getDataItem(locale);
-                        randomSeries.add(tempData);
+                        randomSeries.add(tempData.getXValue(), (tempData.getYValue()/tempData.getXValue()-standardizationMean)*invStdev*tempData.getXValue());
                     }
                 } // end of checking if bin is empty
             }
             // calculate PofR
-            PrObject prObject = new PrObject(this, randomSeries, upperq, dmax, 0.001, false);
+            // PrObject prObject = new PrObject(this, randomSeries, upperq, dmax, 0.001, false);
+            PrObject prObject = new PrObject(randomSeries, upperq, dmax, 0.01);
             results = prObject.moore_coeffs_L1();
 
             // calculate Izero and Rg
@@ -1224,16 +1258,20 @@ public class RealSpace {
                 rsum = rsum + am3*((pi_k_2 - 2)*minus1 - 2 );
             }
 
-            tempIzero = twodivPi*tempIzero*dmax2*inv_pi + results.get(0)[0];
-            rgValues[i] = Math.sqrt(dmax4_inv_pi_fourth/tempIzero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
-            izeroValues[i] = tempIzero*invRescaleFactor;
+            //tempIzero = twodivPi*tempIzero*dmax2*inv_pi + results.get(0)[0];
+            //tempIzero = standardizationStDev*(twodivPi*tempIzero*dmax2*inv_pi + mooreCoefficients[0]) + standardizationMean;
+            double izero_temp = (twodivPi*tempIzero*dmax2/Math.PI + results.get(0)[0]);
+            // rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero_temp*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
+            // rgValues[i] = Math.sqrt(dmax4_inv_pi_fourth/tempIzero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
+            rgValues[i] = Math.sqrt(dmax4_inv_pi_fourth/izero_temp*partial_rg)*0.7071067811865475;
+            //izeroValues[i] = tempIzero;
+            izeroValues[i] = standardizationStDev*(twodivPi*tempIzero*dmax2*inv_pi + results.get(0)[0]) + standardizationMean;
         }
 
         DescriptiveStatistics rgStat = new DescriptiveStatistics(rgValues);
         DescriptiveStatistics izeroStat = new DescriptiveStatistics(izeroValues);
 
         this.dataset.updateRealSpaceErrors(rgStat.getStandardDeviation()/rgStat.getMean(), izeroStat.getStandardDeviation()/izeroStat.getMean());
-
     }
 
     // auto-Dmax ?
@@ -1279,7 +1317,7 @@ public class RealSpace {
             tempqIqDataItem = fittedqIq.getDataItem(j);
 
             xValue = tempqIqDataItem.getXValue();
-            xyValue = tempqIqDataItem.getYValue()*invRescaleFactor;
+            xyValue = tempqIqDataItem.getYValue();
             qIq.add(xValue, xyValue * scaleFactor);
         }
 
@@ -1330,7 +1368,7 @@ public class RealSpace {
             // fit P(r) using startRvalue and calculate chi and sk2
             if (changed && startRvalue > 10 && startRvalue < 1000){
                 this.dmax = (int)startRvalue;
-                PrObject tempPr = new PrObject(this, lambda, usel1, cBox, useDirect);
+                PrObject tempPr = new PrObject(this, lambda, usel1, cBox, useDirect, false);
                 tempPr.run();
                 //this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
                 //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
@@ -1447,6 +1485,12 @@ public class RealSpace {
 
         //return sumIt/(12*h_increment);
         return sumIt/(2*h_increment);
+    }
+
+
+    public void setStandardizationMean(double value, double stdev){
+        this.standardizationMean = value;
+        this.standardizationStDev = stdev;
     }
 
 }

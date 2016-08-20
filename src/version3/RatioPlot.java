@@ -118,7 +118,7 @@ public class RatioPlot {
                 // make sure reference q values is greater than first two or last two points in sourceSeries
                 if ( (xValue > targetSeries.getX(1).doubleValue()) || (xValue < targetSeries.getX(targetSeries.getItemCount()-2).doubleValue()) ){
 
-                    Double[] results =  Functions.interpolateOriginal(targetSeries, targetError, xValue, 1);
+                    Double[] results =  Functions.interpolateOriginal(targetSeries, targetError, xValue);
                     //target.add(xValue, results[1]);
                     ratioValue = tempXY.getYValue()/results[1];
                     valuesPerBin.add(ratioValue);

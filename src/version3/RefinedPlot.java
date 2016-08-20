@@ -65,15 +65,13 @@ public class RefinedPlot {
 
         for(int i=0; i<totalKept; i++){
             tempItem = temp.getDataItem(i);
-            //qiq.add(tempItem.getX(), tempItem.getXValue()*tempItem.getYValue()*dataset.getRescaleFactor());
             qiq.add(tempItem.getX(), tempItem.getXValue()*tempItem.getYValue());
         }
 
         temp = dataset.getfittedqIq();
-        for(int i=0; i<dataset.getfittedqIq().getItemCount(); i++){ // scaled data
+        for(int i=0; i < dataset.getfittedqIq().getItemCount(); i++){ // scaled data
             tempItem = temp.getDataItem(i);
             if (dataset.getRefinedqIData().indexOf(tempItem.getX()) < 0){ // true means rejected
-                //reject.add(tempItem.getX(), tempItem.getYValue()*dataset.getRescaleFactor());
                 reject.add(tempItem.getX(), tempItem.getYValue());
             }
         }
@@ -82,6 +80,7 @@ public class RefinedPlot {
         scatterCollection.addSeries(qiq);
 
         dataset.calculateIntensityFromModel(true);  //
+
         splineCollection.addSeries(dataset.getCalcqIq());
     }
 

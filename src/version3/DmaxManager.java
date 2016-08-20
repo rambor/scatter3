@@ -23,7 +23,6 @@ public class DmaxManager extends SwingWorker<Void, Void> {
     private RealSpace realSet;
     private XYSeries fittedqIq;                // range of data used for the actual fit, may contain negative values
     private XYSeries errorFittedqIq;           // range of data used for the actual fit, may contain negative values
-    private double invRescaleFactor;
     private XYSeries dmaxQmax;
     private XYSeries dmaxChi2;
     private XYSeries qIq;
@@ -41,11 +40,10 @@ public class DmaxManager extends SwingWorker<Void, Void> {
         this.fittedqIq = new XYSeries("fitted qIq");
         errorFittedqIq = realSet.getfittedError();
 
-        invRescaleFactor = 1.0/realSet.getRescaleFactor();
         int totalinfitted = realSet.getfittedqIq().getItemCount();
         XYSeries tempXY = realSet.getfittedqIq();
         for(int i=0; i<totalinfitted; i++){
-            this.fittedqIq.add(tempXY.getX(i), tempXY.getY(i).doubleValue()*invRescaleFactor);
+            this.fittedqIq.add(tempXY.getX(i), tempXY.getY(i).doubleValue());
         }
 
         this.lambda = lambda;
@@ -73,7 +71,7 @@ public class DmaxManager extends SwingWorker<Void, Void> {
         double delta = (qmax-qmin)/(double)numberOfCPUs;
         int totalqiq = qIq.getItemCount();
 
-        // total indices = totalqiq - startAt
+        // 1. total indices = totalqiq - startAt
         // 2. divide the input dataset in to chunks for processing on multiple threads
         // 3. launch each and update XYSeries
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
@@ -82,7 +80,7 @@ public class DmaxManager extends SwingWorker<Void, Void> {
 
 
         float tempChi2 = 100000;
-        
+
 
 
 
@@ -476,7 +474,7 @@ public class DmaxManager extends SwingWorker<Void, Void> {
                         df += 1.0;
                     } else { // if difference is greater than 0.1% interpolate and also the cardinal is bounded
 
-                        values = Functions.interpolateOriginal(data, error, cardinal, 1.0);
+                        values = Functions.interpolateOriginal(data, error, cardinal);
                         //System.out.println("VALUE " + values[1] + " " + (results[0] + results[i]*dmax*0.5) + " " + values[2]);
                         // results is q*I(q)
                         diff = values[1] - (results[0] + results[i]*dmax*0.5); //*invRescaleFactor;

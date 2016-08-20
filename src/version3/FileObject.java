@@ -227,7 +227,6 @@ public class FileObject {
 
             int tempIndex = 0;
 
-            double invScaleFactor = 1.0/realspaceModel.getRescaleFactor();
             double iCalc;
 
             if (isRefined){
@@ -235,7 +234,7 @@ public class FileObject {
                 for(int i =0; i < tempXYSeries.getItemCount(); i++){
                     tempXY = tempXYSeries.getDataItem(i);
                     tempIndex = dataset.getAllData().indexOf(tempXY.getX());  // gets unscale SAXS curve that originated the P(r)
-                    iCalc = realspaceModel.moore_Iq(tempXY.getXValue())*invScaleFactor;
+                    iCalc = realspaceModel.moore_Iq(tempXY.getXValue());
 
                     if (tempIndex > 0) {
                         out.write(Constants.Scientific1dot5e2.format(tempXY.getXValue()) + "\t" +
@@ -251,7 +250,7 @@ public class FileObject {
                     tempXY = realspaceModel.getfittedqIq().getDataItem(i);
                     //tempXY = realspaceModel.getfittedIq().getDataItem(i);
                     tempIndex = dataset.getAllData().indexOf(tempXY.getX());  // gets unscale SAXS curve that originated the P(r)
-                    iCalc = realspaceModel.moore_Iq(tempXY.getXValue())*invScaleFactor;
+                    iCalc = realspaceModel.moore_Iq(tempXY.getXValue());
 
                     if (tempIndex > 0) {
                         out.write(Constants.Scientific1dot5e2.format(tempXY.getXValue()) + "\t" +

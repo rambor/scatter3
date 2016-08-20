@@ -318,7 +318,7 @@ public class ComplexPlot {
                     XYSeries tempSeries = sourceSeries.getSeries(j);
                     XYSeries tempError = errorSeries.getSeries(j);
                     if ( (xValue > tempSeries.getX(1).doubleValue()) || (xValue < tempSeries.getX(tempSeries.getItemCount()-2).doubleValue()) ){
-                        Double[] results =  Functions.interpolateOriginal(tempSeries, tempError, xValue, 1);
+                        Double[] results =  Functions.interpolateOriginal(tempSeries, tempError, xValue);
                         numbers.get(xValue)[j+1] = results[1];
                     }
                 }
