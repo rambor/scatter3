@@ -132,8 +132,6 @@ public class IofQPofRPlot {
                 renderer1.setSeriesOutlineStroke(locale, temp.getStroke());
                 //renderer1.getLegendItem(1,locale).getLabel()
 
-
-
                 splineRend.setSeriesStroke(locale, strokeAt2);
                 splineRend.setSeriesPaint(locale, Color.RED); // make color slight darker
 

@@ -65,9 +65,30 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         mainStatus = bar;
         this.status = status;
         this.threshold = threshold;
-
     }
 
+
+    public SignalPlot(Collection sampleCollection, Collection bufferCollection, JLabel status, JProgressBar bar){
+        this.samplesCollection = sampleCollection;
+        this.buffersCollection = bufferCollection;
+        plotMe = new XYSeriesCollection();
+
+        this.useRg = false;
+        mainStatus = bar;
+        this.status = status;
+        this.threshold = 0.42;
+    }
+
+
+    /**
+     * create data for signal plot
+     * @return
+     */
+    public XYSeriesCollection createSignalPlotData(){
+        this.makeBuffer();
+        this.makeSamples();
+        return plotMe;
+    }
 
     private void writeData(){
         try {
@@ -88,7 +109,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         }
 
         // go over each series and write out
-        for(int w=0; w<plotMe.getSeriesCount(); w++){
+        for(int w=0; w < plotMe.getSeriesCount(); w++){
             XYSeries tempSeries = plotMe.getSeries(w);
             if (useRg){
 
@@ -122,12 +143,11 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         mainStatus.setValue(0);
         mainStatus.setStringPainted(true);
         mainStatus.setString("Processing");
-        System.out.println("FIRST : " + firstFrame + " LAST : " + lastFrame);
+        System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
 
         if (lastFrame <= 0 || lastFrame <= firstFrame){
             lastFrame = total;
         }
-
 
         for(int i=0; i < total; i++){
 
@@ -156,7 +176,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
                     if (useRg){ // make double plot if checked
 
-                        status.setText("auto-Rg for : " + dataInUse.getFileName());
+                        status.setText("AUTO-Rg FOR : " + dataInUse.getFileName());
                         plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
                         if (area > threshold){
                             ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
@@ -253,6 +273,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         subData = new XYSeries("subtracted");
         subError = new XYSeries("errorSubtracted");
         //Subtract and add to new data
+        double maxQValueInBuffer = buffer.getMaxX();
 
         QLOOP:
         for(int q=0; q<tempTotal; q++){
@@ -284,14 +305,17 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 //                    if (count < 2) {
 //                       break QLOOP;
 //                    }
-                System.out.println("Interpolating Value at " + qValue);
-                Double[] results = Functions.interpolate(buffer, bufferError, qValue, 1);
-                Double[] sigmaResults = Functions.interpolateSigma(bufferError, qValue);
-                //returns unlogged data
-                eValue = sigmaResults[1];
+                if (qValue < maxQValueInBuffer) {
+                    System.out.println("Interpolating Value at " + qValue);
+                    Double[] results = Functions.interpolate(buffer, qValue, 1);
+                    Double[] sigmaResults = Functions.interpolateSigma(bufferError, qValue);
+                    //returns unlogged data
+                    eValue = sigmaResults[1];
 
-                subData.add(qValue, results[1]);
-                subError.add(qValue, Math.sqrt(yValue*yValue + eValue*eValue));
+                    subData.add(qValue, results[1]);
+                    subError.add(qValue, Math.sqrt(yValue * yValue + eValue * eValue));
+                }
+
             }
         }
 
@@ -418,17 +442,25 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         renderer1.setBaseShapesVisible(true);
         renderer1.setBaseShape(new Ellipse2D.Double(-0.5*6, -0.5*6.0, 6, 6));
 
+        Color fillColor = new Color(255, 140, 0, 70);
+        Color outlineColor = new Color(255, 127, 80, 100);
+
         for (int i=0; i < plotMe.getSeriesCount(); i++) {
             // go over each series
             pointSize = 9;
             negativePointSize = -0.5*pointSize;
             renderer1.setSeriesShape(i, new Ellipse2D.Double(negativePointSize, negativePointSize, pointSize, pointSize));
             renderer1.setSeriesLinesVisible(i, false);
-            renderer1.setSeriesPaint(i, new Color(36, 46, 54));
-            renderer1.setSeriesShapesFilled(i, false);
-            renderer1.setSeriesOutlinePaint(i, new Color(36, 46, 54));
+            renderer1.setSeriesPaint(i, fillColor);
+            //renderer1.setSeriesPaint(i, new Color(36, 46, 54));
+            renderer1.setSeriesShapesFilled(i, true);
+            //renderer1.setSeriesOutlinePaint(i, new Color(36, 46, 54));
+            renderer1.setSeriesOutlinePaint(i, outlineColor);
             renderer1.setSeriesOutlineStroke(i, new BasicStroke(2.0f));
         }
+
+
+
 
         frame = new ChartFrame("SC\u212BTTER \u2263 SIGNAL PLOT", chart);
         frame.getChartPanel().setDisplayToolTips(true);
@@ -616,7 +648,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     }
 
 
-
     /**
      *
      */
@@ -642,7 +673,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             startAt = 1;
             innerloop:
             for(; startAt < totalInSampleSet; startAt++) {
-
 
                 tempDataset = samplesCollection.getDataset(startAt);
                 tempData = tempDataset.getAllData();

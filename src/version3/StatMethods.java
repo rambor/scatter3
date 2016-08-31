@@ -330,7 +330,7 @@ public class StatMethods {
                                 count++;
                             }
 
-                            Double[] results = Functions.interpolate(targetData, targetError, referenceQ, 1);
+                            Double[] results = Functions.interpolate(targetData, referenceQ, 1);
                             Double[] sigmaResults = Functions.interpolateSigma(targetError, referenceQ);
                             sigma = 1.0/(sigmaResults[1]*scale);
                             var = sigma*sigma;

@@ -121,50 +121,6 @@ public class SECArchive extends JDialog {
         ProgressBarWriter progressBarWriter = new ProgressBarWriter(progressBar1, outputDirString, archiveName);
         progressBarWriter.execute();
 
-//        File outputDirectory = new File(outputDirString);
-//        boolean success = outputDirectory.mkdirs();
-//
-//        if (!success) {
-//            // Directory creation failed
-//            // rename directory
-//            outputDirectory.renameTo(new File(archiveName + "_old"));
-//            success = outputDirectory.mkdirs();
-//        }
-//
-//
-//        if (success){
-//
-//            writeSamples(outputDirString);
-//
-//            if (buffersCollection.getDatasetCount() > 0){
-//                File outputDirectoryBuffers = new File(outputDirString+"/buffers");
-//                success = outputDirectoryBuffers.mkdirs();
-//                writeBuffers(outputDirString+"/buffers");
-//            }
-//
-//            FileWriter fstream;
-//
-//            try{ // create P(r) file
-//                // Create file
-//                fstream = new FileWriter(outputDirString+ "/README");
-//
-//                BufferedWriter out = new BufferedWriter(fstream);
-//                out.write(String.format("# REMARK README FILE FOR : %s %n", archiveName));
-//                out.write(String.format("# REMARK %s %n", textForReadMe));
-//                out.write(String.format("# REMARK %n"));
-//                out.write(String.format("# REMARK FILES WRITTEN OUT : %n"));
-//                int totalInCollection = collection.getDatasetCount();
-//
-//                for (int i=0; i<totalInCollection; i++){ // write out all files
-//                        out.write(String.format("%3d => %s\t%s %n", (i+1), collection.getDataset(i).getOriginalFilename(), collection.getDataset(i).getFileName() ));
-//                }
-//                //Close the output stream
-//                out.close();
-//            }catch (Exception e){//Catch exception if any
-//                System.err.println("Error: " + e.getMessage());
-//            }
-//
-//        }
 
         if (zipDirectoryAfterCreationCheckBox.isSelected()){
             //make zip file

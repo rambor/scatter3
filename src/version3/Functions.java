@@ -1291,7 +1291,7 @@ int cols, rows;
      * @param scaleFactor
      * @return
      */
-    public static Double[] interpolate(XYSeries data, XYSeries error, double point, double scaleFactor){
+    public static Double[] interpolate(XYSeries data, double point, double scaleFactor){
         //Kriging interpolation
         int [] z = new int[6];
         int index=0;
@@ -1559,7 +1559,7 @@ int cols, rows;
                 //residualAt = Math.pow((data.getY(i).doubleValue() - (keptSlope * data.getX(i).doubleValue() + keptIntercept)), 2);
                 dataItem = data.getDataItem(i);
                 //if (Math.abs((dataItem.getYValue() - (keptSlope * dataItem.getXValue() + keptIntercept))) * inv_sigma < 2.5) {
-                if (Math.abs((dataItem.getYValue() - (keptSlope * dataItem.getXValue() + keptIntercept))) * inv_s_o < 2.5) {
+                if (Math.abs((dataItem.getYValue() - (keptSlope * dataItem.getXValue() + keptIntercept))) * inv_s_o < 2.0) {
                     // decide which ln[I(q)] values to keep
                     keepers.add(i);
                     count++;
@@ -2845,4 +2845,100 @@ int cols, rows;
         System.out.println("FINISHED " + returnMe.getSeries(0).getItemCount() + " " + returnMe.getSeries(1).getItemCount());
         return returnMe;
     }
+
+
+    /**
+     *
+     */
+    public static Double findLeastCommonQvalue(Collection samplesCollection){
+
+        boolean isCommon;
+
+        Dataset firstSet = samplesCollection.getDataset(0);
+        Dataset tempDataset;
+        int totalInSampleSet = samplesCollection.getTotalSelected();
+        XYSeries referenceData = firstSet.getAllData(), tempData;
+        XYDataItem refItem;
+        int startAt;
+        Number minQvalueInCommon = 10;
+
+        outerloop:
+        for(int j=0; j < referenceData.getItemCount(); j++){
+
+            refItem = referenceData.getDataItem(j); // is refItem found in all sets
+            minQvalueInCommon = refItem.getX();
+            isCommon = true;
+
+            startAt = 1;
+            innerloop:
+            for(; startAt < totalInSampleSet; startAt++) {
+
+
+                tempDataset = samplesCollection.getDataset(startAt);
+                tempData = tempDataset.getAllData();
+                // check if refItem q-value is in tempData
+                // if true, check next value
+                if (tempData.indexOf(refItem.getX()) < 0) {
+                    isCommon = false;
+                    break innerloop;
+                }
+            }
+
+            if (startAt == totalInSampleSet && isCommon){
+                break outerloop;
+            }
+        }
+
+        System.out.println("Minimum Common q-value : " + minQvalueInCommon);
+        return minQvalueInCommon.doubleValue();
+    }
+
+
+    /**
+     *
+     */
+    public static Double findMaximumCommonQvalue(Collection samplesCollection){
+
+        boolean isCommon;
+
+        Dataset firstSet = samplesCollection.getDataset(0);
+        Dataset tempDataset;
+        int totalInSampleSet = samplesCollection.getTotalSelected();
+        XYSeries referenceData = firstSet.getAllData(), tempData;
+        XYDataItem refItem;
+        int startAt;
+        Number maxQvalueInCommon = 0;
+
+        outerloop:
+        for(int j=(referenceData.getItemCount()-1); j > -1; j--){
+
+            refItem = referenceData.getDataItem(j); // is refItem found in all sets
+            maxQvalueInCommon = refItem.getX();
+            isCommon = true;
+
+            startAt = 1;
+            innerloop:
+            for(; startAt < totalInSampleSet; startAt++) {
+
+
+                tempDataset = samplesCollection.getDataset(startAt);
+                tempData = tempDataset.getAllData();
+                // check if refItem q-value is in tempData
+                // if true, check next value
+                if (tempData.indexOf(refItem.getX()) < 0) {
+                    isCommon = false;
+                    break innerloop;
+                }
+            }
+
+            if (startAt == totalInSampleSet && isCommon){
+                break outerloop;
+            }
+        }
+
+        System.out.println("Maximum Common q-value : " + maxQvalueInCommon);
+        return maxQvalueInCommon.doubleValue();
+    }
+
+
 }

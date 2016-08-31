@@ -217,9 +217,12 @@ private int refId, scaleToID;
 
         } else { // subtract with no merging or scaling
             // only do average buffer?
-            //subtractFromMedianSample();
-            //subtractFromAveragedBuffer();
+            // subtractFromMedianSample();
+            // subtractFromAveragedBuffer();
+
             int totalSubtracted = subtractedCollection.getDatasetCount();
+
+            System.out.println("No Merging " + totalSubtracted);
 
             for (int i=0; i<totalSubtracted; i++){
                 subtractedCollection.getDataset(i).setExperimentalNotes("");
@@ -248,6 +251,9 @@ private int refId, scaleToID;
         int total = returnCollection.getDatasetCount();
         int newIndex = collectionToUpdate.getDatasetCount();
         for (int i=0; i<total; i++){
+
+            System.out.println("Updating collection " + i);
+
             Dataset temp = returnCollection.getDataset(i);
 
             collectionToUpdate.addDataset( new Dataset(
@@ -487,6 +493,8 @@ private int refId, scaleToID;
         subError = new XYSeries("errorSubtracted");
         //Subtract and add to new data
 
+        double maxQValueInBuffer = buffer.getMaxX();
+
         QLOOP:
         for(int q=0; q<tempTotal; q++){
             tempDataItem = sample.getDataItem(q);
@@ -517,14 +525,17 @@ private int refId, scaleToID;
 //                    if (count < 2) {
 //                       break QLOOP;
 //                    }
-                System.out.println("Interpolating Value at " + qValue);
-                Double[] results = Functions.interpolate(buffer, bufferError, qValue, 1);
-                Double[] sigmaResults = Functions.interpolateSigma(bufferError, qValue);
-                //returns unlogged data
-                eValue = sigmaResults[1];
 
-                subData.add(qValue, results[1]);
-                subError.add(qValue, Math.sqrt(yValue*yValue + eValue*eValue));
+                if (qValue < maxQValueInBuffer){
+                    System.out.println("Interpolating Background Value at " + qValue + " >= " + maxQValueInBuffer);
+                    Double[] results = Functions.interpolate(buffer, qValue, 1);
+                    Double[] sigmaResults = Functions.interpolateSigma(bufferError, qValue);
+                    //returns unlogged data
+                    eValue = sigmaResults[1];
+
+                    subData.add(qValue, results[1]);
+                    subError.add(qValue, Math.sqrt(yValue*yValue + eValue*eValue));
+                }
             }
         }
 
@@ -717,5 +728,16 @@ private int refId, scaleToID;
         return returnMe;
     }
 
+    @Override
+    protected void done() {
+        try {
+            super.get();
+
+            System.out.println("done");
+            //can call other gui update code here
+        } catch (Throwable t) {
+            //do something with the exception
+        }
+    }
 
 }

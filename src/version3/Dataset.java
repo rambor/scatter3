@@ -18,20 +18,20 @@ import java.util.Random;
 public class Dataset {
     private PropertyChangeSupport propChange = new PropertyChangeSupport(this);
     private ArrayList<Fit> fitList;
-    private XYSeries plottedData;         // plotted log10 data
-    private XYSeries plottedError;        // plotted log10 data
-    private XYSeries plottedKratkyData;   // plotted Kratky data
-    private XYSeries plottedqIqData;      // plotted qIq data
+    private XYSeries plottedData;                // plotted log10 data
+    private XYSeries plottedError;               // plotted log10 data error
+    private XYSeries plottedKratkyData;          // plotted Kratky data
+    private XYSeries plottedqIqData;             // plotted qIq data
     private YIntervalSeries plottedLogErrors;    // plotted log10 errors data
-    private XYSeries plottedPowerLaw;    // plotted log10 errors data
+    private XYSeries plottedPowerLaw;            // plotted log10 errors data
 
     private final XYSeries originalLog10Data;         // not to be modified
     private final XYSeries originalPositiveOnlyData;  // not to be modified
     private final XYSeries originalPositiveOnlyError; // not to be modified
     private final YIntervalSeries positiveOnlyIntensityError; //
 
-    private final XYSeries allData;      // not to be modified
-    private final XYSeries allDataError; // not to be modified
+    private final XYSeries allData;              // not to be modified
+    private final XYSeries allDataError;         // not to be modified
     private final YIntervalSeries allDataYError; // not to be modified
 
     private XYSeries normalizedKratkyReciprocalSpaceRgData;
@@ -141,7 +141,7 @@ public class Dataset {
         this.id = id;
 
         Random r=new Random();
-        color = new Color(r.nextInt(256),r.nextInt(256),r.nextInt(256));
+        color = new Color(r.nextInt(256),r.nextInt(256),r.nextInt(256), 70);
         inUse = true;
 
         experimentalNotes ="";

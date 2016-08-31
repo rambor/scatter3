@@ -274,8 +274,4 @@ public class RefinedPlot {
 
     }
 
-    public void makeVisiblePlot(){
-
-    }
-
 }

@@ -1,6 +1,7 @@
 import com.sun.xml.internal.ws.api.pipe.FiberContextSwitchInterceptor;
 import net.iharder.dnd.FileDrop;
 import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
 import version3.Collection;
 
@@ -14,6 +15,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -245,6 +247,7 @@ public class Scatter {
     private JLabel rangeSetLabel;
     private JCheckBox excludeBackgroundInFitCheckBox;
     private JPanel subtractPanel;
+    private JButton SVDButton;
 
     private String version = "3.0f";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -1624,6 +1627,7 @@ public class Scatter {
             }
         });
 
+
         buffersClearButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1632,6 +1636,9 @@ public class Scatter {
                 status.setText("Cleared");
                 bufferFilesModel.clear();
                 //buffersList.removeAll();
+                if (clearALL){
+                    sampleFilesModel.clear();;
+                }
             }
         });
 
@@ -2031,6 +2038,7 @@ public class Scatter {
 
         dmaxSlider.setValue((int)dmaxStart.getValue());
         dmaxLabel.setText( String.valueOf((int)(dmaxStart.getValue())) );
+
         dmaxSlider.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
@@ -2656,16 +2664,45 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 // buffers can not be empty
                 if (bufferFilesModel.getSize() == 0){
-
+                    status.setText("No buffer files set");
                     return;
                 } else {
+                    // qmin and qmax should span the range of data used for the analysis
+                    // default qmin = 0.009
+                    // default qmax = 0.3
+                    double qmin=0;
+                    double qmax=0;
 
-                    Collection sampleCollection = (Collection) collections.get(96);
-                    Collection bufferCollection = (Collection) collections.get(69);
-                    sampleCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
-                    bufferCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                    // launch in separate thread
+                    final double finalQmin = qmin;
+                    final double finalQmax = qmax;
 
-                    FactorAnalysis tempFactorAnalysis = new FactorAnalysis(sampleCollection, bufferCollection);
+                    // collect samples that are selected
+                    Collection tempCollectionForSubtraction = new Collection();
+                    int total = sampleCollections.getDatasetCount();
+
+                    for (int i = 0; i < total; i++) {
+                        if (sampleCollections.getDataset(i).getInUse()) {
+                            tempCollectionForSubtraction.addDataset( new Dataset(sampleCollections.getDataset(i)));
+                        }
+                    }
+                    tempCollectionForSubtraction.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+
+
+                    // collect buffers that are selected
+                    Collection tempCollectionForBuffer = new Collection();
+                    total = bufferCollections.getDatasetCount();
+
+                    for (int i = 0; i < total; i++) {
+                        if (bufferCollections.getDataset(i).getInUse()) {
+                            tempCollectionForBuffer.addDataset( new Dataset(bufferCollections.getDataset(i)));
+                        }
+                    }
+                    tempCollectionForSubtraction.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+
+                    FactorAnalysis tempFactorAnalysis = new FactorAnalysis(tempCollectionForSubtraction, tempCollectionForBuffer, finalQmin, finalQmax, status, mainProgressBar, subtractOutPutDirectoryLabel.getText());
+                    Thread temp1 = new Thread(tempFactorAnalysis);
+                    temp1.start();
 
                 }
             }
@@ -2686,6 +2723,67 @@ public class Scatter {
         subtractPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("released A"), "buttonReleased");
         subtractPanel.getActionMap().put("buttonReleased", subtractButtonReleased);
 
+
+
+
+        SVDButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // need to determine number of frames selected
+                int inUseCount=0;
+                XYSeriesCollection tempCollection = new XYSeriesCollection();
+                double qmin=1000000;
+                double qmax=-100000;
+                double tempMax, tempMin;
+
+                for(int i=0; i<collectionSelected.getDatasetCount(); i++){
+                    Dataset tempData = collectionSelected.getDataset(i);
+                    if (tempData.getInUse()){
+                        tempCollection.addSeries(tempData.getData());
+                        tempMin = tempData.getData().getMinX();
+                        tempMax = tempData.getData().getMaxX();
+
+                        if (tempMin < qmin){
+                            qmin = tempMin;
+                        }
+
+                        if (tempMax > qmax){
+                            qmax = tempMax;
+                        }
+                        inUseCount++;
+                    }
+                }
+
+
+                if (inUseCount < 3){
+                    status.setText("Too few frames, 3 or more!");
+                    return;
+                }
+
+                // set common q-values (max and min)
+                final double finalQmin = qmin;
+                final double finalQmax = qmax;
+
+                Thread makeIt = new Thread(){
+                    public void run() {
+
+                        final SVDCovariance svd = new SVDCovariance(finalQmin, finalQmax, tempCollection);
+                        svd.execute();
+
+                        try {
+                            svd.get();
+                            svd.makePlot();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                };
+
+                makeIt.start();
+            }
+        });
     }
 
     AbstractAction subtractButtonPressed = new AbstractAction() {
