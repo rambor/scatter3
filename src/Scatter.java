@@ -248,6 +248,7 @@ public class Scatter {
     private JCheckBox excludeBackgroundInFitCheckBox;
     private JPanel subtractPanel;
     private JButton SVDButton;
+    private JButton ICAButton;
 
     private String version = "3.0f";
     private static WorkingDirectory WORKING_DIRECTORY;

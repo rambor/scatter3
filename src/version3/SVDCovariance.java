@@ -110,7 +110,7 @@ public class SVDCovariance extends SwingWorker<String, Object> {
             for(int j=0; j<totalInSeries; j++){
                 tempItem = tempSeries.getDataItem(j);
                 if (tempItem.getXValue() >= qmin && tempItem.getXValue() <= qmax){
-                    meanCenteredSets.getSeries(i).add(tempItem.getXValue(), (tempItem.getYValue() - mean)*invCount);
+                    meanCenteredSets.getSeries(i).add(tempItem.getXValue(), (tempItem.getYValue() - mean));
                 }
             }
         }

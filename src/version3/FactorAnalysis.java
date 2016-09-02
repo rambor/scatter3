@@ -244,46 +244,47 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         EFAButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                decompositionAnalysis(true);
                 //double qmin, double qmax, XYSeriesCollection datasets, int startIndexOfFrame, int numberOfEigenValuesToPlot, JProgressBar bar)
-                double finalQmin = Double.parseDouble(minQValueLabel.getText());
-                double finalQmax = Double.parseDouble(maxQValueLabel.getText());
-
-                // create collection
-                XYSeriesCollection tempCollection = new XYSeriesCollection();
-                int startFrame = signalPlotMouseMarker.markerStart.intValue();
-                int endFrame = signalPlotMouseMarker.markerEnd.intValue();
-
-                if (endFrame - startFrame < 3){
-                    messagesLabel.setText("Too few frames, 3 or more!");
-                    return;
-                }
-
-                int totalInCollection = subtractedDataCollection.getDatasetCount();
-                for (int i=0; i<totalInCollection; i++){
-                    if (i >= startFrame && i <= endFrame){
-                        tempCollection.addSeries(subtractedDataCollection.getDataset(i).getAllData());
-                    }
-                }
-
-                int totalSVD = Integer.valueOf((String)comboBoxSVD.getSelectedItem());
-                System.out.println("Total Eigenvalues to Plot: " + totalSVD);
-
-                EvolvingFactorAnalysis efa = new EvolvingFactorAnalysis(finalQmin, finalQmax,tempCollection, startFrame, totalSVD, progressBar1);
-                efa.execute();
-                efa.done();
-
-
-                XYSeriesCollection forward = efa.getForwardEigenValueSet();
-                //XYSeriesCollection reverse = efa.getReverseEigenValueSet();
-
-                int totalSeries = forward.getSeriesCount();
-                int totalInSeries = forward.getSeries(0).getItemCount();
-                System.out.println("PRINTING EFA");
-                //for(int i = 0; i<totalInSeries; i++){
-                //    System.out.println(i + " " + forward.getSeries(0).getX(i) + " " + forward.getSeries(0).getY(i));
-                //}
-
-                efaplot.setDataset(0, forward);  //Moore Function
+//                double finalQmin = Double.parseDouble(minQValueLabel.getText());
+//                double finalQmax = Double.parseDouble(maxQValueLabel.getText());
+//
+//                // create collection
+//                XYSeriesCollection tempCollection = new XYSeriesCollection();
+//                int startFrame = signalPlotMouseMarker.markerStart.intValue();
+//                int endFrame = signalPlotMouseMarker.markerEnd.intValue();
+//
+//                if (endFrame - startFrame < 3){
+//                    messagesLabel.setText("Too few frames, 3 or more!");
+//                    return;
+//                }
+//
+//                int totalInCollection = subtractedDataCollection.getDatasetCount();
+//                for (int i=0; i<totalInCollection; i++){
+//                    if (i >= startFrame && i <= endFrame){
+//                        tempCollection.addSeries(subtractedDataCollection.getDataset(i).getAllData());
+//                    }
+//                }
+//
+//                int totalSVD = Integer.valueOf((String)comboBoxSVD.getSelectedItem());
+//                System.out.println("Total Eigenvalues to Plot: " + totalSVD);
+//
+//                EvolvingFactorAnalysis efa = new EvolvingFactorAnalysis(finalQmin, finalQmax,tempCollection, startFrame, totalSVD, progressBar1);
+//                efa.execute();
+//                efa.done();
+//
+//
+//                XYSeriesCollection forward = efa.getForwardEigenValueSet();
+//                //XYSeriesCollection reverse = efa.getReverseEigenValueSet();
+//
+//                int totalSeries = forward.getSeriesCount();
+//                int totalInSeries = forward.getSeries(0).getItemCount();
+//                System.out.println("PRINTING EFA");
+//                //for(int i = 0; i<totalInSeries; i++){
+//                //    System.out.println(i + " " + forward.getSeries(0).getX(i) + " " + forward.getSeries(0).getY(i));
+//                //}
+//
+//                efaplot.setDataset(0, forward);  //Moore Function
                 //efaplot.setDataset(1, reverse);
                 //setReverseColors(forward.getSeriesCount());
             }
@@ -293,7 +294,7 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // grab subtracted frames
-
+                decompositionAnalysis(false);
             }
         });
     }

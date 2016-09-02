@@ -3,6 +3,8 @@ package version3;
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.factory.DecompositionFactory;
 import org.ejml.interfaces.decomposition.SingularValueDecomposition;
+import org.ejml.ops.CommonOps;
+import org.ejml.simple.SimpleMatrix;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -25,14 +27,20 @@ public class IndependentComponentAnalysis extends SwingWorker {
     private XYSeriesCollection reverseEigenValueSet;
     private int startIndexOfFrame;
 
-    private DenseMatrix64F matrixA;
+    private DenseMatrix64F matrixX; // input data matrix holding mean-centered data
     private DenseMatrix64F U_matrix;
     private DenseMatrix64F S_matrix;
     private double[] s_values;
     private DenseMatrix64F V_matrix;
+    private DenseMatrix64F whitened_matrix;
+    private DenseMatrix64F cumulants_matrix;
     private boolean useReduced = false;
 
     private int rows;
+    private int cols_number_of_q_values;
+    private int dimsymm;
+    private int nbcm;
+
 
 
     public IndependentComponentAnalysis(double qmin, double qmax, XYSeriesCollection datasets, int startIndexOfFrame, int numberOfEigenValuesToPlot, JProgressBar bar){
@@ -49,13 +57,16 @@ public class IndependentComponentAnalysis extends SwingWorker {
             useReduced = true;
         }
 
-
-
         // if total number of frames > numberOfComponents (k), must perform dimension reduction
-
         // divide set into k-bins
         // sample 1 from each bin
         // perform ICA, and average the results
+
+        createMeanSubtractedDatasets();
+        createAMatrix();
+        performSVDAMatrix();
+        //whitenDataSet();
+        whitenAndReduceDataset();
 
         SAXSICA= new XYSeriesCollection();
     }
@@ -90,7 +101,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
                 }
             }
 
-            double invCount = 1.0/(double)count;
+            double invCount = 1.0/count;
             double mean = sum*invCount;
             // System.out.println("Mean Centering " + i + " => "+ mean + " qmin " + qmin + " < " + qmax );
             // center the data
@@ -99,12 +110,13 @@ public class IndependentComponentAnalysis extends SwingWorker {
             for(int j=0; j<totalInSeries; j++){
                 tempItem = tempSeries.getDataItem(j);
                 if (tempItem.getXValue() >= qmin && tempItem.getXValue() <= qmax){
-                    meanCenteredSets.getSeries(i).add(tempItem.getXValue(), (tempItem.getYValue() - mean)*invCount);
+                    meanCenteredSets.getSeries(i).add(tempItem.getXValue(), (tempItem.getYValue() - mean));
                 }
             }
         }
         System.out.println("FINISHED CENTERING");
     }
+
 
     /**
      *
@@ -112,34 +124,37 @@ public class IndependentComponentAnalysis extends SwingWorker {
     private void createAMatrix(){
         // create covariance matrix
         XYDataItem tempItem;
-        rows = meanCenteredSets.getSeries(0).getItemCount();
-        matrixA = new DenseMatrix64F(rows, totalSets);
-        //DenseMatrix64F matrixATranspose = new DenseMatrix64F(rows, totalSets);
-
-        int col=0;
+        // rows = number of frames
+        // total q-values =
+        cols_number_of_q_values = meanCenteredSets.getSeries(0).getItemCount();
+        matrixX = new DenseMatrix64F(totalSets, cols_number_of_q_values);
+        // matrixX = new DenseMatrix64F(rows, totalSets);
+        // DenseMatrix64F matrixATranspose = new DenseMatrix64F(rows, totalSets);
+        int row=0;
         // fill first column and use q-values as standard for subsequent rows
         XYSeries refSeries = meanCenteredSets.getSeries(0);
-        for(int j=0; j<rows; j++){
+        for(int j=0; j<cols_number_of_q_values; j++){
             tempItem = refSeries.getDataItem(j);
-            matrixA.set(j, col, tempItem.getYValue()); // could try q*I(q) also
+            matrixX.set(0, j, tempItem.getYValue()); // could try q*I(q) also
         }
 
         // add remaining sets but check their q-values are in reference
-        col = 1;
+        row = 1;
         for(int s=1; s<totalSets; s++){
 
             XYSeries tempSeries = meanCenteredSets.getSeries(s);
-            for(int j=0; j<rows; j++){
+            for(int j=0; j<cols_number_of_q_values; j++){
+
                 int indexOf = tempSeries.indexOf(refSeries.getX(j));
                 if (indexOf > -1){
-                    matrixA.set(j, col, tempSeries.getDataItem(indexOf).getYValue());
+                    matrixX.set(row, j, tempSeries.getDataItem(indexOf).getYValue());
                 } else { // interpolate
                     Double[] results = Functions.interpolate(tempSeries, refSeries.getX(j).doubleValue(), 1);
-                    matrixA.set(j, col, results[1]);
+                    matrixX.set(row, j, results[1]);
                     System.out.println("Not found! Interpolating q : " + refSeries.getX(j));
                 }
             }
-            col++;
+            row++;
         }
     }
 
@@ -152,7 +167,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
         SingularValueDecomposition<DenseMatrix64F> svd = DecompositionFactory.svd(rows, totalSets, true, true, false);
 
         try {
-            svd.decompose(matrixA);
+            svd.decompose(matrixX);
         } catch (Exception e){
             System.out.println("Matrix inversion exception in svdReduce ");
         }
@@ -161,22 +176,50 @@ public class IndependentComponentAnalysis extends SwingWorker {
         S_matrix = svd.getW(null);
         V_matrix = svd.getV(null,false);
         s_values = svd.getSingularValues();
+        System.out.println(" U rows: " +  U_matrix.getNumRows() + " cols: " + U_matrix.getNumCols());
+        System.out.println(" S rows: " +  S_matrix.getNumRows() + " cols: " + S_matrix.getNumCols());
+        System.out.println(" V rows: " +  V_matrix.getNumRows() + " cols: " + V_matrix.getNumCols());
     }
-
 
 
     /**
      * ZCA whitening
-      * @param k
      */
-    private void whitenAndReduceDataset(int k){
+    private void whitenAndReduceDataset(){
 
-        int numrows = S_matrix.getNumRows();
-        DenseMatrix64F D_matrix = new DenseMatrix64F(S_matrix.getNumRows(), S_matrix.getNumCols());
-        for(int i=0; i<k; i++){
+        int num_rows = matrixX.getNumRows();
+        DenseMatrix64F D_matrix = new DenseMatrix64F(num_rows, num_rows);
+        double invTotal = 1.0/(double)totalSets;
+
+        // create variance matrix (inverse singular values)
+        for(int i=0; i < num_rows; i++){
             D_matrix.set(i,i, 1.0/S_matrix.get(i,i));
         }
 
+        // create reduced rotation matrix by taking first k columns of U_matrix
+        DenseMatrix64F B_matrix = new DenseMatrix64F(num_rows, numberOfComponents);
+        CommonOps.extract(U_matrix, 0, num_rows, 0, numberOfComponents, B_matrix, 0, 0);
+
+        // D_matrix is now square
+        // U*D*U_t * X
+        System.out.println(" BEFORE : " + B_matrix.getNumRows() + " " + B_matrix.getNumCols());
+
+        DenseMatrix64F DB_matrix = new DenseMatrix64F(numberOfComponents, num_rows);
+
+        CommonOps.transpose(B_matrix);
+        System.out.println(" AFTER : " + B_matrix.getNumRows() + " " + B_matrix.getNumCols());
+
+        CommonOps.mult(B_matrix, D_matrix, DB_matrix);
+        CommonOps.scale(invTotal, DB_matrix);
+
+        System.out.println("Whitened X: " + matrixX.getNumRows() + " " + matrixX.getNumCols() + " | " + numberOfComponents);
+        whitened_matrix = new DenseMatrix64F(numberOfComponents, matrixX.getNumCols());
+
+        CommonOps.mult(DB_matrix, matrixX, whitened_matrix);
+
+        for (int i=0; i<matrixX.getNumCols(); i++){
+            System.out.println(datasets.getSeries(0).getX(i) + " " + datasets.getSeries(0).getY(i) + " " + whitened_matrix.get(0,i));
+        }
     }
 
 
@@ -187,17 +230,47 @@ public class IndependentComponentAnalysis extends SwingWorker {
         // svd whitendataset
 
         int numrows = S_matrix.getNumRows();
-        DenseMatrix64F D_matrix = new DenseMatrix64F(S_matrix.getNumRows(), S_matrix.getNumCols());
-        for(int i=0; i<numrows; i++){
+        DenseMatrix64F D_matrix = new DenseMatrix64F(numrows, numrows);
+        double invTotal = 1.0/(double)totalSets;
+
+        // create variance matrix (inverse singular values)
+        for(int i=0; i < numrows; i++){
             D_matrix.set(i,i, 1.0/S_matrix.get(i,i));
         }
+
+        // create rotation matrix
+        DenseMatrix64F B_matrix = new DenseMatrix64F(numrows,numrows);
+        CommonOps.extract(U_matrix, 0, numrows, 0, numrows, B_matrix, 0, 0);
+
+        // D_matrix is now square
         // U*D*U_t * X
+        DenseMatrix64F DB_matrix = new DenseMatrix64F(numrows, numrows);
 
+        CommonOps.transpose(B_matrix);
+        CommonOps.mult(B_matrix, D_matrix, DB_matrix);
+        CommonOps.scale(invTotal, DB_matrix);
 
+        //System.out.println("Whitened X: " + matrixX.getNumRows() + " " + matrixX.getNumCols());
+        whitened_matrix = new DenseMatrix64F(matrixX.getNumRows(), matrixX.getNumCols());
+        CommonOps.mult(DB_matrix, matrixX, whitened_matrix);
+
+        //for (int i=0; i<matrixX.getNumCols(); i++){
+        //    System.out.println(datasets.getSeries(0).getX(i) + " " + datasets.getSeries(0).getY(i) + " " + whitened_matrix.get(0,i));
+        //}
     }
 
 
 
+    private void createCumulantMatrix(){
+
+        dimsymm = numberOfComponents*(numberOfComponents+1)/2;
+        nbcm = dimsymm;
+
+        cumulants_matrix = new DenseMatrix64F(numberOfComponents, numberOfComponents*nbcm);
+
+        DenseMatrix64F r_matrix = CommonOps.identity(numberOfComponents);
+
+    }
 
 
 }
