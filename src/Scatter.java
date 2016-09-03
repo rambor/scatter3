@@ -2725,8 +2725,6 @@ public class Scatter {
         subtractPanel.getActionMap().put("buttonReleased", subtractButtonReleased);
 
 
-
-
         SVDButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -3882,279 +3880,6 @@ public class Scatter {
                         powerLawPlot.changeVisibleSeries(row, collectionSelected.getDataset(row).getInUse());
                     }
 
-/*
-
-
-                    if (normalKratkyRg.frame.isVisible()){
-                        int old = normalKratkyRg.newDataset.getSeriesCount();
-                        int key;
-                        if (collectionSelected.getDataset(row).getInUse()){ // if true, add to plot
-                            // if row is present as key, toggle visibility, if not add it
-                            boolean test = false;
-                            for (int i=0; i<old; i++){
-                                key = (Integer)normalKratkyRg.newDataset.getSeries(i).getKey();
-                                if (key == row){
-                                    normalKratkyRg.chart.getXYPlot().getRenderer().setSeriesVisible(i, collectionSelected.getDataset(row).getInUse());
-                                    test = true;
-                                }
-                            }
-
-                            if (!test){
-                                // add series to plot
-                                double i_zero_n = 0.0;
-                                double rg_n = 0.0;
-                                double invIzero, rg2, q, q2;
-
-                                int start, stop;
-                                XYDataItem tempDataItem;
-
-                                Dataset tempData = collectionSelected.getDataset(row);
-                                XYSeries tempKratkyData = tempData.getOriginalData(); // non-negative values
-
-                                i_zero_n = tempData.getGuinierIzero();
-                                invIzero = 1/i_zero_n;
-
-                                rg_n = tempData.getGuinierRg();
-                                rg2 = rg_n*rg_n*invIzero;
-
-                                start = (Integer)analysisModel.getValueAt(row,4) - 1;
-                                stop = (Integer)analysisModel.getValueAt(row,5) - 1;
-                                if (i_zero_n > 0 && rg_n > 0){
-                                    normalKratkyRg.newDataset.addSeries(new XYSeries(tempData.getId()));
-                                    for (int j = start; j < stop; j++){
-                                        tempDataItem = tempKratkyData.getDataItem(j);
-                                        q = tempDataItem.getXValue();
-                                        q2 = q*q;
-                                        // Dimensionless via Rg
-                                        normalKratkyRg.newDataset.getSeries(old).add(q*rg_n, q2*rg2*tempDataItem.getYValue());
-                                    }
-
-                                    double pointSize = tempData.getPointSize();
-                                    double negativePointSize = -0.5*pointSize;
-
-                                    normalKratkyRg.renderer1.setSeriesShape(old, new Ellipse2D.Double(negativePointSize, negativePointSize, pointSize, pointSize));
-                                    normalKratkyRg.renderer1.setSeriesLinesVisible(old, false);
-                                    normalKratkyRg.renderer1.setSeriesShapesFilled(old, tempData.getBaseShapeFilled());
-                                    normalKratkyRg.renderer1.setSeriesPaint(old, tempData.getColor());
-                                    normalKratkyRg.renderer1.setSeriesOutlinePaint(old, tempData.getColor());
-                                    normalKratkyRg.renderer1.setSeriesOutlineStroke(old, tempData.getStroke());
-                                }
-                            }
-                        } else { //remove from plot
-                            for (int i=0; i<old; i++){
-                                key = (Integer)normalKratkyRg.newDataset.getSeries(i).getKey();
-                                if (key == row){
-                                    normalKratkyRg.chart.getXYPlot().getRenderer().setSeriesVisible(i, collectionSelected.getDataset(row).getInUse());
-                                }
-                            }
-                        }
-                    }
-
-                    if (normalKratkyVc.frame.isVisible()){
-                        int old = normalKratkyVc.newDataset.getSeriesCount();
-                        int key;
-                        if (collectionSelected.getDataset(row).getInUse()){ // if true, add to plot
-                            // if row is present as key, toggle visibility, if not add it
-                            boolean test = false;
-                            for (int i=0; i<old; i++){
-                                key = (Integer)normalKratkyVc.newDataset.getSeries(i).getKey();
-                                if (key == row){
-                                    normalKratkyVc.chart.getXYPlot().getRenderer().setSeriesVisible(i, collectionSelected.getDataset(row).getInUse());
-                                    test = true;
-                                }
-                            }
-
-                            if (!test){
-                                // add series to plot
-                                double i_zero_n = 0.0;
-                                double invIzero, q, vc, q2, vcI;
-
-                                int start, stop;
-                                XYDataItem tempDataItem;
-
-                                Dataset tempData = collectionSelected.getDataset(row);
-                                XYSeries tempKratkyData = tempData.getOriginalData(); // non-negative values
-
-                                i_zero_n = tempData.getGuinierIzero();
-                                invIzero = 1/i_zero_n;
-                                vc = tempData.getVC();
-
-                                if (vc <= 0) {
-                                    determineVc(row);
-                                    vc = tempData.getVC();
-                                }
-
-                                vcI = vc*invIzero;
-
-                                start = (Integer)analysisModel.getValueAt(row,4) - 1;
-                                stop = (Integer)analysisModel.getValueAt(row,5) - 1;
-                                if (i_zero_n > 0){
-                                    normalKratkyVc.newDataset.addSeries(new XYSeries(tempData.getId()));
-                                    for (int j = start; j < stop; j++){
-                                        tempDataItem = tempKratkyData.getDataItem(j);
-                                        q = tempDataItem.getXValue();
-                                        q2 = q*q;
-                                        // Dimensionless via Vc
-                                        normalKratkyVc.newDataset.getSeries(old).add(q2*vc, q2*vcI*tempDataItem.getYValue());
-                                    }
-
-                                    double pointSize = tempData.getPointSize();
-                                    double negativePointSize = -0.5*pointSize;
-
-                                    normalKratkyVc.renderer1.setSeriesShape(old, new Ellipse2D.Double(negativePointSize, negativePointSize, pointSize, pointSize));
-                                    normalKratkyVc.renderer1.setSeriesLinesVisible(old, false);
-                                    normalKratkyVc.renderer1.setSeriesShapesFilled(old, tempData.getBaseShapeFilled());
-                                    normalKratkyVc.renderer1.setSeriesPaint(old, tempData.getColor());
-                                    normalKratkyVc.renderer1.setSeriesOutlinePaint(old, tempData.getColor());
-                                    normalKratkyVc.renderer1.setSeriesOutlineStroke(old, tempData.getStroke());
-                                }
-                            }
-                        } else { //remove from plot
-
-                            for (int i=0; i<old; i++){
-                                key = (Integer)normalKratkyVc.newDataset.getSeries(i).getKey();
-                                if (key == row){
-                                    normalKratkyVc.chart.getXYPlot().getRenderer().setSeriesVisible(i, collectionSelected.getDataset(row).getInUse());
-                                }
-                            }
-                        }
-                    }
-
-                    if (normalKratkyVcReal.frame.isVisible()){
-                        int old = normalKratkyVcReal.newDataset.getSeriesCount();
-                        int key;
-                        if (collectionSelected.getDataset(row).getInUse() && (collectionSelected.getDataset(row).getRealRg() > 0)){ // if true, add to plot
-                            // if row is present as key, toggle visibility, if not add it
-                            boolean test = false;
-                            for (int i=0; i<old; i++){
-                                key = (Integer)normalKratkyVcReal.newDataset.getSeries(i).getKey();
-                                if (key == row){
-                                    normalKratkyVcReal.chart.getXYPlot().getRenderer().setSeriesVisible(i, collectionSelected.getDataset(row).getInUse());
-                                    test = true;
-                                }
-                            }
-
-                            if (!test){
-                                // add series to plot
-                                double i_zero_n = 0.0;
-                                double invIzero, q, vc, q2, vcI;
-
-                                int start, stop;
-                                XYDataItem tempDataItem;
-
-                                Dataset tempData = collectionSelected.getDataset(row);
-                                XYSeries tempKratkyData = tempData.getOriginalData(); // non-negative values
-
-                                i_zero_n = tempData.getRealIzero();
-                                invIzero = 1/i_zero_n;
-                                vc = tempData.getVCReal();
-
-                                if (vc <= 0) {
-                                    determineVc(row);
-                                    vc = tempData.getVCReal();
-                                }
-
-                                vcI = vc*invIzero;
-
-                                start = (Integer)analysisModel.getValueAt(row,4) - 1;
-                                stop = (Integer)analysisModel.getValueAt(row,5) - 1;
-                                if (i_zero_n > 0){
-                                    normalKratkyVcReal.newDataset.addSeries(new XYSeries(tempData.getId()));
-                                    for (int j = start; j < stop; j++){
-                                        tempDataItem = tempKratkyData.getDataItem(j);
-                                        q = tempDataItem.getXValue();
-                                        q2 = q*q;
-                                        // Dimensionless via Vc
-                                        normalKratkyVcReal.newDataset.getSeries(old).add(q2*vc, q2*vcI*tempDataItem.getYValue());
-                                    }
-
-                                    double pointSize = tempData.getPointSize();
-                                    double negativePointSize = -0.5*pointSize;
-
-                                    normalKratkyVcReal.renderer1.setSeriesShape(old, new Ellipse2D.Double(negativePointSize, negativePointSize, pointSize, pointSize));
-                                    normalKratkyVcReal.renderer1.setSeriesLinesVisible(old, false);
-                                    normalKratkyVcReal.renderer1.setSeriesShapesFilled(old, tempData.getBaseShapeFilled());
-                                    normalKratkyVcReal.renderer1.setSeriesPaint(old, tempData.getColor());
-                                    normalKratkyVcReal.renderer1.setSeriesOutlinePaint(old, tempData.getColor());
-                                    normalKratkyVcReal.renderer1.setSeriesOutlineStroke(old, tempData.getStroke());
-                                }
-                            }
-                        } else { //remove from plot
-
-                            for (int i=0; i<old; i++){
-                                key = (Integer)normalKratkyVcReal.newDataset.getSeries(i).getKey();
-                                if (key == row){
-                                    normalKratkyVcReal.chart.getXYPlot().getRenderer().setSeriesVisible(i, collectionSelected.getDataset(row).getInUse());
-                                }
-                            }
-                        }
-                    }
-
-                    if (normalKratkyRgReal.frame.isVisible() ){
-                        int old = normalKratkyRgReal.newDataset.getSeriesCount();
-                        int key;
-                        if (collectionSelected.getDataset(row).getInUse() && (collectionSelected.getDataset(row).getRealRg() > 0)){ // if true, add to plot
-                            // if row is present as key, toggle visibility, if not add it
-                            boolean test = false;
-                            for (int i=0; i<old; i++){
-                                key = (Integer)normalKratkyRgReal.newDataset.getSeries(i).getKey();
-                                if (key == row){
-                                    normalKratkyRgReal.chart.getXYPlot().getRenderer().setSeriesVisible(i, collectionSelected.getDataset(row).getInUse());
-                                    test = true;
-                                }
-                            }
-
-                            if (!test){
-                                // add series to plot
-                                double i_zero_n = 0.0;
-                                double rg_n = 0.0;
-                                double invIzero, rg2, q, q2;
-
-                                int start, stop;
-                                XYDataItem tempDataItem;
-
-                                Dataset tempData = collectionSelected.getDataset(row);
-                                XYSeries tempKratkyData = tempData.getOriginalData(); // non-negative values
-
-                                i_zero_n = tempData.getRealIzero();
-                                invIzero = 1/i_zero_n;
-
-                                rg_n = tempData.getRealRg();
-                                rg2 = rg_n*rg_n*invIzero;
-
-                                start = (Integer)analysisModel.getValueAt(row,4) - 1;
-                                stop = (Integer)analysisModel.getValueAt(row,5) - 1;
-                                if (i_zero_n > 0 && rg_n > 0){
-                                    normalKratkyRgReal.newDataset.addSeries(new XYSeries(tempData.getId()));
-                                    for (int j = start; j < stop; j++){
-                                        tempDataItem = tempKratkyData.getDataItem(j);
-                                        q = tempDataItem.getXValue();
-                                        q2 = q*q;
-                                        // Dimensionless via Rg
-                                        normalKratkyRgReal.newDataset.getSeries(old).add(q*rg_n, q2*rg2*tempDataItem.getYValue());
-                                    }
-
-                                    double pointSize = tempData.getPointSize();
-                                    double negativePointSize = -0.5*pointSize;
-
-                                    normalKratkyRgReal.renderer1.setSeriesShape(old, new Ellipse2D.Double(negativePointSize, negativePointSize, pointSize, pointSize));
-                                    normalKratkyRgReal.renderer1.setSeriesLinesVisible(old, false);
-                                    normalKratkyRgReal.renderer1.setSeriesShapesFilled(old, tempData.getBaseShapeFilled());
-                                    normalKratkyRgReal.renderer1.setSeriesPaint(old, tempData.getColor());
-                                    normalKratkyRgReal.renderer1.setSeriesOutlinePaint(old, tempData.getColor());
-                                    normalKratkyRgReal.renderer1.setSeriesOutlineStroke(old, tempData.getStroke());
-                                }
-                            }
-                        } else { //remove from plot
-                            for (int i=0; i<old; i++){
-                                key = (Integer)normalKratkyRgReal.newDataset.getSeries(i).getKey();
-                                if (key == row){
-                                    normalKratkyRgReal.chart.getXYPlot().getRenderer().setSeriesVisible(i, collectionSelected.getDataset(row).getInUse());
-                                }
-                            }
-                        }
-                    }
-*/
                 } else if (column == 6){ // Fit File
                     collectionSelected.getDataset(row).setFitFile(!(Boolean)value);
                     // switch Error to allData
@@ -4258,6 +3983,7 @@ public class Scatter {
                         }
                     }
 
+
                     thickBox.setSelectedIndex(index);
                     preview.add(thickBox);
 
@@ -4333,6 +4059,15 @@ public class Scatter {
         }
     }
 
+
+
+    /**
+     * replot the color of the tables listed in the method
+     * @param row
+     * @param newColor
+     * @param thickness
+     * @param pointsize
+     */
     private void reColorPlots(int row, Color newColor, float thickness, int pointsize) {
 
         if (log10IntensityPlot.isVisible()){

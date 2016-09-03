@@ -42,7 +42,6 @@ public class IndependentComponentAnalysis extends SwingWorker {
     private int nbcm;
 
 
-
     public IndependentComponentAnalysis(double qmin, double qmax, XYSeriesCollection datasets, int startIndexOfFrame, int numberOfEigenValuesToPlot, JProgressBar bar){
         this.qmin = qmin;
         this.qmax = qmax;
@@ -51,10 +50,10 @@ public class IndependentComponentAnalysis extends SwingWorker {
         this.startIndexOfFrame = startIndexOfFrame;
 
         // initialize eigenvalue series to plot
-        this.numberOfComponents = numberOfEigenValuesToPlot;
-
-        if (numberOfComponents < totalSets){
+        if (numberOfEigenValuesToPlot < totalSets){
             useReduced = true;
+        } else {
+            this.numberOfComponents = numberOfEigenValuesToPlot;
         }
 
         // if total number of frames > numberOfComponents (k), must perform dimension reduction
@@ -65,8 +64,10 @@ public class IndependentComponentAnalysis extends SwingWorker {
         createMeanSubtractedDatasets();
         createAMatrix();
         performSVDAMatrix();
-        //whitenDataSet();
-        whitenAndReduceDataset();
+
+        whitenDataSet();
+        //whitenAndReduceDataset();
+        createCumulantMatrix();
 
         SAXSICA= new XYSeriesCollection();
     }
@@ -114,6 +115,8 @@ public class IndependentComponentAnalysis extends SwingWorker {
                 }
             }
         }
+
+        cols_number_of_q_values = meanCenteredSets.getSeries(0).getItemCount();
         System.out.println("FINISHED CENTERING");
     }
 
@@ -126,7 +129,6 @@ public class IndependentComponentAnalysis extends SwingWorker {
         XYDataItem tempItem;
         // rows = number of frames
         // total q-values =
-        cols_number_of_q_values = meanCenteredSets.getSeries(0).getItemCount();
         matrixX = new DenseMatrix64F(totalSets, cols_number_of_q_values);
         // matrixX = new DenseMatrix64F(rows, totalSets);
         // DenseMatrix64F matrixATranspose = new DenseMatrix64F(rows, totalSets);
@@ -202,13 +204,9 @@ public class IndependentComponentAnalysis extends SwingWorker {
 
         // D_matrix is now square
         // U*D*U_t * X
-        System.out.println(" BEFORE : " + B_matrix.getNumRows() + " " + B_matrix.getNumCols());
-
         DenseMatrix64F DB_matrix = new DenseMatrix64F(numberOfComponents, num_rows);
 
-        CommonOps.transpose(B_matrix);
-        System.out.println(" AFTER : " + B_matrix.getNumRows() + " " + B_matrix.getNumCols());
-
+        CommonOps.transpose(B_matrix); // B has to be transposed before multiplication
         CommonOps.mult(B_matrix, D_matrix, DB_matrix);
         CommonOps.scale(invTotal, DB_matrix);
 
@@ -217,9 +215,9 @@ public class IndependentComponentAnalysis extends SwingWorker {
 
         CommonOps.mult(DB_matrix, matrixX, whitened_matrix);
 
-        for (int i=0; i<matrixX.getNumCols(); i++){
-            System.out.println(datasets.getSeries(0).getX(i) + " " + datasets.getSeries(0).getY(i) + " " + whitened_matrix.get(0,i));
-        }
+//        for (int i=0; i<matrixX.getNumCols(); i++){
+//            System.out.println(meanCenteredSets.getSeries(0).getX(i) + " " + meanCenteredSets.getSeries(0).getY(i) + " " + whitened_matrix.get(0,i)  + " " + whitened_matrix.get(1,i));
+//        }
     }
 
 
@@ -246,30 +244,211 @@ public class IndependentComponentAnalysis extends SwingWorker {
         // U*D*U_t * X
         DenseMatrix64F DB_matrix = new DenseMatrix64F(numrows, numrows);
 
-        CommonOps.transpose(B_matrix);
-        CommonOps.mult(B_matrix, D_matrix, DB_matrix);
+        CommonOps.transpose(B_matrix); // in place transpose
+        CommonOps.mult(B_matrix, D_matrix, DB_matrix); //
         CommonOps.scale(invTotal, DB_matrix);
 
-        //System.out.println("Whitened X: " + matrixX.getNumRows() + " " + matrixX.getNumCols());
+        System.out.println("Whitened X: " + matrixX.getNumRows() + " " + matrixX.getNumCols());
         whitened_matrix = new DenseMatrix64F(matrixX.getNumRows(), matrixX.getNumCols());
         CommonOps.mult(DB_matrix, matrixX, whitened_matrix);
-
-        //for (int i=0; i<matrixX.getNumCols(); i++){
-        //    System.out.println(datasets.getSeries(0).getX(i) + " " + datasets.getSeries(0).getY(i) + " " + whitened_matrix.get(0,i));
-        //}
+        numberOfComponents = matrixX.getNumRows();
     }
 
 
+    /**
+     *
+     */
+    private void jointDiagonalizationCumulantMatrix(){
 
+        DenseMatrix64F matrix_V = CommonOps.identity(numberOfComponents);
+
+        /*
+         *
+         */
+        double on = 0;
+        int range = numberOfComponents;
+
+        int endAt = numberOfComponents;
+        int colAt = 0;
+        double value;
+
+        // make a sum of the squared diagonals of the cumulants matrix
+        while(endAt < nbcm){
+            for (int i=0; i<numberOfComponents; i++){
+                value = cumulants_matrix.get(i,i+colAt);
+                on += value*value;
+            }
+            colAt = endAt;
+            endAt += numberOfComponents;
+        }
+
+        DenseMatrix64F cumulants_matrix_element_product = new DenseMatrix64F(numberOfComponents, numberOfComponents*nbcm);
+
+        CommonOps.elementMult(cumulants_matrix, cumulants_matrix, cumulants_matrix_element_product);
+
+        double off = CommonOps.elementSum(cumulants_matrix_element_product) + on;
+
+
+        double seiul = 0.000001/Math.sqrt((double)cols_number_of_q_values);
+        boolean encore = true;
+        int sweep = 0;
+        int updates = 0;
+        int upds = 0;
+
+        double cos, sin, ton, toff, theta=0, gain;
+
+        DenseMatrix64F g_matrix = new DenseMatrix64F(2,nbcm);
+        DenseMatrix64F gg_matrix = new DenseMatrix64F(2,2);
+        DenseMatrix64F bigG_matrix = new DenseMatrix64F(2,2);
+
+        while (encore){
+
+            sweep+=1;
+            upds = 0;
+            DenseMatrix64F VKeep = new DenseMatrix64F(matrix_V);
+
+            for (int p=0; p<(numberOfComponents-1); p++){
+
+                for (int q=(p+1); q<numberOfComponents; q++){
+
+                    ton = gg_matrix.get(1,1) - gg_matrix.get(2,2);
+                    toff = gg_matrix.get(1,2) + gg_matrix.get(2,1);
+                    theta = 0.5*Math.atan2(toff, ton+Math.sqrt(ton*ton + toff*toff));
+                    gain = (Math.sqrt(ton*ton + toff*toff) - ton)*0.25;
+
+                    if (Math.abs(theta) > seiul){
+                        encore = false;
+                        upds+=1;
+                        cos = Math.cos(theta);
+                        sin = Math.sin(theta);
+
+                        bigG_matrix.set(0,0,cos);
+                        bigG_matrix.set(0,1,-sin);
+                        bigG_matrix.set(1,0,sin);
+                        bigG_matrix.set(1,1,cos);
+                    }
+                }
+            }
+
+
+
+
+
+        }
+
+
+    }
+
+
+    /**
+     *
+     */
     private void createCumulantMatrix(){
+
+        double sqrt2 = Math.sqrt(2.0);
 
         dimsymm = numberOfComponents*(numberOfComponents+1)/2;
         nbcm = dimsymm;
 
         cumulants_matrix = new DenseMatrix64F(numberOfComponents, numberOfComponents*nbcm);
 
-        DenseMatrix64F r_matrix = CommonOps.identity(numberOfComponents);
+        DenseMatrix64F matrix_R = CommonOps.identity(numberOfComponents);
 
+        DenseMatrix64F vector_Xim = new DenseMatrix64F(cols_number_of_q_values, 1);
+        DenseMatrix64F vector_Xijm = new DenseMatrix64F(cols_number_of_q_values, 1);
+        DenseMatrix64F vector_Xijm_temp = new DenseMatrix64F(cols_number_of_q_values, 1);
+
+        DenseMatrix64F matrix_Qij = new DenseMatrix64F(numberOfComponents, numberOfComponents);
+        //DenseMatrix64F matrix_Qij_1 = new DenseMatrix64F(numberOfComponents, numberOfComponents);
+
+        DenseMatrix64F Xijm_matrixX_mult = new DenseMatrix64F(cols_number_of_q_values, numberOfComponents);
+
+        // extract columns vector
+        CommonOps.transpose(whitened_matrix);
+        System.out.println("transposed Whitened X : " + whitened_matrix.getNumRows() + " " + whitened_matrix.getNumCols());
+        System.out.println("transposed Whitened X : " + Xijm_matrixX_mult.getNumRows() + " " + Xijm_matrixX_mult.getNumCols());
+
+        double invT = 1.0/cols_number_of_q_values, value;
+        int range = numberOfComponents;
+
+        for (int im=0; im<numberOfComponents; im++){
+            CommonOps.extractColumn(whitened_matrix, im, vector_Xim);
+            CommonOps.elementMult(vector_Xim, vector_Xim, vector_Xijm);
+
+            // form Q_ij
+            Xijm_matrixX_mult = elementwiseMultiplyVectorMatrix(vector_Xijm, whitened_matrix);
+            CommonOps.transpose(Xijm_matrixX_mult);
+            CommonOps.mult(Xijm_matrixX_mult, whitened_matrix, matrix_Qij); // return square matrix
+            CommonOps.scale(invT, matrix_Qij);
+            CommonOps.subtractEquals(matrix_Qij, matrix_R);
+
+            value = matrix_Qij.get(im,im)-2;
+            matrix_Qij.set(im, im, value);
+            // add to cumulant matrix
+            update_cumulant_matrix(cumulants_matrix, matrix_Qij, range, numberOfComponents);
+
+            range += numberOfComponents;
+
+            for (int jm=0; jm<im; jm++){
+
+                CommonOps.extractColumn(whitened_matrix, jm, vector_Xijm_temp);
+                CommonOps.elementMult(vector_Xim, vector_Xijm_temp, vector_Xijm);
+
+                Xijm_matrixX_mult = elementwiseMultiplyVectorMatrix(vector_Xijm, whitened_matrix);
+                CommonOps.transpose(Xijm_matrixX_mult);
+                CommonOps.mult(Xijm_matrixX_mult, whitened_matrix, matrix_Qij); // return square matrix
+                CommonOps.scale(invT, matrix_Qij);
+                // subtract
+                value = matrix_Qij.get(im,jm)-1;
+                matrix_Qij.set(im, jm, value);
+                value = matrix_Qij.get(jm,im)-1;
+                matrix_Qij.set(jm, im, value);
+                //scale by square root 2
+                CommonOps.scale(sqrt2, matrix_Qij);
+
+                // add to cumulant matrix
+                update_cumulant_matrix(cumulants_matrix, matrix_Qij, range, numberOfComponents);
+                range += numberOfComponents;
+
+            }
+        }
+    }
+
+
+    /**
+     * Add a square matrix qij (mxm) to rectangular matrix cumulants_matrix that is mxn where n is a multiple of m
+     *
+     * @param cumulants_matrix destination matrix
+     * @param matrix_qij source matrix
+     * @param im starting column position in cumulants
+     * @param lengthOf
+     */
+    private void update_cumulant_matrix(DenseMatrix64F cumulants_matrix, DenseMatrix64F matrix_qij, int im, int lengthOf) {
+        CommonOps.extract(matrix_qij, 0, lengthOf, 0, lengthOf, cumulants_matrix, 0, im);
+    }
+
+    /**
+     * multiply each column of the matrix by the column vector, elementwise*
+     * @param columnVector must be same length as the number rows of matrix
+     * @param matrix
+     * @return
+     */
+    private DenseMatrix64F elementwiseMultiplyVectorMatrix(DenseMatrix64F columnVector, DenseMatrix64F matrix){
+
+
+        int matrixRows = matrix.getNumRows();
+        int cols = matrix.getNumCols();
+
+        DenseMatrix64F returnMe = new DenseMatrix64F(matrixRows,cols);
+
+
+        for (int row=0; row< matrixRows; row++){
+            double value = columnVector.get(row,0);
+            for(int col=0; col<cols; col++){
+                returnMe.set(row, col, value*matrix.get(row,col));
+            }
+        }
+        return returnMe;
     }
 
 
