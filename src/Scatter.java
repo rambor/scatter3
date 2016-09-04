@@ -537,6 +537,10 @@ public class Scatter {
                     tempInfo.setVisible(true);
                     isCtrlB = false;
                 }
+
+                // updateMiniPlots
+                updateMiniPlots(analysisTable.rowAtPoint(e.getPoint()));
+
             }
 
             @Override
@@ -2784,6 +2788,14 @@ public class Scatter {
             }
         });
     }
+
+
+    private void updateMiniPlots(int i) {
+
+
+    }
+
+
 
     AbstractAction subtractButtonPressed = new AbstractAction() {
         @Override

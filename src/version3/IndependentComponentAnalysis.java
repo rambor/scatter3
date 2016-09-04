@@ -10,6 +10,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
+import java.util.ArrayList;
 
 /**
  * Created by robertrambo on 30/08/2016.
@@ -68,6 +69,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
         whitenDataSet();
         //whitenAndReduceDataset();
         createCumulantMatrix();
+        jointDiagonalizationCumulantMatrix();
 
         SAXSICA= new XYSeriesCollection();
     }
@@ -297,9 +299,13 @@ public class IndependentComponentAnalysis extends SwingWorker {
 
         double cos, sin, ton, toff, theta=0, gain;
 
-        DenseMatrix64F g_matrix = new DenseMatrix64F(2,nbcm);
+        DenseMatrix64F g_matrix;
+        DenseMatrix64F g_matrix_trans;
         DenseMatrix64F gg_matrix = new DenseMatrix64F(2,2);
         DenseMatrix64F bigG_matrix = new DenseMatrix64F(2,2);
+
+        ArrayList<Integer> p_indices;
+        ArrayList<Integer> q_indices;
 
         while (encore){
 
@@ -311,8 +317,25 @@ public class IndependentComponentAnalysis extends SwingWorker {
 
                 for (int q=(p+1); q<numberOfComponents; q++){
 
-                    ton = gg_matrix.get(1,1) - gg_matrix.get(2,2);
-                    toff = gg_matrix.get(1,2) + gg_matrix.get(2,1);
+                    p_indices = new ArrayList<>();
+                    q_indices = new ArrayList<>();
+
+                    fill_indices(p, p_indices, nbcm);
+                    fill_indices(q, q_indices, nbcm);
+
+                    // p_indices and q_indices should be same length
+                    System.out.println("("+ p + ") P SIZE : " +p_indices.size() + " (" + q + ") Q SIZE : " + q_indices.size());
+
+                    g_matrix = new DenseMatrix64F(2, p_indices.size());
+                    g_matrix_trans = new DenseMatrix64F(p_indices.size(), 2);
+
+                    fill_g_matrix(p, p_indices, q, q_indices, cumulants_matrix, g_matrix);
+
+                    CommonOps.transpose(g_matrix, g_matrix_trans);
+                    CommonOps.mult(g_matrix, g_matrix_trans, gg_matrix);
+
+                    ton = gg_matrix.get(0,0) - gg_matrix.get(1,1);
+                    toff = gg_matrix.get(0,1) + gg_matrix.get(1,0);
                     theta = 0.5*Math.atan2(toff, ton+Math.sqrt(ton*ton + toff*toff));
                     gain = (Math.sqrt(ton*ton + toff*toff) - ton)*0.25;
 
@@ -327,6 +350,10 @@ public class IndependentComponentAnalysis extends SwingWorker {
                         bigG_matrix.set(1,0,sin);
                         bigG_matrix.set(1,1,cos);
                     }
+
+
+
+
                 }
             }
 
@@ -337,6 +364,29 @@ public class IndependentComponentAnalysis extends SwingWorker {
         }
 
 
+    }
+
+
+    private void fill_g_matrix(int row_p, ArrayList<Integer> p_indices, int row_q, ArrayList<Integer> q_indices, DenseMatrix64F cm_matrix, DenseMatrix64F g_matrix) {
+        int cols = p_indices.size();
+        int p_index;
+        int q_index;
+
+        for (int i=0; i<cols; i++){
+            p_index = p_indices.get(i);
+            q_index = q_indices.get(i);
+            g_matrix.set(0, i, cm_matrix.get(row_p, p_index) - cm_matrix.get(row_q, q_index));
+            g_matrix.set(1, i, cm_matrix.get(row_p, q_index) + cm_matrix.get(row_q, p_index));
+        }
+
+    }
+
+
+    private void fill_indices(int p, ArrayList<Integer> p_indices, int nbcm) {
+        int endAt = numberOfComponents*nbcm;
+        for(int i=p; i< endAt; i+=numberOfComponents){
+            p_indices.add(i);
+        }
     }
 
 
@@ -389,7 +439,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
 
             range += numberOfComponents;
 
-            for (int jm=0; jm<im; jm++){
+            for (int jm=0; jm<(im-1); jm++){
 
                 CommonOps.extractColumn(whitened_matrix, jm, vector_Xijm_temp);
                 CommonOps.elementMult(vector_Xim, vector_Xijm_temp, vector_Xijm);
@@ -424,6 +474,10 @@ public class IndependentComponentAnalysis extends SwingWorker {
      * @param lengthOf
      */
     private void update_cumulant_matrix(DenseMatrix64F cumulants_matrix, DenseMatrix64F matrix_qij, int im, int lengthOf) {
+
+        System.out.println(" NC : " + numberOfComponents +  " " + lengthOf + " mxn : " + cumulants_matrix.getNumRows() + " x " + cumulants_matrix.getNumCols());
+        System.out.println(" matrix_qij : " + matrix_qij.getNumRows() + " " + matrix_qij.getNumCols());
+        System.out.println(" im : " + im);
         CommonOps.extract(matrix_qij, 0, lengthOf, 0, lengthOf, cumulants_matrix, 0, im);
     }
 
