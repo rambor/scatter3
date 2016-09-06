@@ -1575,7 +1575,8 @@ public class Scatter {
                 //samplesList.removeAll();
 
                 if (clearALL){
-                 bufferFilesModel.clear();;
+                    ((Collection)collections.get(69)).removeAllDatasets();
+                 bufferFilesModel.clear();
                 }
             }
         });
@@ -1644,6 +1645,7 @@ public class Scatter {
                 bufferFilesModel.clear();
                 //buffersList.removeAll();
                 if (clearALL){
+                    ((Collection)collections.get(96)).removeAllDatasets();
                     sampleFilesModel.clear();;
                 }
             }

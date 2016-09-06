@@ -81,6 +81,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
         SAXSICA= new XYSeriesCollection();
     }
 
+
     @Override
     protected Object doInBackground() throws Exception {
         return null;
