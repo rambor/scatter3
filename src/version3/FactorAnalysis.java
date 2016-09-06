@@ -65,8 +65,11 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
 
     private TextTitle saxsChartTitle;
 
-    private Color outlineColor = new Color(70, 130, 180, 100);
-    private Color fillColor = new Color(70, 130, 180, 70);
+//    private Color outlineColor = new Color(70, 130, 180, 100);
+//    private Color fillColor = new Color(70, 130, 180, 70);
+
+    private Color outlineColor = new Color(0, 170, 255, 100);
+    private Color fillColor = new Color(0, 170, 255, 70);
 
     private MouseMarker signalPlotMouseMarker;
     private ArrayList<Color> colors;
@@ -412,8 +415,8 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
 
         saxsChartTitle = saxsChart.getTitle();
         saxsChartTitle.setFont(new Font("SansSerif", Font.PLAIN, 12));
-
-        saxsChartPanel.setVerticalAxisTrace(true);
+        saxsChartPanel.setHorizontalAxisTrace(false);
+        saxsChartPanel.setVerticalAxisTrace(false);
 
         final XYPlot plot = saxsChart.getXYPlot();
     /*
@@ -451,15 +454,17 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         //splineRend.setSeriesStroke(locale, temp.getStroke());
         //splineRend.setSeriesPaint(locale, temp.getColor().darker()); // make color slight darker
 
-        pointSize = 2;
+        pointSize = 4;
         negativePointSize = -0.5*pointSize;
         signalRenderer.setSeriesShape(0, new Ellipse2D.Double(negativePointSize, negativePointSize, pointSize, pointSize));
         signalRenderer.setSeriesLinesVisible(0, false);
-        signalRenderer.setSeriesPaint(0, new Color(70, 130, 180, 100));
-        signalRenderer.setSeriesShapesFilled(0, false);
 
-        signalRenderer.setSeriesOutlinePaint(0, outlineColor);
+        signalRenderer.setSeriesPaint(0, new Color(70, 130, 180, 70));
+        signalRenderer.setSeriesShapesFilled(0, true);
+
+        signalRenderer.setSeriesOutlinePaint(0, new Color(70, 130, 180, 100));
         signalRenderer.setSeriesOutlineStroke(0, new BasicStroke(1.0f));
+
 
         //frame = new ChartFrame("SC\u212BTTER \u2263 SIGNAL PLOT", chart);
         saxsChartPanel.setDisplayToolTips(true);

@@ -53,7 +53,6 @@ public class Scatter {
     private JRadioButton radioButtonLoad4;
     private JPanel miniGuinierPanel;
     private JPanel miniVcPanel;
-    private JPanel miniNormalizedKratkyPanel;
     private JPanel mini1;
     private JPanel mini2;
     private JPanel mini3;
@@ -249,6 +248,7 @@ public class Scatter {
     private JPanel subtractPanel;
     private JButton SVDButton;
     private JButton ICAButton;
+    private JPanel bottomMiniPanel;
 
     private String version = "3.0f";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -305,6 +305,7 @@ public class Scatter {
     public QIQPlot qIqPlot;
     public ErrorPlot errorPlot;
     public PowerLawPlot powerLawPlot;
+    public MiniPlots analysisMiniPlots;
 
     private static Similarity similarityObject;
 
@@ -769,6 +770,7 @@ public class Scatter {
         // define Singleton plots
         kratky = KratkyPlot.getInstance();
         log10IntensityPlot = PlotDataSingleton.getInstance();
+        analysisMiniPlots = MiniPlots.getInstance();
         qIqPlot = QIQPlot.getInstance();
         errorPlot = ErrorPlot.getInstance();
         powerLawPlot = PowerLawPlot.getInstance();
@@ -2787,12 +2789,22 @@ public class Scatter {
                 makeIt.start();
             }
         });
+
+        //analysisMiniPlots.createQIQChart();
+        analysisMiniPlots.setChartPanels(miniGuinierPanel, miniVcPanel, bottomMiniPanel);
+
+        tcm = analysisTable.getColumnModel();
+        tc = tcm.getColumn(4);
+        SpinnerEditor temp = (SpinnerEditor) tc.getCellEditor();
+        temp.setMiniPlot(analysisMiniPlots);
+
+        temp = (SpinnerEditor) tcm.getColumn(5).getCellEditor();
+        temp.setMiniPlot(analysisMiniPlots);
     }
 
 
     private void updateMiniPlots(int i) {
-
-
+        analysisMiniPlots.updatePlots(collectionSelected.getDataset(i));
     }
 
 
@@ -3654,6 +3666,7 @@ public class Scatter {
         private int rowID;
         private int colID;
         private int priorValue;
+        private MiniPlots mini;
 
         // Initializes the spinner - Constructor.
         public SpinnerEditor() {
@@ -3687,7 +3700,6 @@ public class Scatter {
             int current = (Integer) this.spinner.getValue() - 1;
             int direction;// = temp - this.priorValue;
             int limit;
-
 
             if (this.colID == 4){
 
@@ -3778,6 +3790,7 @@ public class Scatter {
             }
             // update plots
             // update_plots(rowID);
+            mini.updatePlots(dataset);
         }
 
         @Override
@@ -3839,6 +3852,10 @@ public class Scatter {
                         "Invalid value, discarding.");
             }
             return super.stopCellEditing();
+        }
+
+        public void setMiniPlot(MiniPlots plot){
+            this.mini = plot;
         }
 
     } // end of spinnerEditor

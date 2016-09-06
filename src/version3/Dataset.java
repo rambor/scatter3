@@ -949,6 +949,7 @@ public class Dataset {
 
 
     public XYSeries getQIQData(){ return qIqData;}
+    public XYDataItem getQIQDataItem(int index){ return qIqData.getDataItem(index);}
 
     public void clearPlottedQIQData(){
         plottedqIqData.clear();
