@@ -3,7 +3,6 @@ package version3;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.LogarithmicAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
@@ -11,11 +10,9 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.HorizontalAlignment;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 
 /**
  * Created by robertrambo on 04/09/2016.
@@ -41,8 +38,8 @@ public class MiniPlots {
     private static XYSeriesCollection kratkyCollection;
     private static XYSeriesCollection plotLog10Collection;
 
-    private static JPanel qiqPanel;
-    private static JPanel kratkyPanel;
+    private static JPanel topPanel;
+    private static JPanel midPanel;
     private static JPanel bottomPanel;
 
 
@@ -62,6 +59,7 @@ public class MiniPlots {
 
         createQIQChart();
         createKratkyChart();
+        createLogPlotChart();
     }
 
     /* Static 'instance' method */
@@ -93,10 +91,16 @@ public class MiniPlots {
             kratkyCollection.getSeries(0).add(dataset.getKratkyItem(i));
         }
 
+        endAt = dataset.getData().getItemCount();
+        for (int i=0; i<endAt; i++){
+            plotLog10Collection.getSeries(0).add(dataset.getData().getDataItem(i));
+        }
+
         //Color tempColor = dataset.getColor();
 
         qIqPlot.getRenderer(0).setSeriesPaint(0, dataset.getColor());
         kratkyPlot.getRenderer(0).setSeriesPaint(0, dataset.getColor());
+        log10Plot.getRenderer(0).setSeriesPaint(0, dataset.getColor());
 //        qIqPlot.getRenderer(0).setSeriesPaint(0, new Color(105,105,105, 85));
 //        kratkyPlot.getRenderer(0).setSeriesPaint(0, new Color(105,105,105, 85));
 
@@ -119,7 +123,7 @@ public class MiniPlots {
 
         log10Chart.getXYPlot().setDomainCrosshairVisible(false);
         log10Chart.getXYPlot().setRangeCrosshairVisible(false);
-        log10Chart.setTitle("Kratky Plot");
+        log10Chart.setTitle("log10 Intensity Plot");
         log10Chart.getTitle().setFont(new java.awt.Font("SansSerif", 1, 12));
         log10Chart.getTitle().setPaint(new Color(105,105,105));
 
@@ -131,9 +135,9 @@ public class MiniPlots {
         domainAxis.setAutoRangeStickyZero(true);
 
         quote = "log10 I(q)";
-        //rangeAxis.setLabel(quote);
-        //rangeAxis.setAutoRangeStickyZero(true);
-        //rangeAxis.setTickLabelsVisible(false);
+        rangeAxis.setLabel(quote);
+        rangeAxis.setAutoRangeStickyZero(true);
+        rangeAxis.setTickLabelsVisible(false);
 
 //        qIqChart.getLegend().setVisible(false);
 //
@@ -144,19 +148,17 @@ public class MiniPlots {
 
         log10Plot = log10Chart.getXYPlot();
         log10Plot.setDomainAxis(domainAxis);
-        //log10Plot.setRangeAxis(rangeAxis);
+        log10Plot.setRangeAxis(rangeAxis);
 
-        LogarithmicAxis yAxis = new LogarithmicAxis("eigenvalues");
-        yAxis.setLabel(quote);
-        yAxis.setAutoRangeStickyZero(true);
-        yAxis.setTickLabelsVisible(false);
-
-        log10Plot.setRangeAxis(yAxis);
+        //LogarithmicAxis yAxis = new LogarithmicAxis("eigenvalues");
+        //yAxis.setLabel(quote);
+        //yAxis.setAutoRangeStickyZero(true);
+        //yAxis.setTickLabelsVisible(false);
 
         log10Plot.setBackgroundAlpha(0.0f);
         log10Plot.setOutlineVisible(false);
         log10Plot.setDomainZeroBaselineVisible(true);
-        log10Plot.setRangeZeroBaselineVisible(true);
+        log10Plot.setRangeZeroBaselineVisible(false);
         log10Plot.setRangeZeroBaselineStroke(new BasicStroke(
                 1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
                 1.0f, new float[] {6.0f, 6.0f}, 0.0f
@@ -278,13 +280,13 @@ public class MiniPlots {
     }
 
 
-    public void setChartPanels(JPanel qIqPanel, JPanel kratkypanel, JPanel bottomPanel){
-        qiqPanel = qIqPanel;
-        kratkyPanel = kratkypanel;
+    public void setChartPanels(JPanel qIqPanel, JPanel midpanel, JPanel bottomPanel){
+        topPanel = qIqPanel;    //assign panels from Main
+        midPanel = midpanel;
         this.bottomPanel = bottomPanel;
 
-        qiqPanel.add(qIqChartPanel);
-        kratkyPanel.add(kratkyChartPanel);
+        topPanel.add(qIqChartPanel); // add charts to panels
+        midPanel.add(log10ChartPanel);
         this.bottomPanel.add(kratkyChartPanel);
     }
 }
