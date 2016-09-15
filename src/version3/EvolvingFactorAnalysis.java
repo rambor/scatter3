@@ -40,8 +40,8 @@ public class EvolvingFactorAnalysis extends SwingWorker {
 
         // initialize eigenvalue series to plot
         this.eigenValuesToKeep = numberOfEigenValuesToPlot;
-        if (numberOfEigenValuesToPlot < 6) {
-            this.initialNumberOfColumns = 6;
+        if (numberOfEigenValuesToPlot < 3) {
+            this.initialNumberOfColumns = 3;
         } else {
             this.initialNumberOfColumns = numberOfEigenValuesToPlot;
         }

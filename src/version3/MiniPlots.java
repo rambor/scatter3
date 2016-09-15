@@ -289,4 +289,12 @@ public class MiniPlots {
         midPanel.add(log10ChartPanel);
         this.bottomPanel.add(kratkyChartPanel);
     }
+
+
+    public void clearMiniPlots(){
+        qIQCollection.getSeries(0).clear();
+        kratkyCollection.getSeries(0).clear();
+        plotLog10Collection.getSeries(0).clear();
+    }
+
 }

@@ -265,7 +265,7 @@ public class RealSpace {
 
     public void setChi2(float j){
         chi2 = j;
-        this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(0));
+        this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(7));
         this.l1_norm = this.l1_norm_pddr(11);
         this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
         // System.out.println("CHI2 " + j + " " + this.kurtosis + " L1 " + this.l1_norm);
@@ -515,7 +515,7 @@ public class RealSpace {
          */
         prDistribution.clear();
         double totalPrPoints = (Math.ceil(fittedqIq.getMaxX()*dmax*invPi)*3);
-        int r_limit = (int)totalPrPoints -1;
+        int r_limit = (int)totalPrPoints;
         double deltar = dmax/totalPrPoints;
 
         double resultM;
@@ -538,7 +538,7 @@ public class RealSpace {
             }
 
             prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
-
+            System.out.println(j + " " + r_value);
             if (resultM < 0){
                 negativeValuesInModel = true;
             }
@@ -735,57 +735,39 @@ public class RealSpace {
 
         int limit = this.getMooreCoefficients().length;
         double[] ratio = new double[total];
-        double squared = 0;
-        double sumMean = 0;
+//        double squared = 0;
+//        double sumMean = 0;
         ArrayList<Double> test_ratios = new ArrayList<Double>();
 
         //System.out.println("KURTOSIS");
         double tempVar;
         for (int i=0; i<total; i++){
             XYDataItem values = this.fittedqIq.getDataItem(i);  // unscale data
-            // ratio of calc/obs
+            // calculate as difference I_calc - I_obs
             tempVar = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit, standardizationMean, standardizationStDev) - values.getYValue()/values.getXValue();
             ratio[i] = tempVar;
-            sumMean += tempVar;
-            squared += tempVar*tempVar;
+//            sumMean += tempVar;
+//            squared += tempVar*tempVar;
         }
 
-        double[] centered = new double[total];
-
-        double invtotal = 1.0/(double)total;
-        double standardizedMean = sumMean*invtotal;
-        double stdev = Math.sqrt(squared*invtotal - standardizedMean*standardizedMean);
-        double invstdev = 1.0/stdev;
-        // center the residuals
-
-        for (int i=0; i<total; i++){
-            centered[i] = (ratio[i] - standardizedMean)*invstdev;
-        }
-
-        // compute covariance matrix
-        // calculate variance-covariance matrix
-        // sum of eigen values restricted to Shannon Number
-
-
-
-
-
-//        double tempKurtosises = StatMethods.kurtosis(test_ratios);
+//        double[] centered = new double[total];
+//
+//        double invtotal = 1.0/(double)total;
+//        double standardizedMean = sumMean*invtotal;
+//        double stdev = Math.sqrt(squared*invtotal - standardizedMean*standardizedMean);
+//        double invstdev = 1.0/stdev;
+//        // center the residuals
+//        for (int i=0; i<total; i++){
+//            centered[i] = (ratio[i] - standardizedMean)*invstdev;
+//        }
 
         /*
          * bin the ratio
          * qmax*dmax/PI
          *
          */
-        //double qmin = this.fittedqIq.getMinX();
-        //double qmax = this.fittedqIq.getMaxX();
-
-        //int bins = (int)(Math.round(qmax*dmax/Math.PI)), locale;
-        //ArrayList<Double> kurtosises = new ArrayList<Double>();
         double[] kurtosises = new double[rounds];
         // calculate kurtosis
-        //double kurtosis = StatMethods.kurtosis(test_ratios);
-        //double kurtosis = StatMethods.prunedKurtosis(test_ratios);
         double qmin = this.fittedqIq.getMinX();
         double bins = this.mooreCoefficients.length*3.0;
         double delta_q = (this.fittedqIq.getMaxX()-qmin)/bins;
@@ -827,13 +809,8 @@ public class RealSpace {
             //System.out.println(i + " KURT : " + kurtosises[i]);
         }
 
-        // double returnMe = Collections.max(kurtosises);
         Arrays.sort(kurtosises);
         return kurtosises[3];
-        //return StatUtils.mean(kurtosises);
-        //System.out.println("Sample Kurtosis " + tempKurtosises);
-        //return tempKurtosises;
-        //return Statistics.calculateMedian(kurtosises);
     }
 
 

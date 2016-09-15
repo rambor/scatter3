@@ -15,6 +15,7 @@ import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Random;
 
 /**
  * Created by robertrambo on 30/08/2016.
@@ -50,6 +51,8 @@ public class IndependentComponentAnalysis extends SwingWorker {
     private int dimsymm;
     private int nbcm;
 
+    private JProgressBar bar;
+    private XYSeriesCollection testCollection;
 
     public IndependentComponentAnalysis(double qmin, double qmax, XYSeriesCollection datasets, int startIndexOfFrame, int numberOfEigenValuesToPlot, JProgressBar bar){
         this.qmin = qmin;
@@ -59,9 +62,18 @@ public class IndependentComponentAnalysis extends SwingWorker {
         this.startIndexOfFrame = startIndexOfFrame;
 
         // initialize eigenvalue series to plot
+//        if (numberOfEigenValuesToPlot < totalSets){
+//            useReduced = true;
+//            this.numberOfComponents = numberOfEigenValuesToPlot;
+//        }
+
+        System.out.println("EIGEN " + numberOfEigenValuesToPlot + " " + totalSets);
+        this.bar = bar;
         if (numberOfEigenValuesToPlot < totalSets){
             useReduced = true;
             this.numberOfComponents = numberOfEigenValuesToPlot;
+        } else {
+            this.numberOfComponents = totalSets;
         }
 
         // if total number of frames > numberOfComponents (k), must perform dimension reduction
@@ -69,22 +81,88 @@ public class IndependentComponentAnalysis extends SwingWorker {
         // sample 1 from each bin
         // perform ICA, and average the results
 
-        createMeanSubtractedDatasets();
-        createAMatrix();
-        performSVDAMatrix();
+//        createMeanSubtractedDatasets();
+//        createAMatrix();
+//        performSVDAMatrix();
+//
+//        //whitenDataSet();
+//        whitenAndReduceDataset();
+//        createCumulantMatrix();
+//        jointDiagonalizationCumulantMatrix();
+//
+//        SAXSICA= new XYSeriesCollection();
+    }
 
-        //whitenDataSet();
-        whitenAndReduceDataset();
-        createCumulantMatrix();
-        jointDiagonalizationCumulantMatrix();
 
-        SAXSICA= new XYSeriesCollection();
+    public IndependentComponentAnalysis(double qmin, double qmax, XYSeriesCollection datasets, int numberOfEigenValuesToPlot, JProgressBar bar){
+        this.qmin = qmin;
+        this.qmax = qmax;
+        this.datasets = datasets;
+        totalSets = datasets.getSeriesCount();
+
+        this.bar = bar;
+        // initialize eigenvalue series to plot
+        if (numberOfEigenValuesToPlot < totalSets){
+            useReduced = true;
+            this.numberOfComponents = numberOfEigenValuesToPlot;
+        } else {
+            this.numberOfComponents = totalSets;
+        }
+
+//        createMeanSubtractedDatasets();
+//        createAMatrix();
+//        performSVDAMatrix();
+//
+//        if (useReduced){
+//            whitenAndReduceDataset();
+//        } else {
+//            whitenDataSet();
+//        }
+//
+//        createCumulantMatrix();
+//        jointDiagonalizationCumulantMatrix();
+//
+//        SAXSICA= new XYSeriesCollection();
     }
 
 
     @Override
     protected Object doInBackground() throws Exception {
+
+        bar.setString("DEMIXING");
+        bar.setIndeterminate(true);
+
+        System.out.println("In Background ");
+
+        //make a fake dataset for testing
+
+        createMeanSubtractedDatasets();
+        createAMatrix();
+        performSVDAMatrix();
+
+        if (useReduced){
+            whitenAndReduceDataset();
+            System.out.println("In Background REDUCED");
+        } else {
+            whitenDataSet();
+        }
+
+        createCumulantMatrix();
+        jointDiagonalizationCumulantMatrix();
+        bar.setIndeterminate(false);
+        bar.setString("FINISHED");
         return null;
+    }
+
+    @Override
+    protected void done() {
+        try {
+            super.get();
+            System.out.println("done");
+            //can call other gui update code here
+        } catch (Throwable t) {
+            //do something with the exception
+        }
     }
 
 
@@ -94,7 +172,13 @@ public class IndependentComponentAnalysis extends SwingWorker {
     private void createMeanSubtractedDatasets(){
 
         meanCenteredSets = new XYSeriesCollection();
+        XYSeriesCollection ratioSets = new XYSeriesCollection();
+
         XYDataItem tempItem;
+
+        // create ratio of datasets
+        // create q-bins and randomly sample from each bin to make a dataset to invert
+        // estimate dmax and select 2 to 3 points from each bin?
 
         // for each dataset
         // calculate average value
@@ -107,10 +191,10 @@ public class IndependentComponentAnalysis extends SwingWorker {
             XYSeries tempSeries = datasets.getSeries(i);
             int totalInSeries = tempSeries.getItemCount();
 
-
             for(int j=0; j<totalInSeries; j++){
                 tempItem = tempSeries.getDataItem(j);
                 if (tempItem.getXValue() >= qmin && tempItem.getXValue() <= qmax){
+                    //sum += tempItem.getYValue()*tempItem.getXValue(); // q*I(q)
                     sum += tempItem.getYValue();
                     count += 1;
                 }
@@ -125,11 +209,11 @@ public class IndependentComponentAnalysis extends SwingWorker {
             for(int j=0; j<totalInSeries; j++){
                 tempItem = tempSeries.getDataItem(j);
                 if (tempItem.getXValue() >= qmin && tempItem.getXValue() <= qmax){
-                    meanCenteredSets.getSeries(i).add(tempItem.getXValue(), (tempItem.getYValue() - mean));
+                    //meanCenteredSets.getSeries(i).add(tempItem.getXValue(), (tempItem.getYValue()*tempItem.getXValue() - mean)); // q*I(q)
+                    meanCenteredSets.getSeries(i).add(tempItem.getXValue(), (tempItem.getYValue() - mean)); //
                 }
             }
         }
-
 
         // create matrix of original values bounded by qmin and qmax
         originalMatrixX = new DenseMatrix64F(totalSets, meanCenteredSets.getSeries(0).getItemCount());
@@ -139,7 +223,8 @@ public class IndependentComponentAnalysis extends SwingWorker {
         for(int j=0; j<refSeries.getItemCount(); j++){
             tempItem = refSeries.getDataItem(j);
             if (tempItem.getXValue() >= qmin && tempItem.getXValue() <= qmax){
-                originalMatrixX.set(0, count, tempItem.getYValue()); // could try q*I(q) also
+                //originalMatrixX.set(0, count, tempItem.getYValue()*tempItem.getXValue()); //  q*I(q)
+                originalMatrixX.set(0, count, tempItem.getYValue()); //
                 count++;
             }
         }
@@ -153,11 +238,13 @@ public class IndependentComponentAnalysis extends SwingWorker {
             for(int j=0; j<refSeries.getItemCount(); j++){
                 tempItem = refSeries.getDataItem(j);
                 if (tempItem.getXValue() >= qmin && tempItem.getXValue() <= qmax){
-                    int indexOf = tempSeries.indexOf(refSeries.getX(j));
+                    int indexOf = tempSeries.indexOf(tempItem.getXValue());
                     if (indexOf > -1){
-                        originalMatrixX.set(row, count, tempSeries.getDataItem(indexOf).getYValue());
+                        //originalMatrixX.set(row, count, tempSeries.getDataItem(indexOf).getYValue()*tempSeries.getDataItem(indexOf).getXValue()); // q*I(q)
+                        originalMatrixX.set(row, count, tempSeries.getDataItem(indexOf).getYValue()); // q*I(q)
                     } else { // interpolate
-                        Double[] results = Functions.interpolate(tempSeries, refSeries.getX(j).doubleValue(), 1);
+                        Double[] results = Functions.interpolate(tempSeries, tempItem.getXValue(), 1);
+                        //originalMatrixX.set(row, count, results[1]*tempItem.getXValue());
                         originalMatrixX.set(row, count, results[1]);
                         System.out.println("Not found! Interpolating for Original Matrix q : " + refSeries.getX(j));
                     }
@@ -166,7 +253,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
             }
         }
 
-        cols_number_of_q_values = meanCenteredSets.getSeries(0).getItemCount();
+        cols_number_of_q_values = meanCenteredSets.getSeries(0).getItemCount(); // based on first dataset as reference
         System.out.println("FINISHED CENTERING");
     }
 
@@ -182,19 +269,19 @@ public class IndependentComponentAnalysis extends SwingWorker {
         matrixX = new DenseMatrix64F(totalSets, cols_number_of_q_values);
         // matrixX = new DenseMatrix64F(rows, totalSets);
         // DenseMatrix64F matrixATranspose = new DenseMatrix64F(rows, totalSets);
-        int row=0;
+
         // fill first column and use q-values as standard for subsequent rows
         XYSeries refSeries = meanCenteredSets.getSeries(0);
         for(int j=0; j<cols_number_of_q_values; j++){
             tempItem = refSeries.getDataItem(j);
-            matrixX.set(0, j, tempItem.getYValue()); // could try q*I(q) also
+            matrixX.set(0, j, tempItem.getYValue()); //
         }
 
         // add remaining sets but check their q-values are in reference
-        row = 1;
-        for(int s=1; s<totalSets; s++){
 
-            XYSeries tempSeries = meanCenteredSets.getSeries(s);
+        for(int row=1; row<totalSets; row++){
+
+            XYSeries tempSeries = meanCenteredSets.getSeries(row);
             for(int j=0; j<cols_number_of_q_values; j++){
 
                 int indexOf = tempSeries.indexOf(refSeries.getX(j));
@@ -206,7 +293,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
                     System.out.println("Not found! Interpolating q : " + refSeries.getX(j));
                 }
             }
-            row++;
+
         }
     }
 
@@ -277,7 +364,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
      */
     private void whitenDataSet(){
         // svd whitendataset
-
+        System.out.println("NO REDUCTION SOURCES = SIGNALS " + numberOfComponents + " = " + matrixX.getNumRows());
         int numrows = S_matrix.getNumRows();
         DenseMatrix64F D_matrix = new DenseMatrix64F(numrows, numrows);
         double invTotal = 1.0/(double)totalSets;
@@ -316,7 +403,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
          *
          */
         double on = 0;
-        int range = numberOfComponents;
+        //int range = numberOfComponents;
 
         int endAt = numberOfComponents;
         int colAt = 0;
@@ -326,6 +413,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
         while(endAt < lengthOfCM){ // m*nbcm
             for (int i=0; i<numberOfComponents; i++){
                 value = cumulants_matrix.get(i,i+colAt);
+                System.out.println(i + " " + endAt + " => " + (colAt + i) + " ON " + value);
                 on += value*value;
             }
             colAt = endAt;
@@ -338,7 +426,7 @@ public class IndependentComponentAnalysis extends SwingWorker {
         double off = CommonOps.elementSum(cumulants_matrix_element_product) + on;
 
 
-        double seiul = 0.000001/Math.sqrt((double)cols_number_of_q_values);
+        double seiul = 0.0000001/Math.sqrt((double)cols_number_of_q_values);
         boolean encore = true;
         int sweep = 0;
         int updates = 0;
@@ -404,63 +492,94 @@ public class IndependentComponentAnalysis extends SwingWorker {
                         on = on + gain;
                         off = off - gain;
                     }
-
                 }
             }
             System.out.println("Updates : " + upds);
         }
 
         System.out.println("Finished => |theta| " + Math.abs(theta) + " < " + seiul);
-
         CommonOps.transpose(matrix_V);
         System.out.println("matrix_V : " + matrix_V.getNumRows() + " " + matrix_V.getNumCols());
         System.out.println("WHITENING MATRIX (DB) : " + DB_matrix.getNumRows() + " " + DB_matrix.getNumCols());
 
         DenseMatrix64F demixingMatrix = new DenseMatrix64F(DB_matrix.getNumRows(), DB_matrix.getNumCols());
-        CommonOps.mult(matrix_V, DB_matrix, demixingMatrix);
+        DenseMatrix64F demixingMatrixTemp = new DenseMatrix64F(DB_matrix.getNumRows(), DB_matrix.getNumCols());
+        CommonOps.mult(matrix_V, DB_matrix, demixingMatrixTemp);
 
         // sort the matrix in terms of amplitudes
         DenseMatrix64F invMatrix = new DenseMatrix64F(DB_matrix.getNumCols(), DB_matrix.getNumRows());
-        CommonOps.pinv(demixingMatrix, invMatrix);
+        CommonOps.pinv(demixingMatrixTemp, invMatrix);
         ArrayList<Pair> indices = new ArrayList<>();
-        column_sort_matrix(invMatrix, indices);
+        column_sort_matrix(invMatrix, indices, demixingMatrixTemp);
 
+        // get first column of demixing matrix and determine signs
+        DenseMatrix64F signMatrix = new DenseMatrix64F(DB_matrix.getNumRows(), DB_matrix.getNumRows());
+        for (int i=0; i<DB_matrix.getNumRows(); i++){
+            signMatrix.set(i,i, (int)Math.signum( Math.signum(demixingMatrixTemp.get(i,0) + 0.1) ) );
+        }
+
+        CommonOps.mult(signMatrix, demixingMatrixTemp, demixingMatrix);
         DenseMatrix64F output = new DenseMatrix64F(B_matrix.getNumRows(), matrixX.getNumCols());
+
+        SAXSICA= new XYSeriesCollection();
 
         if (useReduced){
             // reduce the data then demix
-            //DenseMatrix64F reduced_XMatrix = new DenseMatrix64F(B_matrix.getNumRows(), matrixX.getNumCols());
-            //CommonOps.mult(B_matrix, matrixX, reduced_XMatrix);
-            //System.out.println("REDUCED MATRIX : " + reduced_XMatrix.getNumRows() + " x (cols)" + reduced_XMatrix.getNumCols());
             System.out.println("DEMIXING MATRX : " + demixingMatrix.getNumRows() + " x (cols) " + demixingMatrix.getNumCols());
-            //System.out.println("REDUCED MATRIX : " + reduced_XMatrix.getNumRows() + " x " + reduced_XMatrix.getNumCols());
-            //CommonOps.mult(demixingMatrix, matrixX, output);
-
             CommonOps.mult(demixingMatrix, originalMatrixX, output);
-
 
             XYSeries tempSeries = meanCenteredSets.getSeries(0);
             double q_value;
-            for (int row=0; row<1; row++){
-                System.out.println("Dataset : " + row);
+            int totalrows = output.getNumRows();
+            for (int row=0; row<totalrows; row++){
+                SAXSICA.addSeries(new XYSeries("SERIES " + row));
                 for(int j=0; j<cols_number_of_q_values; j++){
                     q_value = tempSeries.getX(j).doubleValue();
-                    System.out.println(q_value + " " + output.get(row, j)+ " " + output.get(row+1, j));
+                    //System.out.println(q_value + " " + output.get(row, j)+ " " + output.get(row+1, j) );
+                    SAXSICA.getSeries(row).add(q_value, output.get(row, j));
                 }
             }
 
 
-        } else {
+            for (int row=0; row<1; row++){
+                for(int j=0; j<cols_number_of_q_values; j++){
+                    q_value = tempSeries.getX(j).doubleValue();
+                    if (output.getNumRows() > 2){
+                        System.out.println(q_value + " " + output.get(row, j)+ " " + output.get(row+1, j) + " " + output.get(row+2, j));
+                    } else {
+                        System.out.println(q_value + " " + output.get(row, j)+ " " + output.get(row+1, j));
+                    }
 
+                }
+            }
+
+        } else { // not using reduced dataset
+            //CommonOps.mult(demixingMatrix, originalMatrixX, output);
+            CommonOps.mult(demixingMatrix, matrixX, output);
+
+            XYSeries tempSeries = meanCenteredSets.getSeries(0);
+            double q_value;
+            int totalrows = output.getNumRows();
+            for (int row=0; row<totalrows; row++){
+                SAXSICA.addSeries(new XYSeries("SERIES " + row));
+                for(int j=0; j<cols_number_of_q_values; j++){
+                    q_value = tempSeries.getX(j).doubleValue();
+                    //System.out.println(q_value + " " + output.get(row, j)+ " " + output.get(row+1, j));
+                    SAXSICA.getSeries(row).add(q_value, output.get(row, j));
+                }
+            }
         }
 
         // column sum of output matrix norm
         
     }
 
-    private void column_sort_matrix(DenseMatrix64F output, ArrayList<Pair> indices) {
+    public XYSeriesCollection getSAXSICA(){return SAXSICA;}
+
+    private void column_sort_matrix(DenseMatrix64F output, ArrayList<Pair> indices, DenseMatrix64F matrixToSort) {
         int rowsOf = output.getNumRows();
         int colsOf = output.getNumCols();
+        DenseMatrix64F tempMatrix = new DenseMatrix64F(matrixToSort.getNumRows(), matrixToSort.getNumCols());
         double value, sum;
         // for each column, sum down row
         for (int c=0; c<colsOf; c++){
@@ -481,6 +600,17 @@ public class IndependentComponentAnalysis extends SwingWorker {
         System.out.println("SORTED COLUMNS (descending) :");
         for(int i=0; i<indices.size(); i++){
             System.out.println(i + " " + indices.get(i).column + " => " + indices.get(i).value);
+        }
+        System.out.println(output.getNumRows() + " x " + output.getNumCols() + " | " + matrixToSort.getNumRows() + " x " + matrixToSort.getNumCols());
+        System.out.println("Total sorted : " + indices.size());
+        // sort the matrix, make copy and replace
+        int totalToSort = matrixToSort.getNumRows();
+        for (int i=0; i<totalToSort; i++){
+            CommonOps.extract(matrixToSort, indices.get(i).column, indices.get(i).column+1, 0, matrixToSort.getNumCols(), tempMatrix, i, 0);
+        }
+        // replace
+        for (int i=0; i<totalToSort; i++){
+            CommonOps.extract(tempMatrix, i, i+1, 0, matrixToSort.getNumCols(), matrixToSort, i, 0);
         }
     }
 
@@ -631,27 +761,31 @@ public class IndependentComponentAnalysis extends SwingWorker {
         System.out.println("transposed Whitened X : " + Xijm_matrixX_mult.getNumRows() + " " + Xijm_matrixX_mult.getNumCols());
 
         double invT = 1.0/cols_number_of_q_values, value;
-        int range = numberOfComponents;
+        int startColumn = 0;
 
         for (int im=0; im<numberOfComponents; im++){
             CommonOps.extractColumn(whitened_matrix, im, vector_Xim);
-            CommonOps.elementMult(vector_Xim, vector_Xim, vector_Xijm);
+            //CommonOps.elementMult(vector_Xim, vector_Xim, vector_Xijm);
+            CommonOps.elementPower(vector_Xim, 2, vector_Xijm);
 
             // form Q_ij
             Xijm_matrixX_mult = elementwiseMultiplyVectorMatrix(vector_Xijm, whitened_matrix);
             CommonOps.transpose(Xijm_matrixX_mult);
             CommonOps.mult(Xijm_matrixX_mult, whitened_matrix, matrix_Qij); // return square matrix
+
+            // Qij = ((scale* (Xim.*Xim)) .* X ) * X' 	- R - 2 * R(:,im)*R(:,im)' ;
             CommonOps.scale(invT, matrix_Qij);
             CommonOps.subtractEquals(matrix_Qij, matrix_R);
-
+            //matrix_R.set(im, im, 2); // 2 * R(:,im)*R(:,im)'
+            //CommonOps.subtractEquals(matrix_Qij, matrix_R);
             value = matrix_Qij.get(im,im)-2;
             matrix_Qij.set(im, im, value);
             // add to cumulant matrix
-            update_cumulant_matrix(cumulants_matrix, matrix_Qij, range, numberOfComponents);
+            update_cumulant_matrix(cumulants_matrix, matrix_Qij, startColumn, numberOfComponents);
 
-            range += numberOfComponents;
+            startColumn += numberOfComponents;
 
-            for (int jm=0; jm<(im-1); jm++){
+            for (int jm=0; jm<= (im-1); jm++){ // skipped on first one and second?
 
                 CommonOps.extractColumn(whitened_matrix, jm, vector_Xijm_temp);
                 CommonOps.elementMult(vector_Xim, vector_Xijm_temp, vector_Xijm);
@@ -668,8 +802,8 @@ public class IndependentComponentAnalysis extends SwingWorker {
                 //scale by square root 2
                 CommonOps.scale(sqrt2, matrix_Qij);
                 // add to cumulant matrix
-                update_cumulant_matrix(cumulants_matrix, matrix_Qij, range, numberOfComponents);
-                range += numberOfComponents;
+                update_cumulant_matrix(cumulants_matrix, matrix_Qij, startColumn, numberOfComponents);
+                startColumn += numberOfComponents;
             }
         }
     }
@@ -680,15 +814,15 @@ public class IndependentComponentAnalysis extends SwingWorker {
      *
      * @param cumulants_matrix destination matrix
      * @param matrix_qij source matrix
-     * @param im starting column position in cumulants
+     * @param startColumn starting column position in cumulants
      * @param lengthOf
      */
-    private void update_cumulant_matrix(DenseMatrix64F cumulants_matrix, DenseMatrix64F matrix_qij, int im, int lengthOf) {
+    private void update_cumulant_matrix(DenseMatrix64F cumulants_matrix, DenseMatrix64F matrix_qij, int startColumn, int lengthOf) {
 
       //  System.out.println(" NC : " + numberOfComponents +  " " + lengthOf + " mxn : " + cumulants_matrix.getNumRows() + " x " + cumulants_matrix.getNumCols());
       //  System.out.println(" matrix_qij : " + matrix_qij.getNumRows() + " " + matrix_qij.getNumCols());
-      //  System.out.println(" im : " + im);
-        CommonOps.extract(matrix_qij, 0, lengthOf, 0, lengthOf, cumulants_matrix, 0, im);
+        // cumulants is destination
+        CommonOps.extract(matrix_qij, 0, lengthOf, 0, lengthOf, cumulants_matrix, 0, startColumn);
     }
 
     /**
@@ -705,13 +839,147 @@ public class IndependentComponentAnalysis extends SwingWorker {
 
         DenseMatrix64F returnMe = new DenseMatrix64F(matrixRows,cols);
 
-
         for (int row=0; row< matrixRows; row++){
             double value = columnVector.get(row,0);
             for(int col=0; col<cols; col++){
                 returnMe.set(row, col, value*matrix.get(row,col));
+                //System.out.println("VALUE*MATRIX " + matrix.get(row,col));
             }
         }
+
         return returnMe;
+    }
+
+    private void createTestDataset(){
+//        %=======================================================================
+//        n	= 3 	;  % M = number of sources
+//        m	= 4	;  % m = number of sensors (add the relevant lines in S= ...)
+//        T	= 200	;  % sample size
+//        NdB	= -30 	;  % kind of noise level in dB
+//        %----------------------------------------------------------------------------
+//
+//                f1 = 0.013 ;
+//        f2 = 0.02 ;
+//
+//        s1	=     1.2*cos(2*pi*f1*(1:T)) ;
+//        s2	= sign(cos(2*pi*f2*(1:T))) ;
+//        s3	=      randn(1,T) ;
+//        s4	= sign(randn(1,T)) ;
+//
+//
+//        S	= [ s1 ; s2 ; s3  ] ;
+        Random rand = new Random();
+
+
+        double f1 = 0.013;
+        double f2 = 0.025;
+
+        this.numberOfComponents = 3;
+        this.useReduced = true; // numberOfComponents < signals
+        int signals = 4;
+        this.cols_number_of_q_values = 200;
+        double noiseLevel = -30;
+
+        qmin = 1;
+        qmax = cols_number_of_q_values;
+
+
+        DenseMatrix64F sources = new DenseMatrix64F(cols_number_of_q_values, numberOfComponents);
+
+        System.out.println("SOURCES");
+
+        for(int i=0; i<cols_number_of_q_values; i++){
+            sources.set(i,0, 0.7*Math.cos(2*Math.PI*f1*(i+1)));
+            //sources.set(i,1, 0.9*Math.signum(Math.cos(2*Math.PI*f2*(i+1))) + 1);
+            sources.set(i,1, 0.9*(Math.cos(2*Math.PI*f2*(i+1))) + 1);
+            sources.set(i,2, rand.nextGaussian());
+            System.out.println((i+1) + " " + sources.get(i,0) + " " + sources.get(i,1) + " " + sources.get(i,2));
+        }
+
+        CommonOps.transpose(sources);
+//        %%%%%%%%%%%  Mixing %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+//        % mixing and noising
+//
+//
+//        % random mixing matrix
+        double noiseamp = Math.pow(10, (noiseLevel/20.0));
+        DenseMatrix64F a_matrix = new DenseMatrix64F(signals, numberOfComponents);
+        for(int i=0; i<signals; i++){
+            for(int j=0; j<numberOfComponents; j++){
+                a_matrix.set(i,j,rand.nextDouble() + noiseamp);
+            }
+        }
+
+        //
+        DenseMatrix64F testData = new DenseMatrix64F(signals, cols_number_of_q_values);
+        CommonOps.mult(a_matrix, sources, testData);
+
+        // make XYSeriesCollection
+        totalSets = signals;
+
+
+        testCollection = new XYSeriesCollection();
+
+        for (int i=0; i<signals; i++){
+            testCollection.addSeries(new XYSeries(i));
+            for (int j=0; j<cols_number_of_q_values; j++){
+                testCollection.getSeries(i).add((j+1),  testData.get(i,j));
+            }
+        }
+
+        //ArrayList<String> datatext = new ArrayList<>();
+        String tempString;
+        System.out.println("MIXTURE MODEL ");
+        for (int j=0; j<cols_number_of_q_values; j++){
+            tempString=String.valueOf(j+1);
+            for (int i=0; i<signals; i++){
+                tempString += " " + testCollection.getSeries(i).getY(j);
+            }
+            System.out.println(tempString);
+        }
+
+
+    }
+
+    public void runTest(){
+        this.createTestDataset();
+        datasets = testCollection;
+
+
+        createMeanSubtractedDatasets();
+        createAMatrix();
+        performSVDAMatrix();
+
+        if (useReduced){
+            whitenAndReduceDataset();
+            System.out.println("In Background REDUCED");
+        } else {
+            whitenDataSet();
+        }
+
+        createCumulantMatrix();
+        jointDiagonalizationCumulantMatrix();
+
+        // print SAXSICA
+        double q_value;
+        ArrayList<String> outputLines = new ArrayList<>(cols_number_of_q_values);
+        String value ="";
+
+        for(int j=0; j<cols_number_of_q_values; j++){
+            value=String.valueOf(j+1);
+            for(int i=0; i<SAXSICA.getSeriesCount(); i++ ){
+                value += " " + SAXSICA.getSeries(i).getY(j);
+            }
+            // write to array
+            outputLines.add(value);
+        }
+
+
+        System.out.println("PRINTING SOURCES");
+
+        for(int i=0; i<cols_number_of_q_values; i++){
+            System.out.println(outputLines.get(i));
+        }
+
     }
 }

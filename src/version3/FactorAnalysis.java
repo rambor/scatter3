@@ -344,9 +344,16 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
             //}
 
             efaplot.setDataset(0, forward);  //Moore Function
-        } else{
+        } else {
             // ICA
-            IndependentComponentAnalysis ica = new IndependentComponentAnalysis(finalQmin, finalQmax,tempCollection, startFrame, totalSVD, progressBar1);
+            System.out.println("DOING ICA");
+//            Thread makeIt = new Thread(){
+//                public void run() {
+                    IndependentComponentAnalysis ica = new IndependentComponentAnalysis(finalQmin, finalQmax,tempCollection, startFrame, totalSVD, progressBar1);
+                    ica.execute();
+//                }
+//            };
+            //makeIt.start();
         }
     }
 

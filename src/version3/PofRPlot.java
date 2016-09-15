@@ -27,13 +27,13 @@ public class PofRPlot {
     private  ChartPanel outPanel;
     private  boolean crosshair = true;
 
-    private XYSeriesCollection plottedCollection;;
+    private XYSeriesCollection plottedCollection;
     private XYSeriesCollection splineCollection = new XYSeriesCollection();
     private XYSeriesCollection pdbCollection = new XYSeriesCollection();
 
     private XYSplineRenderer splineRend = new XYSplineRenderer();
     private XYLineAndShapeRenderer renderer1 = new XYSplineRenderer();
-    private Collection collectionInUse;
+   // private Collection collectionInUse;
 
     //Container content = f.getContentPane();
     private static PofRPlot singleton = new PofRPlot( );
@@ -57,6 +57,9 @@ public class PofRPlot {
                 }
             }
         }));
+
+        plottedCollection = new XYSeriesCollection();
+        splineCollection = new XYSeriesCollection();
     }
 
     /* Static 'instance' method */
@@ -67,13 +70,15 @@ public class PofRPlot {
     public void plot(Collection collection, WorkingDirectory workingDirectory, JPanel panelForPlot) {
 
         plottedCollection = new XYSeriesCollection();
-        collectionInUse = collection;
+        splineCollection = new XYSeriesCollection();
+        //collectionInUse = collection;
 
         int totalC = collection.getDatasetCount();
+        System.out.println("Total C " + totalC);
         for (int i=0; i<totalC; i++){
-
             if (collection.getDataset(i).getInUse()){
                 splineCollection.addSeries(collection.getDataset(i).getRealSpaceModel().getPrDistribution());
+                System.out.println(i + " TOTAL IN PR " +collection.getDataset(i).getRealSpaceModel().getPrDistribution().getItemCount());
             }
         }
 
@@ -159,18 +164,15 @@ public class PofRPlot {
         plot.setDomainCrosshairVisible(true);
         plot.setRangeCrosshairVisible(true);
 
+        splineRend = new XYSplineRenderer();
+        renderer1 = new XYSplineRenderer();
+
         splineRend.setBaseShapesVisible(false);
         renderer1.setBaseShapesVisible(false);
 
-        plot.setDataset(0, splineCollection);  //Moore Function
-        plot.setRenderer(0, splineRend);       //render as a line
-
-        plot.setDataset(1, pdbCollection);
-        plot.setRenderer(1, renderer1);
         renderer1.setBaseStroke(new BasicStroke(2.0f));
 
         // renderer1.setBaseLinesVisible(false);
-
         int locale = 0;
         //double negativePointSize;
         for (int i=0; i < collection.getDatasets().size(); i++){
@@ -179,10 +181,16 @@ public class PofRPlot {
                 //splineRend.setSeriesOutlineStroke();
                 splineRend.setSeriesStroke(locale, temp.getStroke());
                 splineRend.setSeriesPaint(locale, temp.getColor().darker()); // make color slight darker
+             //   chart.getXYPlot().getRenderer(0).setSeriesVisible(locale, true);
                 locale++;
             }
         }
 
+        plot.setDataset(0, splineCollection);  //Moore Function
+        plot.setRenderer(0, splineRend);       //render as a line
+
+        plot.setDataset(1, pdbCollection); //PDB data
+        plot.setRenderer(1, renderer1);
 
         //frame.getChartPanel().setBorder(b);
         //frame.getContentPane().add(chartPanel);

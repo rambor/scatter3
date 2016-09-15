@@ -141,7 +141,7 @@ public class Dataset {
         this.id = id;
 
         Random r=new Random();
-        color = new Color(r.nextInt(256),r.nextInt(256),r.nextInt(256), 70);
+        color = new Color(r.nextInt(256),r.nextInt(256),r.nextInt(256));
         inUse = true;
 
         experimentalNotes ="";

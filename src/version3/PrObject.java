@@ -335,7 +335,6 @@ public class PrObject implements Runnable {
         //double ymax = -1000000;
         //double value;
 
-
         for(int r=0; r<totalItems; r++){
             tempData = qIqDatset.getDataItem(r);
             data.add(tempData.getX(), (tempData.getYValue() - standardizedMin)*invstdev);

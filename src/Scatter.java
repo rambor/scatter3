@@ -1,5 +1,6 @@
 import com.sun.xml.internal.ws.api.pipe.FiberContextSwitchInterceptor;
 import net.iharder.dnd.FileDrop;
+import org.apache.commons.math3.stat.descriptive.moment.Kurtosis;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
@@ -249,6 +250,7 @@ public class Scatter {
     private JButton SVDButton;
     private JButton ICAButton;
     private JPanel bottomMiniPanel;
+    private JButton testButton;
 
     private String version = "3.0f";
     private static WorkingDirectory WORKING_DIRECTORY;
@@ -1546,6 +1548,11 @@ public class Scatter {
                     }
                 }
 
+
+                if (selectB==0){ // assume data is subtracted and do auto-Rg
+
+                }
+
                 if (selectB < 1 || selectS < 1){
                     return;
                 }
@@ -2017,10 +2024,22 @@ public class Scatter {
                     prTable.validate();
                 }
 
+
+
+                for(int i=0; i<collectionSelected.getDatasetCount(); i++){
+                    if (collectionSelected.getDataset(i).getInUse()){
+                        collectionSelected.getDataset(i).getRealSpaceModel().setSelected(true);
+                    } else {
+                        collectionSelected.getDataset(i).getRealSpaceModel().setSelected(false);
+                    }
+                }
+
+
                 prModel.clear();
                 prModel.addDatasetsFromCollection(collectionSelected);
                 prModel.fireTableDataChanged();
                 mainPane.setSelectedIndex(2);
+
 
                 IofQPofRPlot iofqPofRplot = IofQPofRPlot.getInstance();
                 iofqPofRplot.clear();
@@ -2802,13 +2821,58 @@ public class Scatter {
 
         temp = (SpinnerEditor) tcm.getColumn(5).getCellEditor();
         temp.setMiniPlot(analysisMiniPlots);
+
+        ICAButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // get qmin and qmax
+
+                Thread makeIt = new Thread(){
+                    public void run() {
+                        AnalysisICA icaTemp = new AnalysisICA(collectionSelected);
+                        icaTemp.execute();
+                    }
+                };
+
+                makeIt.start();
+
+            }
+        });
+
+
+        testButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                Dataset temp;
+
+                for(int i=0; i<collectionSelected.getDatasetCount(); i++){
+                    Dataset tempData = collectionSelected.getDataset(i);
+                    if (tempData.getInUse()){
+                        temp = collectionSelected.getDataset(i);
+                        XYSeries tempSeries = new XYSeries("kurt");
+
+                        for (int j=temp.getStart(); j<temp.getEnd(); j++){
+                            tempSeries.add(temp.getAllData().getDataItem(j));
+                        }
+
+                        KurtosisSolver kurtsolver = new KurtosisSolver(tempSeries, 84);
+                        kurtsolver.run();
+                        System.out.println(kurtsolver.isDone());
+                        break;
+                    }
+                }
+
+
+
+            }
+        });
     }
 
 
     private void updateMiniPlots(int i) {
         analysisMiniPlots.updatePlots(collectionSelected.getDataset(i));
     }
-
 
 
     AbstractAction subtractButtonPressed = new AbstractAction() {
@@ -2862,8 +2926,8 @@ public class Scatter {
         ((Collection)collections.get(panel)).setNote("Drop Files in Colored Box for Set " + panel);
 
         prModel.clear();
-
         PofRPlot pofRPlot = PofRPlot.getInstance();
+
         pofRPlot.clear();
         IofQPofRPlot iofQPofRPlot = IofQPofRPlot.getInstance();
         iofQPofRPlot.clear();
@@ -2873,9 +2937,14 @@ public class Scatter {
 
         analysisModel.clear();
         resultsModel.clear();
+        analysisMiniPlots.clearMiniPlots();
 
         prStatusLabel.setText("");
         status.setText("Cleared");
+
+
+
+
         closeWindows();
     }
 

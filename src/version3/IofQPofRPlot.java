@@ -104,6 +104,7 @@ public class IofQPofRPlot {
         //plot.setDomainZeroBaselineVisible(false);
         plot.setOutlineVisible(false);
 
+        splineRend = new XYSplineRenderer();
         renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
         renderer1.setBaseShapesVisible(true);
         renderer1.setBaseShapesFilled(false);
@@ -278,7 +279,6 @@ public class IofQPofRPlot {
     public void clear(){
         this.scatterCollection.removeAllSeries();
         this.splineCollection.removeAllSeries();
-
     }
 
     public boolean inUse(){

@@ -65,6 +65,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         this.fireTableRowsDeleted(row, row);
     }
 
+
     public void clear(){
         datalist.clear();
 
