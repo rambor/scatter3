@@ -54,6 +54,9 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     private XYSeries bufferError = new XYSeries("buffer error");
     private boolean useRg = false;
     private double threshold;
+    private int startAtPoint;
+
+    private boolean useqIq = false;
 
     public SignalPlot(Collection sampleCollection, Collection bufferCollection, JLabel status, boolean useRg, JProgressBar bar, double threshold){
         this.samplesCollection = sampleCollection;
@@ -61,6 +64,27 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         plotMe = new XYSeriesCollection();
         plotRg = new XYSeriesCollection();
 
+        this.useRg = useRg;
+        mainStatus = bar;
+        this.status = status;
+        this.threshold = threshold;
+    }
+
+    /**
+     * This constructor assumes data is already subtracted
+     * @param sampleCollection Subtracted Dataset
+     * @param status JLabel for sending messages to main
+     * @param useRg Boolean to do autoRg
+     * @param bar progressbar for calculation from main
+     * @param threshold cutoff for AutoRG
+     */
+    public SignalPlot(Collection sampleCollection, JLabel status, boolean useRg, JProgressBar bar, double threshold){
+        this.samplesCollection = sampleCollection;
+        this.buffersCollection = new Collection();
+        plotMe = new XYSeriesCollection();
+        plotRg = new XYSeriesCollection();
+
+        useqIq = true;
         this.useRg = useRg;
         mainStatus = bar;
         this.status = status;
@@ -88,6 +112,12 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         this.makeBuffer();
         this.makeSamples();
         return plotMe;
+    }
+
+
+    public void setPointsToExclude(int value){
+        startAtPoint = value;
+        System.out.println("Number of points to exclude : " + value);
     }
 
     private void writeData(){
@@ -124,6 +154,77 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         Functions.writeLinesToFile(linesToFile, "signal_plot.txt", samplesCollection.getWORKING_DIRECTORY_NAME());
     }
 
+
+    /**
+     * use if samplesCollection contains subtracted data
+     */
+    private void makeSamplesFromSubtractedData(){
+        Dataset tempDataset;
+        XYDataItem tempXY;
+
+        XYSeries qIqData = new XYSeries("ratio"), tempData;
+        XYSeries errorOfUse = new XYSeries("errorset");
+
+        int total = samplesCollection.getDatasetCount();
+        int totalXY;
+        int seriesCount=0;
+        double area;
+        double[] izeroRg;
+
+        mainStatus.setValue(0);
+        mainStatus.setStringPainted(true);
+        mainStatus.setString("Processing");
+        System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
+
+        if (lastFrame <= 0 || lastFrame <= firstFrame){
+            lastFrame = total;
+        }
+
+        for(int i=0; i < total; i++){
+
+            if (i >= firstFrame && i < lastFrame){
+                tempDataset = samplesCollection.getDataset(i);
+                qIqData.clear();
+                tempData = tempDataset.getAllData();
+                totalXY = tempData.getItemCount();
+
+                // create XY Series using ratio to buffer then integrate
+                for(int q=startAtPoint; q < totalXY; q++){
+                    tempXY = tempData.getDataItem(q);
+                    qIqData.add(tempXY.getX(), tempXY.getYValue()*tempXY.getXValue());
+                }
+
+                // if number of points is less than 100, skip
+                if (qIqData.getItemCount() > 100){
+                    // integrate
+                    Dataset dataInUse = samplesCollection.getDataset(i);
+                    plotMe.addSeries(new XYSeries(dataInUse.getFileName()));
+                    area = Functions.trapezoid_integrate(qIqData);
+                    plotMe.getSeries(seriesCount).add(i, area);
+
+                    if (useRg){ // make double plot if checked
+
+                        status.setText("AUTO-Rg FOR : " + dataInUse.getFileName());
+                        plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
+                        if (area > threshold){
+                            izeroRg = Functions.autoRgTransformIt(tempData, tempDataset.getAllDataError(), startAtPoint+1);
+                            plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+                        } else {
+                            plotRg.getSeries(seriesCount).add(i,0);
+                        }
+
+                    }
+                    seriesCount++;
+                }
+            }
+            mainStatus.setValue((int) (i / (double) total * 100));
+        }
+
+        Toolkit.getDefaultToolkit().beep();
+        mainStatus.setMinimum(0);
+        mainStatus.setStringPainted(false);
+        mainStatus.setValue(0);
+    }
 
     /**
      * creates XYSeries collections used for plotting
@@ -180,7 +281,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                         plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
                         if (area > threshold){
                             ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
-                            izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), 1);
+                            izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), startAtPoint+1);
                             plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
                         } else {
                             plotRg.getSeries(seriesCount).add(i,0);
@@ -390,6 +491,9 @@ public class SignalPlot extends SwingWorker<Void, Void> {
      */
         final NumberAxis domainAxis = new NumberAxis("Sample ID");
         final NumberAxis rangeAxis = new NumberAxis("Integral of Ratio to Background");
+        if (useqIq){
+            rangeAxis.setLabel("Integral of q*I(q)");
+        }
         final NumberAxis rangeAxisRight = new NumberAxis("Rg");
 
         rangeAxis.setRange(plotMe.getRangeLowerBound(true) - 0.01*plotMe.getRangeLowerBound(true), plotMe.getRangeUpperBound(true) + 0.02*plotMe.getRangeUpperBound(true));
@@ -459,9 +563,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             renderer1.setSeriesOutlineStroke(i, new BasicStroke(2.0f));
         }
 
-
-
-
         frame = new ChartFrame("SC\u212BTTER \u2263 SIGNAL PLOT", chart);
         frame.getChartPanel().setDisplayToolTips(true);
 
@@ -503,26 +604,35 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     @Override
     protected Void doInBackground() throws Exception {
 
-
         int select = buffersCollection.getTotalSelected();
         int sampleSize = samplesCollection.getTotalSelected();
 
         if (select > 0){
             status.setText("compiling buffers");
             this.makeBuffer();
-        } else if (sampleSize > 2) {
+        } else if (sampleSize > 2 && !useqIq) {
             // if buffer size is zero, estimate background from samples
+            // make signal plot from q*Iq
             this.estimateBackgroundFrames();
             // make a Runnable class that operates on windows of the data and updates treeset
         }
 
+
         status.setText("compiling samples");
-        this.makeSamples();
+        if (useqIq){
+            this.makeSamplesFromSubtractedData();
+        } else {
+            this.makeSamples();
+        }
+
         status.setText("Writing Signal Plot");
         this.writeData();
+
+
         status.setText("Making Plot");
         this.makePlot();
         mainStatus.setIndeterminate(false);
+
 
         return null;
     }

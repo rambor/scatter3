@@ -19,8 +19,9 @@ public class StatMethods {
 
         double m2=0, m4=0, diff, mm;
         double mean = mean_array_list(values);
-        double inverse_n = 1.0/pointsToUse;
 
+        double inverse_n = 1.0/pointsToUse;
+        //System.out.println("Mean " + mean);
         for (int i=0; i<pointsToUse; i++){
             diff = (values.get(i) - mean);
             mm = diff*diff;
@@ -29,7 +30,9 @@ public class StatMethods {
         }
 
         double quotient = inverse_n*m2; // standard deviation squared => variance
-        kurtosis = inverse_n*m4/(quotient*quotient) - 3;
+        //kurtosis = inverse_n*m4 - 3*quotient*quotient;
+        kurtosis = Math.abs(inverse_n*m4/(quotient*quotient) - 3);
+        //kurtosis = inverse_n*m4/(quotient*quotient);
 
         return kurtosis;
     }

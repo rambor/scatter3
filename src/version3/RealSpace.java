@@ -262,15 +262,6 @@ public class RealSpace {
         return chi2;
     }
 
-
-    public void setChi2(float j){
-        chi2 = j;
-        this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(7));
-        this.l1_norm = this.l1_norm_pddr(11);
-        this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
-        // System.out.println("CHI2 " + j + " " + this.kurtosis + " L1 " + this.l1_norm);
-    }
-
     public float getScale(){
         return scale;
     }
@@ -458,11 +449,14 @@ public class RealSpace {
             // calculate chi over all the data bounded by Spinners
             this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
             //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
-            this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(7));
-            this.l1_norm = this.l1_norm_pddr(3);
+            this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(13));
+            //this.l1_norm = this.l1_norm_pddr(1);
+            //this.l1_norm = this.l1_norm_pddr(3);
+            //this.l1_norm = this.l1_norm_pddr(7);
+            this.l1_norm = this.l1_norm_pddr(11);
 
             System.out.println("SETTING MOORE COEFFICIENTS " + totalMooreCoefficients + " L1 : " + this.l1_norm + " K :" + this.kurtosis);
-            this.kurt_l1_sum = 0.1*this.kurtosis + 1000*this.l1_norm;
+            this.kurt_l1_sum = (0.1000*this.kurtosis + 100*this.l1_norm);
             //this.kurt_l1_sum = 0.9*this.l1_norm;
         } catch (Exception e) {
             e.printStackTrace();
@@ -538,7 +532,7 @@ public class RealSpace {
             }
 
             prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
-            System.out.println(j + " " + r_value);
+            //System.out.println(j + " " + r_value);
             if (resultM < 0){
                 negativeValuesInModel = true;
             }
@@ -639,14 +633,11 @@ public class RealSpace {
         double dmaxq = dmax*q;
 
         double resultM = mooreCoefficients[0];
-        //double resultM = 0;
-        //double twodivpi = 2.0/Math.PI;
 
         for(int i=1; i < totalMooreCoefficients; i++){
             resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
         }
 
-        //data.add(tempData.getX(), (tempData.getYValue() - standardizedMin)*invstdev);
         //return (resultM*invq + mooreCoefficients[0])*standardizationStDev + standardizationMean;
         return (resultM*standardizationStDev + standardizationMean)*invq;
     }
@@ -682,6 +673,7 @@ public class RealSpace {
         double inv_d = 1.0/this.dmax;
         double r_value, pi_r_n_inv_d, pi_r_inv_d, cos_pi_r_n_inv_d, sin_pi_r_n_inv_d;
         double pi_inv_d = Math.PI*inv_d;
+        double n_pi_inv_d;
         double inv_2d = inv_d*0.5;
         double a_i;
 
@@ -704,23 +696,37 @@ public class RealSpace {
 
         int r_limit = (int)shannon + 1;
 
+        double costerm, sinterm;
+
         for (int r=0; r < r_limit; r++){
             r_value = r_vector[r];
             pi_r_inv_d = pi_inv_d*r_value;
+
             a_i_sum = 0;
+            costerm = 0;
+            sinterm = 0;
 
             for(int n=1; n < coeffs_size; n++){
                 //a_i = am.get(n,0);
                 a_i = this.mooreCoefficients[n];
+                n_pi_inv_d = pi_inv_d*n;
+
                 pi_r_n_inv_d = pi_r_inv_d*n;
-                cos_pi_r_n_inv_d = inv_d*n*Math.cos(pi_r_n_inv_d);
-                sin_pi_r_n_inv_d = Math.sin(pi_r_n_inv_d);
-                product = pi_r_inv_d*inv_2d*n*n*sin_pi_r_n_inv_d;
-                a_i_sum += a_i*cos_pi_r_n_inv_d + a_i*product;
+//                cos_pi_r_n_inv_d = inv_d*n*Math.cos(pi_r_n_inv_d);
+//                sin_pi_r_n_inv_d = Math.sin(pi_r_n_inv_d);
+//
+//                product = pi_r_inv_d*inv_2d*n*n*sin_pi_r_n_inv_d;
+//                a_i_sum += a_i*cos_pi_r_n_inv_d + a_i*product;
+
+                costerm += a_i*n_pi_inv_d*Math.cos(pi_r_n_inv_d);
+                sinterm += a_i*n_pi_inv_d*n_pi_inv_d*Math.sin(pi_r_n_inv_d);
             }
-            l1_norm += Math.abs(a_i_sum);
+
+            l1_norm += Math.abs(2*costerm - r_value*sinterm);
+            //l1_norm += Math.abs(a_i_sum);
         }
-        //System.out.println("l1_norm pddr " + l1_norm);
+
+        //System.out.println("l1_norm pddr " + (l1_norm/shannon));
         return l1_norm/shannon;
     }
 
@@ -735,31 +741,17 @@ public class RealSpace {
 
         int limit = this.getMooreCoefficients().length;
         double[] ratio = new double[total];
-//        double squared = 0;
-//        double sumMean = 0;
         ArrayList<Double> test_ratios = new ArrayList<Double>();
 
         //System.out.println("KURTOSIS");
-        double tempVar;
+        //double tempVar;
         for (int i=0; i<total; i++){
             XYDataItem values = this.fittedqIq.getDataItem(i);  // unscale data
             // calculate as difference I_calc - I_obs
-            tempVar = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit, standardizationMean, standardizationStDev) - values.getYValue()/values.getXValue();
-            ratio[i] = tempVar;
-//            sumMean += tempVar;
-//            squared += tempVar*tempVar;
+            //tempVar = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit, standardizationMean, standardizationStDev);
+            ratio[i] = Functions.moore_Iq(this.getMooreCoefficients(), this.dmax, values.getXValue(), limit, standardizationMean, standardizationStDev) - values.getYValue()/values.getXValue();
         }
 
-//        double[] centered = new double[total];
-//
-//        double invtotal = 1.0/(double)total;
-//        double standardizedMean = sumMean*invtotal;
-//        double stdev = Math.sqrt(squared*invtotal - standardizedMean*standardizedMean);
-//        double invstdev = 1.0/stdev;
-//        // center the residuals
-//        for (int i=0; i<total; i++){
-//            centered[i] = (ratio[i] - standardizedMean)*invstdev;
-//        }
 
         /*
          * bin the ratio
@@ -782,10 +774,12 @@ public class RealSpace {
             int startbb = 0, upperbb = 0;
             test_ratios.clear();
 
+            // same percent out of each bin
+            samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
+
             for (int b=1; b < bins; b++) {
                 // find upper q in bin
                 // SAMPLE randomly per bin
-                samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
                 lowerLimit = (delta_q * b + qmin);
 
                 binloop:
@@ -797,6 +791,7 @@ public class RealSpace {
                 }
 
                 // grab indices inbetween startbb and upperbb
+                //System.out.println("bin " + b + " " + (upperbb - startbb));
                 randomNumbers = Functions.randomIntegersBounded(startbb, upperbb, samplingLimit);
                 startbb = upperbb;
 
@@ -806,11 +801,11 @@ public class RealSpace {
             }
             // calculate kurtosis
             kurtosises[i] = StatMethods.kurtosis(test_ratios);
-            //System.out.println(i + " KURT : " + kurtosises[i]);
+            //System.out.println(i + " KURT : " + kurtosises[i] + " SL : " + samplingLimit);
         }
 
         Arrays.sort(kurtosises);
-        return kurtosises[3];
+        return kurtosises[(rounds-1)/2];
     }
 
 
@@ -1085,7 +1080,6 @@ public class RealSpace {
                     values = Functions.interpolateOriginal(data, error, cardinal);
                     diff = values[1] - (standardizationStDev*(mooreCoefficients[0] + mooreCoefficients[i]*dmax_inv_pi) + standardizationMean)*inv_card;
                     //System.out.println(i + " " + cardinal + " " + values[1] + " " + (((mooreCoefficients[0] + mooreCoefficients[i]*dmax_inv_pi)*standardizationStDev + standardizationMean)*inv_card) );
-                    //System.out.println(i + " " + cardinal + " obs " + values[1] + "( "+ values[2] + " )  calc => " + (standardizationStDev*(mooreCoefficients[0] + mooreCoefficients[i]*dmax_inv_pi*inv_card) + standardizationMean));
                     chi += (diff*diff)/(values[2]*values[2]);
                     df += 1.0;
                 }

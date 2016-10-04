@@ -251,8 +251,10 @@ public class Scatter {
     private JButton ICAButton;
     private JPanel bottomMiniPanel;
     private JButton testButton;
+    private JTextField subtractThresholdField;
+    private JComboBox excludeComboBox;
 
-    private String version = "3.0f";
+    private String version = "3.0g";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -261,6 +263,7 @@ public class Scatter {
     private static String BEAMLINEMANUFACTURER="";
     private static String XRAYSOURCE="";
     private static String ATSAS_DIRECTORY="";
+    private static String THRESHOLD="";
 
     private static DefaultListModel<DataFileElement> dataFilesModel;
     private DefaultListModel<DataFileElement> fitFilesModel;
@@ -1548,24 +1551,22 @@ public class Scatter {
                     }
                 }
 
-
-                if (selectB==0){ // assume data is subtracted and do auto-Rg
-
+                SignalPlot tempSignalPlot;
+                if (selectB < 1 && selectS > 3){
+                    // if no buffers, assuming subtracted and do q*Iq plot
+                    tempSignalPlot = new SignalPlot(sampleCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+                    //return;
+                } else {
+                    tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
                 }
-
-                if (selectB < 1 || selectS < 1){
-                    return;
-                }
-
-                SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
 
                 tempSignalPlot.setFirstLastFrame(firstIndexInSignalPlot, lastIndexInSignalPlot);
 
                 tempSignalPlot.setSampleJList(samplesList);
+                tempSignalPlot.setPointsToExclude(Integer.valueOf((String)excludeComboBox.getSelectedItem()));
 
                 Thread temp1 = new Thread(tempSignalPlot);
                 temp1.start();
-
             }
         });
 
@@ -2682,7 +2683,6 @@ public class Scatter {
                 packageIt.setVisible(true);
 
                 updateProp();
-
             }
         });
 
@@ -2843,28 +2843,73 @@ public class Scatter {
         testButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                NonNegativeMatrixFactorization nmf = new NonNegativeMatrixFactorization();
+                nmf.test();
 
-                Dataset temp;
+//                Dataset temp;
+//
+//                for(int i=0; i<collectionSelected.getDatasetCount(); i++){
+//                    Dataset tempData = collectionSelected.getDataset(i);
+//                    if (tempData.getInUse()){
+//                        temp = collectionSelected.getDataset(i);
+//                        XYSeries tempSeries = new XYSeries("kurt");
+//
+//                        for (int j=temp.getStart(); j<temp.getEnd(); j++){
+//                            tempSeries.add(temp.getAllData().getDataItem(j));
+//                        }
+//
+//                        KurtosisSolver kurtsolver = new KurtosisSolver(tempSeries, 84);
+//                        kurtsolver.run();
+//                        System.out.println(kurtsolver.isDone());
+//                        break;
+//                    }
+//                }
+            }
+        });
 
-                for(int i=0; i<collectionSelected.getDatasetCount(); i++){
-                    Dataset tempData = collectionSelected.getDataset(i);
-                    if (tempData.getInUse()){
-                        temp = collectionSelected.getDataset(i);
-                        XYSeries tempSeries = new XYSeries("kurt");
+        l1NormCheckBox.setSelected(true);
+        checkBoxDirect.setSelected(true);
 
-                        for (int j=temp.getStart(); j<temp.getEnd(); j++){
-                            tempSeries.add(temp.getAllData().getDataItem(j));
-                        }
+        subtractThresholdField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
 
-                        KurtosisSolver kurtsolver = new KurtosisSolver(tempSeries, 84);
-                        kurtsolver.run();
-                        System.out.println(kurtsolver.isDone());
-                        break;
+                String myString = subtractThresholdField.getText();
+                try {
+                    double newvalue = Double.parseDouble(myString);
+                    if (newvalue > 0 && newvalue < 11.1){
+                        thresholdField.setText(myString);
+                        THRESHOLD=myString;
+                        updateProp();
                     }
                 }
+                catch (NumberFormatException exception) {
+                    //Not a number
+                    subtractThresholdField.setText(thresholdField.getText());
+                    System.out.println(exception.getMessage());
+                }
+            }
+        });
 
-
-
+        thresholdField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+                String myString = thresholdField.getText();
+                try {
+                    double newvalue = Double.parseDouble(myString);
+                    if (newvalue > 0 && newvalue < 11.1){
+                        subtractThresholdField.setText(myString);
+                        THRESHOLD=myString;
+                        updateProp();
+                    }
+                }
+                catch (NumberFormatException exception) {
+                    //Not a number
+                    thresholdField.setText(subtractThresholdField.getText());
+                    System.out.println(exception.getMessage());
+                }
             }
         });
     }
@@ -2903,6 +2948,7 @@ public class Scatter {
             prop.setProperty("subtractionDirectory", OUTPUT_DIR_SUBTRACTION_NAME);
             prop.setProperty("xraysource", XRAYSOURCE);
             prop.setProperty("beamlineOrManufacturer", BEAMLINEMANUFACTURER);
+            prop.setProperty("threshold", THRESHOLD);
             // save properties to project root folder
             prop.store(output, null);
 
@@ -3048,6 +3094,10 @@ public class Scatter {
                     BEAMLINEMANUFACTURER = prop.getProperty("beamlineOrManufacturer");
                 }
 
+                THRESHOLD="0.44";
+                if (prop.getProperty("threshold") != null) {
+                    THRESHOLD = prop.getProperty("threshold");
+                }
 
             } catch (IOException ex) {
                 ex.printStackTrace();

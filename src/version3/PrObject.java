@@ -304,10 +304,10 @@ public class PrObject implements Runnable {
 
     /**
      * Constructor assumes fittedqIq is standardized already
-     * @param fittedqIq
-     * @param qmax
-     * @param dmax
-     * @param lambda
+     * @param fittedqIq XYSeries data
+     * @param qmax max q value
+     * @param dmax dmax
+     * @param lambda tolerance
      */
     public PrObject(XYSeries fittedqIq, double qmax, double dmax, double lambda){
 
@@ -1054,7 +1054,7 @@ public class PrObject implements Runnable {
     public ArrayList<double[]> moore_coeffs_L1(){
 
         ArrayList<double[]> results = new ArrayList<>(2);
-
+        System.out.println("LAMBDA : " + lambda + " Moore COEFF => dmax " + dmax);
         int ns = (int) Math.floor(qmax*dmax*INV_PI) + 1; //shannon points
         int coeffs_size = ns + 1;   //+1 for constant background
         //int coeffs_size = ns // no background correction
@@ -1067,7 +1067,7 @@ public class PrObject implements Runnable {
         // does not include 0 or dmax
         for(int i=0; i< r_limit; i++){
             r_vector[i] = (i+1)*del_r;
-            //System.out.println(i + " => " + r_vector[i] + " delr " + del_r);
+        //    System.out.println(i + " => " + r_vector[i] + " delr " + del_r);
         }
 
         double pi_d = Math.PI*dmax;
@@ -1240,7 +1240,7 @@ public class PrObject implements Runnable {
             //------------------------------------------------------------
             if (gap/dobj < reltol) {
                 status = "Solved";
-                //System.out.println("SOLVED : " + " | ratio " + gap/dobj + " < reltol " + reltol);
+                System.out.println("SOLVED : " + " | ratio " + gap/dobj + " < reltol " + reltol + " at " + ntiter);
                 break calculationLoop;
             }
 
@@ -1299,12 +1299,14 @@ public class PrObject implements Runnable {
                 //System.out.println("Updating PCG tolerance: " + pcgtol);
             }
 
+            // laplacian = 2*ATA
+            // d1 and d2 are scaled by 1/t
             hessian = hessphi_coeffs(laplacian, d1, d2, coeffs_size);
 
             /*
              *
              */
-            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, pcgtol, pcgmaxi, t*tau);
+            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, pcgtol, pcgmaxi, tau);
 
             dx = answers.get(0);
             du = answers.get(1);
@@ -1592,8 +1594,7 @@ public class PrObject implements Runnable {
         double normL1;
         double[] d3Array = new double[u_size];
         double phi, new_phi, logfSum, gdx, normg, pcgtol;
-        double resultM, am_value, u_value, invdiff2, cnir_row, cnir_col, value_at_g1, value_at_g2, sum, diff, value_at_d1, invdiff;
-        double inv_2d = 0.5*inv_d;
+        double am_value, u_value, invdiff2, cnir_row, cnir_col, value_at_g1, value_at_g2, sum, diff, value_at_d1, invdiff;
         //initialize f
 
         String status;
@@ -1639,8 +1640,8 @@ public class PrObject implements Runnable {
             //------------------------------------------------------------
             //System.out.println(ntiter + " GAP  ratio " + (gap/dobj ) + " " + pobj + " dobj " + dobj);
             if (gap/dobj < reltol) {
-                //status = "Solved";
-                System.out.println(ntiter + " Solved => " + gap/dobj + " " + reltol);
+                status = "Solved";
+                //System.out.println(ntiter + " Solved => " + gap/dobj + " " + reltol);
                 break calculationLoop;
             }
 
@@ -1828,7 +1829,7 @@ public class PrObject implements Runnable {
              *
              *
              */
-            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, pcgtol, pcgmaxi, t*tau);
+            answers = linearPCG(hessian, gradux.scale(-1.0), dxu, d1, pcgtol, pcgmaxi, tau);
 
             dx = answers.get(0);
             du = answers.get(1);
@@ -1911,15 +1912,15 @@ public class PrObject implements Runnable {
 
         results.get(0)[0] = am.get(0,0);
 
-        for (int j=0;j < r_limit;j++){
-            double pi_dmax_r = Math.PI/dmax*r_vector[j];
-            resultM = 0;
-            for(int i=1; i < coeffs_size; i++){
+        //for (int j=0;j < r_limit;j++){
+        //    double pi_dmax_r = Math.PI/dmax*r_vector[j];
+        //    resultM = 0;
+        //    for(int i=1; i < coeffs_size; i++){
                 //System.out.println(i + " " + am.get(i,0));
-                resultM += am.get(i,0)*FastMath.sin(pi_dmax_r*i);
-            }
+        //        resultM += am.get(i,0)*FastMath.sin(pi_dmax_r*i);
+        //    }
             //System.out.println(r_vector[j] + " " + 1/Math.PI*0.5*r_vector[j]*resultM);
-        }
+        //}
         return results;
     }
 
@@ -2432,7 +2433,6 @@ public class PrObject implements Runnable {
             beta = z_plus_1.transpose().mult(r_plus_1.minus(r)).get(0,0)/(z.transpose().mult(r)).get(0,0);
             //Fletcher Reeves
             //beta = z_plus_1.transpose().mult(r_plus_1).get(0,0)*(z.transpose().mult(r)).get(0,0);
-
             /*
              * k => k + 1
              */
@@ -2481,12 +2481,14 @@ public class PrObject implements Runnable {
         for(int row=0; row < n; row++){
             for(int col=0; col< n; col++){
                 if (row == col){
-                    //preConditioner.set(row,row,2*designMatrix.get(row,row)+d1.get(row,row));
-                    preConditioner.set(row,row,2+d1.get(row,row));
+                    //preConditioner.set(row,row, designMatrix.get(row,row));
+                    preConditioner.set(row,row,2*tauT+d1.get(row,row));
                     // d3.set(row,row,2+d1.get(row,row));
                 }
                 if (row != col){ // preserve diagonal entries and just add D1
-                    preConditioner.set(row, col, d1.get(row, col));
+                    preConditioner.set(row, col, 0);
+                    //System.out.println("d1 " + row + " " + d1.get(row, col));
+                    //preConditioner.set(row, col, d1.get(row, col));
                 }
             }
         }
@@ -2512,25 +2514,7 @@ public class PrObject implements Runnable {
 
         SimpleMatrix xu_vector = initial.copy();
         int xu_size = xu_vector.getNumElements();
-        /*
-        // from Boyd Start
-        SimpleMatrix r1 = new SimpleMatrix(xu_size/2,1);
-        SimpleMatrix r2 = new SimpleMatrix(xu_size/2,1);
 
-        for(int row=0; row<xu_size/2; row++){
-            r1.set(row,0,r.get(row,0));
-            r2.set(row,0,r.get(row+xu_size/2,0));
-        }
-
-        SimpleMatrix top = p1.mult(r1).minus(p2.mult(r2));
-        SimpleMatrix bot = p3.mult(r2).minus(p2.mult(r1));
-
-        for(int row=0; row<xu_size/2; row++){
-            d.set(row,0,top.get(row,0));
-            d.set(row+xu_size/2,0,bot.get(row,0));
-        }
-        // from Boyd END
-        */
         SimpleMatrix z_plus_1 ;//= new SimpleMatrix(xu_size,1);
 
         SimpleMatrix x_vector = new SimpleMatrix(n, 1);
@@ -2558,22 +2542,6 @@ public class PrObject implements Runnable {
                 r_plus_1 = r.minus(q.scale(alpha)); // r_k+1 = r_k - alpha_k * A*p_k
             }
 
-            /*
-            // from Boyd Start
-            for(int row=0; row<xu_size/2; row++){
-                r1.set(row,0,r.get(row,0));
-                r2.set(row,0,r.get(row+xu_size/2,0));
-            }
-
-            top = p1.mult(r1).minus(p2.mult(r2));
-            bot = p3.mult(r2).minus(p2.mult(r1));
-
-            for(int row=0; row<xu_size/2; row++){
-                s_.set(row,0,top.get(row,0));
-                s_.set(row+xu_size/2,0,bot.get(row,0));
-            }
-            // from Boyd END
-             */
 
             z_plus_1 = invertM.mult(r_plus_1);
 

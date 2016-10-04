@@ -28,7 +28,7 @@ import java.util.*;
 public class Functions {
 
 
-    private static List<Integer> sequence = new ArrayList<Integer>();
+    private static List<Integer> sequence = new ArrayList<>();
     private static Random generator = new Random();
     private static double[] n_pi_squared = {
             0.000,
@@ -296,7 +296,7 @@ public class Functions {
     public static int[] randomIntegersBounded(int lower, int upper, double percent){
 
 
-        List<Integer> numbers = new ArrayList<Integer>();
+        List<Integer> numbers = new ArrayList<>();
 
         int total = 0;
         for(int i = lower; i < upper; i++) {
@@ -844,13 +844,17 @@ int cols, rows;
         double dmaxq = dmax*q;
         double sin_dmaxq = Math.sin(dmaxq);
 
-        double resultM=0;
+        //double resultM=0;
+        double resultM=a_m[0];
         for(int i=1; i < limit; i++){
                 resultM = resultM + Constants.TWO_DIV_PI*a_m[i]*Math.PI*i*dmax*Math.pow(-1,i+1)*sin_dmaxq/(Math.pow(Math.PI*i, 2) - dmaxq*dmaxq);
         }
 
-        return ((resultM*invq + a_m[0])*standardizationStDev + standardizationMean);
+        //return ((resultM*invq + a_m[0])*standardizationStDev + standardizationMean);
         //return resultM*invq;
+        return (resultM*standardizationStDev + standardizationMean)*invq;
+
+
     }
 
     public static double moore_Iq_L(ArrayList<Double> a_m, double dmax, double q, int limit, boolean background){
@@ -1286,7 +1290,6 @@ int cols, rows;
     /**
      *
      * @param data XYSeries non-log10 data
-     * @param error XYSeries non-log10 error
      * @param point double point to be determined
      * @param scaleFactor
      * @return
@@ -1359,7 +1362,7 @@ int cols, rows;
     }
 
     /**
-     *
+     * transforms data to q^2 vs ln I(q)
      * @param data q-values and intensities of dataset
      * @param errors associated errors
      * @param startAt index from spinner
@@ -1797,14 +1800,20 @@ int cols, rows;
         //Kriging interpolation, use input log10 data
         int [] z = new int[6];
         int index=0;
-        //loop over data to find the smalllest q rather than than point
+        //loop over data to find the smalllest q rather than the point
 
-        for (int i=0; i< data.getItemCount()-1; i++) {
+        for (int i=0; i< data.getItemCount(); i++) {
             if (data.getX(i).doubleValue() > point){
                 index = i;
                 break;
             }
         }
+
+        // if index is last point, need to backoff to estimate
+        if (index == data.getItemCount()-1){
+            index = data.getItemCount()-3;
+        }
+
 
         if (index <=1){
             for (int k=0; k<6; k++){
@@ -1822,6 +1831,8 @@ int cols, rows;
                 z[k+2]=index+k;
             }
         }
+
+
 
         double scale = data.getX(z[5]).doubleValue() - data.getX(z[0]).doubleValue();
 

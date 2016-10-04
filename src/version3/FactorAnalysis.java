@@ -47,6 +47,16 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
     private JProgressBar progressBar1;
     private JLabel messagesLabel;
     private JButton EFAButton;
+    private JLabel qminLabel;
+    private JLabel qmaxLabel;
+    private JLabel svdLabel;
+    private JLabel efaLabel;
+    private JLabel componentLabel;
+    private JLabel deltaLabel;
+    private JLabel label2;
+    private JPanel label1;
+    private JPanel leftPanel;
+    private JPanel rightPanel;
 
     private ArrayList<Double> means;
     private double minQValueOfSet;
