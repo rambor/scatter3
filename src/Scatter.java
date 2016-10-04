@@ -254,7 +254,7 @@ public class Scatter {
     private JTextField subtractThresholdField;
     private JComboBox excludeComboBox;
 
-    private String version = "3.0g";
+    private String version = "3.0h";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
