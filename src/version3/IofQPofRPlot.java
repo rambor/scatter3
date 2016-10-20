@@ -241,8 +241,9 @@ public class IofQPofRPlot {
 
         scatterCollection.removeAllSeries();
         splineCollection.removeAllSeries();
-
+        System.out.println("Total Collection InUse " + totalC);
         for(int i=0;i<totalC; i++){
+            System.out.println(i + " InUse ? " + collectionInUse.getDataset(i).getInUse());
             if (collectionInUse.getDataset(i).getInUse()){
                 collectionInUse.getDataset(i).getRealSpaceModel().calculateQIQ();
                 scatterCollection.addSeries(collectionInUse.getDataset(i).getRealSpaceModel().getfittedqIq());

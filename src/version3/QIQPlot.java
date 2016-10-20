@@ -194,6 +194,18 @@ public class QIQPlot {
             renderer1.setSeriesOutlineStroke(i, temp.getStroke());
         }
 
+        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
+        popup.add(new JMenuItem(new AbstractAction("Export Plotted Data") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                ExportData temp = new ExportData(plottedDatasets, workingDirectoryName, "QIQ");
+                temp.pack();
+                temp.setVisible(true);
+            }
+        }));
+
+
         //frame.setLocation(350, 350);
         frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDisplayToolTips(true);

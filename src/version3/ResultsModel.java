@@ -10,7 +10,7 @@ public class ResultsModel extends AbstractTableModel {
 
     private final LinkedList<Dataset> datalist;
 
-    private String[] columnNames = new String[]{"", "", "I(0)", "real", "<html>R<sub>g</sub></html>", "real", "<html>V<sub>c</sub></html>", "Volume", "Protein", "RNA", "r", "<html>d<sub>max</sub></html>", "<html>R<sub>c</sub></html>", "<html>P<sub>x</sub></html>"};
+    private String[] columnNames = new String[]{"", "", "I(0)", "real", "<html>R<sub>g</sub></html>", "real", "<html>V<sub>c</sub></html>", "Volume", "MW 1.0", "MW 1.37","Protein", "RNA", "r", "<html>d<sub>max</sub></html>", "<html>R<sub>c</sub></html>", "<html>P<sub>x</sub></html>"};
 
     public ResultsModel(){
         datalist = new LinkedList<Dataset>();
@@ -67,19 +67,25 @@ public class ResultsModel extends AbstractTableModel {
                 return vol;
             //return (int)dataset.getPorodVolume();
             case 8:
+                String mass11 = "<html><p><b>" + (dataset.getPorodVolumeMass1p1()/1000) + "</b></p><p>" + (dataset.getPorodVolumeRealMass1p1()/1000) + "</p></html>";
+                return mass11;
+            case 9:
+                String mass137 = "<html><p><b>" + (dataset.getPorodVolumeMass1p37()/1000) + "</b></p><p>" + (dataset.getPorodVolumeRealMass1p37()/1000) + "</p></html>";
+                return mass137;
+            case 10:
                 String massP = "<html><p><b>" + Constants.Scientific1.format(dataset.getMassProtein()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getMassProteinReal()) + "</p></html>";
                 //return scientific.format(dataset.getMassProtein());
                 return massP;
-            case 9:
+            case 11:
                 String massR = "<html><p><b>" + Constants.Scientific1.format(dataset.getMassRna()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getMassRnaReal()) + "</p></html>";
                 return massR;
-            case 10:
-                return Constants.OneDecPlace.format(dataset.getAverageR());
-            case 11:
-                return (int)dataset.getDmax();
             case 12:
-                return Constants.TwoDecPlace.format(dataset.getRc());
+                return Constants.OneDecPlace.format(dataset.getAverageR());
             case 13:
+                return (int)dataset.getDmax();
+            case 14:
+                return Constants.TwoDecPlace.format(dataset.getRc());
+            case 15:
                 return Constants.OneDecPlace.format(dataset.getPorodExponent());
             default:
                 return null;

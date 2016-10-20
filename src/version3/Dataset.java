@@ -77,6 +77,13 @@ public class Dataset {
     private double averageRSigma;
     private int porodVolume = 0;
     private int porodVolumeReal = 0;
+
+    private int porodMass1p1 = 0;
+    private int porodRealMass1p1 = 0;
+    private int porodMass1p37 = 0;
+    private int porodRealMass1p37 = 0;
+
+
     private double vc;
     private double vcSigma;
     private int massProtein;
@@ -799,6 +806,11 @@ public class Dataset {
         // update normalized Kratky and Guinier plot
 
         this.updateMass();
+
+        if (invariantQ > 0){
+            porodVolume = (int)(Constants.TWO_PI_2*guinierIZero/this.invariantQ);
+            this.calculatePorodMass();
+        }
     }
 
 
@@ -808,6 +820,11 @@ public class Dataset {
         this.realRg = rg;
         this.realRg_sigma = rgError;
         this.averageR = rave;
+
+        if (invariantQ > 0){
+            porodVolumeReal = (int)(Constants.TWO_PI_2*realIZero/this.invariantQ);
+            this.calculatePorodMass();
+        }
     }
 
     /**
@@ -1166,11 +1183,31 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
 
     public void setPorodVolume(int porodV){
         porodVolume=porodV;
+        this.calculatePorodMass();
     }
+
+
+    public void calculatePorodMass(){
+        porodMass1p1 = (int)(porodVolume*1/1.66);
+        porodMass1p37 = (int)(porodVolume*1.37/1.66);
+
+        if (porodVolumeReal > 0){
+            porodRealMass1p1 = (int)(porodVolumeReal*1/1.66);
+            porodRealMass1p37 = (int)(porodVolumeReal*1.37/1.66);
+        }
+    }
+
 
     public void setPorodVolumeReal(int porodVR){
         porodVolumeReal=porodVR;
+        this.calculatePorodMass();
     }
+
+    public int getPorodVolumeRealMass1p1(){return porodRealMass1p1;}
+    public int getPorodVolumeRealMass1p37(){return porodRealMass1p37;}
+
+    public int getPorodVolumeMass1p1(){return porodMass1p1;}
+    public int getPorodVolumeMass1p37(){return porodMass1p37;}
 
     public void updateMass(){
         double qr, mass;

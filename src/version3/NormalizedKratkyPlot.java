@@ -15,6 +15,7 @@ import org.jfree.ui.HorizontalAlignment;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
@@ -49,6 +50,7 @@ public class NormalizedKratkyPlot {
     public NormalizedKratkyPlot(final String title) {
         locationOfWindow = new Point(100,100);
         chartTitle = title;
+
     }
 
     /**
@@ -242,6 +244,16 @@ public class NormalizedKratkyPlot {
             }
         }));
 
+        popup.add(new JMenuItem(new AbstractAction("Export Plotted Data") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                ExportData temp = new ExportData(plottedData, workingDirectoryName, "NKratky");
+                temp.pack();
+                temp.setVisible(true);
+            }
+        }));
+
         frame.addWindowListener(new WindowAdapter() {
             public void WindowClosing(WindowEvent e) {
                 locationOfWindow = frame.getLocation();
@@ -249,9 +261,7 @@ public class NormalizedKratkyPlot {
             }
         });
 
-
         //frame.setLocation(new Point(frame.getLocation().getX(), frame.getLocation().getY() + horizontalDisplacement));
-
         //frame.getChartPanel().setSize(600, 500);
 
         //chartPanel.setDefaultDirectoryForSaveAs(new File(workingDirectoryName));

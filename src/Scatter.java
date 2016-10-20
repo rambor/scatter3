@@ -5,6 +5,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
 import version3.Collection;
+import version3.pipeline.AutoMerge;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -21,6 +22,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 /**
  * Created by robertrambo on 17/12/2015.
@@ -543,10 +545,8 @@ public class Scatter {
                     tempInfo.setVisible(true);
                     isCtrlB = false;
                 }
-
                 // updateMiniPlots
                 updateMiniPlots(analysisTable.rowAtPoint(e.getPoint()));
-
             }
 
             @Override
@@ -575,7 +575,7 @@ public class Scatter {
             @Override
             public void mouseClicked(MouseEvent mouseEvent){
                 int index = analysisTable.columnAtPoint(mouseEvent.getPoint());
-                if (index == 2 ){
+                if (index == 2 ){ // invert selection
                     int total = collectionSelected.getDatasets().size();
                     for(int i=0; i<total; i++){
                         collectionSelected.getDataset(i).setInUse(!collectionSelected.getDataset(i).getInUse());
@@ -632,7 +632,6 @@ public class Scatter {
                     }
 
                 }
-
                 // analysisModel.fireTableDataChanged();
                 // check if key is depresed
             }
@@ -652,6 +651,107 @@ public class Scatter {
             }
         });
 
+        // add mouse functions, remove, select all, select none
+        final JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem deleteItem = new JMenuItem("Select All");
+        deleteItem.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Selecting All");
+                int total = collectionSelected.getDatasets().size();
+                for(int i=0; i<total; i++){
+                    collectionSelected.getDataset(i).setInUse(true);
+                }
+                analysisModel.fireTableDataChanged();
+            }
+        });
+        popupMenu.add(deleteItem);
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("DeSelect All") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                System.out.println("DeSelecting All");
+                int total = collectionSelected.getDatasets().size();
+                for(int i=0; i<total; i++){
+                    collectionSelected.getDataset(i).setInUse(false);
+                }
+                analysisModel.fireTableDataChanged();
+            }
+        }));
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("Select Highlighted") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+
+
+                int[] rowIndex = analysisTable.getSelectedRows();
+
+                int endat = collectionSelected.getDatasetCount();
+                System.out.println("Selecting Highlighted " + endat);
+
+                int total = collectionSelected.getDatasets().size();
+                for(int i=0; i<total; i++){
+                    collectionSelected.getDataset(i).setInUse(false);
+                }
+
+                total = rowIndex.length;
+                for(int i=0; i<total; i++){
+                    collectionSelected.getDataset(rowIndex[i]).setInUse(true);
+                }
+
+                analysisModel.fireTableDataChanged();
+            }
+        }));
+
+
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("Remove") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+
+                int[] rowIndex = analysisTable.getSelectedRows();
+
+                int start = rowIndex.length - 1;
+
+                for(int j = start; j >= 0; j--){ // count in reverse and remove selected dataset
+                    int index = rowIndex[j];
+                    collectionSelected.removeDataset(index);
+                    analysisModel.remove(index);
+                    resultsModel.remove(index);
+                }
+
+                //update list on Files tab
+                dataFilesModel.clear();
+                dataFilesList.removeAll();
+                // update dataFilesList in dataFilesPanel;
+                // rebuild dataFilesPanel from collection.get(i)
+                for(int j=0; j<collectionSelected.getDatasets().size(); j++){
+                    String name = collectionSelected.getDataset(j).getFileName();
+                    dataFilesModel.addElement(new DataFileElement(name, j));
+                }
+
+                dataFilesList.setModel(dataFilesModel);
+
+                //update collection ids
+                int total = collectionSelected.getDatasets().size();
+                for(int h=0; h<total; h++){
+                    collectionSelected.getDataset(h).setId(h);
+                }
+
+                dataFilesList.validate();
+                dataFilesList.repaint();
+                analysisModel.fireTableDataChanged();
+            }
+        }));
+
+        analysisTable.setComponentPopupMenu(popupMenu);
 
         JTableHeader header = analysisTable.getTableHeader();
         header.setDefaultRenderer(new HeaderRenderer(analysisTable));
@@ -686,6 +786,8 @@ public class Scatter {
         resultsTable.getColumnModel().getColumn(11).setCellRenderer(centerRenderer);
         resultsTable.getColumnModel().getColumn(12).setCellRenderer(centerRenderer);
         resultsTable.getColumnModel().getColumn(13).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(14).setCellRenderer(centerRenderer);
+        resultsTable.getColumnModel().getColumn(15).setCellRenderer(centerRenderer);
 
         JScrollPane resultsList = new JScrollPane(resultsTable);
         resultsPanel.add(resultsList);
@@ -849,6 +951,30 @@ public class Scatter {
                 }
             }
         });
+
+
+        // popup mouse item for samples list
+        final JPopupMenu samplesPopupMenu = new JPopupMenu();
+        JMenuItem selectItemsSamplesList = new JMenuItem("Select All");
+        selectItemsSamplesList.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateSamplesListSelection(true);
+            }
+        });
+        samplesPopupMenu.add(selectItemsSamplesList);
+
+        // popup mouse item for samples list
+        JMenuItem deSelectItemsSamplesList = new JMenuItem("DeSelect All");
+        deSelectItemsSamplesList.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateSamplesListSelection(false);
+            }
+        });
+        samplesPopupMenu.add(deSelectItemsSamplesList);
+        samplesList.setComponentPopupMenu(samplesPopupMenu);
+
 
         // remove file from Collection/Set
         removeButton.addActionListener(new ActionListener() {
@@ -1528,17 +1654,6 @@ public class Scatter {
                     }
                 }
 
-                // sampleCollection should only contain files in use
-/*
-                for(int i=0;i<total; i++){
-                    if (sampleFilesModel.get(i).isSelected() && i >= firstIndexInSignalPlot && i < lastIndexInSignalPlot){
-                        sampleCollection.getDataset(i).setInUse(true);
-                        selectS++;
-                    } else {
-                        sampleCollection.getDataset(i).setInUse(false);
-                    }
-                }
-*/
 
                 int totalBuffers = bufferFilesModel.getSize();
                 int selectB=0;
@@ -1571,9 +1686,8 @@ public class Scatter {
         });
 
 
+
         clearSamplesButton.addActionListener(new ActionListener() {
-
-
 
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1586,6 +1700,8 @@ public class Scatter {
                     ((Collection)collections.get(69)).removeAllDatasets();
                  bufferFilesModel.clear();
                 }
+                // reset range
+                RESETRANGEButton.doClick();
             }
         });
 
@@ -2026,7 +2142,6 @@ public class Scatter {
                 }
 
 
-
                 for(int i=0; i<collectionSelected.getDatasetCount(); i++){
                     if (collectionSelected.getDataset(i).getInUse()){
                         collectionSelected.getDataset(i).getRealSpaceModel().setSelected(true);
@@ -2397,19 +2512,21 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                Thread makeIt = new Thread(){
-                    public void run() {
+//                AutoMerge temp = new AutoMerge(collectionSelected, 3);
+//                temp.run();
 
-                        final PDFBuilder pdfBuilder = new PDFBuilder(collectionSelected, WORKING_DIRECTORY, mainProgressBar);
+//                Thread makeIt = new Thread(){
+//                    public void run() {
 
-                        pdfBuilder.setName("this is a name");
-                        pdfBuilder.execute();
+                        //final PDFBuilder pdfBuilder = new PDFBuilder(collectionSelected, WORKING_DIRECTORY, mainProgressBar);
+                        //pdfBuilder.setName("this is a name");
+                        //pdfBuilder.execute();
 
-                    }
+//                    }
 
-                };
+//                };
 
-                makeIt.start();
+  //              makeIt.start();
 
             }
         });
@@ -2914,6 +3031,16 @@ public class Scatter {
         });
     }
 
+    private void updateSamplesListSelection(boolean boo) {
+        int totalSamples = sampleFilesModel.getSize();
+        Collection sampleCollection = (Collection) collections.get(96);
+        for(int i=0;i<totalSamples; i++){
+            ((SampleBufferElement) samplesList.getModel().getElementAt(i)).setSelected(boo);
+            sampleCollection.getDataset(i).setInUse(boo);
+        }
+        samplesList.repaint();
+    }
+
 
     private void updateMiniPlots(int i) {
         analysisMiniPlots.updatePlots(collectionSelected.getDataset(i));
@@ -3051,6 +3178,12 @@ public class Scatter {
 
     public static void main(String[] args) {
         //check from property file
+
+        int totalFiles = args.length;
+        // if files, add to Collection
+        for(int i=0; i<totalFiles; i++){
+            System.out.println(i + " Files " + args[i]);
+        }
 
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {

@@ -656,6 +656,8 @@ public class VolumePlot {
         //Update jLabels and collection
 
         dataset.setPorodVolume(volumeOld);
+        dataset.setInvariantQ(porodInvariantOld);
+
         if (dataset.getRealRg() > 0){
             dataset.setPorodVolumeReal((int)(Constants.TWO_PI_2*dataset.getRealIzero()/porodInvariantOld));
         }

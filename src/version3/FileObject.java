@@ -290,6 +290,10 @@ public class FileObject {
         newLines += String.format("REMARK 265           RECI Rg ERROR (+/-) : %.3E %n", dataset.getGuinierRG_sigma());
         newLines += String.format("REMARK 265            PERCENT DIFFERENCE : %.3f %n", diff);
         newLines += String.format("REMARK 265                        VOLUME : %d (Angstroms^3) %n", dataset.getPorodVolume());
+        newLines += String.format("REMARK 265    Porod Volume Mass (d 1.11) : %d (Angstroms^3) RECI %n", dataset.getPorodVolumeMass1p1());
+        newLines += String.format("REMARK 265    Porod Volume Mass (d 1.11) : %d (Angstroms^3) REAL %n", dataset.getPorodVolumeRealMass1p1());
+        newLines += String.format("REMARK 265    Porod Volume Mass (d 1.37) : %d (Angstroms^3) RECI %n", dataset.getPorodVolumeMass1p37());
+        newLines += String.format("REMARK 265    Porod Volume Mass (d 1.37) : %d (Angstroms^3) REAL %n", dataset.getPorodVolumeRealMass1p37());
         newLines += String.format("REMARK 265          POROD EXPONENT (P_E) : %.3f %n", dataset.getPorodExponent());
         newLines += String.format("REMARK 265                      REAL <r> : %.3f (Angstroms)%n", dataset.getAverageR());
         newLines += String.format("REMARK 265                          DMAX : %d (Angstroms) %n", (int)dataset.getDmax());

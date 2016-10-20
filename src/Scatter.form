@@ -1225,7 +1225,7 @@
                               </grid>
                             </constraints>
                             <properties>
-                              <text value="0.18"/>
+                              <text value="0.14"/>
                             </properties>
                           </component>
                         </children>
@@ -2863,6 +2863,9 @@
                             </constraints>
                             <properties>
                               <model>
+                                <item value="5"/>
+                                <item value="7"/>
+                                <item value="11"/>
                                 <item value="17"/>
                                 <item value="19"/>
                                 <item value="23"/>
@@ -3593,7 +3596,7 @@
                                   </grid>
                                 </constraints>
                                 <properties>
-                                  <text value="0.18"/>
+                                  <text value="0.14"/>
                                 </properties>
                               </component>
                               <component id="ab58c" class="javax.swing.JTextField" binding="qminLimitField">

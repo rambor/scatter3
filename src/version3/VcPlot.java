@@ -123,6 +123,7 @@ public class VcPlot {
                 dataset.clearPlottedQIQData();
                 dataset.scalePlottedQIQData();
 
+                allLoop:
                 for (int j=startAll; j < dataset.getAllData().getItemCount(); j++){
                     tempqIqDataItem = dataset.getAllData().getDataItem(j);
                     //tempqIqDataItem = dataset.getPlottedQIQDataSeries().getDataItem(j);
@@ -145,7 +146,7 @@ public class VcPlot {
                             dataset.setVC(dataset.getGuinierIzero()*invtempArea);
                             dataset.setVCReal(dataset.getRealIzero()*invtempArea);
                         }
-                    } else if (xValue >= 0.30){
+                    } else if (xValue >= 0.30 && xValue <= 0.32){
 
                         tempArea = Functions.trapezoid_integrate(tempqIqData);
                         area3Label.get(label_index).setText(Constants.Scientific2.format(tempArea));

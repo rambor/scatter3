@@ -458,6 +458,7 @@ public class RealSpace {
             System.out.println("SETTING MOORE COEFFICIENTS " + totalMooreCoefficients + " L1 : " + this.l1_norm + " K :" + this.kurtosis);
             this.kurt_l1_sum = (0.1000*this.kurtosis + 100*this.l1_norm);
             //this.kurt_l1_sum = 0.9*this.l1_norm;
+
         } catch (Exception e) {
             e.printStackTrace();
         }

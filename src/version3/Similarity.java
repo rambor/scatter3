@@ -37,6 +37,8 @@ public class Similarity implements Runnable {
     private XYSeriesCollection averageValuePerBin;
     private XYSeriesCollection plottedCollection;
     private XYSeriesCollection collectionOfkurtosisPerFrame;
+
+    private XYSeries baseLine;
     private double qmin, qmax, bins, binWidth;
     private ArrayList<Number> keptQvalues;
     private SortedSet<Number> commonQValues;
@@ -54,6 +56,7 @@ public class Similarity implements Runnable {
     private int yCount;
     private int zCount;
     private int frameCount;
+    private int binSize = 11;
     private JPanel panelForChart;
     private String directory;
 
@@ -173,6 +176,7 @@ public class Similarity implements Runnable {
         this.qmin = qmin;
         this.qmax = qmax;
         this.bins = bins;
+        this.binSize = (int)bins;
         this.binWidth = (qmax-qmin)/bins;
         System.out.println("QMIN to QMAX: " + qmin + " < " + qmax + " BINWIDTH => " + binWidth);
         this.cpus = cpus;
@@ -206,13 +210,14 @@ public class Similarity implements Runnable {
         for (int dd=0; dd<totalDatasetToAnalyze; dd++){
 
             if (collections.get(dd).isSelected()){
+
                 collectionInUse = collections.get(dd).getCollection();
                 // first dataset is reference to calculate ratio to
                 int totalDatasets = collectionInUse.getDatasetCount();
                 Dataset referenceSet =  null;  // set first checked dataset as reference
 
+                // find first data to use that is true, this will be reference
                 int startAt=0;
-
                 for(int i=0; i<totalDatasets; i++){
                     referenceSet = collectionInUse.getDataset(i);
                     if (referenceSet.getInUse()){
@@ -221,6 +226,7 @@ public class Similarity implements Runnable {
                     }
                 }
 
+                // determine index that satisfies qmin constraint.
                 int startPt=0, endPt;
                 int totalPoints = referenceSet.getAllData().getItemCount();
                 endPt = totalPoints - 1;
@@ -230,6 +236,15 @@ public class Similarity implements Runnable {
                         break;
                     }
                 }
+
+
+                for (int i=0; i<totalPoints; i++){
+                    if (referenceSet.getAllData().getX(i).doubleValue() >= qmax){
+                        endPt = i;
+                        break;
+                    }
+                }
+
 
                 int seriesCount=0;
 
@@ -262,10 +277,11 @@ public class Similarity implements Runnable {
                     if (targetSet.getInUse()){
 
                         frameCount++;
-                        double kurt = calculateSimFunctionPerSet(referenceSet, startPt, endPt, targetSet);
+                        double dism = calculateSimFunctionPerSet(referenceSet, startPt, endPt, targetSet);
+                        //double dism = createAndAddSquaredRatioResidual(referenceSet.getAllData(), startPt, endPt, targetSet.getAllData());
                         seriesCount++;
-                        collectionOfkurtosisPerFrame.getSeries(locale).add(seriesCount, kurt);
-                        System.out.println(s + " target set " + targetSet.getFileName() + " <=> " + seriesCount + " " + kurt);
+                        collectionOfkurtosisPerFrame.getSeries(locale).add(seriesCount, dism);
+                        System.out.println(s + " target set " + targetSet.getFileName() + " <=> " + seriesCount + " " + dism);
                     }
                 }
             }
@@ -273,11 +289,12 @@ public class Similarity implements Runnable {
         plottedCollection = collectionOfkurtosisPerFrame;
     }
 
+
     /**
-     * Returns a single value, the kurtosis of the ratio of the two datasets.
+     * Returns a single value, the dis-similarity of the two datasets.
      *
      * @param referenceSet
-     * @param startPt
+     * @param startPt  index of first q-value to use in calculation
      * @param endPt
      * @param targetSet
      * @return double representing kurtosis of the ratio
@@ -342,7 +359,7 @@ public class Similarity implements Runnable {
 
         int startIndex = 0;
         int totalRatio = ratioSeries.getItemCount();
-        double mean, diff, diff2, averageBottom;
+        double mean;
 
         XYSeries tempK = new XYSeries("tempK");
 
@@ -604,6 +621,100 @@ public class Similarity implements Runnable {
                 break;
         }
         return numberToPrint;
+    }
+
+
+    /**
+     * take ratio to first frame
+     * bin the ratio as the sum
+     * In a moving window, calculate sum of squared residual (-1)
+     *
+     * @param ref
+     * @param target
+     */
+    private double createAndAddSquaredRatioResidual(XYSeries ref, int startPt, int endPt, XYSeries target){
+
+        int totalRef = ref.getItemCount();
+        double sum=0;
+        double count=0.0;
+        double diff;
+//        int currentSet = dataSetsToPlot.getSeriesCount();
+//        dataSetsToPlot.addSeries(new XYSeries(currentSet));
+        XYSeries binnedRatio = new XYSeries("binratio");
+
+        binLoop:
+        for(int i=startPt; i<endPt; i++){
+
+            if ((i+binSize) > endPt){
+                break binLoop;
+            }
+
+            double[] dataholder = new double[binSize];
+
+            //sum=0;
+
+            for(int b=0; b<binSize; b++){
+
+                int index = i+b;
+
+                if (index > totalRef){
+                    break binLoop;
+                }
+
+                Number qTest = ref.getX(index);  //
+                if (qTest.doubleValue() >= qmin && qTest.doubleValue() <= qmax){
+                    // calculate ratio and subtract from 1
+                    int check = target.indexOf(qTest);  // remove outliers
+                    if (check > -1){
+                        diff = 1-target.getY(check).doubleValue()/ref.getY(index).doubleValue();
+                        dataholder[b] = diff;
+                        sum += diff;
+                    } else { //interpolate
+
+                    }
+                }
+            }
+
+            // remove outliers
+            double tempsum = sumItWithRejection(dataholder);
+            // add sum to plot
+            binnedRatio.add(1.0*i, tempsum);
+            sum += tempsum*tempsum;
+            count += 1.0;
+//            dataSetsToPlot.getSeries(currentSet).add(1.0*i, tempsum);
+            //System.out.println(startPt + " " + i + " => " + endPt + " " + qmax + " " + sum + " " + tempsum);
+        }
+
+        //return calculateKurtosis(binnedRatio);
+
+        return sum*1.0/count;
+//        totalBins = dataSetsToPlot.getSeries(0).getItemCount();
+    }
+
+    private double sumItWithRejection(double[] values){
+        Arrays.sort(values);
+        double median = Functions.median(values);
+
+        int total = values.length;
+        double[] deviation = new double[total];
+        // calculate MAD
+        for(int i=0; i<total; i++){
+            deviation[i] = Math.abs(values[i] - median);
+        }
+
+        Arrays.sort(deviation);
+        double mad = 1.4826*Functions.median(deviation);
+        double inv_mad = 1.0/mad;
+
+        // reject outliers
+        double sum = 0;
+        for(int i=0; i<total; i++){
+            if ((Math.abs(values[i] - median)*inv_mad) < 3.0){
+                sum += values[i];
+            }
+        }
+
+        return sum;
     }
 
 

@@ -481,9 +481,9 @@ public class Functions {
      */
     public static double median(double[] array) {
         int index;
-        index= 0;
         double medianResult;
-        medianResult= 0.0;
+        medianResult = 0.0;
+
         int length = array.length;
         //if even number of elements
         if (length%2==0) {
