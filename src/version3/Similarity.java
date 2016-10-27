@@ -1,25 +1,17 @@
 package version3;
 
-import com.sun.org.glassfish.external.statistics.Statistic;
-import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatistics;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.labels.XYToolTipGenerator;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.data.DomainOrder;
-import org.jfree.data.general.DatasetChangeListener;
-import org.jfree.data.general.DatasetGroup;
 import org.jfree.data.xy.*;
 import org.jfree.ui.HorizontalAlignment;
 
 import javax.swing.*;
-import java.awt.geom.Ellipse2D;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
@@ -45,6 +37,7 @@ public class Similarity implements Runnable {
     private JLabel status;
     private JProgressBar bar;
     private boolean useKurtosis = false;
+    private boolean useShapiro = false;
     private boolean useVr = false;
     private int totalItemsInCollection=0;
     private int cpus = 1;
@@ -124,6 +117,15 @@ public class Similarity implements Runnable {
                     count++;
                 }
             }
+        } else if (useShapiro){
+            range_type="unweighted Shapiro-Wilk";
+            makePlot();
+            for (int i=0; i<totalDatasetToAnalyze; i++){
+                if(collections.get(i).isSelected()){
+                    writeCollectionToFile(collections.get(i).getName() + "_sw", collectionOfkurtosisPerFrame.getSeries(count));
+                    count++;
+                }
+            }
         }
     }
 
@@ -187,6 +189,7 @@ public class Similarity implements Runnable {
         this.qmin = qmin;
         this.qmax = qmax;
         this.bins = bins;
+        this.binSize = (int)bins;
         this.binWidth = (qmax-qmin)/bins;
         System.out.println("QMIN to QMAX: " + qmin + " < " + qmax + " BINWIDTH => " + binWidth);
         this.cpus = cpus;
@@ -323,6 +326,59 @@ public class Similarity implements Runnable {
         XYSeries targetSeries = targetSet.getAllData();
         XYSeries targetError = targetSet.getAllDataError();
 
+        // scale the target data to reference data
+
+
+        //new stuff covariance
+//        double sumRef=0, sumTar=0;
+//        double countSum = 0.0;
+//        for(int i=startPt; i< endPt; i++){
+//            referenceXY = referenceSeries.getDataItem(i);
+//            locale = targetSeries.indexOf(referenceXY.getX());
+//
+//            if (locale >= 0) {
+//                tarXY = targetSeries.getDataItem(locale);
+//                sumRef+=referenceXY.getYValue();
+//                sumTar+=tarXY.getYValue();
+//                countSum+=1.0;
+//            }
+//        }
+//        double aveRef = sumRef/countSum;
+//        double aveTar = sumTar/countSum;
+//        sumRef = 0.0d;
+//
+//        for(int i=startPt; i< endPt; i++){
+//            referenceXY = referenceSeries.getDataItem(i);
+//            locale = targetSeries.indexOf(referenceXY.getX());
+//
+//            if (locale >= 0) {
+//                tarXY = targetSeries.getDataItem(locale);
+//                sumRef+=(referenceXY.getYValue()-aveRef)*(tarXY.getYValue()-aveTar);
+//            }
+//        }
+//        double covariance = 1.0/countSum*sumRef;
+        //end covariance
+        double scaleSum =0;
+        double squaredSum =0;
+        for(int i=startPt; i< endPt; i++) {
+
+            referenceXY = referenceSeries.getDataItem(i);
+            locale = targetSeries.indexOf(referenceXY.getX());
+
+            if (locale >= 0) {
+                tarXY = targetSeries.getDataItem(locale);
+                ratioValue = targetError.getY(locale).doubleValue();
+                scaleSum += referenceXY.getYValue()*tarXY.getYValue()/(ratioValue*ratioValue);
+
+                ratioValue = tarXY.getYValue()/targetError.getY(locale).doubleValue();
+                squaredSum += ratioValue*ratioValue;
+            }
+        }
+
+        double scaleFactor = scaleSum/squaredSum;
+        //double inv_scaleFactor = squaredSum/scaleSum;
+
+        // take ratio to reference state
         for(int i=startPt; i< endPt; i++){
 
             referenceXY = referenceSeries.getDataItem(i);
@@ -335,7 +391,9 @@ public class Similarity implements Runnable {
                 tarXY = targetSeries.getDataItem(locale);
 
                 // reference/target
-                ratioValue = referenceXY.getYValue()/tarXY.getYValue();
+                //ratioValue= (tarXY.getYValue()-referenceXY.getYValue())/referenceXY.getYValue();
+                //ratioValue = referenceXY.getYValue()/tarXY.getYValue();
+                ratioValue = tarXY.getYValue()/referenceXY.getYValue()*scaleFactor;
 
                 ratioSeries.add(xValue, ratioValue);
                 ratioError = ratioValue*Math.sqrt((errorXYref.getYValue()/referenceXY.getYValue()*errorXYref.getYValue()/referenceXY.getYValue()) + (tarXY.getYValue()*tarXY.getYValue()*tarXY.getYValue()*tarXY.getYValue()));
@@ -348,7 +406,9 @@ public class Similarity implements Runnable {
 
                     Double[] results =  Functions.interpolateOriginal(targetSeries, targetError, xValue);
                     //target.add(xValue, results[1]);
-                    ratioValue = referenceXY.getYValue()/results[1];
+                    //ratioValue = (results[1]-referenceXY.getYValue())/referenceXY.getYValue();
+                    //ratioValue = referenceXY.getYValue()/results[1];
+                    ratioValue = results[1]/referenceXY.getYValue();
                     ratioSeries.add(xValue, ratioValue);
                     ratioValuesForAveraging.add(ratioValue);
                 }
@@ -356,13 +416,15 @@ public class Similarity implements Runnable {
         }
 
         // do binning and calculate MAD average for each bin
-
         int startIndex = 0;
         int totalRatio = ratioSeries.getItemCount();
         double mean;
 
         XYSeries tempK = new XYSeries("tempK");
-
+        // divide the ratio of data into bins
+        // take average per bin
+        // then calculate kurtosis of the binned data
+        double totalInbins=0;
         for (int b=0; b < intBins; b++){
             // fill bins
             qlower = qmin + b*binWidth;
@@ -379,40 +441,58 @@ public class Similarity implements Runnable {
                     break Innerloop;
                 }
             }
-
             // calculate MAD and average
-            DescriptiveStatistics keptSet = averageByMAD(valuesPerBin);
-            mean = keptSet.getMean();
-            // average per bin
+            DescriptiveStatistics keptSet = reduceByMAD(valuesPerBin);
+            totalInbins+=valuesPerBin.size();
+            // if identical, average per bin is 1.0
+            //
+            // HeatMap XYZDataset
+            // XYBlockrenderer
+            //
+            // calculate kurtosis per bin?
+            if (useKurtosis || useVr){
+                mean = keptSet.getMean();
+            } else {
+                mean = shapiroWilk(keptSet);
+            }
             tempK.add(0.5*binWidth + qlower, mean);
         }
 
+        double averageInBin = (totalInbins/(double)intBins);
+        System.out.println("average in bin "  + (int)averageInBin);
         // return kurtosis or Vr
+        // return covariance;
         if (useKurtosis){
+            //return sumOfXYSeries(tempK);
             return calculateKurtosis(tempK);
         } else if (useVr){
             return calculateVr(tempK);
+        } else if (useShapiro){
+            return sumOfDeviationsFromMedianXYSeries(tempK, averageInBin);
         }
 
         return 0;
     }
 
 
+
+    //
     public double calculateKurtosis(XYSeries reducedBinData){
-        double mean, diff, diff2, averageBottom;
+        double diff, diff2, averageBottom;
         // calculate kurtosis of tempK
         DescriptiveStatistics top = new DescriptiveStatistics();
         DescriptiveStatistics bottom = new DescriptiveStatistics();
-        mean = meanFromXYSeries(reducedBinData);
+        double mean = meanFromXYSeries(reducedBinData);
 
         for (int ss=0; ss<bins; ss++){
-            diff = reducedBinData.getY(ss).doubleValue() - mean; // tempK average value per bin
+            diff = reducedBinData.getY(ss).doubleValue()-mean; // tempK average value per bin
             diff2 = diff*diff;
             top.addValue(diff2*diff2);
             bottom.addValue(diff2);
         }
+
         averageBottom = bottom.getMean();
-        return top.getMean()/(averageBottom*averageBottom) - 3;
+        return (top.getMean()/(averageBottom*averageBottom) - 3);
     }
 
     /**
@@ -441,15 +521,21 @@ public class Similarity implements Runnable {
      * @param useKurtosis
      * @param useVr
      */
-    public void setFunction(boolean useKurtosis, boolean useVr){
+    public void setFunction(boolean useKurtosis, boolean useVr, boolean useShapiro){
         if (useKurtosis){
-            this.useKurtosis = useKurtosis;
+            this.useKurtosis = true;
+            this.useShapiro = false;
             this.useVr = false;
 
         } else if (useVr) {
             this.useKurtosis = false;
-            this.useVr = useVr;
+            this.useShapiro = false;
+            this.useVr = true;
 
+        } else if (useShapiro){
+            this.useKurtosis = false;
+            this.useShapiro = true;
+            this.useVr = false;
         }
     }
 
@@ -463,12 +549,72 @@ public class Similarity implements Runnable {
         return sum;
     }
 
+
+
+    private double sumOfDeviationsFromMedianXYSeries(XYSeries series, double averageInBin){
+        int total = series.getItemCount();
+        DescriptiveStatistics stats = new SynchronizedDescriptiveStatistics();
+
+        for (int i=0; i<total; i++) {
+            stats.addValue(series.getY(i).doubleValue());
+        }
+
+        double median = stats.getPercentile(50);
+        DescriptiveStatistics deviations = new SynchronizedDescriptiveStatistics();
+
+        //ArrayList<Double> testValues = new ArrayList<>(total);
+        //double baseline = 19.197*averageInBin-26.188;
+        double baseline = -2.2166 + 0.71027*averageInBin;
+
+        for (int i=0; i<total; i++){ // deviations from
+            deviations.addValue(Math.abs(stats.getElement(i) - baseline));
+        }
+        return stats.getSum();
+    }
+
+    /**
+     *
+     * @param values
+     * @return
+     */
+    private double shapiroWilk(DescriptiveStatistics values){
+        //Shapiro-Wilk test equal weights
+        int totalKept = (int)values.getN();
+        int m_index = totalKept/2;
+        if ( (totalKept & 1) == 1 ) { // check if odd
+            m_index = (totalKept-1)/2;
+        }
+
+        DescriptiveStatistics tempValues = new SynchronizedDescriptiveStatistics();
+
+        // subtract mean, since we are dealing with scaled ratio, the mean should be one
+        for(int i=0; i<totalKept; i++){
+            tempValues.addValue(values.getElement(i) - 1);
+        }
+
+        // squared sum
+        double ssSum=0;
+        for(int i=0; i<totalKept; i++){
+            double value = tempValues.getElement(i);
+            ssSum += value*value;
+        }
+
+        double[] sorted = tempValues.getSortedValues();
+        double rangeSum=0;
+        for(int i=0; i < m_index; i++){
+            double value = sorted[totalKept-i-1] - sorted[i];
+            rangeSum += value;
+        }
+        return rangeSum*rangeSum/ssSum;
+    }
+
+
     /**
      * average using median based rejection method
      * @param values
      * @return
      */
-    private DescriptiveStatistics averageByMAD(ArrayList<Double> values){
+    private DescriptiveStatistics reduceByMAD(ArrayList<Double> values){
 
         int total = values.size();
         DescriptiveStatistics stats = new SynchronizedDescriptiveStatistics();
@@ -494,13 +640,14 @@ public class Similarity implements Runnable {
         DescriptiveStatistics keptValues = new DescriptiveStatistics();
 
         for (int i=0; i<total; i++){
-            if (testValues.get(i)*invMAD < 2.5 ){
+            if (testValues.get(i)*invMAD < 5.0 ) {
                 keptValues.addValue(values.get(i));
             }
         }
-
+        // characterize the values in kept.
         return keptValues;
     }
+
 
     /**
      * calculates average value of the y-column from XYSeries
@@ -685,9 +832,9 @@ public class Similarity implements Runnable {
             //System.out.println(startPt + " " + i + " => " + endPt + " " + qmax + " " + sum + " " + tempsum);
         }
 
-        //return calculateKurtosis(binnedRatio);
+        return calculateKurtosis(binnedRatio);
 
-        return sum*1.0/count;
+//        return sum*1.0/count;
 //        totalBins = dataSetsToPlot.getSeries(0).getItemCount();
     }
 
@@ -709,13 +856,67 @@ public class Similarity implements Runnable {
         // reject outliers
         double sum = 0;
         for(int i=0; i<total; i++){
-            if ((Math.abs(values[i] - median)*inv_mad) < 3.0){
+            if ((Math.abs(values[i] - median)*inv_mad) < 2.5){
                 sum += values[i];
+            } else {
+                System.out.println(i + " => " + values[i]);
             }
         }
 
         return sum;
     }
 
+//    public JFreeChart createChart(XYZDataset dataset) {
+//
+//        NumberAxis xAxis = new NumberAxis("Theta");
+//        xAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+//        xAxis.setLowerMargin(0.0);
+//        xAxis.setUpperMargin(0.0);
+//        xAxis.setAxisLinePaint(Color.white);
+//        xAxis.setTickMarkPaint(Color.white);
+//
+//        NumberAxis yAxis = new NumberAxis("Phi");
+//        yAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+//        yAxis.setLowerMargin(0.0);
+//        yAxis.setUpperMargin(0.0);
+//        yAxis.setAxisLinePaint(Color.white);
+//        yAxis.setTickMarkPaint(Color.white);
+//
+//        XYBlockRenderer renderer = new XYBlockRenderer();
+//        LookupPaintScale paintScale = new LookupPaintScale(-1, 3, Color.gray);
+//
+//
+//        //code adding paints to paintScale
+//        renderer.setPaintScale(paintScale);
+//
+//        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
+//        plot.setBackgroundPaint(Color.lightGray);
+//        //plot.setDomainGridlinesVisible(false);
+//        plot.setRangeGridlinePaint(Color.white);
+//        plot.setAxisOffset(new RectangleInsets(5, 5, 5, 5));
+//        plot.setOutlinePaint(Color.blue);
+//
+//        JFreeChart chart = new JFreeChart(patternType.toUpperCase(), plot);
+//        chart.removeLegend();
+//        NumberAxis scaleAxis = new NumberAxis("Scale");
+//        scaleAxis.setAxisLinePaint(Color.white);
+//        scaleAxis.setTickMarkPaint(Color.white);
+//        scaleAxis.setTickLabelFont(new Font("Dialog", Font.PLAIN, 7));
+//        scaleAxis.setRange(min, max);
+//
+//        PaintScaleLegend legend = new PaintScaleLegend(paintScale,
+//                scaleAxis);
+//        legend.setAxisLocation(AxisLocation.BOTTOM_OR_LEFT);
+//        legend.setAxisOffset(5.0);
+//        legend.setMargin(new RectangleInsets(5, 5, 5, 5));
+//        legend.setFrame(new BlockBorder(Color.red));
+//        legend.setPadding(new RectangleInsets(10, 10, 10, 10));
+//        legend.setStripWidth(10);
+//        legend.setPosition(RectangleEdge.RIGHT);
+//        legend.setBackgroundPaint(new Color(120, 120, 180));
+//        chart.addSubtitle(legend);
+//        chart.setBackgroundPaint(new Color(180, 180, 250));
+//        return chart;
+//    }
 
 }

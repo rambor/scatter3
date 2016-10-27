@@ -255,8 +255,9 @@ public class Scatter {
     private JButton testButton;
     private JTextField subtractThresholdField;
     private JComboBox excludeComboBox;
+    private JCheckBox shapiroWilkCheckBox;
 
-    private String version = "3.0h";
+    private String version = "3.0i";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -707,9 +708,6 @@ public class Scatter {
                 analysisModel.fireTableDataChanged();
             }
         }));
-
-
-
 
         popupMenu.add(new JMenuItem(new AbstractAction("Remove") {
             @Override
@@ -1984,7 +1982,7 @@ public class Scatter {
                         //Similarity simTemp = new Similarity(similarityCollection, qminFinal, qmaxFinal, binsFinal, cpuCores, status, mainProgressBar);
                         // add other attributes and then run
                         // Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString())/100.00;
-                        similarityObject.setFunction(excessKurtosisCheckBox.isSelected(), volatilityVRCheckBox.isSelected());
+                        similarityObject.setFunction(excessKurtosisCheckBox.isSelected(), volatilityVRCheckBox.isSelected(), shapiroWilkCheckBox.isSelected());
                         //simTemp.setFunction(excessKurtosisCheckBox.isSelected(), volatilityVRCheckBox.isSelected());
 
                         //Thread temp1 = new Thread(simTemp);
@@ -2112,6 +2110,7 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 volatilityVRCheckBox.setSelected(!(excessKurtosisCheckBox.isSelected()));
+                shapiroWilkCheckBox.setSelected(!(excessKurtosisCheckBox.isSelected()));
             }
         });
 
@@ -2119,6 +2118,15 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 excessKurtosisCheckBox.setSelected(!(volatilityVRCheckBox.isSelected()));
+                shapiroWilkCheckBox.setSelected(!(volatilityVRCheckBox.isSelected()));
+            }
+        });
+
+        shapiroWilkCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                excessKurtosisCheckBox.setSelected(!(shapiroWilkCheckBox.isSelected()));
+                volatilityVRCheckBox.setSelected(!(shapiroWilkCheckBox.isSelected()));
             }
         });
 
@@ -3522,6 +3530,7 @@ public class Scatter {
                             e.printStackTrace();
                         }
                         // populate drop down
+                        System.out.println("Populating list");
                         programInstance.similarityList.removeAll();
                         programInstance.similarityFilesModel.clear();
                         //sampleBufferFilesList.removeAll();

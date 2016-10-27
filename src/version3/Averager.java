@@ -17,6 +17,7 @@ public class Averager {
     public Averager(Collection collection){
         this.collectionInUse = collection;
 
+        // should move StatMethods function to internal method for multi-threading
         ArrayList<XYSeries> results = StatMethods.weightedAverageDatasets(this.collectionInUse);
 
         averaged = results.get(0);

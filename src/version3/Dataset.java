@@ -174,7 +174,6 @@ public class Dataset {
         }
 
 
-
         plottedError = new XYSeries(tempName); // actual log10 data that is plotted
         plottedKratkyData = new XYSeries(tempName);
         plottedqIqData = new XYSeries(tempName);
