@@ -17,6 +17,7 @@ public class CurveFactory {
             case SPHERICAL:
                 break;
             case CORESHELL:
+
             case CORESHELLBINARY:
                 curves = new CoreShellCurves(scale);
                 break;

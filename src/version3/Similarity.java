@@ -485,7 +485,7 @@ public class Similarity implements Runnable {
         double mean = meanFromXYSeries(reducedBinData);
 
         for (int ss=0; ss<bins; ss++){
-            diff = reducedBinData.getY(ss).doubleValue()-mean; // tempK average value per bin
+            diff = reducedBinData.getY(ss).doubleValue() - mean; // tempK average value per bin
             diff2 = diff*diff;
             top.addValue(diff2*diff2);
             bottom.addValue(diff2);

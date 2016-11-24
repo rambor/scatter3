@@ -288,8 +288,8 @@ public class Functions {
 
     /**
      *
-     * @param lower int
-     * @param upper int
+     * @param lower int (inclusive of)
+     * @param upper int (exclusive of)
      * @param percent double
      * @return
      */

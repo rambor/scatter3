@@ -33,6 +33,7 @@ public final class Constants {
     public static final double TWO_PI_2 = (2.0*Math.PI*Math.PI);
     public static final double PI_2 = Math.PI*Math.PI;
     public static final double TWO_DIV_PI = 2.0/Math.PI;
+    public static final double HALF_PI = Math.PI*0.50d;
 
     //FONTS
     public static final BasicStroke stroke3 = new BasicStroke(3.0f);

@@ -810,10 +810,10 @@ public class RealSpace {
     }
 
 
+    /**
+     * calculate SAXS invariants from moore coefficients
+     */
     private void saxs_invariants(){
-        /*
-         * Calculate invariants
-         */
         double i_zero = 0;
         double partial_rg = 0;
         double rsum = 0;
@@ -844,6 +844,7 @@ public class RealSpace {
         raverage = 2*dmax3*inv_pi_fourth/izero_temp*rsum;
         this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);
     }
+
 
     public void decrementLow(int spinnerValue){
 
