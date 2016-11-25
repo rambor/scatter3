@@ -21,21 +21,21 @@ public class CallableEclipse implements Callable<Ellipse> {
         this.index = index;
         this.solventContrast = solventContrast;
         this.qvalues = new Double[qvalues.length];
-//        cosxvalues = new ArrayList<>(totalIntegrationSteps);
-//        sinxvalues = new ArrayList<>(totalIntegrationSteps);
 
         this.deltaqr=deltaqr;
 
-        synchronized (this){
+        synchronized (qvalues){
+            System.arraycopy(qvalues, 0, this.qvalues, 0, qvalues.length);
+        }
+
+        synchronized (particleContrasts){
             this.particleContrasts[0] = particleContrasts[0];
+        }
+
+        synchronized (radii){
             this.params[0] = radii[0];
             this.params[1] = radii[1];
             this.params[2] = radii[2];
-            System.arraycopy(qvalues, 0, this.qvalues, 0, qvalues.length);
-//            for (int i=0; i<totalIntegrationSteps; i++){
-//                cosxvalues.add(cos2.get(i));
-//                sinxvalues.add(sin2.get(i));
-//            }
         }
     }
 

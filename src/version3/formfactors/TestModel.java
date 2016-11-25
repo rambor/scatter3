@@ -42,7 +42,17 @@ public class TestModel implements Callable<Double> {
      * @param transformedIntensities
      * @param transformedErrors
      */
-    public TestModel(int index, int totalToSelect, ConcurrentNavigableMap<Double, Integer> cdf, TopList list, List<Double> modelIntensities, int totalq, ArrayList<Double> transformedIntensities, ArrayList<Double> transformedErrors, Double[] qvalues, boolean useNoBackground){
+    public TestModel(int index,
+                     int totalToSelect,
+                     ConcurrentNavigableMap<Double, Integer> cdf,
+                     TopList list,
+                     List<Double> modelIntensities,
+                     int totalqInModelIntensities,
+                     ArrayList<Double> transformedIntensities,
+                     ArrayList<Double> transformedErrors,
+                     Double[] qvalues,
+                     boolean useNoBackground){
+
         this.modelIndex = index;
         this.totalToSelect = totalToSelect;
         this.selectedIndices = new ArrayList<>();  // can have redundant indices
@@ -51,21 +61,41 @@ public class TestModel implements Callable<Double> {
         this.list = list;
         this.cdf = cdf;
 
-        this.totalq = totalq;
-        this.modelIntensities = new ArrayList<>(totalq);
+        this.totalq = qvalues.length;
+        //this.modelIntensities = new ArrayList<>(totalqInModelIntensities);
+        this.modelIntensities = modelIntensities;
         this.transformedIntensities = new ArrayList<>(totalq);
         this.transformedErrors = new ArrayList<>(totalq);
         this.useNoBackground = useNoBackground;
 
         qValues = new double[totalq];
-        synchronized (this){
+
+        //synchronized (modelIntensities){
+        //    for (double item : modelIntensities) this.modelIntensities.add(item); // can be quite large
+        //}
+
+        synchronized (transformedIntensities){
             for (double item : transformedIntensities) this.transformedIntensities.add(item);
+        }
+
+        synchronized (transformedErrors){
             for (double item : transformedErrors) this.transformedErrors.add(item);
-            for (double item : modelIntensities) this.modelIntensities.add(item);
+        }
+
+        synchronized (qvalues){
             for(int i=0; i<totalq; i++){
                 qValues[i] = qvalues[i];
             }
         }
+
+//        synchronized (this){
+//            for (double item : transformedIntensities) this.transformedIntensities.add(item);
+//            for (double item : transformedErrors) this.transformedErrors.add(item);
+//
+//            for(int i=0; i<totalq; i++){
+//                qValues[i] = qvalues[i];
+//            }
+//        }
     }
 
 
@@ -91,6 +121,11 @@ public class TestModel implements Callable<Double> {
             // combine with
             startIndex = index*totalq;
             // sum the intensities for each model
+//            synchronized (modelIntensities){
+//                for(int j=0; j<totalq; j++){
+//                    calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + modelIntensities.get(startIndex+j).doubleValue());
+//                }
+//            }
             for(int j=0; j<totalq; j++){
                 calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + modelIntensities.get(startIndex+j).doubleValue());
             }

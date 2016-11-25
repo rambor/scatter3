@@ -36,6 +36,7 @@ abstract class Model {
 
     public void addIntensity(int index, double value){
         modelIntensities[index] = value;
+        //System.out.println(index + " " + modelIntensities[index]);
     }
 
     public double getIntensity(int index){return modelIntensities[index];}

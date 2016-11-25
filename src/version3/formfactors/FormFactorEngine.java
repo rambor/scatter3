@@ -190,7 +190,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
         double[] params;
         System.out.println("CALCULATING " + this.model + " MODELS");
-        double major, minor;
+        double major, minor, dmaxOfSet=0;
         double minLimit;
         ScheduledExecutorService ellipseExecutor;
         double deltaqr = 0.00001;
@@ -201,6 +201,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 // create spherical models at different radii
                 params = new double[1];
                 params[0] = minParams[0];
+                dmaxOfSet = 2*maxParams[0];
 
                 while(params[0] < maxParams[0]){
                     models.add(new Sphere(totalSearchSpace, solventContrast, particleContrasts, params, qvalues));
@@ -215,6 +216,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 minLimit = minParams[0];
                 params = new double[3];   // [0] => R_1, [1] => R_2, [2] => R_3
                 params[2] = maxParams[0]; //
+                dmaxOfSet = 2*maxParams[0]*3.0;
 
                 while(params[2] > minLimit){ // sphere 1
                     // set R_b
@@ -224,11 +226,12 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         params[0] = params[1];
                         while (params[0] >= minLimit){ // sphere 3
 
-                            double maxr13 = (2*params[1]+params[2]+params[0]);
-                            double minr13 = params[2] + params[0];
+                            double maxr13 = (2*params[1]+params[2]+params[0]); // furthest sphere_1 and sphere_2 can be
+                            double minr13 = params[2] + params[0];             //closest they can be
 
                             // set the distances between first and third sphere
                             for(double rad=minr13; rad<maxr13; rad += delta[0]){
+                                //System.out.println(totalSearchSpace + " PARAMS " + params[0] + " " + params[1] + " " + params[2] + " rad " + rad);
                                 Future<ThreeBody> future = ellipseExecutor.submit(new CallableThreeBody(
                                         totalSearchSpace,
                                         solventContrast,
@@ -240,7 +243,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 threeBodiesFutures.add(future);
                                 totalSearchSpace++;
                             }
-
                             // Callable object models.get(totalSearchSpace)
                             params[0] -= delta[0];
                         }
@@ -249,8 +251,27 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                     params[2] -= delta[0];
                 }
 
+                int madeModels = 0;
+                progressBar.setStringPainted(true);
+                progressBar.setString("Making Models");
+                progressBar.setMaximum(totalSearchSpace);
+                progressBar.setValue(0);
+                for(Future<ThreeBody> fut : threeBodiesFutures){
+                    try {
+                        //print the return value of Future, notice the output delay in console
+                        // because Future.get() waits for task to get completed
+                        models.add(fut.get());
+                        //update progress bar
+                        //System.out.println("Creating Search Space : " + models.size() + " Total Models of " + totalSearchSpace);
+                        madeModels++;
+                        progressBar.setValue(madeModels);
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                    }
+                }
 
-
+                ellipseExecutor.shutdown();
+                break;
             case CORESHELL:
                 break;
             case CORESHELLBINARY:
@@ -262,6 +283,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 params = new double[2];
                 minLimit = minParams[0];  // lower limit of minor axis
                 params[0] = maxParams[0]; // this is R_a
+                dmaxOfSet = 2*maxParams[0];
 
                 while(params[0] > minLimit){
                     // set R_c
@@ -276,7 +298,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         ));
 
                         epfutures.add(future);
-                        // Callable object models.get(totalSearchSpace)
                         params[1] -= delta[0];
                         totalSearchSpace++;
                     }
@@ -314,6 +335,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 params = new double[2];
                 minLimit = minParams[0];  // lower limit of minor axis
                 params[1] = maxParams[0]; // this is R_c
+                dmaxOfSet = 2*maxParams[0];
 
                 while(params[1] > minLimit){
                     // set R_a
@@ -362,6 +384,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 minLimit = minParams[0];
                 params = new double[3];  // [0] => R_a, [1] => R_b, [2] => R_c
                 params[2] = maxParams[0]; // this is R_c
+                dmaxOfSet = 2*maxParams[0];
                 System.out.println("MAX " +  params[2] + " MIN " + minLimit + " " + delta[0]);
                 // create atomic integer array that will hold weights
                 //this.integrationInterval = 1.0d/99.0d; // not sure what this should be
@@ -426,11 +449,12 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         // transform data
         transformData();
         // create working dataset for fitting
-        bins = (int)(qmax*maxParams[0]/Math.PI) + 1;
+        bins = (int)(qmax*dmaxOfSet/Math.PI) + 1;
 
         System.out.println("Max Shannon Bins " + bins);
         int startIndex=0;
-        double deltaq = (qmax-qmin)/(double)bins;
+        //double deltaq = (qmax-qmin)/(double)bins;
+        double deltaq = qmax/(double)bins;
 
         qIndicesToFit = new ArrayList<>();
         // for each bin, grab at least 3 points to fit
@@ -452,18 +476,17 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         break;
                     }
                 }
-
-                //System.out.println("StartIndex " + startIndex + " " + upperIndex);
-                int[] indices = Functions.randomIntegersBounded(startIndex, upperIndex, percentData);
-                startIndex = upperIndex;
-                int totalToAdd = indices.length;
-                System.out.println(i + " Total to add " + totalToAdd);
-                for(int j=0; j<totalToAdd; j++){
-                    qIndicesToFit.add(indices[j]);
+                //System.out.println("StartIndex " + startIndex + " " + upperIndex + " " + upper + " <= " + qmax);
+                if (upperIndex > 0){
+                    int[] indices = Functions.randomIntegersBounded(startIndex, upperIndex, percentData);
+                    startIndex = upperIndex;
+                    int totalToAdd = indices.length;
+                    for(int j=0; j<totalToAdd; j++){
+                        qIndicesToFit.add(indices[j]);
+                    }
                 }
             }
         }
-
 
         totalQIndicesToFit = qIndicesToFit.size();
         Double[] qValuesInSearch = new Double[totalQIndicesToFit];
@@ -483,21 +506,21 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         for(int i=0; i<models.size(); i++){
             Model model = models.get(i);
             probabilities.put(i, value);
-            for(int j = 0; j< totalQIndicesToFit; j++){
-                modelIntensities.add(model.getIntensity(qIndicesToFit.get(j)));
+            synchronized (modelIntensities){
+                for(int j = 0; j< totalQIndicesToFit; j++){
+                    modelIntensities.add(model.getIntensity(qIndicesToFit.get(j)));
+                }
             }
         }
+        // modelIntensities is read only from this point on.
 
         //createTestData();
-        // TreeMap, holds starting probability for each model and the corresponding index
-        // each key (probability) is unique and will add to < 1.
         /*
          * pick top X configurations
          * update probabilities for each
          * update hash map and sort by probabilities
          * use CDF to pick
          */
-
         populateCDF();
         scorePerRound = new XYSeries("Score per Round");
         keptList = new ConcurrentSkipListMap<Double, ArrayList<Integer> >();
@@ -516,7 +539,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             // cdf is immutable per round
             for(int r=0; r < trials; r++){
                 // TestModel will update the tempTopList
-                // Future<Double> future = executor.submit(new TestModel(r, modelsPerTrial, cdf, tempTopList, modelIntensities, totalQIndicesToFit, workingSetIntensities, workingSetErrors));
                 futures.add(executor.submit(
                         new TestModel(
                                 r,
@@ -524,7 +546,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 cdf,
                                 tempTopList,
                                 modelIntensities,
-                                totalQIndicesToFit,
+                                totalIntensitiesOfModels,
                                 workingSetIntensities,
                                 workingSetErrors,
                                 qValuesInSearch,
@@ -646,27 +668,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
 
     /**
-     * Define total number of models
-     *
-     * For each model
-     * create parameter space:
-     *
-     * sphere :
-     *        1. radius
-     *
-     * ellipsoid :
-     *        1. major axis
-     *        2. minor axis
-     *
-     * core-shell :
-     *
-     * Calculate I(q) for each model
-     * Select q-values to fit from binned data
-     * Create model matrix
-     * Perform selection
-     */
-
-    /**
      * Data sets are transformed depending on the model as follows:
      *
      * Spherical I(q) => q^6*I(q)
@@ -683,9 +684,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                  for(int i=0; i<totalQValues; i++){
                      value = qvalues[i];
                      //tvalue = value*value*value*value*value*value; // q^6
-                     tvalue = value; // q*(I(q)
-                     transformedIntensities.add(tvalue*fittedIntensities.get(i));
-                     transformedErrors.add(tvalue*fittedErrors.get(i));
+                     transformedIntensities.add(value*fittedIntensities.get(i));
+                     transformedErrors.add(value*fittedErrors.get(i));
 //                     transformedIntensities.add(fittedIntensities.get(i));
 //                     transformedErrors.add(fittedErrors.get(i));
 
@@ -695,7 +695,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                  break;
              case CORESHELLBINARY:
                  break;
-             case ELLIPSOID:
+             case ELLIPSOID: case PROLATE_ELLIPSOID: case OBLATE_ELLIPSOID:
                  for(int i=0; i<totalQValues; i++){
                      value = qvalues[i];
                      transformedIntensities.add(value*fittedIntensities.get(i));
@@ -743,7 +743,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         // create Gaussian distribution of spheres
         for(int i=start; i<endat; i++){
             Model model = models.get(i);
-            System.out.println(i + " Model In Test " + ((Sphere)model).getRadius());
+            //System.out.println(i + " Model In Test " + ((Sphere)model).getRadius());
             int index = i-start;
             for(int j = 0; j< qIndicesToFit.size(); j++){
                 testData.set(j, testData.get(j) + percentages.get(index)/sumOfPercentages*model.getIntensity(qIndicesToFit.get(j)));
@@ -757,7 +757,10 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
     private void createTestData(){
         // given the number of models, randomly select an index
         int randomIndex = ThreadLocalRandom.current().nextInt(3,models.size()-3);
-        int[] indicesToModel = {31, 76};
+        //int[] indicesToModel = {31, 76};
+        System.out.println("Models.size " + models.size());
+        int[] indicesToModel = {1131, 1129};
+        //double[] weights = {0.61, 0.1};
         double[] weights = {0.61, 0.1};
 
         ArrayList<Double> testData = new ArrayList<>();
@@ -767,7 +770,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             testData.add(0.0d);
             testError.add(0.0d);
         }
-
+        System.out.println("1--");
         for(int ind=0; ind<indicesToModel.length; ind++){
 
             ArrayList<Double> temp = createTestDistribution(indicesToModel[ind]);
@@ -781,7 +784,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 testData.set(j, temp.get(j) + testData.get(j));
             }
         }
-
+        System.out.println("2--");
 
         // scale intensities
         for(int j = 0; j< qIndicesToFit.size(); j++){
@@ -817,7 +820,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         workingSetIntensities = new ArrayList<>();
         workingSetErrors = new ArrayList<>();
         for(int i = 0; i< totalQIndicesToFit; i++){
-            System.out.println(i + " index => " + qIndicesToFit.get(i) + " size: " + transformedIntensities.size());
             workingSetIntensities.add(transformedIntensities.get(qIndicesToFit.get(i)));
             workingSetErrors.add(transformedErrors.get(qIndicesToFit.get(i)));
         }

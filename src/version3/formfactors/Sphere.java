@@ -24,7 +24,7 @@ public class Sphere extends Model {
         super(index, ModelType.SPHERICAL, (4.0/3.0*Math.PI*radius[0]*radius[0]*radius[0]), solventContrast, particleContrasts, qvalues.length);
         this.radius = radius[0];
         this.contrast = particleContrasts[0] - solventContrast;
-        this.setConstant(9.0d*this.getVolume()*contrast*contrast); // 9*V*contrast^2
+        this.setConstant(4.0*Math.PI*9.0*this.getVolume()*contrast*contrast); // 9*V*contrast^2
 
         this.calculateModelIntensities(qvalues);
     }
@@ -39,7 +39,7 @@ public class Sphere extends Model {
 
         double qValue;
 
-        double qr, rSixth, sinCos;
+        double qr, sinCos;
         //rSixth=1.0/(radius*radius*radius*radius*radius*radius);
 
         for(int i=0; i<this.getTotalIntensities(); i++){

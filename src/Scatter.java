@@ -2374,7 +2374,7 @@ public class Scatter {
 
                         final FormFactorEngine sphere = new FormFactorEngine(tempData,
                                 ModelType.SPHERICAL,
-                                cpuCores,           // total cpu cores to use during search
+                                4,           // total cpu cores to use during search
                                 Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
                                 lowerParams, // lower radius starting value
                                 upperParams, // upper
@@ -3149,7 +3149,7 @@ public class Scatter {
                 delta[0] = 1.9;
 
                 double[] contrasts = new double[1];
-                contrasts[0] = Float.parseFloat(particleContrastText.getText());
+                contrasts[0] = Float.parseFloat(particleContrast3Body.getText());
 
                 double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
                 double percentData = Double.parseDouble((String)percentDataCEcomboBox.getSelectedItem());

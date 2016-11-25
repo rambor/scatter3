@@ -2490,7 +2490,7 @@
                                   </grid>
                                 </children>
                               </grid>
-                              <grid id="48bd5" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                              <grid id="48bd5" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                 <margin top="0" left="0" bottom="0" right="0"/>
                                 <constraints>
                                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -2506,7 +2506,7 @@
                                   <grid id="6d7d8" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                     <margin top="0" left="0" bottom="0" right="0"/>
                                     <constraints>
-                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                     </constraints>
                                     <properties>
                                       <background color="-1574918"/>
@@ -2531,7 +2531,7 @@
                                           </grid>
                                         </constraints>
                                         <properties>
-                                          <text value="2e-6"/>
+                                          <text value="0.334"/>
                                         </properties>
                                       </component>
                                     </children>
@@ -2539,7 +2539,7 @@
                                   <grid id="caa68" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                     <margin top="0" left="0" bottom="0" right="0"/>
                                     <constraints>
-                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                     </constraints>
                                     <properties>
                                       <background color="-1574918"/>
@@ -2564,11 +2564,19 @@
                                           </grid>
                                         </constraints>
                                         <properties>
-                                          <text value="1e-6"/>
+                                          <text value="0.42"/>
                                         </properties>
                                       </component>
                                     </children>
                                   </grid>
+                                  <component id="f211f" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="electrons per Å^3"/>
+                                    </properties>
+                                  </component>
                                 </children>
                               </grid>
                             </children>
@@ -2605,14 +2613,14 @@
                       <tabbedpane title="Ellipsoid"/>
                     </constraints>
                     <properties>
-                      <visible value="false"/>
+                      <visible value="true"/>
                     </properties>
                     <border type="none"/>
                     <children>
                       <grid id="38bdb" binding="ellipsoidResultsPanel" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
-                          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="9" fill="0" indent="0" use-parent-layout="false"/>
+                          <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                           <forms defaultalign-horz="false" defaultalign-vert="false"/>
                         </constraints>
                         <properties>
@@ -2900,7 +2908,7 @@
                                   </component>
                                 </children>
                               </grid>
-                              <grid id="90c64" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                              <grid id="90c64" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                 <margin top="0" left="0" bottom="0" right="0"/>
                                 <constraints>
                                   <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -2916,7 +2924,7 @@
                                   <grid id="d7a6" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                     <margin top="0" left="0" bottom="0" right="0"/>
                                     <constraints>
-                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                     </constraints>
                                     <properties>
                                       <background color="-4916547"/>
@@ -2942,7 +2950,7 @@
                                           </grid>
                                         </constraints>
                                         <properties>
-                                          <text value="2e-6"/>
+                                          <text value="0.334"/>
                                         </properties>
                                       </component>
                                     </children>
@@ -2950,7 +2958,7 @@
                                   <grid id="4a072" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                     <margin top="0" left="0" bottom="0" right="0"/>
                                     <constraints>
-                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                     </constraints>
                                     <properties>
                                       <background color="-4916547"/>
@@ -2976,11 +2984,19 @@
                                           </grid>
                                         </constraints>
                                         <properties>
-                                          <text value="1e-6"/>
+                                          <text value="0.42"/>
                                         </properties>
                                       </component>
                                     </children>
                                   </grid>
+                                  <component id="67b47" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="electrons per Å^3"/>
+                                    </properties>
+                                  </component>
                                 </children>
                               </grid>
                             </children>
@@ -3133,18 +3149,18 @@
                             </constraints>
                             <properties/>
                           </component>
-                          <grid id="f0c37" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                          <grid id="f0c37" layout-manager="GridLayoutManager" row-count="6" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                             <margin top="0" left="0" bottom="0" right="0"/>
                             <constraints>
                               <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                             </constraints>
                             <properties/>
-                            <border type="none"/>
+                            <border type="none" title="Contrast"/>
                             <children>
                               <grid id="32d7d" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                 <margin top="0" left="0" bottom="0" right="0"/>
                                 <constraints>
-                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                  <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties/>
                                 <border type="none"/>
@@ -3165,7 +3181,7 @@
                                       </grid>
                                     </constraints>
                                     <properties>
-                                      <text value="1e-6"/>
+                                      <text value="0.334"/>
                                     </properties>
                                   </component>
                                 </children>
@@ -3173,7 +3189,7 @@
                               <grid id="be516" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                 <margin top="0" left="0" bottom="0" right="0"/>
                                 <constraints>
-                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                  <grid row="5" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties/>
                                 <border type="none"/>
@@ -3194,11 +3210,43 @@
                                       </grid>
                                     </constraints>
                                     <properties>
-                                      <text value="1e-6"/>
+                                      <text value="0.42"/>
                                     </properties>
                                   </component>
                                 </children>
                               </grid>
+                              <component id="72bd4" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="electrons per Å^3"/>
+                                </properties>
+                              </component>
+                              <component id="20848" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="Nucleic Acids 0.550"/>
+                                </properties>
+                              </component>
+                              <component id="4fd6" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="Lipids "/>
+                                </properties>
+                              </component>
+                              <component id="c2c18" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="Protein 0.420"/>
+                                </properties>
+                              </component>
                             </children>
                           </grid>
                         </children>

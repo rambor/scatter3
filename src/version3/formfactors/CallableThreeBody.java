@@ -10,7 +10,7 @@ public class CallableThreeBody implements Callable<ThreeBody> {
     private int index;
     private double solventContrast;
     private double[] particleContrasts = new double[1];
-    private double[] params = new double[2];
+    private double[] params = new double[3];
     private Double[] qvalues;
     private double rdis;
 
@@ -34,6 +34,7 @@ public class CallableThreeBody implements Callable<ThreeBody> {
             this.particleContrasts[0] = particleContrasts[0];
             this.params[0] = radii[0];
             this.params[1] = radii[1];
+            this.params[2] = radii[2];
             System.arraycopy(qvalues, 0, this.qvalues, 0, qvalues.length);
         }
     }
