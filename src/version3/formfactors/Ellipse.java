@@ -57,7 +57,7 @@ public class Ellipse extends Model {
         n_index = m_index;
 
         //this.setConstant(9.0/this.getVolume()*this.contrast*this.contrast);
-        this.setConstant(9.0*this.getVolume()*this.contrast*this.contrast);
+        this.setConstant(4*Math.PI*9.0*this.getVolume()*this.contrast*this.contrast);
         a2 = radius_a*radius_a;
         b2 = radius_b*radius_b;
         c2 = radius_c*radius_c;
@@ -168,53 +168,8 @@ public class Ellipse extends Model {
             this.addIntensity(i, qValue*this.getConstant()*sum); // q*I(q)
         }
 //        System.out.println("TIME: " + (System.currentTimeMillis()-startTime));
-
-        // old method below using integrator
-//        SimpsonIntegrator t = new SimpsonIntegrator();
-//
-//        double qValue;
-//        double constant = getConstant()*majorAxis*minorAxis*minorAxis;
-//
-//        for(int i=0; i<getTotalIntensities(); i++){
-//            qValue = qValues[i];
-//
-//            EllipsoidUnivariateFunction func = new EllipsoidUnivariateFunction(majorAxis, minorAxis, qValue);
-//            float integral = (float)t.integrate(100000000, func, 0, pi_half);
-//            this.addIntensity(i, constant*integral);
-//        }
-
     }
 
 
-//    public class EllipsoidUnivariateFunction implements UnivariateFunction {
-//
-//        private double maj, min,q;
-//
-//        public EllipsoidUnivariateFunction(double maj, double min, double q){
-//            this.maj = maj;
-//            this.min = min;
-//            this.q = q;
-//        }
-//
-//        /**
-//         * {@inheritDoc}
-//         */
-//        @Override
-//        public double value(double v){
-//            float r = findR(v);
-//            double qr = q*r;
-//            float rCube = r*r*r;
-//            float sinCos = (float) ((FastMath.sin(qr) - qr * FastMath.cos(qr)));
-//            float f = sinCos/rCube;
-//
-//            return f*f*Math.sin(v);
-//        }
-//
-//        private float findR(double alpha){
-//            double thing1 = maj*FastMath.cos(alpha);
-//            double thing2 = min*FastMath.sin(alpha);
-//            return (float)FastMath.sqrt(thing1*thing1 + thing2*thing2);
-//        }
-//    }
 
 }

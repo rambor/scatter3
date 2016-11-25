@@ -38,7 +38,7 @@ public class TestModel implements Callable<Double> {
      * @param cdf cumulative distribution function (probability range for each model)
      * @param list
      * @param modelIntensities pre-calculated model intensities
-     * @param totalq
+     * @param totalqInModelIntensities
      * @param transformedIntensities
      * @param transformedErrors
      */

@@ -48,7 +48,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
     private double[] minParams;
     private double[] maxParams;
     private double[] delta;
-    private double integrationInterval;
     private double solventContrast;
     private double[] particleContrasts;
     private double qmax, qmin, epsilon;
@@ -382,12 +381,11 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 // iterate from largest ellipsoid to smallest ellipsoid
                 // largest ellipsoid = maxParams[0]
                 minLimit = minParams[0];
-                params = new double[3];  // [0] => R_a, [1] => R_b, [2] => R_c
+                params = new double[3];   // [0] => R_a, [1] => R_b, [2] => R_c
                 params[2] = maxParams[0]; // this is R_c
                 dmaxOfSet = 2*maxParams[0];
                 System.out.println("MAX " +  params[2] + " MIN " + minLimit + " " + delta[0]);
                 // create atomic integer array that will hold weights
-                //this.integrationInterval = 1.0d/99.0d; // not sure what this should be
                 // if interval is 0.01, then x,y is 100*100 = 10000 points
                 // if interval is 0.001 then x,y is 1000*1000 = 1x10^6
                 //
@@ -431,7 +429,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         //print the return value of Future, notice the output delay in console
                         // because Future.get() waits for task to get completed
                         models.add(fut.get());
-                        //((Ellipse)models.get(models.size()-1)).printParams();
                         //update progress bar
                         //System.out.println("Creating Search Space : " + models.size() + " Total Models of " + totalSearchSpace);
                         ellipses++;
