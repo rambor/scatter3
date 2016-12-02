@@ -29,8 +29,6 @@ public class LoadedFile {
     public String filebase;
     private Pattern dataFormat = Pattern.compile("(-?[0-9].[0-9]+[Ee][+-]?[0-9]+)|(-?[0-9]+.[0-9]+)");
     //private Pattern nonDataFormat = Pattern.compile("[A-Z]+");
-
-
     private Locale loc = Locale.getDefault(Locale.Category.FORMAT);
     private boolean isUSUK = false;
     private DecimalFormat df = new DecimalFormat("#.#", new DecimalFormatSymbols(Locale.US));
@@ -67,7 +65,7 @@ public class LoadedFile {
                 throw new Exception("File Empty");
             }
 
-            if (ext.equals("dat") || ext.equals("int")) { //regular 3 column file space or tab delimited
+            if (ext.equals("dat") || ext.equals("int") || ext.equals("txt") ) { //regular 3 column file space or tab delimited
                 String strLine;
 
                 //Read file line-by-line
@@ -80,7 +78,6 @@ public class LoadedFile {
                             if (!ext.equals("fit")){
 
                                 tempQValue = (convert) ? dataPoints.getq()/10 : dataPoints.getq();
-
                                 allData.add(tempQValue, dataPoints.getI() );
                                 allDataError.add(tempQValue, dataPoints.getE() );
 
@@ -135,7 +132,7 @@ public class LoadedFile {
                 throw new Exception("File Empty");
             }
 
-            if (ext.equals("dat") || ext.equals("fit") || ext.equals("int")) { //regular 3 column file space or tab delimited
+            if (ext.equals("dat") || ext.equals("fit") || ext.equals("int") || ext.equals("txt")) { //regular 3 column file space or tab delimited
                 String strLine;
 
                 //Read file line-by-line
@@ -151,7 +148,6 @@ public class LoadedFile {
 
                                 allData.add(tempQValue, dataPoint.getE() ); // third column is actual model intensity (2nd is data)
                                 allDataError.add(tempQValue, dataPoint.getE()*0.05);
-
                                 //allData.add(tempQValue, dataPoint.getI());
                                 //allDataError.add(dataPoint.getq(), dataPoint.getE()*0.05);
                                 //allDataError.add(tempQValue, dataPoint.getE());
@@ -167,18 +163,22 @@ public class LoadedFile {
                             dataPoint = dataFromText(strLine);
                             if (dataPoint.getTest()){
                                 tempQValue = (convert) ? dataPoint.getq() / 10 : dataPoint.getq();
-                                allData.add(tempQValue, dataPoint.getI() );
-                                allDataError.add(tempQValue, dataPoint.getE());
+                                allData.addOrUpdate(tempQValue, dataPoint.getI());
+                                allDataError.addOrUpdate(tempQValue,  dataPoint.getE());
+                                //allData.add(tempQValue, dataPoint.getI() );
+                                //allDataError.add(tempQValue, dataPoint.getE());
                             }
                             count++;
 //                            else if (checkRemark(strLine)){ // check if header without BUFFER LINE
 //
 //                            } // move to next line
                         }
-                        System.out.println("READ " + count + " LINES in => " + (System.nanoTime() - start)/1000 + " nanoseconds");
+
+                        if (allData.getItemCount() != count){
+                            System.out.println("POSSIBLE DUPLICATE ENTRIES: READ " + count + " LINES in => " + (System.nanoTime() - start)/1000 + " nanoseconds");
+                        }
                     }
 
-                    //endPtNN = originalNNData.getItemCount();
                 } catch (IOException ex) {
                     System.out.println("File Index out of bounds");
                 }
