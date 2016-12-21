@@ -22,10 +22,14 @@ public class FileObject {
     private JComboBox source;
     private String instrument = "BENDING MAGNET";
     private String synchrotron = "Y";
+    private String version = "";
     private String beamlineManufacturer = "B21 DIAMOND LIGHT SOURCE";
 
     public FileObject(File directory){
         this.directoryInfo = directory;
+    }
+    public FileObject(File directory, String version){
+        this.directoryInfo = directory; this.version = version;
     }
 
     public void setSource(JComboBox box, String nameOf){
@@ -454,9 +458,9 @@ public class FileObject {
         tempHeader += String.format("REMARK 265             SYNCHROTRON (Y/N) : %s %n", synchrotron);
         tempHeader += String.format("REMARK 265                      BEAMLINE : %s %n", beamlineManufacturer);
         tempHeader += "REMARK 265\n";
-        tempHeader += "REMARK 265       DATA REDUCTION SOFTWARE : SCATTER (v3.0a)\n";
+        tempHeader += "REMARK 265       DATA REDUCTION SOFTWARE : SCATTER (v "+version+")\n";
         tempHeader += "REMARK 265               SOFTWARE AUTHOR : RP RAMBO\n";
-        tempHeader += "REMARK 265        DATA ANALYSIS SOFTWARE : SCATTER (v3.0a)\n";
+        tempHeader += "REMARK 265        DATA ANALYSIS SOFTWARE : SCATTER (v "+version+")\n";
         tempHeader += "REMARK 265               SOFTWARE AUTHOR : RP RAMBO\n";
         tempHeader += "REMARK 265\n";
         return tempHeader;

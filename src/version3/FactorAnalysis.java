@@ -93,13 +93,14 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
     private ArrayList<XYSeries> standardizedDataSet;
     private XYLineAndShapeRenderer signalRenderer;
     private XYLineAndShapeRenderer reverseEFARenderer;
+    private String version="";
 
     // use defined buffer to make signal plot
     //
     // user define full range of data to apply factor analysis
     // perform factor analysis (forward reverse)
     //
-    public FactorAnalysis(Collection samples, Collection selectedBuffers, double finalQmin, double finalQmax, JLabel status, final JProgressBar bar, String outputDirectory){
+    public FactorAnalysis(Collection samples, Collection selectedBuffers, double finalQmin, double finalQmax, JLabel status, final JProgressBar bar, String outputDirectory, String version){
         // take specified buffer and do subtraction from each frame
         // samplesCollection = samples;
         // buffersCollection = selectedBuffers;
@@ -113,7 +114,8 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         colors.add(Color.magenta);
         colors.add(Color.black);
 
-        Subtraction subTemp = new Subtraction(selectedBuffers, samples, finalQmin, finalQmax, false, true, false, false, 4, status, bar);
+        this.version = version;
+        Subtraction subTemp = new Subtraction(selectedBuffers, samples, finalQmin, finalQmax, false, true, false, false, 4, status, bar, this.version);
         // add other attributes and then run
         // Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString())/100.00;
         subTemp.setNameAndDirectory("", outputDirectory);

@@ -9,10 +9,8 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.XYBlockRenderer;
-import org.jfree.chart.renderer.xy.XYBubbleRenderer;
-import org.jfree.chart.renderer.xy.XYItemRenderer;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.renderer.xy.*;
 import org.jfree.data.statistics.SimpleHistogramDataset;
 import org.jfree.data.xy.DefaultXYZDataset;
 import org.jfree.data.xy.XYSeries;
@@ -32,7 +30,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public class SpherePlots {
 
-    private final ConcurrentSkipListMap<Double, ArrayList<Integer>> keptList;
+    private final KeptModels keptList;
     private JPanel residualsPanel;
     private JPanel histogramPanel;
     private JPanel geometricPanel;
@@ -54,7 +52,8 @@ public class SpherePlots {
     private ChartPanel residualsChartPanel;
 
     private XYLineAndShapeRenderer renderer1;
-    private HashMap<Integer, Double> probabilities;
+    //private HashMap<Integer, Double> probabilities;
+    private ArrayList<Double> probabilities;
     private XYSeries probabilitiesPerRadii;
     private ArrayList<Double> calculatedIntensities;
     private ArrayList<Double> transformedObservedIntensities;
@@ -78,8 +77,9 @@ public class SpherePlots {
                        JPanel distributionPanel,
                        JPanel dataPlotPanel,
                        ArrayList<Model> models,
-                       ConcurrentSkipListMap<Double, ArrayList<Integer>> keptList,
-                       HashMap<Integer, Double> probabilities,
+                       KeptModels keptList,
+                       //HashMap<Integer, Double> probabilities,
+                       ArrayList<Double> probabilities,
                        Double[] qvalues,
                        ArrayList<Double> transformedObservedIntensities,
                        ArrayList<Double> transformedObservedErrors,
@@ -93,7 +93,7 @@ public class SpherePlots {
         this.dataPlotPanel = dataPlotPanel;
         this.models = models;
         this.keptList = keptList;
-        this.probabilities = probabilities;
+        this.probabilities = probabilities;  // probabilities per model
         this.qvalues = qvalues;
         this.transformedObservedIntensities = transformedObservedIntensities;
         this.transformedObservedErrors = transformedObservedErrors;
@@ -145,9 +145,25 @@ public class SpherePlots {
         while(calculatedIntensities.size() < totalq) calculatedIntensities.add(0.0d);
 
         int count=0;
-        for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
+//        for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
+//
+//            ArrayList<Integer> indices = entry.getValue();
+//            // for each index, great XYSeries and Add
+//            int total = indices.size();
+//
+//            for (int i=0; i<total; i++){
+//                Sphere model =  (Sphere)models.get(indices.get(i));
+//
+//                for(int q=0; q<totalq; q++){
+//                    calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + model.getIntensity(q));
+//                    count++;
+//                }
+//            }
+//        }
+        //Map.Entry<Double, ArrayList<Integer>> entry = keptList.firstEntry();
 
-            ArrayList<Integer> indices = entry.getValue();
+            ArrayList<Integer> indices = keptList.getFirst();
+
             // for each index, great XYSeries and Add
             int total = indices.size();
 
@@ -159,7 +175,10 @@ public class SpherePlots {
                     count++;
                 }
             }
-        }
+
+
+
+
 
         // average the calculated intensities
         double inv = 1.0/(double)count;
@@ -215,11 +234,17 @@ public class SpherePlots {
 
     private void makeHistogramData(){
         probabilitiesPerRadii = new XYSeries("probabilities");
+
         for(int i=0; i<probabilities.size(); i++){
             // convert probabilities into radii
             Sphere model =  (Sphere)models.get(i);
             probabilitiesPerRadii.add(model.getRadius(), probabilities.get(i));
         }
+
+        double first = ((Sphere)models.get(0)).getRadius();
+        double last = ((Sphere)models.get(probabilities.size()-1)).getRadius();
+
+
     }
 
     private void makeHistogramPlot(){
@@ -235,8 +260,22 @@ public class SpherePlots {
                 false
         );
 
+
+//        histogramChart = ChartFactory.createBarChart(
+//                "",
+//                "radius",
+//                "",
+//                new XYSeriesCollection(probabilitiesPerRadii),
+//                PlotOrientation.VERTICAL,
+//                false,
+//                false,
+//                false
+//        )
+
         // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
         XYPlot plot = (XYPlot) histogramChart.getPlot();
+        XYBarRenderer renderer = (XYBarRenderer) ((XYPlot) histogramChart.getPlot()).getRenderer();
+        renderer.setMargin(0.0);
 
         histogramChartPanel = new ChartPanel(histogramChart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
@@ -401,15 +440,16 @@ public class SpherePlots {
 
         // convert each model into a radii
         // as a single XYSeries
-        Map.Entry<Double, ArrayList<Integer> > top = keptList.firstEntry();
+        //Map.Entry<Double, ArrayList<Integer> > top = keptList.firstEntry();
         //renderer1 = (XYBubbleRenderer) heatMapChart.getXYPlot().getRenderer();
         //renderer1.setBaseShapesVisible(true);
         //renderer1.setBaseShapesFilled(false);
         //renderer1.setBaseStroke(new BasicStroke(2.0f));
         // keptList -> score and array of indices
-        int count=1;
+        int count=0;
         int setCount=0;
         double radius, del;
+        double volume = 0.0;
         ellipses = new ArrayList<>();
 
         minDomain=100000.0;
@@ -418,14 +458,15 @@ public class SpherePlots {
 
         XYSeries ellipseSet = new XYSeries("ALL");
 
-        for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
-
-            ArrayList<Integer> indices = entry.getValue();
+       // for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
+        //Map.Entry<Double, ArrayList<Integer>> entry = keptList.firstEntry();
+            ArrayList<Integer> indices = keptList.getFirst();
             // for each index, great XYSeries and Add
             int total = indices.size();
 
             for (int i=0; i<total; i++){
                 Sphere model =  (Sphere)models.get(indices.get(i));
+                volume += model.getVolume();
                 radius =  2*model.getRadius();
                 del = (-radius*0.5);
                 // get radii of model specified by indices.get(i)
@@ -445,9 +486,10 @@ public class SpherePlots {
 
                 count++;
             }
-            setCount++;
-        }
+       //     setCount++;
+       // }
 
+        System.out.println("VOLUME : " + (1.0/((double)count)*volume) );
         heatMapCollection.addSeries(ellipseSet);
         System.out.println("MIN " + minDomain + " " + " MAX " + maxDomain);
         System.out.println(heatMapCollection.getSeriesCount() + " => " + heatMapCollection.getItemCount(0));

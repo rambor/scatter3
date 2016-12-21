@@ -11,5 +11,7 @@ public enum ModelType {
         ELLIPSOID,
         PROLATE_ELLIPSOID,
         OBLATE_ELLIPSOID,
-        CYLINDRICAL;
+        CYLINDRICAL,
+        CORESHELL_PROLATE_ELLIPSOID,
+        CORESHELL_OBLATE_ELLIPSOID;
 }

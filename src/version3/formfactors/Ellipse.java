@@ -18,9 +18,6 @@ import java.util.concurrent.Callable;
  */
 public class Ellipse extends Model {
 
-    private double radius_a;
-    private double radius_b;
-    private double radius_c;
     private double integrationInterval;
     private int m_index, n_index;
     //private double[][] weights;
@@ -41,12 +38,15 @@ public class Ellipse extends Model {
     public Ellipse(int index, double solventContrast, double[] particleContrasts, double[] radii, Double[] qvalues, double deltaqr) {
 
 
-        super(index, ModelType.ELLIPSOID, (4.0/3.0*Math.PI*radii[0]*radii[1]*radii[2]), solventContrast, particleContrasts, qvalues.length);
+        super(index, ModelType.ELLIPSOID, (4.0/3.0*Math.PI*radii[0]*radii[1]*radii[2]), solventContrast, particleContrasts, qvalues.length, 3);
 
-        radius_a = radii[0];
-        radius_b = radii[1];
-        radius_c = radii[2];
+//        radius_a = radii[0];
+//        radius_b = radii[1];
+//        radius_c = radii[2];
 
+        this.setFittedParamsByIndex(0, radii[0]);
+        this.setFittedParamsByIndex(1, radii[1]);
+        this.setFittedParamsByIndex(2, radii[2]);
         //df.setRoundingMode(RoundingMode.CEILING);
 
         this.contrast = particleContrasts[0] - solventContrast;
@@ -58,28 +58,28 @@ public class Ellipse extends Model {
 
         //this.setConstant(9.0/this.getVolume()*this.contrast*this.contrast);
         this.setConstant(4*Math.PI*9.0*this.getVolume()*this.contrast*this.contrast);
-        a2 = radius_a*radius_a;
-        b2 = radius_b*radius_b;
-        c2 = radius_c*radius_c;
+        a2 = radii[0]*radii[0];
+        b2 = radii[1]*radii[1];
+        c2 = radii[2]*radii[2];
         this.deltaqr = deltaqr;
 
         this.calculateModelIntensities(qvalues);
     }
 
     public void printParams(){
-        System.out.println(this.getIndex() + " PARAMS " + radius_a + " " + radius_b + " " + radius_c);
+        System.out.println(this.getIndex() + " PARAMS " + getRadius_a() + " " + getRadius_b() + " " + getRadius_c());
     }
 
-    public double getRadius_a(){ return radius_a;}
-    public double getRadius_b(){ return radius_b;}
-    public double getRadius_c(){ return radius_c;}
+//    public double getRadius_a(){ return radius_a;}
+//    public double getRadius_b(){ return radius_b;}
+//    public double getRadius_c(){ return radius_c;}
 
     @Override
     void calculateModelIntensities(Double[] qValues) {
 
         double maxR = Math.sqrt(c2 + a2);
         double qmaxRmax = qValues[qValues.length-1]*maxR;
-        double qminRmin = qValues[0]*radius_a;
+        double qminRmin = qValues[0]*getRadius_a();
 
         int totalq = (int)Math.floor((qmaxRmax - qminRmin)/deltaqr) + 1;
 
@@ -149,10 +149,9 @@ public class Ellipse extends Model {
                 pihalfvalue = pi_half*x_value*integrationInterval;
                 cos = FastMath.cos(pihalfvalue);
                 acos2 = a2*cos*cos;
-                //acos2 = radius_a*radius_a*cos2x.get(x_value);
                 sin = FastMath.sin(pihalfvalue);
                 asin2 = b2*sin*sin;
-                //asin2 = radius_a*radius_a*sin2x.get(x_value);
+
                 for(int y_value=0; y_value<n_index; y_value++){
                     y2=y_value*i2*y_value;
                     effective_qr = qValue*FastMath.sqrt(acos2 + asin2*(1.0d-y2) + c2*y2); // sqrt is r_effective
@@ -160,15 +159,19 @@ public class Ellipse extends Model {
                     // slowest step by 10x
                     phi = (sinxvalues[locale] - effective_qr*cosxvalues[locale])/(effective_qr*effective_qr*effective_qr);
                     //phi = (FastMath.sin(effective_qr) - effective_qr*FastMath.cos(effective_qr))/(effective_qr*effective_qr*effective_qr);
-                    //System.out.println(effective_qr + " PHI " + phi + " " + newphi + " " + locale + " size " + sinxvalues.size());
+
                     sum += weights[x_value][y_value]*phi*phi;
                 }
             }
 
             this.addIntensity(i, qValue*this.getConstant()*sum); // q*I(q)
         }
-//        System.out.println("TIME: " + (System.currentTimeMillis()-startTime));
     }
+
+    public double getRadius_a(){return this.getFittedParamByIndex(0);}
+    public double getRadius_b(){return this.getFittedParamByIndex(1);}
+    public double getRadius_c(){return this.getFittedParamByIndex(2);}
+
 
 
 

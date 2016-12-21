@@ -23,7 +23,6 @@ public class TestModel implements Callable<Double> {
     private int totalq;
     private int totalToSelect;
     private double score;
-    //private TreeMap<Double, Integer> cdf;
     private ConcurrentNavigableMap<Double, Integer> cdf;
     private List<Double> modelIntensities;
     private ArrayList<Double> transformedIntensities;
@@ -31,6 +30,7 @@ public class TestModel implements Callable<Double> {
     private RealMatrix designMatrix;
     private double[] qValues;
     private boolean useNoBackground;
+    private int totalqInModelIntensities;
 
     /**
      *  @param index
@@ -57,22 +57,19 @@ public class TestModel implements Callable<Double> {
         this.totalToSelect = totalToSelect;
         this.selectedIndices = new ArrayList<>();  // can have redundant indices
         while(selectedIndices.size() < this.totalToSelect) selectedIndices.add(0);
-
+        this.totalqInModelIntensities = totalqInModelIntensities;
         this.list = list;
         this.cdf = cdf;
 
         this.totalq = qvalues.length;
-        //this.modelIntensities = new ArrayList<>(totalqInModelIntensities);
-        this.modelIntensities = modelIntensities;
+
         this.transformedIntensities = new ArrayList<>(totalq);
         this.transformedErrors = new ArrayList<>(totalq);
         this.useNoBackground = useNoBackground;
 
         qValues = new double[totalq];
 
-        //synchronized (modelIntensities){
-        //    for (double item : modelIntensities) this.modelIntensities.add(item); // can be quite large
-        //}
+        this.modelIntensities = modelIntensities;
 
         synchronized (transformedIntensities){
             for (double item : transformedIntensities) this.transformedIntensities.add(item);
@@ -87,47 +84,43 @@ public class TestModel implements Callable<Double> {
                 qValues[i] = qvalues[i];
             }
         }
-
-//        synchronized (this){
-//            for (double item : transformedIntensities) this.transformedIntensities.add(item);
-//            for (double item : transformedErrors) this.transformedErrors.add(item);
-//
-//            for(int i=0; i<totalq; i++){
-//                qValues[i] = qvalues[i];
-//            }
-//        }
     }
-
 
 
     @Override
     public Double call() throws Exception {
 
+        List<Double> modelIntensitiesTemp;
+//        if (totalqInModelIntensities < 1000000){
+//            System.out.println("MAKING COPY : Total Model Intensities => " + totalqInModelIntensities);
+//            modelIntensitiesTemp = new ArrayList<>(totalqInModelIntensities);
+//            synchronized (modelIntensities){
+//                for (double item : modelIntensities) modelIntensitiesTemp.add(item); // can be quite large
+//            }
+//        } else {
+//            modelIntensitiesTemp = this.modelIntensities;
+//        }
+
+        modelIntensitiesTemp = this.modelIntensities;
         // create the random Ensemble Model
         DecimalFormat formatter = new DecimalFormat("0.#####E0");
 
         Random random = new Random();
         int index, startIndex;
-        Map.Entry<Double, Integer> entry;
+
         calculatedIntensities = new ArrayList<>();
         while(calculatedIntensities.size() < totalq) calculatedIntensities.add(0.0d);
 
         for(int i=0; i<totalToSelect; i++){
             double rand = random.nextDouble();
-            entry = cdf.floorEntry(rand); // generate random number, find closest Key in CDF
-            index = entry.getValue();
 
+            index = cdf.floorEntry(rand).getValue();
             selectedIndices.set(i, index);
             // combine with
             startIndex = index*totalq;
             // sum the intensities for each model
-//            synchronized (modelIntensities){
-//                for(int j=0; j<totalq; j++){
-//                    calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + modelIntensities.get(startIndex+j).doubleValue());
-//                }
-//            }
             for(int j=0; j<totalq; j++){
-                calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + modelIntensities.get(startIndex+j).doubleValue());
+                calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + modelIntensitiesTemp.get(startIndex+j).doubleValue());
             }
         }
 
@@ -139,11 +132,19 @@ public class TestModel implements Callable<Double> {
         // calculate score
         calculateScore();
         // update list
+//        printIndices();
         list.update(score, modelIndex, this, totalToSelect);
-        //System.out.println(modelIndex + " score " + score);
         return score;
     }
 
+    /**
+     * print selected indices
+     */
+    private void printIndices(){
+        for(int i=0; i<totalToSelect; i++){
+            System.out.println(modelIndex + " MODEL INDEX " + selectedIndices.get(i));
+        }
+    }
 
     public synchronized ArrayList<Integer> getSelectedIndices(){
         return selectedIndices;
@@ -156,7 +157,7 @@ public class TestModel implements Callable<Double> {
     private void calculateScore(){
 
         double scale_c;
-        double baseline = 0;
+        double baseline = 0.0d;
 
         if (useNoBackground){
             float cUp = 0;
@@ -173,8 +174,7 @@ public class TestModel implements Callable<Double> {
             }
 
             scale_c = cUp/cDown;
-        } else {
-
+        } else { // fit background to data
             designMatrix = new Array2DRowRealMatrix(totalq, 2);
 
             for(int j=0; j<totalq; j++){
@@ -196,65 +196,15 @@ public class TestModel implements Callable<Double> {
             baseline = solution.getEntry(1);
         }
 
-        //int totaldiff = totalq/2;
-
-        // if totaldiff is even, limit = totaldiff
-        // else if totaldiff is odd, limit =
-//        if ( (totaldiff & 1) != 0 ) {
-//            totaldiff+=1;
-//        }
-
-
-        ArrayList<Double> residualsToPartition = new ArrayList<>();
-        double sumDiff = 0; // average should be zero for a perfect fit
-        double chiSq = 0, diff;
+        double chiSq = 0, diff, sumit=0;
         for (int index=0; index<totalq; index++){
             diff = (transformedIntensities.get(index)-scale_c*calculatedIntensities.get(index)-baseline);
             double thing = diff/transformedErrors.get(index);
-            residualsToPartition.add(diff);
-            sumDiff += diff;
+            sumit+= diff;
             chiSq+= thing*thing;
         }
 
-        //Shapiro Wilk calculation
-//        double invTotalQ = 1.0/(double)totalq;
-//        double averageResidual = invTotalQ*sumDiff;
-//        //sumDiff=0;
-//        double sumCubed=0, sumSquared=0, sumFourth=0, tempvalue;
-//        for (int index=0; index<totalq; index++){
-//            diff = (residualsToPartition.get(index) - averageResidual);
-//            tempvalue = diff*diff;
-//            sumCubed += tempvalue*diff;
-//            sumSquared += tempvalue;
-//            sumFourth += tempvalue*tempvalue;
-//           // sumDiff += tempvalue; // bottom of the Shapiro Wilk statistic
-//        }
-//        //kurtosis
-//        double kurt = (double)totalq*sumFourth/(sumSquared*sumSquared);
-//
-//        // skew
-//        double topSkew = 1.0/(double)totalq*sumCubed;
-//        double bottomHalf = sumSquared/((double)totalq - 1.0d);
-//        double skew = topSkew/(Math.sqrt(bottomHalf*bottomHalf*bottomHalf));
-//        //end skew
-//
-//        //Jarque-Bera
-//        double jb = 1.0/6.0*(totalq - totalToSelect)*(skew*skew + 0.25*(kurt-3.0)*(kurt-3.0));
-
-        // sum diff of residuals
-        //Collections.sort(residualsToPartition);
-        //double shapirowilk=0;
-        //for (int index=0; index<totaldiff; index++){
-//            //System.out.println("Index " + index + " " + residualsToPartition.get(index) + " <=> " + residualsToPartition.get(totalq-index-1));
-        //    shapirowilk += residualsToPartition.get(totalq-index-1) + residualsToPartition.get(index) ;
-        //}
-        // END Shapiro Wilk calculation
-        // System.out.println(chiSq/(double)totalq + " SW " + (shapirowilk*shapirowilk/sumDiff) + " JB " + jb);
-        //score = (shapirowilk*shapirowilk/sumDiff);
-
-        //score = chiSq/(double)totalq + (shapirowilk*shapirowilk/sumDiff);
-        //score = chiSq/(double)totalq + jb;
-        score = chiSq/(double)totalq;
+        score = chiSq/(double)(totalq - 2);
     }
 
 

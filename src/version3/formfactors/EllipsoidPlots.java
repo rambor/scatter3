@@ -1,18 +1,22 @@
 package version3.formfactors;
 
 import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartFrame;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.data.xy.DefaultXYZDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import javax.swing.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.awt.*;
+import java.lang.reflect.Array;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
@@ -32,27 +36,26 @@ public class EllipsoidPlots {
 
     private ArrayList<Model> models;
 
-    private HashMap<Integer, Double> probabilities;
+    //private HashMap<Integer, Double> probabilities;
+    private ArrayList<Double> probabilities;
     private XYSeries probabilitiesPerRadiiA;
     private XYSeries probabilitiesPerRadiiB;
     private XYSeries probabilitiesPerRadiiC;
     private ArrayList<Double> calculatedIntensities;
     private ArrayList<Double> transformedObservedIntensities;
     private ArrayList<Double> transformedObservedErrors;
-    private XYSeriesCollection heatMapCollection;
+    private ArrayList<Double> probabilitiesPerModel;
     private XYSeriesCollection residualsCollection;
     private XYSeriesCollection averageCollection;
     private double minRc;
     private double maxRc;
-    private double minRb;
-    private double maxRb;
-    private double minRa;
-    private double maxRa;
     private boolean useNoBackGround;
+    private DefaultXYZDataset xyzdataset;
+    private DefaultXYZDataset bcdataset;
 
     private Double[] qvalues;
 
-    private final ConcurrentSkipListMap<Double, ArrayList<Integer>> keptList;
+    private final KeptModels keptList;
 
     public EllipsoidPlots(JPanel residualsPanel,
                           JPanel cross1Panel,
@@ -64,12 +67,13 @@ public class EllipsoidPlots {
                           JPanel rcPanel,
                           JPanel dataFitPlot,
                           ArrayList<Model> models,
-                          ConcurrentSkipListMap<Double, ArrayList<Integer>> keptList,
-                          HashMap<Integer, Double> probabilities,
+                          KeptModels keptList,
+                          ArrayList<Double> probabilities,
+                          //HashMap<Integer, Double> probabilities,
                           Double[] qvalues,
                           ArrayList<Double> transformedObservedIntensities,
                           ArrayList<Double> transformedObservedErrors,
-                          boolean useNoBackground){
+                          boolean useNoBackground, double min, double max){
 
         this.residualsPanel = residualsPanel;
         this.cross1Panel = cross1Panel;
@@ -89,10 +93,11 @@ public class EllipsoidPlots {
         this.transformedObservedIntensities = transformedObservedIntensities;
         this.transformedObservedErrors = transformedObservedErrors;
 
-        heatMapCollection = new XYSeriesCollection();
+
         residualsCollection = new XYSeriesCollection();
         averageCollection = new XYSeriesCollection();
-
+        minRc = min;
+        maxRc = max;
     }
 
 
@@ -107,52 +112,83 @@ public class EllipsoidPlots {
         probabilitiesPerRadiiB = new XYSeries("probabilitiesB"); // empty series if no radii
         probabilitiesPerRadiiC = new XYSeries("probabilitiesC");
 
+        ArrayList<Double> radiusA = new ArrayList<>();
+        ArrayList<Double> radiusB = new ArrayList<>();
+        ArrayList<Double> radiusC = new ArrayList<>();
+        probabilitiesPerModel = new ArrayList<>();
+
+        double volume=0;
+
         if(models.get(0).getModelType() == ModelType.ELLIPSOID){
 
-            for(int i=0; i<probabilities.size(); i++){
+            for(int i=0; i<models.size(); i++){
                 // convert probabilities into radii
                 Ellipse model =  (Ellipse) models.get(i);
+                int index = model.getIndex();
+                double currentProbability = probabilities.get(index);
+                volume += currentProbability*model.getVolume();
 
                 if (r_a.containsKey(model.getRadius_a())){
-                    r_a.put(model.getRadius_a(), r_a.get(model.getRadius_a()) + probabilities.get(i));
+                    r_a.put(model.getRadius_a(), r_a.get(model.getRadius_a()) + currentProbability);
                 } else {
-                    r_a.put(model.getRadius_a(), probabilities.get(i));
+                    r_a.put(model.getRadius_a(), currentProbability);
                 }
 
                 if (r_b.containsKey(model.getRadius_b())){
-                    r_b.put(model.getRadius_b(), r_b.get(model.getRadius_b()) + probabilities.get(i));
+                    r_b.put(model.getRadius_b(), r_b.get(model.getRadius_b()) + currentProbability);
                 } else {
-                    r_b.put(model.getRadius_b(), probabilities.get(i));
+                    r_b.put(model.getRadius_b(), currentProbability);
                 }
 
                 if (r_c.containsKey(model.getRadius_c())){
-                    r_c.put(model.getRadius_c(), r_c.get(model.getRadius_c()) + probabilities.get(i));
+                    r_c.put(model.getRadius_c(), r_c.get(model.getRadius_c()) + currentProbability);
                 } else {
-                    r_c.put(model.getRadius_c(), probabilities.get(i));
+                    r_c.put(model.getRadius_c(), currentProbability);
                 }
+
+                radiusA.add(model.getRadius_a());
+                radiusB.add(model.getRadius_b());
+                radiusC.add(model.getRadius_c());
+                probabilitiesPerModel.add(currentProbability*20); // size of bubble
             }
 
             for(Map.Entry<Double, Double> entry : r_b.entrySet()) {
                 probabilitiesPerRadiiB.add(entry.getKey(), entry.getValue());
             }
+
         } else {
 
-            for(int i=0; i<probabilities.size(); i++){
-                // convert probabilities into radii
-                ProlateEllipsoid model =  (ProlateEllipsoid) models.get(i);
+            //minRc=100000;
+            //maxRc=0;
+            int totalModels = models.size();
+
+            for(int i=0; i<totalModels; i++){
+                // add up all the probabilities at the given r_a value
+                ProlateEllipsoid model = (ProlateEllipsoid) models.get(i);
+
+                int index = model.getIndex();
+
+                double currentProbability = probabilities.get(index);
+                volume += currentProbability*model.getVolume();
 
                 if (r_a.containsKey(model.getRadius_a())){
-                    r_a.put(model.getRadius_a(), r_a.get(model.getRadius_a()) + probabilities.get(i));
+                    r_a.put(model.getRadius_a(), r_a.get(model.getRadius_a()) + currentProbability);
                 } else {
-                    r_a.put(model.getRadius_a(), probabilities.get(i));
+                    r_a.put(model.getRadius_a(), currentProbability);
                 }
 
                 if (r_c.containsKey(model.getRadius_c())){
-                    r_c.put(model.getRadius_c(), r_c.get(model.getRadius_c()) + probabilities.get(i));
+                    r_c.put(model.getRadius_c(), r_c.get(model.getRadius_c()) + currentProbability);
                 } else {
-                    r_c.put(model.getRadius_c(), probabilities.get(i));
+                    r_c.put(model.getRadius_c(), currentProbability);
                 }
+
+                radiusA.add(model.getRadius_a());
+                radiusC.add(model.getRadius_c());
+                probabilitiesPerModel.add(currentProbability*20); // size of bubble
             }
+
+            System.out.println("min " + minRc + " < " + maxRc);
         }
 
         for(Map.Entry<Double, Double> entry : r_a.entrySet()) {
@@ -163,20 +199,155 @@ public class EllipsoidPlots {
             probabilitiesPerRadiiC.add(entry.getKey(), entry.getValue());
         }
 
+        // create datasets to plot
+        int count = radiusA.size();
+        xyzdataset = new DefaultXYZDataset();
+        bcdataset = new DefaultXYZDataset();
+        for(int i=0; i<count; i++){
+            xyzdataset.addSeries("-" + i, new double[][]{new double[]{radiusC.get(i)}, new double[]{radiusA.get(i)}, new double[]{probabilitiesPerModel.get(i)}});
+            if(models.get(0).getModelType() == ModelType.ELLIPSOID){
+                bcdataset.addSeries("-" + i, new double[][]{new double[]{radiusC.get(i)}, new double[]{radiusB.get(i)}, new double[]{probabilitiesPerModel.get(i)}});
+            }
+        }
+        System.out.println("VOLUME " + volume);
     }
 
 
     public void create(boolean makeFigures){
-      //  makeGeomtricData();
 
         makeResiduals();
         makeHistogramData();
 
-      //  makeGeometricPlot();
-      //  makeHistogramPlot();
+        makeGeometricPlot();
         makeResidualsPlot();
         makeDataPlot();
         createDistributionPlots();
+    }
+
+    private Color giveRGB(double maximum, double value){
+
+        double ratio = 2 * value/maximum;
+
+        int blue = (int)(Math.max(0, 255*(1 - ratio)));
+        int red = (int)(Math.max(0, 255*(ratio - 1)));
+        int green = 255 - blue - red;
+        return new Color(red,green,blue);
+    }
+
+
+    private XYPlot makeBCGeometricPlot(){
+        JFreeChart chart = ChartFactory.createBubbleChart(
+                "",
+                "c-axis",
+                "b-axis",
+                bcdataset,
+                PlotOrientation.VERTICAL,
+                false,
+                false,
+                false
+
+        );
+
+        XYPlot plot = (XYPlot) chart.getPlot();
+        XYItemRenderer xyitemrenderer = plot.getRenderer();
+        xyitemrenderer.setBaseOutlinePaint(new Color(105, 105, 105, 40) );
+
+        double max = Collections.max(probabilitiesPerModel);
+        int totalcount = bcdataset.getSeriesCount();
+
+        for(int i=0; i<totalcount; i++){
+            xyitemrenderer.setSeriesPaint(i, giveRGB(max, probabilitiesPerModel.get(i)));
+        }
+
+        final NumberAxis domainAxis = new NumberAxis("c-axis");
+        final NumberAxis rangeAxis = new NumberAxis("b-axis");
+        domainAxis.setAutoRange(true);
+        domainAxis.setRange(minRc, maxRc);
+        domainAxis.setAutoRangeStickyZero(false);
+        domainAxis.setAutoRangeIncludesZero(false);
+
+        rangeAxis.setAutoRange(true);
+        rangeAxis.setRange(minRc, maxRc);
+        rangeAxis.setAutoRangeStickyZero(false);
+        rangeAxis.setAutoRangeIncludesZero(false);
+
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
+
+        plot.setBackgroundPaint(Color.white);
+        chart.getXYPlot().getRangeAxis().setInverted(true);
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+        //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
+        return plot;
+        //cross2Panel.removeAll();
+        //cross2Panel.add(chartPanel);
+    }
+
+
+
+    private void makeGeometricPlot(){
+        JFreeChart chart = ChartFactory.createBubbleChart(
+                "",
+                "c-axis",
+                "a-axis",
+                xyzdataset,
+                PlotOrientation.VERTICAL,
+                false,
+                false,
+                false
+
+        );
+
+        XYPlot plot = (XYPlot) chart.getPlot();
+        XYItemRenderer xyitemrenderer = plot.getRenderer();
+        xyitemrenderer.setBaseOutlinePaint(new Color(105, 105, 105, 40) );
+
+        double max = Collections.max(probabilitiesPerModel);
+        int totalcount = xyzdataset.getSeriesCount();
+        System.out.println("Series count " + plot.getSeriesCount());
+        for(int i=0; i<totalcount; i++){
+            xyitemrenderer.setSeriesPaint(i, giveRGB(max, probabilitiesPerModel.get(i)));
+        }
+
+        final NumberAxis domainAxis = new NumberAxis("c-axis");
+        final NumberAxis rangeAxis = new NumberAxis("a-axis");
+        domainAxis.setAutoRange(true);
+        domainAxis.setRange(minRc, maxRc);
+        domainAxis.setAutoRangeStickyZero(false);
+        domainAxis.setAutoRangeIncludesZero(false);
+
+        rangeAxis.setAutoRange(true);
+        rangeAxis.setRange(minRc, maxRc);
+        rangeAxis.setAutoRangeStickyZero(false);
+        rangeAxis.setAutoRangeIncludesZero(false);
+
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
+
+        plot.setBackgroundPaint(Color.white);
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+        //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
+        if(models.get(0).getModelType() == ModelType.ELLIPSOID){
+            //makeBCGeometricPlot();
+            CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot(new NumberAxis("2"));
+            combinedPlot.setDomainAxis(domainAxis);
+            combinedPlot.setGap(10.0);
+            combinedPlot.add(plot, 1);
+            combinedPlot.add(makeBCGeometricPlot(), 1);
+            combinedPlot.setOrientation(PlotOrientation.VERTICAL);
+
+            JFreeChart combChart = new JFreeChart("", JFreeChart.DEFAULT_TITLE_FONT, combinedPlot, true);
+            combChart.removeLegend();
+            combChart.setBackgroundPaint(Color.WHITE);
+            ChartFrame chartframe = new ChartFrame("", combChart);
+            cross1Panel.removeAll();
+            cross1Panel.add(chartframe.getContentPane());
+        } else {
+            cross1Panel.removeAll();
+            cross1Panel.add(chartPanel);
+        }
     }
 
     private void makeResidualsPlot(){
@@ -199,6 +370,7 @@ public class EllipsoidPlots {
         residualsPanel.removeAll();
         residualsPanel.add(chartPanel);
     }
+
 
     private void createDistributionPlots(){
 
@@ -266,9 +438,11 @@ public class EllipsoidPlots {
         while(calculatedIntensities.size() < totalq) calculatedIntensities.add(0.0d);
 
         int count=0;
-        for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
+       // for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
+        //Map.Entry<Double, ArrayList<Integer>> entry = keptList.firstEntry();
 
-            ArrayList<Integer> indices = entry.getValue();
+
+            ArrayList<Integer> indices = keptList.getFirst();
             // for each index, great XYSeries and Add
             int total = indices.size();
 
@@ -279,13 +453,12 @@ public class EllipsoidPlots {
                     count++;
                 }
             }
-        }
+       // }
 
         // average the calculated intensities
         double inv = 1.0/(double)count;
         for(int q=0; q<totalq; q++){
             calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue()*inv);
-            count++;
         }
 
 
@@ -358,5 +531,6 @@ public class EllipsoidPlots {
         dataPlotPanel.removeAll();
         dataPlotPanel.add(chartPanel);
     }
+
 
 }

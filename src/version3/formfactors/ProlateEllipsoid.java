@@ -9,10 +9,9 @@ import org.apache.commons.math3.util.FastMath;
  */
 public class ProlateEllipsoid extends Model {
 
-    private double radius_a; // minor axis
-    private double radius_c; // major axis
+    //private double radius_a; // minor axis
+    //private double radius_c; // major axis
     private double contrast;
-    private boolean isOblate=false;
     double ratio2;
 
     /**
@@ -25,16 +24,18 @@ public class ProlateEllipsoid extends Model {
      */
     public ProlateEllipsoid(int index, double solventContrast, double[] particleContrasts, double[] radii, Double[] qvalues) {
 
-        super(index, ModelType.PROLATE_ELLIPSOID, (4.0/3.0*Math.PI*radii[0]*radii[0]*radii[1]), solventContrast, particleContrasts, qvalues.length);
+        super(index, ModelType.PROLATE_ELLIPSOID, (4.0/3.0*Math.PI*radii[0]*radii[0]*radii[1]), solventContrast, particleContrasts, qvalues.length, 2);
 
-        if (radii[0] < radii[1]){
+        if (radii[0] < radii[1]){ //oblate
             this.setVolume((4.0/3.0*Math.PI*radii[0]*radii[1]*radii[1]));
-            isOblate=true;
         }
 
-        radius_a = radii[0]; // prolate is radius_a > radius_c
-        radius_c = radii[1]; //  oblate is radius_c > radius_a
-        ratio2 = (radius_a*radius_a)/(radius_c*radius_c);
+        // prolate r_a > r_c
+        //  oblate r_c > r_a
+        this.setFittedParamsByIndex(0, radii[0]); // r_a
+        this.setFittedParamsByIndex(1, radii[1]); // r_c
+
+        ratio2 = (radii[0]*radii[0])/(radii[1]*radii[1]);
 
         this.contrast = particleContrasts[0] - solventContrast;
         this.setConstant(9.0*this.getVolume()*this.contrast*this.contrast);
@@ -43,11 +44,11 @@ public class ProlateEllipsoid extends Model {
     }
 
     public void printParams(){
-        System.out.println(this.getIndex() + " PARAMS MINOR " + radius_a + " MAJOR " + radius_c);
+        System.out.println(this.getIndex() + " PARAMS MINOR " + this.getFittedParamByIndex(0) + " MAJOR " + this.getFittedParamByIndex(1));
     }
 
-    public double getRadius_a(){ return radius_a;}
-    public double getRadius_c(){ return radius_c;}
+    public double getRadius_a(){ return this.getFittedParamByIndex(0);}
+    public double getRadius_c(){ return this.getFittedParamByIndex(1);}
 
     @Override
     void calculateModelIntensities(Double[] qValues) {
@@ -56,7 +57,7 @@ public class ProlateEllipsoid extends Model {
         SimpsonIntegrator t = new SimpsonIntegrator();
 
         double qValue;
-        double constant = getConstant();//*radius_c*radius_a*radius_a;
+        double constant = getConstant();
 
          // prolate
         for(int i=0; i<getTotalIntensities(); i++){
@@ -65,7 +66,6 @@ public class ProlateEllipsoid extends Model {
             float integral = (float)t.integrate(100000000, func, 0, 1);
             this.addIntensity(i, qValue*constant*integral);
         }
-
     }
 
 
@@ -94,7 +94,7 @@ public class ProlateEllipsoid extends Model {
         }
 
         private double effectiveR(double alpha){
-            return (radius_c*FastMath.sqrt(1.0d+alpha*alpha*(ratio2 - 1.0d)));
+            return (getRadius_c()*FastMath.sqrt(1.0d+alpha*alpha*(ratio2 - 1.0d)));
         }
     }
 

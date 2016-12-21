@@ -1,8 +1,13 @@
 package version3.formfactors;
 
+import org.apache.commons.math3.special.Gamma;
+import org.ejml.simple.SimpleMatrix;
+import version3.*;
+
 import javax.xml.bind.SchemaOutputResolver;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -11,16 +16,737 @@ import java.util.concurrent.atomic.AtomicInteger;
 // make threadsafe object to update topList
 public class TopList{
 
-    private ConcurrentSkipListMap<Double, Integer> scoreList;  // strictly positive
-    private ConcurrentSkipListMap<Integer, ArrayList<Integer>> modelList;
-    private AtomicInteger counter = new AtomicInteger(0);
-    private final int sizeOfList;
+    //private ConcurrentSkipListMap<Double, Integer> scoreList;  // strictly positive
+    //private ConcurrentSkipListSet<ScoreObject> scoreList;
+    private ArrayList<ScoreObject> scoreList;
 
-    public TopList(int sizeOfList){
+
+    private ConcurrentSkipListMap<Integer, ArrayList<Integer>> modelList;
+    private List<Double> probabilities;
+    private ArrayList<SortedSet<Double>> setofValuesInParam;
+    private int totalProbabilities;
+    private double alpha, stepsize, invStepSize2, invStepSize;
+    private int totalParamsFitted;
+    // Integer in scoreList corresponds to Integer in ArrayList
+    private AtomicInteger counter = new AtomicInteger(0);
+    private double smoothnessScore=0;
+    private ArrayList<Model> models;
+    private boolean useEntropy=false;
+    private final int sizeOfList;
+    private double lambda;
+    private double gap;
+
+    private final double logePI = 0.5*(1.0+Math.log(Math.PI));
+
+    /**
+     *
+     * @param sizeOfList
+     * @param probabilities
+     * @param alpha smoothness parameter for updating probabilities, controls weights for updating
+     * @param stepsize
+     * @param models
+     * @param lambda regularizaion parameter
+     */
+    public TopList(int sizeOfList,
+                   ArrayList<Double> probabilities,
+                   double alpha,
+                   double stepsize,
+                   ArrayList<Model> models,
+                   double lambda,
+                   boolean entropy
+    ){
         this.sizeOfList = sizeOfList;
-        scoreList = new ConcurrentSkipListMap();   // sorted by keys
+        //scoreList = new ConcurrentSkipListMap();   // sorted by keys
+        //scoreList = new ConcurrentSkipListSet<>(new ScoreComp());
+        scoreList = new ArrayList<>();
         modelList = new ConcurrentSkipListMap<>(); // sorted by keys
+
+        totalProbabilities = probabilities.size();
+        //double degree = Math.log10((double)totalProbabilities);
+
+        ArrayList<Double> temp = new ArrayList<>(totalProbabilities);
+
+        for(int i=0; i<totalProbabilities; i++){
+            temp.add(probabilities.get(i));
+        }
+
+        //this.probabilities = Collections.synchronizedList(new ArrayList<>(temp));
+        this.probabilities = Collections.unmodifiableList(probabilities);
+
+        this.alpha = alpha;
+        this.lambda = lambda;
+        this.stepsize = stepsize;
+        this.invStepSize2 = 1.0/(stepsize*stepsize);
+        this.invStepSize = 1.0/stepsize;
+
+        this.models = models;
+
+        totalParamsFitted = this.models.get(0).getTotalFittedParams();
+
+        //totalParamsFitted= 1;
+        setofValuesInParam = new ArrayList<>();
+        this.useEntropy = entropy;
     }
+
+
+    private synchronized void calculateSmoothnessUsing2ndDerivative(int numberOfModelsPerTrial){
+
+        double[] tempProbabilities = calculateTempProbabilities(numberOfModelsPerTrial);
+
+        // calculate second derivative for each parameter based on the models
+        smoothnessScore=0;
+        int totalModels = models.size();
+        double smoothtemp=0;
+
+        for(int p=0; p<totalParamsFitted; p++){
+            double secondDerivative=0;
+            SortedMap<Double, Double> modelParamsCount = new TreeMap<>();
+
+            // create the projection
+            for(int j=0; j<totalModels; j++){
+                Model model = models.get(j);
+                double param = model.getFittedParamByIndex(p);
+
+                if (modelParamsCount.containsKey(param)){
+                    modelParamsCount.put(param, modelParamsCount.get(param) + 1.0d*tempProbabilities[j]);
+                } else {
+                    modelParamsCount.put(param, 1.0d*tempProbabilities[j]);
+                }
+            }
+
+            double invTotalModels = 1.0/(double)modelParamsCount.size();
+
+            // calculate smoothness of the selected distribution using 2nd derivative
+            Object[] parameterValues = modelParamsCount.keySet().toArray();
+            int totalValues = parameterValues.length-1;
+            double f_xminus_h, f_xplus_h, center, diff;
+
+            // calculate diff
+            for (int i=1; i<totalValues; i++){
+                // calculate derivative for each entry
+                center = (double)parameterValues[i];
+                diff = (center-(double)parameterValues[i-1]);
+                f_xminus_h = 0;
+                f_xplus_h = 0;
+                if (diff*invStepSize < 2){ // reverse step
+                    f_xminus_h = modelParamsCount.get(parameterValues[i-1]);
+                }
+
+                diff = ((double)parameterValues[i+1]-center);
+                if (diff*invStepSize < 2){ // forward step
+                    f_xplus_h = modelParamsCount.get(parameterValues[i+1]);
+                }
+
+                //diff = (f_xplus_h - f_xminus_h)/(2*stepsize); // first derivative
+                diff = (f_xminus_h-2*modelParamsCount.get(parameterValues[i]) + f_xplus_h)*invStepSize2;
+                //secondDerivative += Math.abs(diff);
+                secondDerivative += diff*diff;
+            }
+            //secondDerivative += forward2ndderivative(parameterValues, modelParamsCount);
+            //secondDerivative += reverse2ndderivative(parameterValues, modelParamsCount);
+
+            smoothtemp += secondDerivative*invTotalModels;
+        }
+
+
+//        Set<Map.Entry<Integer, ArrayList<Integer>>> entries = modelList.entrySet();
+//        //System.out.println("Total Fitted Params " + totalParamsFitted);
+//        for(int p=0; p<totalParamsFitted; p++){ // calculate marginal distribution for each parameter
+//            // go through all the models and create distribution based on each parameter
+//            // go through each model and grab parameters and populate hash
+//            SortedMap<Double, Double> modelParamsCount = new TreeMap<>();
+//            // go through the TopNList and for each selected Index:
+//            // get the parameter and use as a key and count occurence of the parameter
+//            for(Map.Entry<Integer, ArrayList<Integer>> entry:entries){
+//
+//                ArrayList<Integer> modelIndices = entry.getValue();
+//
+//                for(int j=0; j<numberOfModelsPerTrial; j++){
+//
+//                    Model model = models.get(modelIndices.get(j));
+//                    double param = model.getFittedParamByIndex(p);
+//
+//                    if (modelParamsCount.containsKey(param)){
+//                        modelParamsCount.put(param, modelParamsCount.get(param) + 1.0d);
+//                    } else {
+//                        modelParamsCount.put(param, 1.0d);
+//                    }
+//                }
+//            }
+//
+//            // calculate smoothness of the selected distribution using 2nd derivative
+//            Object[] parameterValues = modelParamsCount.keySet().toArray();
+//            int totalValues = parameterValues.length-1;
+//            double f_xminus_h, f_xplus_h, center, diff;
+//
+//            // calculate diff
+//            for (int i=1; i<totalValues; i++){
+//                // calculate derivative for each entry
+//                center = (double)parameterValues[i];
+//                diff = (center-(double)parameterValues[i-1]);
+//                f_xminus_h = 0;
+//                f_xplus_h = 0;
+//                if (diff*invStepSize < 2){ // reverse step
+//                    f_xminus_h = modelParamsCount.get(parameterValues[i-1]);
+//                }
+//
+//                diff = ((double)parameterValues[i+1]-center);
+//                if (diff*invStepSize < 2){ // forward step
+//                    f_xplus_h = modelParamsCount.get(parameterValues[i+1]);
+//                }
+//
+//                //diff = (f_xplus_h - f_xminus_h)/(2*stepsize); // first derivative
+//                diff = (f_xminus_h-2*modelParamsCount.get(parameterValues[i]) + f_xplus_h)*invStepSize2;
+//                //secondDerivative += Math.abs(diff);
+//                secondDerivative += diff*diff;
+//            }
+//
+//            secondDerivative += forward2ndderivative(parameterValues, modelParamsCount);
+//            secondDerivative += reverse2ndderivative(parameterValues, modelParamsCount);
+//        }
+//
+//        if (totalParamsFitted > 1){ // calculate mixed partials
+//
+//            // for each point in search space, calculate
+//
+//
+//
+//        }
+
+        smoothnessScore = lambda*10000*smoothtemp;
+        //smoothnessScore = lambda*secondDerivative/(double)totalParamsFitted;
+    }
+
+
+
+
+
+    private synchronized double[] calculateTempProbabilities(int numberOfModelsPerTrial){
+
+        Set<Map.Entry<Integer, ArrayList<Integer>>> entries = modelList.entrySet();
+        SortedMap<Integer, Double> selectedModelCount = new TreeMap<>(); // organized by (parameter, occurence)
+
+        // modelist is sorted by key, not in order of score
+        // for each entry, there is an arraylist of integers
+        // each integer refers to a model that is defined by a unique parameter set
+        // In the next section, we iterate over the selected set and count
+        // exclude the last model
+        int totalModels=0;
+        for(Map.Entry<Integer, ArrayList<Integer>> entry:entries){
+            ArrayList<Integer> modelIndices = entry.getValue();
+
+            for(int j=0; j<numberOfModelsPerTrial; j++){
+
+                int keyToCheck = modelIndices.get(j);
+
+                if (selectedModelCount.containsKey(keyToCheck)){
+                    selectedModelCount.put(keyToCheck, selectedModelCount.get(keyToCheck) + 1.0d);
+                } else {
+                    selectedModelCount.put(keyToCheck, 1.0d);
+                }
+                totalModels+=1;
+            }
+        }
+
+        // calculate/update temp probabilities
+        double inv = 1.0/(double)totalModels;
+        double oldprob;
+        double[] tempProbabilities = new double[models.size()];
+
+            for(int i=0; i<models.size(); i++){
+                int index = models.get(i).getIndex();
+                oldprob = (1-alpha)*probabilities.get(index); // get old probability by index
+
+                if (selectedModelCount.containsKey(index)) {
+                    tempProbabilities[index] = alpha*selectedModelCount.get(index)*inv + oldprob;
+                } else {
+                    tempProbabilities[index] = oldprob;
+                }
+            }
+
+        return tempProbabilities;
+    }
+
+
+    /**
+     * MaximumEntropy calculation
+     * @param numberOfModelsPerTrial
+     */
+    private synchronized void calculateEntropy(int numberOfModelsPerTrial){
+        // if scoresizeOfList
+        // create HashMap
+        // for each params, determine the probability distribution
+        // create unique values of the parameter space once and use for the lifetime of the class
+        smoothnessScore=0;
+        double[] tempProbabilities = calculateTempProbabilities(numberOfModelsPerTrial);
+        //
+        // for each fitted parameter
+        // calculate variance and then covariance
+        // xyz
+        // var_x, var_y, var_z, var_xy, var_yz, var_xz
+        // total variances
+        SimpleMatrix variances = new SimpleMatrix(totalParamsFitted, totalParamsFitted);
+
+        for(int p=0; p<totalParamsFitted; p++){
+
+            double outer_mean=0, outerSquared=0;
+            for(int i=0; i<models.size(); i++){
+                double tempvalue;
+                double prob;
+                Model tempModel = models.get(i);
+                prob = tempModel.getProbability();
+                // outer block
+                tempvalue = tempModel.getFittedParamByIndex(p);
+                outerSquared += tempvalue*tempvalue*prob;
+                outer_mean += tempvalue*prob;
+            }
+            double variance_outer = outerSquared - outer_mean*outer_mean;
+            variances.set(p,p, variance_outer);
+
+            for(int c=(p+1); c<totalParamsFitted; c++){
+                // for each column, calculate covariances
+                double inner_mean=0, tempvalue;
+                double prob;
+                double innerSquared=0, cross=0;
+
+                for(int i=0; i<models.size(); i++){
+                    Model tempModel = models.get(i);
+                    prob = tempModel.getProbability();
+                    tempvalue = tempModel.getFittedParamByIndex(c);
+                    cross += prob*tempModel.getFittedParamByIndex(p)*tempvalue;
+
+                }
+                variances.set(p,c, (cross - outer_mean*inner_mean));
+            }
+        }
+
+        // covariance matrices are symmetric
+        // calculate entropy
+        double smoothness=0;
+        int totalModels = models.size();
+        if (totalParamsFitted >1 ){ // determinant
+            /* a b
+             * c d
+             * det => ad - bc
+             * var_x*var_y - cov_2
+             */
+            smoothness = totalParamsFitted*logePI + 0.5*Math.log(variances.determinant());
+            // do digamma
+            for(int j=1; j<=totalParamsFitted; j++){
+                smoothness -= 0.5*Gamma.digamma(0.5*(totalModels-j));
+            }
+
+        } else {
+
+            // calculate entropy of distribution
+            double temp;
+            for(int i=0; i<models.size(); i++){
+                temp =tempProbabilities[i];
+                smoothness += temp*Math.log(temp);
+            }
+        }
+
+        smoothnessScore = lambda*10*smoothness;
+    }
+
+
+    private synchronized double forward2ndderivative(Object[] parameterValues, SortedMap<Double, Double> modelParamsCount){
+        double diff=0;
+        double first = (double)parameterValues[0];
+
+        diff = ((double)parameterValues[1]-first);
+
+        double f_xplus_h = 0;
+        double f_xplus_2h = 0;
+        if (diff*invStepSize< 2){ // reverse step
+            f_xplus_h = modelParamsCount.get(parameterValues[1]);
+        }
+
+        diff = ((double)parameterValues[2]-first);
+        if (diff*invStepSize< 2){ // forward step
+            f_xplus_2h = modelParamsCount.get(parameterValues[2]);
+        }
+
+        diff = (f_xplus_2h-2*f_xplus_h+modelParamsCount.get(parameterValues[0]))*invStepSize2;
+        //return Math.abs(diff);
+        //return Math.abs((f_xplus_h - modelParamsCount.get(parameterValues[0]))*invStepSize);
+        return diff*diff;
+    }
+
+
+
+    private synchronized double reverse2ndderivative(Object[] parameterValues, SortedMap<Double, Double> modelParamsCount){
+        double diff=0;
+        double f_xminus_h = 0;
+        double f_xminus_2h = 0;
+
+        int total = parameterValues.length;
+        Object previous = parameterValues[total-2];
+        Object before = parameterValues[total-3];
+        double last = (double)parameterValues[total-1];
+
+        diff = (last - (double)previous);
+        if (diff*invStepSize < 2){ // reverse step
+            f_xminus_h = modelParamsCount.get(previous);
+        }
+
+        diff = (last - (double)before);
+        if (diff*invStepSize < 2){ // forward step
+            f_xminus_2h = modelParamsCount.get(before);
+        }
+
+        diff = (modelParamsCount.get(last) - 2*f_xminus_h + f_xminus_2h)*invStepSize2;
+        //return Math.abs((modelParamsCount.get(last) - f_xminus_h)*invStepSize);
+        return diff*diff;
+    }
+
+
+
+
+    private synchronized double calculate2ndDerivativeTestModel(TestModel testmodel, int numberOfModelsPerTrial){
+
+        //double[] tempProbabilities = calculateTempProbalitiesExcludeLast(numberOfModelsPerTrial, testmodel);
+        Set<Map.Entry<Integer, ArrayList<Integer>>> entries = modelList.entrySet();
+        SortedMap<Integer, Double> selectedModelCount = new TreeMap<>(); // organized by (parameter, occurence)
+
+        int lastKey = scoreList.get(scoreList.size()-1).getIndex();
+        // modelist is sorted by key, not in order of score
+        // for each entry, there is an arraylist of integers
+        // each integer refers to a model that is defined by a unique parameter set
+        // In the next section, we iterate over the selected set and count
+        // exclude the last model
+        int totalModels=0;
+        for(Map.Entry<Integer, ArrayList<Integer>> entry:entries){
+            ArrayList<Integer> modelIndices = entry.getValue();
+
+            if (entry.getKey() != lastKey){ // last model
+                for(int j=0; j<numberOfModelsPerTrial; j++){
+
+                    int keyToCheck = modelIndices.get(j);
+
+                    if (selectedModelCount.containsKey(keyToCheck)){
+                        selectedModelCount.put(keyToCheck, selectedModelCount.get(keyToCheck) + 1.0d);
+                    } else {
+                        selectedModelCount.put(keyToCheck, 1.0d);
+                    }
+                    totalModels+=1;
+                }
+            }
+        }
+
+        // add contribution from putative model
+        for(int j=0; j<numberOfModelsPerTrial; j++){
+            int keyToCheck = testmodel.getSelectedIndices().get(j);
+
+            if (selectedModelCount.containsKey(keyToCheck)){
+                selectedModelCount.put(keyToCheck, selectedModelCount.get(keyToCheck) + 1.0d);
+            } else {
+                selectedModelCount.put(keyToCheck, 1.0d);
+            }
+            totalModels+=1;
+        }
+
+        // calculate/update temp probabilities
+        double inv = 1.0/(double)totalModels;
+        double oldprob;
+        double[] tempProbabilities = new double[models.size()];
+        for(int i=0; i<models.size(); i++){
+            int index = models.get(i).getIndex();
+            oldprob = (1-alpha)*probabilities.get(index); // get old probability by index
+
+            if (selectedModelCount.containsKey(index)) {
+                tempProbabilities[index] = alpha*selectedModelCount.get(index)*inv + oldprob;
+            } else {
+                tempProbabilities[index] = oldprob;
+            }
+        }
+
+        // checking end
+        totalModels = models.size();
+        double smoothtemp=0;
+
+        for(int p=0; p<totalParamsFitted; p++){
+            double secondDerivative=0;
+            SortedMap<Double, Double> modelParamsCount = new TreeMap<>();
+
+            // create the projection
+            for(int j=0; j<totalModels; j++){
+                Model model = models.get(j);
+                double param = model.getFittedParamByIndex(p);
+
+                if (modelParamsCount.containsKey(param)){
+                    modelParamsCount.put(param, modelParamsCount.get(param) + 1.0d*tempProbabilities[j]);
+                } else {
+                    modelParamsCount.put(param, 1.0d*tempProbabilities[j]);
+                }
+            }
+
+            double invTotalModels = 1.0/(double)modelParamsCount.size();
+            // calculate smoothness of the selected distribution using 2nd derivative
+            Object[] parameterValues = modelParamsCount.keySet().toArray();
+            int totalValues = parameterValues.length-1;
+            double f_xminus_h, f_xplus_h, center, diff;
+
+            // calculate diff
+            for (int i=1; i<totalValues; i++){
+                // calculate derivative for each entry
+                center = (double)parameterValues[i];
+                diff = (center-(double)parameterValues[i-1]);
+                f_xminus_h = 0;
+                f_xplus_h = 0;
+                if (diff*invStepSize < 2){ // reverse step
+                    f_xminus_h = modelParamsCount.get(parameterValues[i-1]);
+                }
+
+                diff = ((double)parameterValues[i+1]-center);
+                if (diff*invStepSize < 2){ // forward step
+                    f_xplus_h = modelParamsCount.get(parameterValues[i+1]);
+                }
+
+                //diff = (f_xplus_h - f_xminus_h)/(2*stepsize); // first derivative
+                diff = (f_xminus_h-2*modelParamsCount.get(parameterValues[i]) + f_xplus_h)*invStepSize2;
+                //secondDerivative += Math.abs(diff);
+                secondDerivative += diff*diff;
+            }
+            secondDerivative += forward2ndderivative(parameterValues, modelParamsCount);
+            secondDerivative += reverse2ndderivative(parameterValues, modelParamsCount);
+            smoothtemp += secondDerivative*invTotalModels;
+        }
+
+
+//        double secondDerivativeTest = 0.0d;
+//        Set<Map.Entry<Integer, ArrayList<Integer>>> entries = modelList.entrySet();
+//
+//        for(int p=0; p<totalParamsFitted; p++){
+//            // go through all the models and create distribution based on each parameter
+//            // go through each model and grab parameters and populate hash
+//            SortedMap<Double, Double> modelParamsCount = new TreeMap<>();
+//            // go through the TopNList and for each selected Index:
+//            // leave out the last entry!
+//            // get the parameter and use as a key and count occurence of the parameter
+//            // Map.Entry<Double, Integer> lastKey = scoreList.lastEntry();
+//            // modelist is sorted by key, not in order of score
+//            for(Map.Entry<Integer, ArrayList<Integer>> entry:entries){
+//                ArrayList<Integer> modelIndices = entry.getValue();
+//
+//                //if (entry.getKey() != lastKey.getValue()){
+//                if (entry.getKey() != scoreList.get(scoreList.size()-1).getIndex()){
+//                    for(int j=0; j<numberOfModelsPerTrial; j++){
+//
+//                        double keyToCheck = models.get(modelIndices.get(j)).getFittedParamByIndex(p);
+//
+//                        if (modelParamsCount.containsKey(keyToCheck)){
+//                            modelParamsCount.put(keyToCheck, modelParamsCount.get(keyToCheck) + 1.0d);
+//                        } else {
+//                            modelParamsCount.put(keyToCheck, 1.0d);
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // add contribution from putative model
+//            ArrayList<Integer> modelIndices = model.getSelectedIndices();
+//            for(int j=0; j<numberOfModelsPerTrial; j++){
+//                double keyToCheck = models.get(modelIndices.get(j)).getFittedParamByIndex(p);
+//                if (modelParamsCount.containsKey(keyToCheck)){
+//                    modelParamsCount.put(keyToCheck, modelParamsCount.get(keyToCheck) + 1.0d);
+//                } else {
+//                    modelParamsCount.put(keyToCheck, 1.0d);
+//                }
+//            }
+//
+//            // calculate 2nd derivative
+//            // based on populated modelParamsCount
+//            // calculate smoothness of the selected distribution
+//            Object[] parameterValues = modelParamsCount.keySet().toArray();
+//            int totalValues = parameterValues.length-1;
+//            double f_xminus_h, f_xplus_h, center, diff;
+//
+//            // calculate forward diff
+//            for (int i=1; i<totalValues; i++){
+//                // calculate derivative for each entry
+//                center = (double)parameterValues[i];
+//                diff = (center-(double)parameterValues[i-1]);
+//                f_xminus_h = 0;
+//                f_xplus_h = 0;
+//                if (diff*invStepSize < 2){ // reverse step
+//                    f_xminus_h = modelParamsCount.get(parameterValues[i-1]);
+//                }
+//
+//                diff = ((double)parameterValues[i+1]-center);
+//                if (diff*invStepSize < 2){ // forward step
+//                    f_xplus_h = modelParamsCount.get(parameterValues[i+1]);
+//                }
+//
+//                //diff = (f_xplus_h - f_xminus_h)/(2*stepsize); // first derivative
+//                diff = (f_xminus_h-2*modelParamsCount.get(parameterValues[i]) + f_xplus_h)*invStepSize2;
+//                secondDerivativeTest += diff*diff;
+//                //secondDerivativeTest += Math.abs(diff);
+//            }
+//
+//            secondDerivativeTest += forward2ndderivative(parameterValues, modelParamsCount);
+//            secondDerivativeTest += reverse2ndderivative(parameterValues, modelParamsCount);
+//        }
+
+        return (lambda*10000*smoothtemp);
+        //return (lambda*secondDerivativeTest/(double)totalParamsFitted);
+    }
+
+
+    /**
+     * Calculate probability model excluding last model in list
+     *
+     * @param numberOfModelsPerTrial
+     * @param model
+     * @return
+     */
+    private synchronized double[] calculateTempProbalitiesExcludeLast(int numberOfModelsPerTrial, TestModel model){
+
+        Set<Map.Entry<Integer, ArrayList<Integer>>> entries = modelList.entrySet();
+
+        // entropy of bivariate distribution
+        // variance of each parameter and then pairwise
+        // sigma_x, sigma_y, sigma_xy
+        // sum => probability*parameter
+        SortedMap<Integer, Double> selectedModelCount = new TreeMap<>(); // organized by (parameter, occurence)
+
+        int lastKey = scoreList.get(scoreList.size()-1).getIndex();
+        // modelist is sorted by key, not in order of score
+        // for each entry, there is an arraylist of integers
+        // each integer refers to a model that is defined by a unique parameter set
+        // In the next section, we iterate over the selected set and count
+        // exclude the last model
+        int totalModels=0;
+        for(Map.Entry<Integer, ArrayList<Integer>> entry:entries){
+            ArrayList<Integer> modelIndices = entry.getValue();
+
+            if (entry.getKey() != lastKey){ // last model
+                for(int j=0; j<numberOfModelsPerTrial; j++){
+
+                    int keyToCheck = modelIndices.get(j);
+
+                    if (selectedModelCount.containsKey(keyToCheck)){
+                        selectedModelCount.put(keyToCheck, selectedModelCount.get(keyToCheck) + 1.0d);
+                    } else {
+                        selectedModelCount.put(keyToCheck, 1.0d);
+                    }
+                    totalModels+=1;
+                }
+            }
+        }
+
+
+        // add contribution from putative model
+        for(int j=0; j<numberOfModelsPerTrial; j++){
+            int keyToCheck = model.getSelectedIndices().get(j);
+
+            if (selectedModelCount.containsKey(keyToCheck)){
+                selectedModelCount.put(keyToCheck, selectedModelCount.get(keyToCheck) + 1.0d);
+            } else {
+                selectedModelCount.put(keyToCheck, 1.0d);
+            }
+            totalModels+=1;
+        }
+
+        // calculate/update temp probabilities
+        double inv = 1.0/(double)totalModels;
+        double oldprob;
+        double[] tempProbabilities = new double[models.size()];
+        for(int i=0; i<models.size(); i++){
+            int index = models.get(i).getIndex();
+            oldprob = (1-alpha)*probabilities.get(index); // get old probability by index
+
+            if (selectedModelCount.containsKey(index)) {
+                tempProbabilities[index] = alpha*selectedModelCount.get(index)*inv + oldprob;
+            } else {
+                tempProbabilities[index] = oldprob;
+            }
+        }
+
+        return tempProbabilities;
+    }
+
+
+    /**
+     * Maximum Entropy calculation
+     *
+     * @param model
+     * @param numberOfModelsPerTrial
+     * @return
+     */
+    private synchronized double calculateEntropyOfTestModel(TestModel model, int numberOfModelsPerTrial){
+        //
+        // for each fitted parameter
+        // calculate variance and then covariance
+        // xyz
+        // var_x, var_y, var_z, var_xy, var_yz, var_xz
+        // total variances
+        double[] tempProbabilities = calculateTempProbalitiesExcludeLast(numberOfModelsPerTrial, model);
+
+        SimpleMatrix variances = new SimpleMatrix(totalParamsFitted, totalParamsFitted);
+
+        for(int p=0; p<totalParamsFitted; p++){
+
+            double outer_mean=0, outerSquared=0;
+            for(int i=0; i<models.size(); i++){
+                double tempvalue;
+                double prob;
+                Model tempModel = models.get(i);
+                prob = tempModel.getProbability();
+                // outer block
+                tempvalue = tempModel.getFittedParamByIndex(p);
+                outerSquared += tempvalue*tempvalue*prob;
+                outer_mean += tempvalue*prob;
+            }
+
+            double variance_outer = outerSquared - outer_mean*outer_mean;
+            variances.set(p,p, variance_outer);
+
+            for(int c=(p+1); c<totalParamsFitted; c++){
+                // for each column, calculate covariances
+                double inner_mean=0, tempvalue;
+                double prob;
+                double cross=0;
+
+                for(int i=0; i<models.size(); i++){
+                    Model tempModel = models.get(i);
+                    prob = tempModel.getProbability();
+                    tempvalue = tempModel.getFittedParamByIndex(c);
+                    cross += prob*tempModel.getFittedParamByIndex(p)*tempvalue;
+
+                }
+                variances.set(p,c, (cross - outer_mean*inner_mean));
+            }
+        }
+
+        // covariance matrices are symmetric
+        // calculate entropy
+        int totalModels = models.size();
+        double smoothness = 0.0d;
+        if (totalParamsFitted >1 ){ // determinant
+            /* a b
+             * c d
+             * det => ad - bc
+             * var_x*var_y - cov_2
+             */
+            smoothness = totalParamsFitted*logePI + 0.5*Math.log(variances.determinant());
+            // do digamma
+            for(int j=1; j<=totalParamsFitted; j++){
+                smoothness -= 0.5*Gamma.digamma(0.5*(totalModels-j));
+            }
+
+        } else {
+            // calculate entropy of distribution
+            double temp;
+            for(int i=0; i<models.size(); i++){
+                temp =tempProbabilities[i];
+                smoothness += temp*Math.log(temp);
+            }
+        }
+
+        return lambda*10*smoothness;
+    }
+
 
     /**
      * Update Method maintains the top ten list and must be synchronized since it will
@@ -36,35 +762,68 @@ public class TopList{
         // start in reverse
         // and if score is better than
         // insert and remove last
-
-        //System.out.println(index + " SCORE : " + score + " scorelist key : " + scoreList.ceilingKey(score)  +  " cnt => " + counter.get());
-
+        //
         if (counter.get() < sizeOfList){
 
-            scoreList.put(score, index);
-            modelList.put(index, new ArrayList<Integer>(numberOfModelsPerTrial));
-
-            // Collections.copy(destination, source)
-            for (Integer item : model.getSelectedIndices()) modelList.get(index).add(item);
-            counter.incrementAndGet();
-
-            // if list if full, check if score is less than some value in Map
-            // if so, add and popoff last key-value in map
-        } else if (scoreList.ceilingKey(score) != null){
-            // popoff last
-            //System.out.println(index + " REMOVING " + scoreList.size() + " " + scoreList.lastKey());
-            // insert new entry
-            scoreList.put(score, index); // score is
             modelList.put(index, new ArrayList<Integer>(numberOfModelsPerTrial));
             for (Integer item : model.getSelectedIndices()) modelList.get(index).add(item);
 
-            if (scoreList.size() > sizeOfList){
-                modelList.remove(scoreList.get(scoreList.lastKey())); // Map<Integer, ArrayList<Integer>>
-                scoreList.remove(scoreList.lastKey());                // Map<Double, Integer>
+
+            if (useEntropy){
+                this.calculateEntropy(numberOfModelsPerTrial);
+            } else {
+                this.calculateSmoothnessUsing2ndDerivative(numberOfModelsPerTrial);
             }
 
-            //System.out.println(index + "   ADDING " + scoreList.size() + " " + score + " < " + scoreList.lastKey());
+            scoreList.add(new ScoreObject(score, index));
+            counter.set(scoreList.size());
+            Collections.sort(scoreList, new ScoreComp());
 
+        } else {
+            // double currentBest = scoreList.lastKey() + smoothnessScore;
+            int lastIndex = scoreList.size()-1;
+            double currentBest = scoreList.get(lastIndex).getScorevalue() + smoothnessScore;
+            // new configuration has to be better than the last and have a better overall smoothness
+//            if (score < scoreList.get(lastIndex).getScorevalue()){
+//
+//                double testSmooth = (useEntropy) ? this.calculateEntropyOfTestModel(model, numberOfModelsPerTrial) : this.calculate2ndDerivativeTestModel(model, numberOfModelsPerTrial);
+//
+//                if (testSmooth < smoothnessScore) {
+//                    // popoff last
+//                    // insert new entry
+//                    modelList.remove(scoreList.get(lastIndex).getIndex());
+//                    scoreList.remove(lastIndex);
+//
+//                    //System.out.println(index + " SCORE " + score + " " + testSmooth + " <= " + lastvalue);
+//                    scoreList.add(new ScoreObject(score, index));
+//                    modelList.put(index, new ArrayList<Integer>(numberOfModelsPerTrial));
+//                    // add indices from model to newly created entry
+//                    for (Integer item : model.getSelectedIndices()) modelList.get(index).add(item);
+//                    Collections.sort(scoreList, new ScoreComp());
+//                    //System.out.println(index + " SCORE " + score + " " + testSmooth + " <= " + lastvalue + " < " + scoreList.get(lastIndex).getScorevalue());
+//                    smoothnessScore = testSmooth;
+//                    //System.out.println("Score " + score + " => " + smoothnessScore);
+//                }
+//            }
+
+            double testSmooth = (useEntropy) ? this.calculateEntropyOfTestModel(model, numberOfModelsPerTrial) : this.calculate2ndDerivativeTestModel(model, numberOfModelsPerTrial);
+
+            if ((score + testSmooth)< currentBest) {
+                // popoff last
+                // insert new entry
+                modelList.remove(scoreList.get(lastIndex).getIndex());
+                scoreList.remove(lastIndex);
+
+                scoreList.add(new ScoreObject(score, index));
+                modelList.put(index, new ArrayList<Integer>(numberOfModelsPerTrial));
+                // add indices from model to newly created entry
+                for (Integer item : model.getSelectedIndices()) modelList.get(index).add(item);
+
+                Collections.sort(scoreList, new ScoreComp());
+                smoothnessScore = testSmooth;
+
+                //System.out.println(index + " SCORE " + score + " SMOOTH " + testSmooth + " <= " + scoreList.get(lastIndex).getScorevalue());
+            }
         }
     }
 
@@ -72,19 +831,19 @@ public class TopList{
      *
      * ConcurrentSkipListMap<Double, Integer> scoreList;  // strictly positive
      * Integer is the index of the random trial set
-     * @return
+     * @return List of models used in the randomized selection
      */
     public Integer[] getModelIndicesFromScore(){
-        //System.out.println("SCORELIST: " + scoreList.size());
-        //System.out.println(scoreList.values().toString());
+
         int size = scoreList.size();
         Integer[] returnthis = new Integer[size];
 
         int index=0;
-        for (Double key : scoreList.keySet()) {
-            returnthis[index] = scoreList.get(key);
+        for(ScoreObject s : scoreList){
+            returnthis[index] = s.getIndex();
             index++;
         }
+
         return returnthis;
     }
 
@@ -96,36 +855,41 @@ public class TopList{
     public double getAverageScore(){
 
         double value = 0.0d;
+
         int index=0;
-        for (Double key : scoreList.keySet()) {
-            value += key;
+        for(ScoreObject s : scoreList){
+            value += s.getScorevalue();
             index++;
         }
 
-        double first = scoreList.firstEntry().getKey();
-        double last = scoreList.lastEntry().getKey();
         double average = (value/(double)index);
-        double gap = last-first;
 
+        double first = scoreList.get(0).getScorevalue();
+        double last = scoreList.get(scoreList.size()-1).getScorevalue();
+        gap = last-first;
 
-        System.out.println("FIRST: " + first + " LAST: " + last +  "  AVG: " + average + " GAP: "+ gap + " SIZE: " + scoreList.size());
-        //return scoreList.firstEntry().getKey();
+        System.out.println("FIRST: " + first + " LAST: " + last +  "  AVG: " + average + " GAP: "+ gap + " SIZE: " + scoreList.size() + " " +counter.get());
         return Math.log10(average);
     }
-
 
 
     public ArrayList<Integer> getModelIndicesByKey(int key){
         return modelList.get(key);
     }
 
+    /**
+     * returns the difference between first and last member of the top N list
+     * @return
+     */
+    public double getGap(){return gap;}
+
 
     public void print(){
         int count=0;
         System.out.println("SIZE OF SCORELIST => " + scoreList.size() + " CNT " + counter.get());
 
-        for (ConcurrentSkipListMap.Entry<Double, Integer> entry : scoreList.entrySet()) {
-            System.out.println(count + " SCORE LIST KEY : " + entry.getKey() + " => " + entry.getValue());
+        for(ScoreObject s : scoreList){
+            System.out.println(count + " SCORE LIST KEY : " + s.getIndex() + " => " + s.getScorevalue());
             count++;
         }
     }
@@ -138,16 +902,21 @@ public class TopList{
      * @param keptList
      * @param numberOfModelsPerTrial
      */
-    public void copyToKeptList(ConcurrentSkipListMap<Double, ArrayList<Integer>> keptList, int numberOfModelsPerTrial){
+    public void copyToKeptList(KeptModels keptList, int numberOfModelsPerTrial){
 
-        int count=1;
-        for (ConcurrentSkipListMap.Entry<Double, Integer> entry : scoreList.entrySet()) {
-            double newKey = entry.getKey(); // use the score as the key
-            //System.out.println(count + " score " + newKey);
-            count++;
-            keptList.put(newKey, new ArrayList<Integer>(numberOfModelsPerTrial));
-            // populate list
-            for (Integer item : modelList.get(entry.getValue())) keptList.get(newKey).add(item);
+        for(ScoreObject s : scoreList){ // should be sorted
+            keptList.addModel(s.getScorevalue(), modelList.get(s.getIndex()));
+        }
+    }
+
+
+    class ScoreComp implements Comparator<ScoreObject>{
+
+        @Override
+        public int compare(ScoreObject o1, ScoreObject o2) {
+            if (o1.getScorevalue() > o2.getScorevalue()) return 1;
+            if (o1.getScorevalue() < o2.getScorevalue()) return -1;
+            return 0;
         }
     }
 

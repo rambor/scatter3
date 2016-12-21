@@ -2,47 +2,62 @@ package version3.formfactors;
 
 import org.apache.commons.math3.util.FastMath;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Arrays;
+
 /**
  * Created by robertrambo on 23/11/2016.
  */
 public class ThreeBody extends Model {
 
-    private double radius1, radius2, radius3;
+    //private double radius1, radius2, radius3;
+    private double smallest, middle, largest;
     private double r12, r23, r13;
+    private double[] sortedDistances = new double[3];
     private double vol1, vol2, vol3;
     private final double mathPI = 4.0/3.0*Math.PI;
     private double contrast;
     private double number_of_vectors;
 
-    public ThreeBody(int index, double solventContrast, double[] particleContrasts, double[] radius, double r13distance, Double[] qvalues){
+    public ThreeBody(int index, double solventContrast, double[] particleContrasts, double[] radii, double r13distance, Double[] qvalues){
         super(index,
                 ModelType.SPHERICAL,
-                ((4.0/3.0*Math.PI*radius[0]*radius[0]*radius[0]) + (4.0/3.0*Math.PI*radius[1]*radius[1]*radius[1]) + (4.0/3.0*Math.PI*radius[2]*radius[2]*radius[2])),
+                ((4.0/3.0*Math.PI*radii[0]*radii[0]*radii[0]) + (4.0/3.0*Math.PI*radii[1]*radii[1]*radii[1]) + (4.0/3.0*Math.PI*radii[2]*radii[2]*radii[2])),
                 solventContrast,
                 particleContrasts,
-                qvalues.length);
+                qvalues.length,
+                3);
 
-        this.radius1 = radius[0];
-        this.radius2 = radius[1];
-        this.radius3 = radius[2];
-        this.r12= radius1+radius2;
-        this.r23= radius2+radius3;
-        this.r13= r13distance; // correlation between first and last spehre
-        this.vol1 = (mathPI*radius[0]*radius[0]*radius[0]);
-        this.vol2 = (mathPI*radius[1]*radius[1]*radius[1]);
-        this.vol3 = (mathPI*radius[2]*radius[2]*radius[2]);
+        this.setFittedParamsByIndex(0, radii[0]); // r_a
+        this.setFittedParamsByIndex(1, radii[1]); // r_c
+        this.setFittedParamsByIndex(2, radii[2]); // thickness
+
+
+        Double doubleObject;
+        doubleObject = new Double(radii[0]+radii[1]);
+        this.r12= BigDecimal.valueOf(doubleObject).setScale(3, RoundingMode.CEILING).doubleValue();
+        doubleObject = new Double(radii[1]+radii[2]);
+        this.r23= BigDecimal.valueOf(doubleObject).setScale(3, RoundingMode.CEILING).doubleValue();
+        doubleObject = new Double(r13distance);
+        this.r13= BigDecimal.valueOf(doubleObject).setScale(3, RoundingMode.CEILING).doubleValue();
+
+        sortedDistances[0] = r12;
+        sortedDistances[1] = r23;
+        sortedDistances[2] = r13;
+        Arrays.sort(sortedDistances); // which radii map to each sorted distance
+
+        setOrder();
+
+        this.vol1 = (mathPI*radii[0]*radii[0]*radii[0]);
+        this.vol2 = (mathPI*radii[1]*radii[1]*radii[1]);
+        this.vol3 = (mathPI*radii[2]*radii[2]*radii[2]);
         this.number_of_vectors = 6.0;
 
         this.contrast = particleContrasts[0] - solventContrast;
         double volS2 = 1.0/(vol1*vol1*vol2*vol2*vol3*vol3);
         this.setConstant(4*Math.PI*9*contrast*contrast/number_of_vectors); // 4*PI*contrast
-        // form factor of sphere has 3 in it
-        // 4 PI is from integrating theta and phi in spherical coordinates
-        //
-        //
-        //this.setConstant(1.0/(this.getVolume()*this.getVolume())*contrast*contrast); // 9*V*contrast^2
-        System.out.println(index + " radii " + radius1 + " " + radius2 + " " + radius3 + " r13 => " + r13);
-        //System.out.println(index + " radii " + r12 + " " + r23 + " " + r13 + " ");
+
         this.calculateModelIntensities(qvalues);
     }
 
@@ -62,9 +77,9 @@ public class ThreeBody extends Model {
 
         for(int i=0; i<this.getTotalIntensities(); i++){
             qValue = qValues[i];
-            qr1 = qValue*radius1;
-            qr2 = qValue*radius2;
-            qr3 = qValue*radius3;
+            qr1 = qValue*getFittedParamByIndex(0);
+            qr2 = qValue*getFittedParamByIndex(1);
+            qr3 = qValue*getFittedParamByIndex(2);
             // form factor for each sphere
             sphere1=(FastMath.sin(qr1) - qr1*FastMath.cos(qr1))/(qr1*qr1*qr1);
             sphere2=(FastMath.sin(qr2) - qr2*FastMath.cos(qr2))/(qr2*qr2*qr2);
@@ -78,13 +93,59 @@ public class ThreeBody extends Model {
                     vol13*sphere1*sphere3*FastMath.sin(qValue*r13)/(qValue*r13);
 
             this.addIntensity(i, qValue*this.getConstant()*form);
-            //System.out.println(this.getIndex() + " " + qValue + " " + form);
+
+            if (Double.isNaN(form)){
+                System.out.println(this.getIndex() + " " + qValue + " " + form);
+            }
         }
     }
 
     public double getR13Distance(){return r13;}
-    public double getRadius1(){return radius1;}
-    public double getRadius2(){return radius2;}
-    public double getRadius3(){return radius3;}
+    public double getR23Distance(){return r23;}
+    public double getR12Distance(){return r12;}
+    public double getSortedDistanceByIndex(int index){return sortedDistances[index];}
+    public double getRadius1(){return getFittedParamByIndex(0);}
+    public double getRadius2(){return getFittedParamByIndex(1);}
+    public double getRadius3(){return getFittedParamByIndex(2);}
+    public double getSmallest(){ return smallest;}
+    public double getLargest(){ return largest;}
+    public double getMiddle(){ return middle;}
+    public void printOrder(){
+
+        System.out.println(getIndex() + " RAD " + smallest + " <= " + middle + " <= " + largest);
+        System.out.println(getIndex() + " DIS " + sortedDistances[0] + " <= " + sortedDistances[1] + " <= " + sortedDistances[2]);
+    }
+
+    private void setOrder(){
+        double radius1 = getFittedParamByIndex(0);
+        double radius2 = getFittedParamByIndex(1);
+        double radius3 = getFittedParamByIndex(2);
+
+        if ((radius1 <= radius2) && (radius2 <= radius3)){
+            smallest = radius1;
+            middle = radius2;
+            largest = radius3;
+        } else if ((radius2 <= radius3) && (radius3 <= radius1)){
+            smallest = radius2;
+            middle = radius3;
+            largest = radius1;
+        } else if ((radius3 <= radius2) && (radius2 <= radius1)){
+            smallest = radius3;
+            middle = radius2;
+            largest = radius1;
+        }else if ((radius3 <= radius1) && (radius1 <= radius2)){
+            smallest = radius3;
+            middle = radius1;
+            largest = radius2;
+        }else if ((radius2 <= radius1) && (radius1 <= radius3)){
+            smallest = radius2;
+            middle = radius1;
+            largest = radius3;
+        }else if ((radius1 <= radius3) && (radius3 <= radius2)){
+            smallest = radius1;
+            middle = radius3;
+            largest = radius2;
+        }
+    }
 
 }

@@ -29,6 +29,7 @@ public class Dataset {
     private final XYSeries originalPositiveOnlyData;  // not to be modified
     private final XYSeries originalPositiveOnlyError; // not to be modified
     private final YIntervalSeries positiveOnlyIntensityError; //
+    private final XYSeries originalQVectorError;      // not to be modified (SANS)
 
     private final XYSeries allData;              // not to be modified
     private final XYSeries allDataError;         // not to be modified
@@ -184,6 +185,7 @@ public class Dataset {
         originalLog10Data = new XYSeries(tempName);
         originalPositiveOnlyError = new XYSeries(tempName);
         positiveOnlyIntensityError = new YIntervalSeries(tempName);
+        originalQVectorError = new XYSeries(tempName);
 
         normalizedKratkyReciprocalSpaceRgData = new XYSeries(tempName);  // derived from allData
         normalizedKratkyRealSpaceRgData = new XYSeries(tempName);  // derived from allData
@@ -237,6 +239,7 @@ public class Dataset {
         originalLog10Data = new XYSeries(tempName);
         originalPositiveOnlyError = new XYSeries(tempName);
         positiveOnlyIntensityError = new YIntervalSeries(tempName);
+        originalQVectorError = new XYSeries(tempName);
 
         normalizedKratkyReciprocalSpaceRgData = new XYSeries(tempName);  // derived from allData
         normalizedKratkyRealSpaceRgData = new XYSeries(tempName);  // derived from allData
@@ -364,6 +367,7 @@ public class Dataset {
         originalLog10Data = aDataset.originalLog10Data;
         originalPositiveOnlyError = aDataset.originalPositiveOnlyError;
         positiveOnlyIntensityError = aDataset.positiveOnlyIntensityError;
+        originalQVectorError = aDataset.originalQVectorError;
 
         normalizedKratkyReciprocalSpaceRgData = aDataset.normalizedKratkyReciprocalSpaceRgData;
         normalizedKratkyRealSpaceRgData = aDataset.normalizedKratkyReciprocalSpaceRgData;

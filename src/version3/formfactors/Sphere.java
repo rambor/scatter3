@@ -1,14 +1,12 @@
 package version3.formfactors;
 
 import org.apache.commons.math3.util.FastMath;
-import version3.ceengine.SphericalCurves;
 
 /**
  * Created by robertrambo on 28/10/2016.
  */
 public class Sphere extends Model {
 
-    private double radius;
     private double contrast;
 
     /**
@@ -21,11 +19,11 @@ public class Sphere extends Model {
      */
     public Sphere(int index, double solventContrast, double[] particleContrasts, double[] radius, Double[] qvalues) {
 
-        super(index, ModelType.SPHERICAL, (4.0/3.0*Math.PI*radius[0]*radius[0]*radius[0]), solventContrast, particleContrasts, qvalues.length);
-        this.radius = radius[0];
+        super(index, ModelType.SPHERICAL, (4.0/3.0*Math.PI*radius[0]*radius[0]*radius[0]), solventContrast, particleContrasts, qvalues.length, 1);
         this.contrast = particleContrasts[0] - solventContrast;
         this.setConstant(4.0*Math.PI*9.0*this.getVolume()*contrast*contrast); // 9*V*contrast^2
-
+        this.setFittedParamsByIndex(0, radius[0]);
+        //this.setConstant(4.0*Math.PI*9.0*contrast*contrast);
         this.calculateModelIntensities(qvalues);
     }
 
@@ -38,21 +36,17 @@ public class Sphere extends Model {
     void calculateModelIntensities(Double[] qValues) {
 
         double qValue;
-
         double qr, sinCos;
-        //rSixth=1.0/(radius*radius*radius*radius*radius*radius);
+        double radius = this.getFittedParamByIndex(0);
 
         for(int i=0; i<this.getTotalIntensities(); i++){
             qValue = qValues[i];
-
             qr=(qValue*radius);
             sinCos=(FastMath.sin(qr) - qr*FastMath.cos(qr));
-            //System.out.println(qValue + " qValue " + sinCos + " " + this.getConstant());
-            //this.addIntensity(i, this.getConstant()*sinCos*sinCos*rSixth);
-            this.addIntensity(i, qValue*this.getConstant()*sinCos*sinCos/(qr*qr*qr*qr*qr*qr));
+            this.addIntensity(i, qValue*this.getConstant()*sinCos*sinCos/(qr*qr*qr*qr*qr*qr)); // transform as q*I(q)
         }
     }
 
-    public double getRadius(){return radius;}
+    public double getRadius(){return getFittedParamByIndex(0);}
 
 }

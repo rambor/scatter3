@@ -39,9 +39,10 @@ private int refId, scaleToID;
     private double sqmin, sqmax;
     private Collection returnCollection;
     private Collection collectionToUpdate;
+    private String version="";
 
 
-    public Subtraction(Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage, boolean singles, boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar){
+    public Subtraction(Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage, boolean singles, boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar, String version){
         this.samples = samples;
         //this.samples = new Collection();
 
@@ -88,6 +89,7 @@ private int refId, scaleToID;
         // used for scaling
         this.sqmin = tqmin;
         this.sqmax = tqmax;
+        this.version = version;
     }
 
     @Override
@@ -252,8 +254,6 @@ private int refId, scaleToID;
         int newIndex = collectionToUpdate.getDatasetCount();
         for (int i=0; i<total; i++){
 
-            System.out.println("Updating collection " + i);
-
             Dataset temp = returnCollection.getDataset(i);
 
             collectionToUpdate.addDataset( new Dataset(
@@ -298,7 +298,7 @@ private int refId, scaleToID;
         subtractedCollection.getLast().setMinq(subtraction.get(0).getMinX());
         subtractedCollection.getLast().setMaxq(subtraction.get(0).getMaxX());
 
-        FileObject dataToWrite = new FileObject(new File(cwd));
+        FileObject dataToWrite = new FileObject(new File(cwd), version);
         dataToWrite.writeSAXSFile("med_"+name+"_from_averaged_buffer", subtractedCollection.getDataset(0));
 
         // subtract from averaged samples
@@ -338,7 +338,7 @@ private int refId, scaleToID;
         subtractedCollection.getLast().setMinq(subtraction.get(0).getMinX());
         subtractedCollection.getLast().setMaxq(subtraction.get(0).getMaxX());
 
-        FileObject dataToWrite = new FileObject(new File(cwd));
+        FileObject dataToWrite = new FileObject(new File(cwd), version);
         dataToWrite.writeSAXSFile("ave_" + name+"_from_averaged_buffer", subtractedCollection.getDataset(0));
 
         // subtract from averaged samples
@@ -402,7 +402,7 @@ private int refId, scaleToID;
                 output_name,
                 0, false );
 
-        FileObject dataToWrite = new FileObject(new File(cwd));
+        FileObject dataToWrite = new FileObject(new File(cwd), version);
         dataToWrite.writeSAXSFile(output_name, tempSingle);
 
         return tempSingle;
@@ -450,7 +450,7 @@ private int refId, scaleToID;
                 output_name,
                 0, false );
 
-        FileObject dataToWrite = new FileObject(new File(cwd));
+        FileObject dataToWrite = new FileObject(new File(cwd), version);
         dataToWrite.writeSAXSFile(output_name, tempSingle);
 
         /*
@@ -467,7 +467,7 @@ private int refId, scaleToID;
         int total = subtractedCollection.getDatasetCount();
 
         status.setText("writing each dataset to file");
-        FileObject dataToWrite = new FileObject(new File(cwd));
+        FileObject dataToWrite = new FileObject(new File(cwd), version);
 
         for (int i = 0; i < total; i++) {
             dataToWrite.writeSAXSFile(subtractedCollection.getDataset(i).getFileName(), subtractedCollection.getDataset(i));

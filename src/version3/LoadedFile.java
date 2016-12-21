@@ -156,8 +156,8 @@ public class LoadedFile {
 
                     } else {
 
-                        long start = System.nanoTime();
-                        int count = 1;
+                        //long start = System.nanoTime();
+                        int count = 0;
                         DataLine dataPoint;
                         while ((strLine = br.readLine()) != null) {
                             dataPoint = dataFromText(strLine);
@@ -165,18 +165,21 @@ public class LoadedFile {
                                 tempQValue = (convert) ? dataPoint.getq() / 10 : dataPoint.getq();
                                 allData.addOrUpdate(tempQValue, dataPoint.getI());
                                 allDataError.addOrUpdate(tempQValue,  dataPoint.getE());
-                                //allData.add(tempQValue, dataPoint.getI() );
-                                //allDataError.add(tempQValue, dataPoint.getE());
+                                count++;
+
+                                if (allData.getItemCount() != count){
+                                    System.out.println(count + "(" + allData.getItemCount() + ")" + " POSSIBLE DUPLICATE ENTRIES SEE LINE => " + strLine);
+                                }
                             }
-                            count++;
+
 //                            else if (checkRemark(strLine)){ // check if header without BUFFER LINE
 //
 //                            } // move to next line
                         }
 
-                        if (allData.getItemCount() != count){
-                            System.out.println("POSSIBLE DUPLICATE ENTRIES: READ " + count + " LINES in => " + (System.nanoTime() - start)/1000 + " nanoseconds");
-                        }
+//                        if (allData.getItemCount() != count){
+//                            System.out.println("POSSIBLE DUPLICATE ENTRIES: READ " + count + " LINES in => " + (System.nanoTime() - start)/1000 + " nanoseconds");
+//                        }
                     }
 
                 } catch (IOException ex) {

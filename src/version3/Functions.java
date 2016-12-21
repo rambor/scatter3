@@ -14,6 +14,7 @@ import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.List;
 
 /**
  * Created by robertrambo on 05/01/2016.
@@ -2672,6 +2674,5 @@ int cols, rows;
         System.out.println("Maximum Common q-value : " + maxQvalueInCommon);
         return maxQvalueInCommon.doubleValue();
     }
-
 
 }

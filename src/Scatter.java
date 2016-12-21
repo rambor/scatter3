@@ -259,7 +259,7 @@ public class Scatter {
     private JPanel sphereResidualsPanel;
     private JPanel leftSpherePanel;
     private JPanel rightSpherePanel;
-    private JComboBox percentDataCEcomboBox;
+    private JComboBox lambdaCEcomboBox;
     private JPanel crossSection1Panel;
     private JPanel crossSection2Panel;
     private JPanel crossSection3Panel;
@@ -272,16 +272,46 @@ public class Scatter {
     private JPanel histogramRbPanel;
     private JPanel histogramRcPanel;
     private JComboBox ellipseComboBox1;
-    private JButton button1;
-    private JProgressBar progressBar3;
+    private JButton buttonCoreShell;
+    private JProgressBar coreShellProgressBar;
     private JPanel coreShellParametersPanel;
-    private JComboBox coreShellComboBox;
     private JButton run3BodyButton;
     private JProgressBar progressBar3Body;
     private JTextField min3BodyTextField;
     private JTextField max3BodyTextField;
     private JTextField solventContrast3Body;
     private JTextField particleContrast3Body;
+    private JTextField coreShellSolventContrast;
+    private JTextField coreShellShellContrast;
+    private JTextField coreShellCoreContrast;
+    private JTextField radiiLowerCoreShell;
+    private JTextField radiiUpperCoreShell;
+    private JPanel residuals3BodyPanel;
+    private JPanel dataFit3BodyPanel;
+    private JPanel scorePanelCoreShell;
+    private JPanel dataFitsCoreShell;
+    private JCheckBox coreEmptyAndFullCheckBox;
+    private JPanel scoreProgressThreeBodyPanel;
+    private JPanel threeBodyGeometryPanel;
+    private JPanel threeBodyDistributionPlot;
+    private JPanel smallest3BodyPanel;
+    private JPanel middle3BodyPanel;
+    private JPanel largest3BodyPanel;
+    private JButton button2;
+    private JProgressBar progressBar4;
+    private JTextField floryField;
+    private JTextField a66TextField;
+    private JComboBox coreShellEllipsoidModel;
+    private JTextField shellThickness;
+    private JCheckBox fitBackgroundCheckBox;
+    private JPanel residualsCoreShellPanel;
+    private JPanel histogramRaCoreShellPanel;
+    private JPanel histogramRcCoreShellPanel;
+    private JPanel histogramShellThicknessPanel;
+    private JPanel geometryCoreShellPanel;
+    private JRadioButton maximumEntropyRadioButton;
+    private JRadioButton secondDerivativeRadioButton;
+    private JTextField textField1;
     private JPanel plotPanel3Body;
 
     private String version = "3.0i";
@@ -373,10 +403,11 @@ public class Scatter {
         simBinsComboBox.setSelectedIndex(0);
         lambdaBox.setSelectedIndex(6);
         cBox.setSelectedIndex(1);
-        percentDataCEcomboBox.setSelectedIndex(3);
+        lambdaCEcomboBox.setSelectedIndex(5);
         ceComboBoxRounds.setSelectedIndex(1);
         trialsPerRoundComboBox.setSelectedIndex(2);
-        modelsPerRoundComboBox.setSelectedIndex(3);
+        modelsPerRoundComboBox.setSelectedIndex(4);
+        topNComboBox.setSelectedIndex(0);
 
         collections = new HashMap();
         bufferCollections = new Collection();
@@ -1285,7 +1316,7 @@ public class Scatter {
 
                             WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
 
-                            FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                            FileObject dataToWrite = new FileObject(fc.getCurrentDirectory(), version);
                             dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                             dataToWrite.writeSAXSFile(cleaned, tempDataset);
 
@@ -1353,7 +1384,7 @@ public class Scatter {
                         if(fc.getSelectedFile()!=null){
 
                             WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
-                            FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                            FileObject dataToWrite = new FileObject(fc.getCurrentDirectory(), version);
                             dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                             dataToWrite.writeSAXSFile(cleaned, tempDataset);
 
@@ -1415,7 +1446,7 @@ public class Scatter {
                         WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
                         System.out.println("WORKING DIRECTORY SET TO : " + WORKING_DIRECTORY.getWorkingDirectory());
 
-                        FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                        FileObject dataToWrite = new FileObject(fc.getCurrentDirectory(), version);
                         dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                         dataToWrite.writeSingleSAXSFile(cleaned, tempData);
 
@@ -1515,7 +1546,7 @@ public class Scatter {
 
                         WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
 
-                        FileObject dataToWrite = new FileObject(fc.getCurrentDirectory());
+                        FileObject dataToWrite = new FileObject(fc.getCurrentDirectory(), version);
                         dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                         dataToWrite.writeSAXSFile(cleaned, tempDataset);
 
@@ -1901,7 +1932,7 @@ public class Scatter {
                 new Thread() {
                     public void run() {
                         //Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage,  boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar){
-                        Subtraction subTemp = new Subtraction(bufferCollections, tempCollectionForSubtraction, finalQmin, finalQmax, mergeByAverage, finalSingles, scaleBefore, svd, cpuCores, status, mainProgressBar);
+                        Subtraction subTemp = new Subtraction(bufferCollections, tempCollectionForSubtraction, finalQmin, finalQmax, mergeByAverage, finalSingles, scaleBefore, svd, cpuCores, status, mainProgressBar, version);
                         // add other attributes and then run
                         // Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString())/100.00;
                         subTemp.setBinsAndCutoff(Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString()), Double.parseDouble(subtractionCutOff.getSelectedItem().toString()));
@@ -2346,6 +2377,8 @@ public class Scatter {
         runSphereModelButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                runSphereModelButton.setEnabled(false);
+                status.setText("Calculating Modelings please wait");
                 float qmin = Float.parseFloat(qminCEText.getText());
                 float qmax = Float.parseFloat(qmaxCEText.getText());
                 float solventContrast = Float.parseFloat(solventContrastText.getText());
@@ -2358,13 +2391,12 @@ public class Scatter {
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
                 //delta[0] = Math.PI/qmax/4.0;
-                delta[0] = 1.7;
-                System.out.println("Increment " + delta[0]);
+                delta[0] = 2.373;
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrastText.getText());
 
                 double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
-                double percentData = Double.parseDouble((String)percentDataCEcomboBox.getSelectedItem());
+                double lambda = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
                 int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
 
                 int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
@@ -2374,7 +2406,7 @@ public class Scatter {
 
                         final FormFactorEngine sphere = new FormFactorEngine(tempData,
                                 ModelType.SPHERICAL,
-                                4,           // total cpu cores to use during search
+                                cpuCores,           // total cpu cores to use during search
                                 Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
                                 lowerParams, // lower radius starting value
                                 upperParams, // upper
@@ -2382,18 +2414,28 @@ public class Scatter {
                                 qmin,        // qmin of fit
                                 qmax,        // qmax of fit
                                 0.0001,      // epsilon
-                                percentData, //
+                                lambda, //
                                 topN,        // top N to select in out of M
                                 solventContrast,
                                 contrasts,
                                 trialsPerRound,  // trials per round
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()),
-                                true
+                                !fitBackgroundCheckBox.isSelected(),
+                                maximumEntropyRadioButton.isSelected()
                         );   // randomModelsPerTrial
 
                         sphere.setProgressBar(progressBarSphere);
                         sphere.setPlotPanels(sphereResidualsPanel, sphereDistributionPanel, leftSpherePanel, rightSpherePanel, sphereDataPlotPanel);
                         sphere.execute();
+                        try {
+                            sphere.get();
+                            runSphereModelButton.setEnabled(true);
+                            status.setText("Finished");
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
                     }
 
                 };
@@ -2427,8 +2469,8 @@ public class Scatter {
                     }
                 } else {
                     qminCEText.setText(String.valueOf(tempDataset.getOriginalPositiveOnlyData().getX(tempDataset.getStart()-1).doubleValue()));
-                    if (tempDataset.getAllData().getMaxX() > 0.18){
-                        qmaxCEText.setText("0.18");
+                    if (tempDataset.getAllData().getMaxX() > 0.08){
+                        qmaxCEText.setText("0.08");
                     } else {
                         qmaxCEText.setText(String.valueOf(tempDataset.getAllData().getMaxX()));
                     }
@@ -2490,6 +2532,7 @@ public class Scatter {
         ellipsoidButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                ellipsoidButton.setEnabled(false);
                 float qmin = Float.parseFloat(qminCEText.getText());
                 float qmax = Float.parseFloat(qmaxCEText.getText());
                 float solventContrast = Float.parseFloat(ellipsoidSolventText.getText());
@@ -2500,13 +2543,13 @@ public class Scatter {
                 upperParams[0] = Double.parseDouble(majorAxisLabel.getText());
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
-                delta[0] = 1.9;
+                delta[0] = 2.393;
 
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrastText.getText());
 
                 double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
-                double percentData = Double.parseDouble((String)percentDataCEcomboBox.getSelectedItem());
+                double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
                 int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
 
                 int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
@@ -2542,7 +2585,9 @@ public class Scatter {
                                 contrasts,
                                 trialsPerRound,  // trials per round
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
-                                true);      // useNoBackground
+                                !fitBackgroundCheckBox.isSelected(), // background
+                                maximumEntropyRadioButton.isSelected()
+                        );      // useNoBackground
 
                         ellipsoid.setProgressBar(progressBarEllipsoid);
 
@@ -2558,6 +2603,14 @@ public class Scatter {
                                 scoreProgressEllipsePanel,
                                 ellipseDataPanel);
                         ellipsoid.execute();
+                        try {
+                            ellipsoid.get();
+                            ellipsoidButton.setEnabled(true);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
                     }
                 };
 
@@ -2590,7 +2643,7 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 status.setText("Writing txt file to " + WORKING_DIRECTORY.getWorkingDirectory());
-                FileObject tempObject = new FileObject(new File(WORKING_DIRECTORY.getWorkingDirectory()));
+                FileObject tempObject = new FileObject(new File(WORKING_DIRECTORY.getWorkingDirectory()), version);
                 tempObject.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                 tempObject.exportResults(collectionSelected);
             }
@@ -2943,7 +2996,7 @@ public class Scatter {
                     }
                     tempCollectionForSubtraction.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
 
-                    FactorAnalysis tempFactorAnalysis = new FactorAnalysis(tempCollectionForSubtraction, tempCollectionForBuffer, finalQmin, finalQmax, status, mainProgressBar, subtractOutPutDirectoryLabel.getText());
+                    FactorAnalysis tempFactorAnalysis = new FactorAnalysis(tempCollectionForSubtraction, tempCollectionForBuffer, finalQmin, finalQmax, status, mainProgressBar, subtractOutPutDirectoryLabel.getText(), version);
                     Thread temp1 = new Thread(tempFactorAnalysis);
                     temp1.start();
 
@@ -3135,7 +3188,7 @@ public class Scatter {
         run3BodyButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                run3BodyButton.setEnabled(false);
                 float qmin = Float.parseFloat(qminCEText.getText());
                 float qmax = Float.parseFloat(qmaxCEText.getText());
                 float solventContrast = Float.parseFloat(solventContrast3Body.getText());
@@ -3146,13 +3199,13 @@ public class Scatter {
                 upperParams[0] = Double.parseDouble(max3BodyTextField.getText());
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
-                delta[0] = 1.9;
+                delta[0] = 2.37;
 
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrast3Body.getText());
 
                 double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
-                double percentData = Double.parseDouble((String)percentDataCEcomboBox.getSelectedItem());
+                double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
                 int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
 
                 int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
@@ -3177,28 +3230,131 @@ public class Scatter {
                                 contrasts,
                                 trialsPerRound,  // trials per round
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
-                                true);      // useNoBackground
+                                !fitBackgroundCheckBox.isSelected(),      // useNoBackground
+                                maximumEntropyRadioButton.isSelected());
 
                         body3.setProgressBar(progressBar3Body);
 
-                        body3.setEllipsoidPlotPanels(
-                                crossSection1Panel,
-                                crossSection2Panel,
-                                crossSection3Panel,
-                                crossSection4Panel,
-                                ellipsoidResidualPanel,
-                                histogramRaPanel,
-                                histogramRbPanel,
-                                histogramRcPanel,
-                                scoreProgressEllipsePanel,
-                                ellipseDataPanel);
+                        body3.setThreeBodyPlotPanels(
+                                threeBodyGeometryPanel,
+                                residuals3BodyPanel,
+                                scoreProgressThreeBodyPanel,
+                                dataFit3BodyPanel,
+                                smallest3BodyPanel,
+                                middle3BodyPanel,
+                                largest3BodyPanel);
+
                         body3.execute();
+                        try {
+                            body3.get();
+                            run3BodyButton.setEnabled(true);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
                     }
                 };
 
                 findIt.start();
+            }
+        });
 
 
+
+        buttonCoreShell.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                buttonCoreShell.setEnabled(false);
+                float qmin = Float.parseFloat(qminCEText.getText());
+                float qmax = Float.parseFloat(qmaxCEText.getText());
+                float solventContrast = Float.parseFloat(coreShellSolventContrast.getText());
+
+                double[] lowerParams = new double[1];
+                lowerParams[0] = Double.parseDouble(radiiLowerCoreShell.getText());
+                double[] upperParams = new double[1];
+                upperParams[0] = Double.parseDouble(radiiUpperCoreShell.getText());
+                double[] delta = new double[1];
+                // delta can be calculated from delta-q and dmax
+                delta[0] = 2.37;
+
+                double[] contrasts = new double[2];
+                contrasts[0] = Float.parseFloat(coreShellShellContrast.getText());
+                contrasts[1] = Float.parseFloat(coreShellCoreContrast.getText());
+
+                double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
+                double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
+                int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
+
+                int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
+                Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
+
+                ModelType modelType1 = ModelType.CORESHELL_PROLATE_ELLIPSOID;
+                if (coreShellEllipsoidModel.getSelectedIndex()==1){
+                    modelType1 = ModelType.CORESHELL_OBLATE_ELLIPSOID;
+                }
+
+                final ModelType finalModelType = modelType1;
+
+                Thread findIt = new Thread(){
+                    public void run() {
+
+                        final FormFactorEngine csModel = new FormFactorEngine(tempData,
+                                finalModelType,
+                                cpuCores,           // total cpu cores to use during search
+                                Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
+                                lowerParams, // lower radius starting value
+                                upperParams, // upper
+                                delta,       // incremement to go from lower -> upper limits of params
+                                qmin,        // qmin of fit
+                                qmax,        // qmax of fit
+                                0.0001,      // epsilon
+                                percentData, //
+                                topN,        // top N to select in out of M
+                                solventContrast,
+                                contrasts,
+                                trialsPerRound,  // trials per round
+                                Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
+                                !fitBackgroundCheckBox.isSelected(),     // useNoBackground
+                                maximumEntropyRadioButton.isSelected());
+
+                        csModel.setProgressBar(coreShellProgressBar);
+                        csModel.setCompleteness(coreEmptyAndFullCheckBox.isSelected(), Double.parseDouble(shellThickness.getText()));
+
+                        csModel.setCSPlotPanels(
+                                geometryCoreShellPanel,
+                                residualsCoreShellPanel,
+                                scorePanelCoreShell,
+                                dataFitsCoreShell,
+                                histogramRaCoreShellPanel,
+                                histogramShellThicknessPanel,
+                                histogramRcCoreShellPanel);
+
+                        csModel.execute();
+                        try {
+                            csModel.get();
+                            buttonCoreShell.setEnabled(true);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                };
+
+                findIt.start();
+            }
+        });
+        maximumEntropyRadioButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                secondDerivativeRadioButton.setSelected(false);
+            }
+        });
+        secondDerivativeRadioButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                maximumEntropyRadioButton.setSelected(false);
             }
         });
     }
@@ -3657,6 +3813,9 @@ public class Scatter {
 
                         // populate drop down
                         Collection thisCollection = ((Collection) collections.get(panel));
+
+                        programInstance.thresholdField.setText(Constants.ThreeDecPlace.format(thisCollection.getMaxq()*0.05 + thisCollection.getMaxq()));
+
                         int totalDatasets = thisCollection.getDatasetCount();
                         programInstance.setReferenceBox.removeAllItems();
 
