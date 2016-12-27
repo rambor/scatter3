@@ -392,7 +392,14 @@ public class CoreShellPlots {
         );
 
         // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
-//        XYPlot plot = (XYPlot) chart.getPlot();
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.1f));
+        plot.getRenderer().setSeriesPaint(1, Color.CYAN);
+        plot.getRenderer().setSeriesStroke(1,new BasicStroke(4.0f));
+        plot.getRenderer().setSeriesPaint(0, Color.BLACK);
+        plot.setRangeGridlinePaint(Color.BLACK);
+        plot.setDomainGridlinePaint(Color.BLACK);
+        plot.setBackgroundPaint(Color.lightGray);
 //        LogAxis logAxis = new LogAxis("Log10 I(q)");
 //        logAxis.setBase(10);
 //        logAxis.setTickUnit(new NumberTickUnit(10));
@@ -491,7 +498,7 @@ public class CoreShellPlots {
             Color temp = giveRGB(max, probabilitiesPerModelFull.get(i));
             //xyitemrenderer.setSeriesOutlinePaint(i, temp);
             xyitemrenderer.setSeriesPaint(i, temp);
-            xyitemrenderer.setSeriesOutlinePaint(i, Color.BLACK);
+            xyitemrenderer.setSeriesOutlinePaint(i, temp);
         }
 
        NumberAxis xAxis = new NumberAxis("c-axis");
@@ -516,7 +523,7 @@ plot.setDomainAxis(xAxis);
         int blue = (int)(Math.max(0, 255*(1 - ratio)));
         int red = (int)(Math.max(0, 255*(ratio - 1)));
         int green = 255 - blue - red;
-        return new Color(red,green,blue, 50);
+        return new Color(red,green,blue, 180);
     }
 
 

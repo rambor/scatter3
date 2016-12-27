@@ -498,7 +498,13 @@ public class ThreeBodyPlots {
         plot.setDomainAxis(domainAxis);
         plot.setRangeAxis(rangeAxis);
 
-        plot.setBackgroundPaint(Color.white);
+        plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.1f));
+        plot.getRenderer().setSeriesPaint(1, Color.CYAN);
+        plot.getRenderer().setSeriesStroke(1,new BasicStroke(4.0f));
+        plot.getRenderer().setSeriesPaint(0, Color.BLACK);
+        plot.setRangeGridlinePaint(Color.BLACK);
+        plot.setDomainGridlinePaint(Color.BLACK);
+        plot.setBackgroundPaint(Color.lightGray);
 
         ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));

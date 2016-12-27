@@ -312,6 +312,7 @@ public class Scatter {
     private JRadioButton maximumEntropyRadioButton;
     private JRadioButton secondDerivativeRadioButton;
     private JTextField textField1;
+    private JPanel sphereResultsPanel;
     private JPanel plotPanel3Body;
 
     private String version = "3.0i";

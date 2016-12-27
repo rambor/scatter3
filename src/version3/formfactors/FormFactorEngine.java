@@ -482,6 +482,9 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         }
 
         makeProgressPlot();
+// write out results
+
+
 
         progressBar.setValue(0);
         return null;
