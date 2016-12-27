@@ -114,104 +114,28 @@ public class TopList{
                 }
             }
 
-            double invTotalModels = 1.0/(double)modelParamsCount.size();
+           // double invTotalModels = 1.0/(double)modelParamsCount.size();
 
             // calculate smoothness of the selected distribution using 2nd derivative
             Object[] parameterValues = modelParamsCount.keySet().toArray();
-            int totalValues = parameterValues.length-1;
-            double f_xminus_h, f_xplus_h, center, diff;
+            int totalValues = parameterValues.length-2;
+            double f_xminus_h, f_xplus_h, diff;
+            double tempStepSize = (double)parameterValues[1] - (double)parameterValues[0];
+            double invfactor = 1.0/(12.0*tempStepSize*tempStepSize);
 
             // calculate diff
-            for (int i=1; i<totalValues; i++){
+            for (int i=2; i<totalValues; i++){
                 // calculate derivative for each entry
-                center = (double)parameterValues[i];
-                diff = (center-(double)parameterValues[i-1]);
-                f_xminus_h = 0;
-                f_xplus_h = 0;
-                if (diff*invStepSize < 2){ // reverse step
-                    f_xminus_h = modelParamsCount.get(parameterValues[i-1]);
-                }
-
-                diff = ((double)parameterValues[i+1]-center);
-                if (diff*invStepSize < 2){ // forward step
-                    f_xplus_h = modelParamsCount.get(parameterValues[i+1]);
-                }
-
-                //diff = (f_xplus_h - f_xminus_h)/(2*stepsize); // first derivative
-                diff = (f_xminus_h-2*modelParamsCount.get(parameterValues[i]) + f_xplus_h)*invStepSize2;
-                //secondDerivative += Math.abs(diff);
+                f_xminus_h = 16*modelParamsCount.get(parameterValues[i-1]) - modelParamsCount.get(parameterValues[i-2]);
+                f_xplus_h = 16*modelParamsCount.get(parameterValues[i+1]) - modelParamsCount.get(parameterValues[i+2]);
+                diff = (f_xminus_h-30*modelParamsCount.get(parameterValues[i]) + f_xplus_h);
                 secondDerivative += diff*diff;
             }
+            //System.out.println(p + " => " + totalParamsFitted + " : " + parameterValues.length);
             //secondDerivative += forward2ndderivative(parameterValues, modelParamsCount);
             //secondDerivative += reverse2ndderivative(parameterValues, modelParamsCount);
-
-            smoothtemp += secondDerivative*invTotalModels;
+            smoothtemp += secondDerivative*invfactor*invfactor/(double)totalValues;
         }
-
-
-//        Set<Map.Entry<Integer, ArrayList<Integer>>> entries = modelList.entrySet();
-//        //System.out.println("Total Fitted Params " + totalParamsFitted);
-//        for(int p=0; p<totalParamsFitted; p++){ // calculate marginal distribution for each parameter
-//            // go through all the models and create distribution based on each parameter
-//            // go through each model and grab parameters and populate hash
-//            SortedMap<Double, Double> modelParamsCount = new TreeMap<>();
-//            // go through the TopNList and for each selected Index:
-//            // get the parameter and use as a key and count occurence of the parameter
-//            for(Map.Entry<Integer, ArrayList<Integer>> entry:entries){
-//
-//                ArrayList<Integer> modelIndices = entry.getValue();
-//
-//                for(int j=0; j<numberOfModelsPerTrial; j++){
-//
-//                    Model model = models.get(modelIndices.get(j));
-//                    double param = model.getFittedParamByIndex(p);
-//
-//                    if (modelParamsCount.containsKey(param)){
-//                        modelParamsCount.put(param, modelParamsCount.get(param) + 1.0d);
-//                    } else {
-//                        modelParamsCount.put(param, 1.0d);
-//                    }
-//                }
-//            }
-//
-//            // calculate smoothness of the selected distribution using 2nd derivative
-//            Object[] parameterValues = modelParamsCount.keySet().toArray();
-//            int totalValues = parameterValues.length-1;
-//            double f_xminus_h, f_xplus_h, center, diff;
-//
-//            // calculate diff
-//            for (int i=1; i<totalValues; i++){
-//                // calculate derivative for each entry
-//                center = (double)parameterValues[i];
-//                diff = (center-(double)parameterValues[i-1]);
-//                f_xminus_h = 0;
-//                f_xplus_h = 0;
-//                if (diff*invStepSize < 2){ // reverse step
-//                    f_xminus_h = modelParamsCount.get(parameterValues[i-1]);
-//                }
-//
-//                diff = ((double)parameterValues[i+1]-center);
-//                if (diff*invStepSize < 2){ // forward step
-//                    f_xplus_h = modelParamsCount.get(parameterValues[i+1]);
-//                }
-//
-//                //diff = (f_xplus_h - f_xminus_h)/(2*stepsize); // first derivative
-//                diff = (f_xminus_h-2*modelParamsCount.get(parameterValues[i]) + f_xplus_h)*invStepSize2;
-//                //secondDerivative += Math.abs(diff);
-//                secondDerivative += diff*diff;
-//            }
-//
-//            secondDerivative += forward2ndderivative(parameterValues, modelParamsCount);
-//            secondDerivative += reverse2ndderivative(parameterValues, modelParamsCount);
-//        }
-//
-//        if (totalParamsFitted > 1){ // calculate mixed partials
-//
-//            // for each point in search space, calculate
-//
-//
-//
-//        }
 
         smoothnessScore = lambda*10000*smoothtemp;
         //smoothnessScore = lambda*secondDerivative/(double)totalParamsFitted;
@@ -356,18 +280,20 @@ public class TopList{
 
         diff = ((double)parameterValues[1]-first);
 
-        double f_xplus_h = 0;
-        double f_xplus_2h = 0;
-        if (diff*invStepSize< 2){ // reverse step
-            f_xplus_h = modelParamsCount.get(parameterValues[1]);
-        }
+            double f_xplus_h = 0;
+            double f_xplus_2h = 0;
+            if (diff*invStepSize< 2){ // reverse step
+                f_xplus_h = modelParamsCount.get(parameterValues[1]);
+            }
 
-        diff = ((double)parameterValues[2]-first);
-        if (diff*invStepSize< 2){ // forward step
-            f_xplus_2h = modelParamsCount.get(parameterValues[2]);
-        }
+            diff = ((double)parameterValues[2]-first);
+            if (diff*invStepSize< 2){ // forward step
+                f_xplus_2h = modelParamsCount.get(parameterValues[2]);
+            }
 
-        diff = (f_xplus_2h-2*f_xplus_h+modelParamsCount.get(parameterValues[0]))*invStepSize2;
+            diff = (f_xplus_2h-2*f_xplus_h+modelParamsCount.get(parameterValues[0]))*invStepSize2;
+
+        //System.out.println("forward : " + diff);
         //return Math.abs(diff);
         //return Math.abs((f_xplus_h - modelParamsCount.get(parameterValues[0]))*invStepSize);
         return diff*diff;
@@ -386,16 +312,18 @@ public class TopList{
         double last = (double)parameterValues[total-1];
 
         diff = (last - (double)previous);
-        if (diff*invStepSize < 2){ // reverse step
-            f_xminus_h = modelParamsCount.get(previous);
-        }
 
-        diff = (last - (double)before);
-        if (diff*invStepSize < 2){ // forward step
-            f_xminus_2h = modelParamsCount.get(before);
-        }
+            if (diff*invStepSize < 2){ // reverse step
+                f_xminus_h = modelParamsCount.get(previous);
+            }
 
-        diff = (modelParamsCount.get(last) - 2*f_xminus_h + f_xminus_2h)*invStepSize2;
+            diff = (last - (double)before);
+            if (diff*invStepSize < 2){ // forward step
+                f_xminus_2h = modelParamsCount.get(before);
+            }
+
+            diff = (modelParamsCount.get(last) - 2*f_xminus_h + f_xminus_2h)*invStepSize2;
+
         //return Math.abs((modelParamsCount.get(last) - f_xminus_h)*invStepSize);
         return diff*diff;
     }
@@ -483,113 +411,27 @@ public class TopList{
 
             double invTotalModels = 1.0/(double)modelParamsCount.size();
             // calculate smoothness of the selected distribution using 2nd derivative
-            Object[] parameterValues = modelParamsCount.keySet().toArray();
-            int totalValues = parameterValues.length-1;
+            Object[] parameterValues = modelParamsCount.keySet().toArray(); // should be sorted
+            int totalValues = parameterValues.length-2;
             double f_xminus_h, f_xplus_h, center, diff;
+            double tempStepSize = (double)parameterValues[1] - (double)parameterValues[0];
+            double invfactor = 1.0/(12.0*tempStepSize*tempStepSize);
 
             // calculate diff
-            for (int i=1; i<totalValues; i++){
+            for (int i=2; i<totalValues; i++){
                 // calculate derivative for each entry
-                center = (double)parameterValues[i];
-                diff = (center-(double)parameterValues[i-1]);
-                f_xminus_h = 0;
-                f_xplus_h = 0;
-                if (diff*invStepSize < 2){ // reverse step
-                    f_xminus_h = modelParamsCount.get(parameterValues[i-1]);
-                }
-
-                diff = ((double)parameterValues[i+1]-center);
-                if (diff*invStepSize < 2){ // forward step
-                    f_xplus_h = modelParamsCount.get(parameterValues[i+1]);
-                }
-
-                //diff = (f_xplus_h - f_xminus_h)/(2*stepsize); // first derivative
-                diff = (f_xminus_h-2*modelParamsCount.get(parameterValues[i]) + f_xplus_h)*invStepSize2;
-                //secondDerivative += Math.abs(diff);
+                f_xminus_h = 16*modelParamsCount.get(parameterValues[i-1]) - modelParamsCount.get(parameterValues[i-2]);
+                f_xplus_h = 16*modelParamsCount.get(parameterValues[i+1]) - modelParamsCount.get(parameterValues[i+2]);
+                diff = (f_xminus_h - 30*modelParamsCount.get(parameterValues[i]) + f_xplus_h);
                 secondDerivative += diff*diff;
             }
-            secondDerivative += forward2ndderivative(parameterValues, modelParamsCount);
-            secondDerivative += reverse2ndderivative(parameterValues, modelParamsCount);
-            smoothtemp += secondDerivative*invTotalModels;
+
+            //secondDerivative += forward2ndderivative(parameterValues, modelParamsCount);
+            //secondDerivative += reverse2ndderivative(parameterValues, modelParamsCount);
+            smoothtemp += secondDerivative*invfactor*invfactor/(double)totalValues;
         }
 
-
-//        double secondDerivativeTest = 0.0d;
-//        Set<Map.Entry<Integer, ArrayList<Integer>>> entries = modelList.entrySet();
-//
-//        for(int p=0; p<totalParamsFitted; p++){
-//            // go through all the models and create distribution based on each parameter
-//            // go through each model and grab parameters and populate hash
-//            SortedMap<Double, Double> modelParamsCount = new TreeMap<>();
-//            // go through the TopNList and for each selected Index:
-//            // leave out the last entry!
-//            // get the parameter and use as a key and count occurence of the parameter
-//            // Map.Entry<Double, Integer> lastKey = scoreList.lastEntry();
-//            // modelist is sorted by key, not in order of score
-//            for(Map.Entry<Integer, ArrayList<Integer>> entry:entries){
-//                ArrayList<Integer> modelIndices = entry.getValue();
-//
-//                //if (entry.getKey() != lastKey.getValue()){
-//                if (entry.getKey() != scoreList.get(scoreList.size()-1).getIndex()){
-//                    for(int j=0; j<numberOfModelsPerTrial; j++){
-//
-//                        double keyToCheck = models.get(modelIndices.get(j)).getFittedParamByIndex(p);
-//
-//                        if (modelParamsCount.containsKey(keyToCheck)){
-//                            modelParamsCount.put(keyToCheck, modelParamsCount.get(keyToCheck) + 1.0d);
-//                        } else {
-//                            modelParamsCount.put(keyToCheck, 1.0d);
-//                        }
-//                    }
-//                }
-//            }
-//
-//            // add contribution from putative model
-//            ArrayList<Integer> modelIndices = model.getSelectedIndices();
-//            for(int j=0; j<numberOfModelsPerTrial; j++){
-//                double keyToCheck = models.get(modelIndices.get(j)).getFittedParamByIndex(p);
-//                if (modelParamsCount.containsKey(keyToCheck)){
-//                    modelParamsCount.put(keyToCheck, modelParamsCount.get(keyToCheck) + 1.0d);
-//                } else {
-//                    modelParamsCount.put(keyToCheck, 1.0d);
-//                }
-//            }
-//
-//            // calculate 2nd derivative
-//            // based on populated modelParamsCount
-//            // calculate smoothness of the selected distribution
-//            Object[] parameterValues = modelParamsCount.keySet().toArray();
-//            int totalValues = parameterValues.length-1;
-//            double f_xminus_h, f_xplus_h, center, diff;
-//
-//            // calculate forward diff
-//            for (int i=1; i<totalValues; i++){
-//                // calculate derivative for each entry
-//                center = (double)parameterValues[i];
-//                diff = (center-(double)parameterValues[i-1]);
-//                f_xminus_h = 0;
-//                f_xplus_h = 0;
-//                if (diff*invStepSize < 2){ // reverse step
-//                    f_xminus_h = modelParamsCount.get(parameterValues[i-1]);
-//                }
-//
-//                diff = ((double)parameterValues[i+1]-center);
-//                if (diff*invStepSize < 2){ // forward step
-//                    f_xplus_h = modelParamsCount.get(parameterValues[i+1]);
-//                }
-//
-//                //diff = (f_xplus_h - f_xminus_h)/(2*stepsize); // first derivative
-//                diff = (f_xminus_h-2*modelParamsCount.get(parameterValues[i]) + f_xplus_h)*invStepSize2;
-//                secondDerivativeTest += diff*diff;
-//                //secondDerivativeTest += Math.abs(diff);
-//            }
-//
-//            secondDerivativeTest += forward2ndderivative(parameterValues, modelParamsCount);
-//            secondDerivativeTest += reverse2ndderivative(parameterValues, modelParamsCount);
-//        }
-
         return (lambda*10000*smoothtemp);
-        //return (lambda*secondDerivativeTest/(double)totalParamsFitted);
     }
 
 

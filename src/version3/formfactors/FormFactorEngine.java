@@ -296,7 +296,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             }
         }
         // modelIntensities is read only from this point on.
-        //createTestData();
+        // createTestData();
         /*
          * pick top X configurations
          * update probabilities for each
@@ -315,7 +315,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
         fitLoop:
         for(int round=0; round<rounds; round++){
-
             // select N models based on probabilities
             // fit model
             // if change, epsilon < 0.001, break;
@@ -332,6 +331,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 modelsPerTrial,
                                 cdf,
                                 tempTopList,
+                                models,
                                 modelIntensities,
                                 totalIntensitiesOfModels,
                                 workingSetIntensities,
@@ -340,7 +340,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 useNoBackground
                         )));
             }
-
             // Use TopList to update CDF
             //
             executor.shutdown();
@@ -1082,7 +1081,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 while (params[0] >= minLimit){ // sphere 3
 
                     double maxr13 = (2*params[1]+params[2]+params[0]); // furthest sphere_1 and sphere_2 can be
-                    double minr13 = params[2] + params[0];             //closest they can be
+                    double minr13 = params[2] + params[0];             // closest they can be
 
                     // set the distances between first and third sphere
                     for(double rad=minr13; rad<=maxr13; rad += delta[0]){
@@ -1142,16 +1141,15 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         dmaxOfSet = 2*maxParams[0];
 
         double deltaShell = shellThickness*0.2;// set shell thickness
-        double shellStart = shellThickness - 2*deltaShell;
+        double shellStart = shellThickness - 3*deltaShell;
 
         while(params[1] > minLimit){ // major
             // set R_a
             params[0] = params[1] - delta[0];
-            System.out.println("PARAMS[1] " + params[1] + " " + params[0] + " minlimit " + minLimit + " " + shellStart);
 
             while (params[0] >= minLimit){ // minor
                 // for each r_major and r_minor axis, set shell thickness
-                for(int s=0; s<5; s++){ // vary the shell thickness
+                for(int s=0; s<7; s++){ // vary the shell thickness
                     double shell = s*deltaShell+shellStart;
 
                     Future<CoreShell> future = executor.submit(new CallableCoreShellEllipsoid(

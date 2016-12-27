@@ -27,6 +27,7 @@ public class TestModel implements Callable<Double> {
     private List<Double> modelIntensities;
     private ArrayList<Double> transformedIntensities;
     private ArrayList<Double> transformedErrors;
+    private ArrayList<Model> models;
     private RealMatrix designMatrix;
     private double[] qValues;
     private boolean useNoBackground;
@@ -46,6 +47,7 @@ public class TestModel implements Callable<Double> {
                      int totalToSelect,
                      ConcurrentNavigableMap<Double, Integer> cdf,
                      TopList list,
+                     ArrayList<Model> models,
                      List<Double> modelIntensities,
                      int totalqInModelIntensities,
                      ArrayList<Double> transformedIntensities,
@@ -60,6 +62,7 @@ public class TestModel implements Callable<Double> {
         this.totalqInModelIntensities = totalqInModelIntensities;
         this.list = list;
         this.cdf = cdf;
+        this.models = models;
 
         this.totalq = qvalues.length;
 
@@ -111,6 +114,7 @@ public class TestModel implements Callable<Double> {
         calculatedIntensities = new ArrayList<>();
         while(calculatedIntensities.size() < totalq) calculatedIntensities.add(0.0d);
 
+        double totalVolume = 0;
         for(int i=0; i<totalToSelect; i++){
             double rand = random.nextDouble();
 
@@ -119,16 +123,20 @@ public class TestModel implements Callable<Double> {
             // combine with
             startIndex = index*totalq;
             // sum the intensities for each model
+            totalVolume = models.get(index).getVolume();
             for(int j=0; j<totalq; j++){
                 calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + modelIntensitiesTemp.get(startIndex+j).doubleValue());
             }
         }
 
         // perform the average by dividing by total
-        double invTotal = 1.0/(double)totalToSelect;
+        //double invTotal = 1.0/(double)totalToSelect;
+        double invTotalVoume = 1.0/totalVolume;
         for(int j=0; j<totalq; j++){
-            calculatedIntensities.set(j, invTotal*calculatedIntensities.get(j).doubleValue());
+            //calculatedIntensities.set(j, invTotal*calculatedIntensities.get(j).doubleValue());
+            calculatedIntensities.set(j, invTotalVoume*calculatedIntensities.get(j).doubleValue());
         }
+
         // calculate score
         calculateScore();
         // update list

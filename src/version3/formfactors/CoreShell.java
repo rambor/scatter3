@@ -21,6 +21,7 @@ public class CoreShell extends Model{
     private double volumeCore;
     private double volumeShell;
     private boolean isEmpty=false;
+    private double thickness;
 
     // fixed thickness shell?
 
@@ -46,9 +47,10 @@ public class CoreShell extends Model{
             this.volumeShell = 4.0/3.0*Math.PI*(radii[0]+thickness)*(radii[1]+thickness)*(radii[1]+thickness);
         }
 
+        this.setVolume(this.volumeShell);
 
-        this.setFittedParamsByIndex(0, radii[0]); // r_a core
-        this.setFittedParamsByIndex(1, radii[1]); // r_c core
+        this.setFittedParamsByIndex(0, radii[0]);  // r_a core
+        this.setFittedParamsByIndex(1, radii[1]);  // r_c core
         this.setFittedParamsByIndex(2, thickness); // thickness
 
         shellRadius_a = this.getRadius_a() + thickness;
@@ -67,7 +69,7 @@ public class CoreShell extends Model{
             isEmpty=true;
         }
 
-        this.setConstant(4.0*Math.PI/this.volumeShell);
+        this.setConstant(4.0*Math.PI*this.volumeShell);
         this.calculateModelIntensities(qvalues);
     }
 
@@ -119,13 +121,13 @@ public class CoreShell extends Model{
             double f = sinCosCore/(qcore*qcore*qcore) + sinCosShell/(qshell*qshell*qshell);
             return f*f;
         }
-
     }
 
 
     public double getShellRadius_a(){return shellRadius_a;}
     public double getRadius_a(){return getFittedParamByIndex(0);}
     public double getRadius_c(){return getFittedParamByIndex(1);}
+    //public double getThickness(){return thickness;}
     public double getThickness(){return getFittedParamByIndex(2);}
     public double getShellRadius_c(){return shellRadius_c;}
     public double getVolumeShell(){return volumeShell;}

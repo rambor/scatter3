@@ -2,15 +2,22 @@ package version3.formfactors;
 
 import javafx.scene.chart.Chart;
 import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartFrame;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.LookupPaintScale;
+import org.jfree.chart.renderer.xy.XYBlockRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.DefaultXYZDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.RectangleAnchor;
+import version3.Constants;
 
 import javax.swing.*;
 import java.awt.*;
@@ -51,6 +58,8 @@ public class CoreShellPlots {
 
     private Double[] qvalues;
     private DefaultXYZDataset xyzdataset;
+    private DefaultXYZDataset shellThicknessCaxisDataset;
+    //private XYSeriesCollection shellThicknessCaxisDataset;
     private final KeptModels keptList;
 
     public CoreShellPlots(JPanel residualsPanel,
@@ -106,6 +115,7 @@ public class CoreShellPlots {
         ArrayList<Double> radiusC = new ArrayList<>();
         ArrayList<Double> thickness = new ArrayList<>();
 
+        HashMap<Pair, Double> caxisThickness = new HashMap<>();
 
         radiiEmpty = new XYSeries("radiiEmpty");
         radiiFull = new XYSeries("radiiFull");
@@ -141,9 +151,19 @@ public class CoreShellPlots {
             }
 
 
+            Pair tempPair = new Pair(model.getRadius_c(), model.getThickness());
+            if (caxisThickness.containsKey(tempPair)){
+                if ( caxisThickness.get(tempPair) < currentProbability){
+                    caxisThickness.put(tempPair, currentProbability);
+                }
+            } else {
+                caxisThickness.put(tempPair, currentProbability);
+            }
+
             radiusA.add(model.getRadius_a());
             radiusC.add(model.getRadius_c());
             thickness.add(model.getThickness());
+
             probabilitiesPerModelFull.add(currentProbability*20);
         }
 
@@ -164,10 +184,26 @@ public class CoreShellPlots {
         // create datasets to plot
         int count = radiusA.size();
         xyzdataset = new DefaultXYZDataset();
+        shellThicknessCaxisDataset = new DefaultXYZDataset();
+
         for(int i=0; i<count; i++){
-            xyzdataset.addSeries("-" + i, new double[][]{new double[]{radiusC.get(i)}, new double[]{radiusA.get(i)}, new double[]{probabilitiesPerModelFull.get(i)}});
+                            xyzdataset.addSeries("-" + i, new double[][]{new double[]{radiusC.get(i)}, new double[]{radiusA.get(i)}, new double[]{probabilitiesPerModelFull.get(i)}});
+            shellThicknessCaxisDataset.addSeries("-" + i, new double[][]{new double[]{radiusC.get(i)}, new double[]{thickness.get(i)}, new double[]{probabilitiesPerModelFull.get(i)/2}});
+//            xvalues[i] = radiusC.get(i);
+//            yvalues[i] = thickness.get(i);
+//            zvalues[i] = probabilitiesPerModelFull.get(i);
+            //shellThicknessCaxisDataset.addSeries(new XYSeries("-" + i));
+            //shellThicknessCaxisDataset.getSeries(i).add(radiusC.get(i), thickness.get(i));
         }
 
+//        Iterator it = caxisThickness.entrySet().iterator();
+//        int track=0;
+//        while (it.hasNext()) {
+//            Map.Entry pair = (Map.Entry)it.next();
+//            Pair tempPair = (Pair) pair.getKey();
+//            shellThicknessCaxisDataset.addSeries("-" + track, new double[][]{new double[]{(double)tempPair.getLeft()}, new double[]{(double)tempPair.getRight()}, new double[]{(double)pair.getValue()}});
+//            track++;
+//        }
     }
 
 
@@ -177,10 +213,10 @@ public class CoreShellPlots {
         makeResiduals();
         makeHistogramData();
 
-        makeGeometryPlot();
         makeResidualsPlot();
         makeDataPlot();
         createDistributionPlots();
+        makeGeometryPlot();
     }
 
     private void makeResidualsPlot(){
@@ -218,6 +254,7 @@ public class CoreShellPlots {
                 false
         );
 
+
         JFreeChart chartB = ChartFactory.createXYBarChart(
                 "shell thickness",
                 "Angstroms",
@@ -229,6 +266,8 @@ public class CoreShellPlots {
                 false,
                 false
         );
+
+
 
         JFreeChart chartC = ChartFactory.createXYBarChart(
                 "c-axis",
@@ -242,6 +281,13 @@ public class CoreShellPlots {
                 false
         );
 
+//Chart B
+        XYPlot plot = chartB.getXYPlot();
+
+        plot.setRangeGridlinePaint(Color.white);
+        plot.setBackgroundPaint(Color.white);
+        chartB.setBackgroundPaint(Color.white);
+        chartB.removeLegend();
 
         // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
         // XYPlot plot = (XYPlot) histogramChart.getPlot();
@@ -256,7 +302,6 @@ public class CoreShellPlots {
         shellThicknessPanel.add(histogramChartPanelB);
         distributionRcPanel.removeAll();
         distributionRcPanel.add(histogramChartPanelC);
-
     }
 
 
@@ -361,6 +406,7 @@ public class CoreShellPlots {
         dataPlotPanel.add(chartPanel);
     }
 
+
     private void makeGeometryPlot(){
 
         JFreeChart chart = ChartFactory.createBubbleChart(
@@ -377,12 +423,14 @@ public class CoreShellPlots {
 
         XYPlot plot = (XYPlot) chart.getPlot();
         XYItemRenderer xyitemrenderer = plot.getRenderer();
-        xyitemrenderer.setSeriesOutlinePaint(0, new Color(105, 105, 105, 25));
+
 
         double max = Collections.max(probabilitiesPerModelFull);
         int totalcount = xyzdataset.getSeriesCount();
         for(int i=0; i<totalcount; i++){
-            xyitemrenderer.setSeriesPaint(i, giveRGB(max, probabilitiesPerModelFull.get(i)));
+            Color temp = giveRGB(max, probabilitiesPerModelFull.get(i));
+            xyitemrenderer.setSeriesOutlinePaint(i, temp);
+            xyitemrenderer.setSeriesPaint(i, temp);
         }
 
         final NumberAxis domainAxis = new NumberAxis("c-axis");
@@ -399,12 +447,67 @@ public class CoreShellPlots {
 
         plot.setBackgroundPaint(Color.white);
 
-        ChartPanel chartPanel = new ChartPanel(chart);
+        //ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
+
+        CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot(new NumberAxis("2"));
+        combinedPlot.setDomainAxis(domainAxis);
+        combinedPlot.setGap(10.0);
+        combinedPlot.add(plot, 1);
+        combinedPlot.add(makeCAxisThicknessPlot(), 1);
+        combinedPlot.setOrientation(PlotOrientation.VERTICAL);
+
+        JFreeChart combChart = new JFreeChart("", JFreeChart.DEFAULT_TITLE_FONT, combinedPlot, true);
+        combChart.removeLegend();
+        combChart.setBackgroundPaint(Color.WHITE);
+        ChartFrame chartframe = new ChartFrame("", combChart);
+
         geometryPanel.removeAll();
-        geometryPanel.add(chartPanel);
+        //geometryPanel.add(chartPanel);
+        geometryPanel.add(chartframe.getContentPane());
 
     }
+
+    private XYPlot makeCAxisThicknessPlot(){
+
+        JFreeChart chartB = ChartFactory.createBubbleChart(
+                "",
+                "radii c",
+                "shell thickness",
+                shellThicknessCaxisDataset,
+                PlotOrientation.VERTICAL,
+                false,
+                false,
+                false
+        );
+
+        XYPlot plot = chartB.getXYPlot();
+        XYItemRenderer xyitemrenderer = plot.getRenderer();
+        double max = Collections.max(probabilitiesPerModelFull);
+        int totalcount = shellThicknessCaxisDataset.getSeriesCount();
+
+
+        for(int i=0; i<totalcount; i++){
+            Color temp = giveRGB(max, probabilitiesPerModelFull.get(i));
+            //xyitemrenderer.setSeriesOutlinePaint(i, temp);
+            xyitemrenderer.setSeriesPaint(i, temp);
+            xyitemrenderer.setSeriesOutlinePaint(i, Color.BLACK);
+        }
+
+       NumberAxis xAxis = new NumberAxis("c-axis");
+//        xAxis.setLowerMargin(0.0);
+//        xAxis.setUpperMargin(0.0);
+        NumberAxis yAxis = new NumberAxis("shell thickness");
+//        yAxis.setLowerMargin(0.0);
+//        yAxis.setUpperMargin(0.0);
+plot.setDomainAxis(xAxis);
+        plot.setRangeAxis(yAxis);
+        plot.setRangeGridlinePaint(Color.white);
+        plot.setBackgroundPaint(Color.white);
+
+        return plot;
+    }
+
 
     private Color giveRGB(double maximum, double value){
 
@@ -413,7 +516,35 @@ public class CoreShellPlots {
         int blue = (int)(Math.max(0, 255*(1 - ratio)));
         int red = (int)(Math.max(0, 255*(ratio - 1)));
         int green = 255 - blue - red;
-        return new Color(red,green,blue);
+        return new Color(red,green,blue, 50);
+    }
+
+
+
+    public class Pair<L,R> {
+
+        private final L left;
+        private final R right;
+
+        public Pair(L left, R right) {
+            this.left = left;
+            this.right = right;
+        }
+
+        public L getLeft() { return left; }
+        public R getRight() { return right; }
+
+        @Override
+        public int hashCode() { return left.hashCode() ^ right.hashCode(); }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Pair)) return false;
+            Pair pairo = (Pair) o;
+            return this.left.equals(pairo.getLeft()) &&
+                    this.right.equals(pairo.getRight());
+        }
+
     }
 
 }

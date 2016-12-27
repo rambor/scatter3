@@ -21,6 +21,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -44,13 +45,14 @@ public class SpherePlots {
     private XYSeriesCollection averageCollection;
     private double minDomain;
     private double maxDomain;
-    private JFreeChart heatMapChart;
+
     private ChartPanel heatMapChartPanel;
     private ChartPanel histogramChartPanel;
     private JFreeChart histogramChart;
     private JFreeChart residualsChart;
     private ChartPanel residualsChartPanel;
 
+    private DefaultXYZDataset radiiBubbles;
     private XYLineAndShapeRenderer renderer1;
     //private HashMap<Integer, Double> probabilities;
     private ArrayList<Double> probabilities;
@@ -78,7 +80,6 @@ public class SpherePlots {
                        JPanel dataPlotPanel,
                        ArrayList<Model> models,
                        KeptModels keptList,
-                       //HashMap<Integer, Double> probabilities,
                        ArrayList<Double> probabilities,
                        Double[] qvalues,
                        ArrayList<Double> transformedObservedIntensities,
@@ -317,124 +318,70 @@ public class SpherePlots {
      */
     public void makeGeometricPlot(){
 
-//        DefaultXYZDataset tempData = new DefaultXYZDataset();
-        int totalInHeat = heatMapCollection.getSeriesCount();
-//        double[] xvalues=new double[totalInHeat];
-//        double[] zvalues=new double[totalInHeat];
+        DefaultXYZDataset tempData = new DefaultXYZDataset();
+        int totalInHeat = probabilities.size();
 //
-//        for(int i=0;i<totalInHeat; i++){
-//            xvalues[i] =0.0d;
-//            zvalues[i] =zcolumn.get(i);
-//        }
-//
-//        double[][] series = new double[][] { xvalues, xvalues, zvalues };
-//        tempData.addSeries("Series 1", series);
+        double maxRadius = 0;
+        for(int i=0; i<totalInHeat; i++){
+            // convert probabilities into radii
+            Sphere model =  (Sphere)models.get(i);
 
-//        heatMapChart = ChartFactory.createBubbleChart(
-//                "",                         // chart title
-//                "r",                        // domain axis label
-//                "r",                        // range axis label
-//                (XYZDataset)tempData,          // data
-//                PlotOrientation.VERTICAL,
-//                false,                      // include legend
-//                false,
-//                false
-//        );
+            if (model.getRadius() > maxRadius){
+                maxRadius = model.getRadius();
+            }
 
-        heatMapChart = ChartFactory.createScatterPlot(
+            tempData.addSeries("-" + i, new double[][]{new double[]{0}, new double[]{0}, new double[]{2*model.getRadius()}});
+        }
+
+        JFreeChart heatMapChart = ChartFactory.createBubbleChart(
                 "",                         // chart title
-                "r",                        // domain axis label
-                "r",                        // range axis label
-                heatMapCollection,          // data
+                "",                        // domain axis label
+                "radius",                        // range axis label
+                tempData,          // data
                 PlotOrientation.VERTICAL,
                 false,                      // include legend
                 false,
                 false
         );
 
-        //final XYPlot heatMapPlot = heatMapChart.getXYPlot();
+        XYPlot plot = (XYPlot) heatMapChart.getPlot();
+        XYItemRenderer xyitemrenderer = plot.getRenderer();
+
+        float width = (float)Math.abs(models.get(1).getFittedParamByIndex(0) - models.get(0).getFittedParamByIndex(0));
+        double max = Collections.max(probabilities);
+        for(int i=0; i<totalInHeat; i++){
+            Color temp = giveRGB(max, probabilities.get(i));
+            xyitemrenderer.setSeriesOutlinePaint(i, temp);
+            xyitemrenderer.setSeriesPaint(i, new Color(0,0,0,0));
+            xyitemrenderer.setSeriesStroke(i, new BasicStroke(width));
+        }
 
         final NumberAxis domainAxis = new NumberAxis("r, \u212B");
         final NumberAxis rangeAxis = new NumberAxis("r");
         domainAxis.setAutoRangeIncludesZero(true);
         domainAxis.setAutoRange(false);
         rangeAxis.setAutoRange(false);
+
         rangeAxis.setAxisLineVisible(true);
-        int maxrange = (int)(maxDomain*0.5 + 0.1*maxDomain*0.5);
+        int maxrange = 2*(int)(maxRadius*0.5 + 0.1*maxRadius);
         rangeAxis.setRange(-maxrange , maxrange);
         domainAxis.setRange(-maxrange, maxrange);
 
-        XYPlot heatMapPlot = (XYPlot)heatMapChart.getPlot();
-        heatMapPlot.setRenderer(new XYLineAndShapeRenderer(){
-            @Override
-            public Paint getItemPaint(int row, int column) {
-                try {
-                    return Color.green;
-                } catch (Exception e) {
-                    return Color.green;
-                }
-            }
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
 
-            @Override
-            public Shape getItemShape(int row, int column) {
-                try {
-                    return ellipses.get(column);
-                } catch (Exception e) {
-                    return ellipses.get(0);
-                }
-            }
-        });
-
-//        heatMapPlot.setRenderer(new XYBubbleRenderer(){
-//            @Override
-//            public Paint getItemPaint(int row, int column) {
-//                try {
-//                    //return new Color(0, 128, 0);
-//                    return Color.green;
-//                } catch (Exception e) {
-//                    return Color.blue;
-//                }
-//            }
-
-//            @Override
-//            public Shape getItemShape(int row, int column) {
-//
-//                try {
-//                    System.out.println("SHAPE ROW " + row + " col " + column);
-//                    return ellipses.get(column);
-//                } catch (Exception e) {
-//                    return ellipses.get(0);
-//                }
-//            }
-//        });
-
-        //XYBubbleRenderer renderer = (XYBubbleRenderer) heatMapPlot.getRenderer();
-        //renderer.setSeriesPaint(0, Color.green);
-        //renderer.setBaseShape(new Ellipse2D.Double(-0.5*10, -5, 4, 10) );
-        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) heatMapPlot.getRenderer();
-        renderer.setBaseShapesFilled(false);
-        BasicStroke stroke = new BasicStroke(2.0f);
-        for (int i = 0; i < totalInHeat; i++) {
-            renderer.addAnnotation(new XYShapeAnnotation(ellipses.get(i), stroke, Color.green));
-        }
-
-        heatMapPlot.setForegroundAlpha(0.1F);
-        heatMapPlot.setBackgroundPaint(Color.white);
-        heatMapPlot.setBackgroundAlpha(0.0f);
-
-        heatMapPlot.setDomainAxis(domainAxis);
-        heatMapPlot.setRangeAxis(rangeAxis);
-
-        //renderer1 = (XYLineAndShapeRenderer) heatMapChart.getXYPlot().getRenderer();
-        //renderer1.setBaseShapesFilled(false);
-        //renderer1.setBaseLinesVisible(true);
-        //renderer1.setSeriesOutlineStroke(count, tempData.getStroke());
+        plot.setRangeGridlinePaint(Color.lightGray);
+        plot.setDomainGridlinePaint(Color.lightGray);
+        plot.setBackgroundPaint(Color.white);
 
         heatMapChartPanel = new ChartPanel(heatMapChart);
+        heatMapChartPanel.setDomainZoomable(false);
+        heatMapChartPanel.setRangeZoomable(false);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
         geometricPanel.removeAll();
         geometricPanel.add(heatMapChartPanel);
     }
+
 
     public void makeGeomtricData(){
 
@@ -489,16 +436,27 @@ public class SpherePlots {
        //     setCount++;
        // }
 
+
+
         System.out.println("VOLUME : " + (1.0/((double)count)*volume) );
         heatMapCollection.addSeries(ellipseSet);
         System.out.println("MIN " + minDomain + " " + " MAX " + maxDomain);
         System.out.println(heatMapCollection.getSeriesCount() + " => " + heatMapCollection.getItemCount(0));
-        // heatMapChart.getXYPlot().setDataset(0, heatMapCollection); //IofQ Data
-        // heatMapChart.getXYPlot().setRenderer(0, renderer1);        //render as points
+
     }
 
 
+    private Color giveRGB(double maximum, double value){
 
+        double ratio = 2 * value/maximum;
+
+        int blue = (int)(Math.max(0, 255*(1 - ratio)));
+        int red = (int)(Math.max(0, 255*(ratio - 1)));
+        int green = 255 - blue - red;
+
+        int alpha = (int)(255*value/maximum);
+        return new Color(red,green,blue, alpha);
+    }
 
 
 }

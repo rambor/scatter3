@@ -2543,7 +2543,7 @@ public class Scatter {
                 upperParams[0] = Double.parseDouble(majorAxisLabel.getText());
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
-                delta[0] = 2.393;
+                delta[0] = 2.373;
 
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrastText.getText());
@@ -3199,7 +3199,7 @@ public class Scatter {
                 upperParams[0] = Double.parseDouble(max3BodyTextField.getText());
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
-                delta[0] = 2.37;
+                delta[0] = 2.373;
 
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrast3Body.getText());

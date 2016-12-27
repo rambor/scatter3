@@ -29,10 +29,9 @@ public class ThreeBody extends Model {
                 qvalues.length,
                 3);
 
-        this.setFittedParamsByIndex(0, radii[0]); // r_a
-        this.setFittedParamsByIndex(1, radii[1]); // r_c
-        this.setFittedParamsByIndex(2, radii[2]); // thickness
-
+        this.setFittedParamsByIndex(0, radii[0]); // radii_0
+        this.setFittedParamsByIndex(1, radii[1]); // radii_1
+        this.setFittedParamsByIndex(2, radii[2]); // radii_2
 
         Double doubleObject;
         doubleObject = new Double(radii[0]+radii[1]);
@@ -46,8 +45,12 @@ public class ThreeBody extends Model {
         sortedDistances[1] = r23;
         sortedDistances[2] = r13;
         Arrays.sort(sortedDistances); // which radii map to each sorted distance
-
         setOrder();
+
+        this.setFittedParamsByIndex(0, smallest); // radii_0
+        this.setFittedParamsByIndex(1, middle);   // radii_1
+        this.setFittedParamsByIndex(2, largest);  // radii_2
+
 
         this.vol1 = (mathPI*radii[0]*radii[0]*radii[0]);
         this.vol2 = (mathPI*radii[1]*radii[1]*radii[1]);
@@ -55,9 +58,9 @@ public class ThreeBody extends Model {
         this.number_of_vectors = 6.0;
 
         this.contrast = particleContrasts[0] - solventContrast;
-        double volS2 = 1.0/(vol1*vol1*vol2*vol2*vol3*vol3);
-        this.setConstant(4*Math.PI*9*contrast*contrast/number_of_vectors); // 4*PI*contrast
-
+        //double volS2 = 1.0/(vol1*vol1*vol2*vol2*vol3*vol3);
+        //this.setConstant(4*Math.PI*9*contrast*contrast/number_of_vectors); // 4*PI*contrast
+        this.setConstant(4*Math.PI*9*this.getVolume()*contrast*contrast); // 4*PI*contrast
         this.calculateModelIntensities(qvalues);
     }
 
@@ -110,8 +113,8 @@ public class ThreeBody extends Model {
     public double getSmallest(){ return smallest;}
     public double getLargest(){ return largest;}
     public double getMiddle(){ return middle;}
-    public void printOrder(){
 
+    public void printOrder(){
         System.out.println(getIndex() + " RAD " + smallest + " <= " + middle + " <= " + largest);
         System.out.println(getIndex() + " DIS " + sortedDistances[0] + " <= " + sortedDistances[1] + " <= " + sortedDistances[2]);
     }
