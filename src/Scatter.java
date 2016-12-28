@@ -2422,7 +2422,8 @@ public class Scatter {
                                 trialsPerRound,  // trials per round
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()),
                                 !fitBackgroundCheckBox.isSelected(),
-                                maximumEntropyRadioButton.isSelected()
+                                maximumEntropyRadioButton.isSelected(),
+                                version
                         );   // randomModelsPerTrial
 
                         sphere.setProgressBar(progressBarSphere);
@@ -2587,7 +2588,8 @@ public class Scatter {
                                 trialsPerRound,  // trials per round
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
                                 !fitBackgroundCheckBox.isSelected(), // background
-                                maximumEntropyRadioButton.isSelected()
+                                maximumEntropyRadioButton.isSelected(),
+                                version
                         );      // useNoBackground
 
                         ellipsoid.setProgressBar(progressBarEllipsoid);
@@ -3232,7 +3234,8 @@ public class Scatter {
                                 trialsPerRound,  // trials per round
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
                                 !fitBackgroundCheckBox.isSelected(),      // useNoBackground
-                                maximumEntropyRadioButton.isSelected());
+                                maximumEntropyRadioButton.isSelected(),
+                                version);
 
                         body3.setProgressBar(progressBar3Body);
 
@@ -3317,7 +3320,8 @@ public class Scatter {
                                 trialsPerRound,  // trials per round
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
                                 !fitBackgroundCheckBox.isSelected(),     // useNoBackground
-                                maximumEntropyRadioButton.isSelected());
+                                maximumEntropyRadioButton.isSelected(),
+                                version);
 
                         csModel.setProgressBar(coreShellProgressBar);
                         csModel.setCompleteness(coreEmptyAndFullCheckBox.isSelected(), Double.parseDouble(shellThickness.getText()));

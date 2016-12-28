@@ -15,6 +15,7 @@ abstract class Model {
     private int totalIntensities;
     private int totalFittedParams;
     private double probability;
+    private String stringToPrint;
 
     private double constant;
 
@@ -57,5 +58,13 @@ abstract class Model {
     public int getTotalFittedParams(){return totalFittedParams;}
     public void setProbability(double value){ this.probability = value;}
     public double getProbability(){ return this.probability;}
+
+    public void setStringToPrint(String value){
+        this.stringToPrint = value;
+    }
+
+    public String getParamsToPrint(){
+        return stringToPrint;
+    }
 
 }

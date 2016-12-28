@@ -34,6 +34,7 @@ public class ProlateEllipsoid extends Model {
         //  oblate r_c > r_a
         this.setFittedParamsByIndex(0, radii[0]); // r_a
         this.setFittedParamsByIndex(1, radii[1]); // r_c
+        this.setString();
 
         ratio2 = (radii[0]*radii[0])/(radii[1]*radii[1]);
 
@@ -49,6 +50,11 @@ public class ProlateEllipsoid extends Model {
 
     public double getRadius_a(){ return this.getFittedParamByIndex(0);}
     public double getRadius_c(){ return this.getFittedParamByIndex(1);}
+
+    private void setString(){
+        String newLines = String.format("REMARK 265 INDEX %d RADII %.2f %.2f %n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1));
+        this.setStringToPrint(newLines);
+    }
 
     @Override
     void calculateModelIntensities(Double[] qValues) {

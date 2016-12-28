@@ -20,6 +20,7 @@ import java.util.concurrent.*;
 public class FormFactorEngine extends SwingWorker<Void, Void> {
 
     private int cpuCores=1;
+    private String version;
     private double alpha = 0.63;
     private double smallestProb;
     private double shellThickness;
@@ -118,7 +119,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                             int trials,
                             int randomModelsPerTrial,
                             boolean useNoBackground,
-                            boolean entropy
+                            boolean entropy,
+                            String version
     ){
 
         this.model = model;
@@ -133,6 +135,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         this.delta=delta;
         this.qmax = qmax;
         this.lambda = lambda;
+
+        this.version = version;
 
         // smallest possible value is PI/qmax
         if (Math.PI/qmax < minParams[0]){
@@ -312,9 +316,10 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         progressBar.setString("CE Search");
 
         // initialize distribution per param
+        int round = 0;
 
         fitLoop:
-        for(int round=0; round<rounds; round++){
+        for(; round<rounds; round++){
             // select N models based on probabilities
             // fit model
             // if change, epsilon < 0.001, break;
@@ -348,7 +353,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
             // tempTopList.print();
             // update probabilities
             updateCDF(tempTopList);
@@ -360,7 +364,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             // printFit(modelIntensities);
             progressBar.setValue(round+1);
 
-            double averageScore = tempTopList.getAverageScore();
+            double averageScore = tempTopList.getAverageScore(); // log 10 score
             scorePerRound.add(round, averageScore);
             if (tempTopList.getGap() < epsilon || (Math.abs(priorAverage-averageScore) < epsilon)){
                 System.out.println("EARLY BREAK :   GAP => " + tempTopList.getGap());
@@ -370,13 +374,12 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             // gap may not change much if the number of trials per round is large enough
             //
             //double criteria = Math.abs(tempTopList.getGap())/(priorAverage-tempTopList.getAverageScore());
-
             // if either is zero break ?
             System.out.println("Round " + round + " => COMPLETED");
             priorAverage = averageScore;
         }
-        // print fit
 
+        // print fit
         progressBar.setString("Finished");
         // make plots/graphs
         switch(model){
@@ -482,8 +485,11 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         }
 
         makeProgressPlot();
-// write out results
 
+        // write out results
+        writeResults(round);
+        // how many in set
+        // chi-square
 
 
         progressBar.setValue(0);
@@ -491,6 +497,40 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
     }
 
 
+    /**
+     *
+     */
+    private void writeResults(int completedRound) {
+
+        String tempHeader="REMARK 265 \n";
+        tempHeader += "REMARK 265       DATA REDUCTION SOFTWARE : SCATTER (v "+version+")\n";
+        tempHeader += "REMARK 265               SOFTWARE AUTHOR : RP RAMBO\n";
+        tempHeader += "REMARK 265 FORM FACTOR DISTRIBUTION FITTING\n";
+        tempHeader += "REMARK 265 \n";
+        tempHeader += String.format("REMARK 265                          QMIN : %.4f %n", qmin);
+        tempHeader += String.format("REMARK 265                          QMAX : %.4f %n", qmax);
+        tempHeader += "REMARK 265\n";
+        tempHeader += String.format("REMARK 265      TOP N SELECTED PER TRIAL : %d %n", topN);
+        tempHeader += String.format("REMARK 265        TOTAL TRIALS PER ROUND : %d %n", trials);
+        tempHeader += String.format("REMARK 265                    MAX ROUNDS : %d %n", rounds);
+        tempHeader += String.format("REMARK 265        TOTAL ROUNDS COMPLETED : %d %n", completedRound);
+        tempHeader += String.format("REMARK 265                       EPSILON : %.6f %n", epsilon);
+
+        int totalScores = scorePerRound.getItemCount();
+        tempHeader += "REMARK 265\n";
+        tempHeader += String.format("REMARK 265              BEST CHI-SQUARED : %.4f %n", keptList.getBestScore());
+        tempHeader += String.format("REMARK 265  AVERAGE CHI-SQUARED OF TOP N : %.4f %n", Math.pow(10,(double)scorePerRound.getY(totalScores-1)));
+        tempHeader += "REMARK 265\n";
+        tempHeader += "REMARK 265 PARAMETER DETAILS OF BEST SELECTED SET\n";
+        ArrayList<Integer> list = keptList.getFirst();
+        // print parameters
+        int total = list.size();
+        for(int i=0; i<total; i++){
+            tempHeader+=models.get(list.get(i)).getParamsToPrint();
+        }
+        System.out.println(tempHeader);
+
+    }
 
 
     /**
@@ -735,7 +775,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
             models.get(i).setProbability(probabilities.get(index));
         }
-
 
         keptList.clear();
         tempTopList.copyToKeptList(keptList, modelsPerTrial);

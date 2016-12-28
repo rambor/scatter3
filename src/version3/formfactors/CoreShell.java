@@ -52,6 +52,7 @@ public class CoreShell extends Model{
         this.setFittedParamsByIndex(0, radii[0]);  // r_a core
         this.setFittedParamsByIndex(1, radii[1]);  // r_c core
         this.setFittedParamsByIndex(2, thickness); // thickness
+        this.setString();
 
         shellRadius_a = this.getRadius_a() + thickness;
         shellRadius_c = this.getRadius_c() + thickness;
@@ -132,4 +133,10 @@ public class CoreShell extends Model{
     public double getShellRadius_c(){return shellRadius_c;}
     public double getVolumeShell(){return volumeShell;}
     public boolean isEmpty(){return isEmpty;}
+
+    private void setString(){
+        String newLines = String.format("REMARK 265 INDEX %d CORE RADII %.2f %.2f %n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1));
+        newLines +=       String.format("REMARK 265 INDEX %d      SHELL %.2f %n", getIndex(), getFittedParamByIndex(2));
+        this.setStringToPrint(newLines);
+    }
 }

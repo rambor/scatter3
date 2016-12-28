@@ -40,6 +40,8 @@ public class KeptModels {
         return indicesKept.get(0);
     }
 
+    public double getBestScore(){ return scores.get(0);}
+
     public int getTotal(){ return scores.size();}
 
     public ArrayList<Integer> getIndicesByIndex(int index){

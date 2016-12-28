@@ -242,10 +242,6 @@ public class SpherePlots {
             probabilitiesPerRadii.add(model.getRadius(), probabilities.get(i));
         }
 
-        double first = ((Sphere)models.get(0)).getRadius();
-        double last = ((Sphere)models.get(probabilities.size()-1)).getRadius();
-
-
     }
 
     private void makeHistogramPlot(){
