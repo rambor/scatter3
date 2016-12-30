@@ -243,8 +243,8 @@ public class CoreShellPlots {
     private void createDistributionPlots(){
 
         JFreeChart chartA = ChartFactory.createXYBarChart(
-                "a-axis",
-                "radius",
+                "",
+                "a-axis radius",
                 false,
                 "",
                 new XYSeriesCollection(probabilitiesPerRadiiA),
@@ -256,8 +256,8 @@ public class CoreShellPlots {
 
 
         JFreeChart chartB = ChartFactory.createXYBarChart(
+                "",
                 "shell thickness",
-                "Angstroms",
                 false,
                 "",
                 new XYSeriesCollection(probabilitiesPerShell),
@@ -270,8 +270,8 @@ public class CoreShellPlots {
 
 
         JFreeChart chartC = ChartFactory.createXYBarChart(
-                "c-axis",
-                "radius",
+                "",
+                "c-axis radius",
                 false,
                 "",
                 new XYSeriesCollection(probabilitiesPerRadiiC),

@@ -9,15 +9,18 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class KeptModels {
 
     private ArrayList<Double> scores;
+    private ArrayList<Double> scales;
     private ArrayList<ArrayList<Integer>> indicesKept;
 
     public KeptModels(){
-            scores = new ArrayList<>();
+             scores = new ArrayList<>();
+             scales = new ArrayList<>();
         indicesKept = new ArrayList<>();
     }
 
-    public void addModel(double score, ArrayList<Integer> indices){
+    public void addModel(double score, ArrayList<Integer> indices, double scale){
         scores.add(score);
+        scales.add(scale);
         indicesKept.add(new ArrayList<>());
         int last = indicesKept.size()-1;
 
@@ -28,6 +31,7 @@ public class KeptModels {
 
     public void clear(){
         scores.clear();
+        scales.clear();
 
         int total = indicesKept.size();
         for(int i=0; i<total; i++){
@@ -41,6 +45,8 @@ public class KeptModels {
     }
 
     public double getBestScore(){ return scores.get(0);}
+
+    public double getScaleByIndex(int index){ return scales.get(index);}
 
     public int getTotal(){ return scores.size();}
 

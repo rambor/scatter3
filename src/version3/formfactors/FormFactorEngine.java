@@ -300,7 +300,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             }
         }
         // modelIntensities is read only from this point on.
-        // createTestData();
+        //createTestData();
         /*
          * pick top X configurations
          * update probabilities for each
@@ -309,7 +309,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
          */
         populateCDF();
         scorePerRound = new XYSeries("Score per Round");
-        //keptList = new ConcurrentSkipListMap<Double, ArrayList<Integer> >();
+
         keptList = new KeptModels();
         progressBar.setMaximum(rounds);
         progressBar.setValue(0);
@@ -491,7 +491,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         // how many in set
         // chi-square
 
-
         progressBar.setValue(0);
         return null;
     }
@@ -525,11 +524,54 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         ArrayList<Integer> list = keptList.getFirst();
         // print parameters
         int total = list.size();
-        for(int i=0; i<total; i++){
-            tempHeader+=models.get(list.get(i)).getParamsToPrint();
-        }
-        System.out.println(tempHeader);
+        int totalParams = models.get(0).getTotalFittedParams();
+        double[] averages = new double[totalParams];
+        double[] variances = new double[totalParams];
 
+        double volume=0;
+        for(int i=0; i<total; i++){
+            Model model = models.get(list.get(i));
+            tempHeader+=model.getParamsToPrint();
+            volume += model.getVolume();
+            for(int p=0; p<totalParams; p++){
+                double value =model.getFittedParamByIndex(p);
+                averages[p]+=value;
+                variances[p] += value*value;
+            }
+        }
+
+        volume *= 1.0/(double)total;
+
+        for(int p=0; p<totalParams; p++){
+            averages[p] *= 1.0/(double)total;
+            variances[p] *= 1.0/(double)total;
+        }
+
+        for(int p=0; p<totalParams; p++){
+            variances[p] -= averages[p]*averages[p];
+        }
+
+        double max=0;
+        int indexOfBest=0;
+        for(int i=0; i<models.size(); i++){
+            double value = models.get(i).getProbability();
+            if (value > max){
+                max = value;
+                indexOfBest = i;
+            }
+        }
+
+        tempHeader += "REMARK 265\n";
+        tempHeader += String.format("REMARK 265           MOST PROBABLE MODEL : %d %n", indexOfBest);
+        tempHeader += String.format("REMARK 265                  SCALE FACTOR : %.5E %n", keptList.getScaleByIndex(0));
+        tempHeader += String.format("REMARK 265               WEIGHTED VOLUME : %.1f %n", volume);
+
+        for(int p=0; p<totalParams; p++){
+          tempHeader += String.format("REMARK 265               PARAM %d AVERAGE : %.3f %n", (p+1), averages[p]);
+          tempHeader += String.format("REMARK 265                         STDEV : %.3f %n", Math.sqrt(variances[p]));
+        }
+
+        System.out.println(tempHeader);
     }
 
 
@@ -712,7 +754,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
      * Initialize cumulative distribution function
      */
     private void populateCDF() {
-        //cdf = new TreeMap<>(); // not sure this is threadsafe for reading
         cdf = new ConcurrentSkipListMap();
         cdf.put(0.0d, models.get(0).getIndex());
         double value = probabilities.get(models.get(0).getIndex());
@@ -751,12 +792,11 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 } else {
                     modelIndexCount.put(keyToCheck, 1.0d);
                 }
-                //System.out.println(totalModels + " KEY SELECTED " + keyToCheck + "( "+ models.size()  + " ) => " + models.get(keyToCheck).getFittedParamByIndex(0));
                 totalModels+=1;
             }
         }
 
-        //modelIndexCount.clear();
+        //
         // update probabilities
         // alpha*v_t + (1-alpha)*v_(t-1)
         double inv = 1.0/(double)totalModels;
@@ -764,7 +804,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
         for(int i=0; i<models.size(); i++){
             int index = models.get(i).getIndex();
-            //oldprob = (1-alpha)*probabilities.get(index); // get old probability by index
+            // get old probability by index
             oldprob = (1-alpha)*models.get(i).getProbability();
 
             if (modelIndexCount.containsKey(index)) {
@@ -780,7 +820,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         tempTopList.copyToKeptList(keptList, modelsPerTrial);
         populateCDF();
     }
-
 
 
 //    private void printFit(List<Double> modelIntensities){

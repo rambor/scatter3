@@ -4,7 +4,9 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.LogAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
@@ -528,11 +530,20 @@ public class EllipsoidPlots {
         XYPlot plot = (XYPlot) chart.getPlot();
         plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.1f));
         plot.getRenderer().setSeriesPaint(1, Color.CYAN);
-        plot.getRenderer().setSeriesStroke(1,new BasicStroke(4.0f));
+        plot.getRenderer().setSeriesStroke(1,new BasicStroke(3.1f));
         plot.getRenderer().setSeriesPaint(0, Color.BLACK);
         plot.setRangeGridlinePaint(Color.BLACK);
         plot.setDomainGridlinePaint(Color.BLACK);
         plot.setBackgroundPaint(Color.lightGray);
+
+//        LogAxis logAxis = new LogAxis("Log10 [q × I(q)]");
+//        logAxis.setBase(10);
+//        logAxis.setTickUnit(new NumberTickUnit(10));
+//        logAxis.setMinorTickMarksVisible(true);
+//        logAxis.setAutoRange(true);
+//        plot.setRangeAxis(logAxis);
+
+
 
         ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));

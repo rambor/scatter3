@@ -21,7 +21,7 @@ public class Sphere extends Model {
 
         super(index, ModelType.SPHERICAL, (4.0/3.0*Math.PI*radius[0]*radius[0]*radius[0]), solventContrast, particleContrasts, qvalues.length, 1);
         this.contrast = particleContrasts[0] - solventContrast;
-        this.setConstant(4.0*Math.PI*9.0*this.getVolume()*contrast*contrast); // 9*V*contrast^2
+        this.setConstant(4.0*Math.PI*9.0*this.getVolume()*this.getVolume()*contrast*contrast); // 9*V*contrast^2
         this.setFittedParamsByIndex(0, radius[0]);
         this.setString();
         //this.setConstant(4.0*Math.PI*9.0*contrast*contrast);
@@ -51,7 +51,7 @@ public class Sphere extends Model {
     public double getRadius(){return getFittedParamByIndex(0);}
 
     private void setString(){
-        String newLines = String.format("REMARK 265 INDEX %d RADIUS %.2f%n", getIndex(), getFittedParamByIndex(0));
+        String newLines = String.format("REMARK 265 INDEX %5d RADIUS %.2f%n", getIndex(), getFittedParamByIndex(0));
         this.setStringToPrint(newLines);
     }
 

@@ -48,6 +48,7 @@ public class Ellipse extends Model {
         this.setFittedParamsByIndex(1, radii[1]);
         this.setFittedParamsByIndex(2, radii[2]);
         //df.setRoundingMode(RoundingMode.CEILING);
+        this.setString();
 
         this.contrast = particleContrasts[0] - solventContrast;
         this.integrationInterval = 1.0d/99.0d; // not sure what this should be
@@ -57,7 +58,8 @@ public class Ellipse extends Model {
         n_index = m_index;
 
         //this.setConstant(9.0/this.getVolume()*this.contrast*this.contrast);
-        this.setConstant(4*Math.PI*9.0*this.getVolume()*this.contrast*this.contrast);
+        this.setConstant(4*Math.PI*9.0*this.getVolume()*this.getVolume()*this.contrast*this.contrast);
+
         a2 = radii[0]*radii[0];
         b2 = radii[1]*radii[1];
         c2 = radii[2]*radii[2];
@@ -173,6 +175,9 @@ public class Ellipse extends Model {
     public double getRadius_c(){return this.getFittedParamByIndex(2);}
 
 
-
+    private void setString(){
+        String newLines = String.format("REMARK 265 INDEX %5d RADII %.2f %.2f %.2f%n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1), getFittedParamByIndex(2));
+        this.setStringToPrint(newLines);
+    }
 
 }

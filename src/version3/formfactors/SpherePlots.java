@@ -258,17 +258,6 @@ public class SpherePlots {
         );
 
 
-//        histogramChart = ChartFactory.createBarChart(
-//                "",
-//                "radius",
-//                "",
-//                new XYSeriesCollection(probabilitiesPerRadii),
-//                PlotOrientation.VERTICAL,
-//                false,
-//                false,
-//                false
-//        )
-
         // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
         XYPlot plot = (XYPlot) histogramChart.getPlot();
         XYBarRenderer renderer = (XYBarRenderer) ((XYPlot) histogramChart.getPlot()).getRenderer();
@@ -294,22 +283,21 @@ public class SpherePlots {
         );
 
         // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
-//        XYPlot plot = (XYPlot) chart.getPlot();
-//        LogAxis logAxis = new LogAxis("Log10 I(q)");
-//        logAxis.setBase(10);
-//        logAxis.setTickUnit(new NumberTickUnit(10));
-//        logAxis.setMinorTickMarksVisible(false);
-//        logAxis.setAutoRange(true);
-//        plot.setRangeAxis(logAxis);
-
         XYPlot plot = (XYPlot) chart.getPlot();
         plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.1f));
         plot.getRenderer().setSeriesPaint(1, Color.CYAN);
-        plot.getRenderer().setSeriesStroke(1,new BasicStroke(4.0f));
+        plot.getRenderer().setSeriesStroke(1,new BasicStroke(3.6f));
         plot.getRenderer().setSeriesPaint(0, Color.BLACK);
         plot.setRangeGridlinePaint(Color.BLACK);
         plot.setDomainGridlinePaint(Color.BLACK);
         plot.setBackgroundPaint(Color.lightGray);
+
+//        LogAxis logAxis = new LogAxis("Log10 [q × I(q)]");
+//        logAxis.setBase(10);
+//        logAxis.setTickUnit(new NumberTickUnit(10));
+//        logAxis.setMinorTickMarksVisible(true);
+//        logAxis.setAutoRange(true);
+//        plot.setRangeAxis(logAxis);
 
         ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
@@ -392,12 +380,6 @@ public class SpherePlots {
 
         // convert each model into a radii
         // as a single XYSeries
-        //Map.Entry<Double, ArrayList<Integer> > top = keptList.firstEntry();
-        //renderer1 = (XYBubbleRenderer) heatMapChart.getXYPlot().getRenderer();
-        //renderer1.setBaseShapesVisible(true);
-        //renderer1.setBaseShapesFilled(false);
-        //renderer1.setBaseStroke(new BasicStroke(2.0f));
-        // keptList -> score and array of indices
         int count=0;
         int setCount=0;
         double radius, del;
@@ -440,8 +422,6 @@ public class SpherePlots {
             }
        //     setCount++;
        // }
-
-
 
         System.out.println("VOLUME : " + (1.0/((double)count)*volume) );
         heatMapCollection.addSeries(ellipseSet);

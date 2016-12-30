@@ -70,7 +70,7 @@ public class CoreShell extends Model{
             isEmpty=true;
         }
 
-        this.setConstant(4.0*Math.PI*this.volumeShell);
+        this.setConstant(1);
         this.calculateModelIntensities(qvalues);
     }
 
@@ -128,15 +128,15 @@ public class CoreShell extends Model{
     public double getShellRadius_a(){return shellRadius_a;}
     public double getRadius_a(){return getFittedParamByIndex(0);}
     public double getRadius_c(){return getFittedParamByIndex(1);}
-    //public double getThickness(){return thickness;}
+
     public double getThickness(){return getFittedParamByIndex(2);}
     public double getShellRadius_c(){return shellRadius_c;}
     public double getVolumeShell(){return volumeShell;}
     public boolean isEmpty(){return isEmpty;}
 
     private void setString(){
-        String newLines = String.format("REMARK 265 INDEX %d CORE RADII %.2f %.2f %n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1));
-        newLines +=       String.format("REMARK 265 INDEX %d      SHELL %.2f %n", getIndex(), getFittedParamByIndex(2));
+        String newLines = String.format("REMARK 265 INDEX %5d CORE RADII %.2f %.2f %n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1));
+        newLines +=       String.format("REMARK 265 INDEX %5d      SHELL %.2f %n", getIndex(), getFittedParamByIndex(2));
         this.setStringToPrint(newLines);
     }
 }

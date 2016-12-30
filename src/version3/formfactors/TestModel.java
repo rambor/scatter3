@@ -23,6 +23,7 @@ public class TestModel implements Callable<Double> {
     private int totalq;
     private int totalToSelect;
     private double score;
+    private double scale_c;
     private ConcurrentNavigableMap<Double, Integer> cdf;
     private List<Double> modelIntensities;
     private ArrayList<Double> transformedIntensities;
@@ -130,18 +131,19 @@ public class TestModel implements Callable<Double> {
         }
 
         // perform the average by dividing by total
-        //double invTotal = 1.0/(double)totalToSelect;
-        double invTotalVoume = 1.0/totalVolume;
+        double invTotal = 1.0/(double)totalToSelect;
+        // uncomment for volume weighting
+        //double invTotalVoume = 1.0/totalVolume;
         for(int j=0; j<totalq; j++){
-            //calculatedIntensities.set(j, invTotal*calculatedIntensities.get(j).doubleValue());
-            calculatedIntensities.set(j, invTotalVoume*calculatedIntensities.get(j).doubleValue());
+            calculatedIntensities.set(j, invTotal*calculatedIntensities.get(j).doubleValue());
+            // uncomment for volume weighting
+            //calculatedIntensities.set(j, invTotalVoume*calculatedIntensities.get(j).doubleValue());
         }
 
         // calculate score
         calculateScore();
         // update list
-//        printIndices();
-        list.update(score, modelIndex, this, totalToSelect);
+        list.update(score, modelIndex, this, totalToSelect, scale_c);
         return score;
     }
 
@@ -164,7 +166,6 @@ public class TestModel implements Callable<Double> {
      */
     private void calculateScore(){
 
-        double scale_c;
         double baseline = 0.0d;
 
         if (useNoBackground){
@@ -204,19 +205,15 @@ public class TestModel implements Callable<Double> {
             baseline = solution.getEntry(1);
         }
 
-        double chiSq = 0, diff, sumit=0;
+        double chiSq = 0, diff;
         for (int index=0; index<totalq; index++){
             diff = (transformedIntensities.get(index)-scale_c*calculatedIntensities.get(index)-baseline);
             double thing = diff/transformedErrors.get(index);
-            sumit+= diff;
             chiSq+= thing*thing;
         }
 
         score = chiSq/(double)(totalq - 2);
     }
 
-
-
-
-
+    public double getScale_c(){return scale_c;}
 }

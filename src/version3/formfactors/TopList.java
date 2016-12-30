@@ -599,7 +599,7 @@ public class TopList{
      * @param model
      * @param numberOfModelsPerTrial
      */
-    public synchronized void update(double score, int index, TestModel model, int numberOfModelsPerTrial){
+    public synchronized void update(double score, int index, TestModel model, int numberOfModelsPerTrial, double scale){
         // iterate over the list
         // start in reverse
         // and if score is better than
@@ -617,7 +617,7 @@ public class TopList{
                 this.calculateSmoothnessUsing2ndDerivative(numberOfModelsPerTrial);
             }
 
-            scoreList.add(new ScoreObject(score, index));
+            scoreList.add(new ScoreObject(score, index, scale));
             counter.set(scoreList.size());
             Collections.sort(scoreList, new ScoreComp());
 
@@ -656,7 +656,7 @@ public class TopList{
                 modelList.remove(scoreList.get(lastIndex).getIndex());
                 scoreList.remove(lastIndex);
 
-                scoreList.add(new ScoreObject(score, index));
+                scoreList.add(new ScoreObject(score, index, scale));
                 modelList.put(index, new ArrayList<Integer>(numberOfModelsPerTrial));
                 // add indices from model to newly created entry
                 for (Integer item : model.getSelectedIndices()) modelList.get(index).add(item);
@@ -664,7 +664,6 @@ public class TopList{
                 Collections.sort(scoreList, new ScoreComp());
                 smoothnessScore = testSmooth;
 
-                //System.out.println(index + " SCORE " + score + " SMOOTH " + testSmooth + " <= " + scoreList.get(lastIndex).getScorevalue());
             }
         }
     }
@@ -747,7 +746,7 @@ public class TopList{
     public void copyToKeptList(KeptModels keptList, int numberOfModelsPerTrial){
 
         for(ScoreObject s : scoreList){ // should be sorted
-            keptList.addModel(s.getScorevalue(), modelList.get(s.getIndex()));
+            keptList.addModel(s.getScorevalue(), modelList.get(s.getIndex()), s.getScale());
         }
     }
 

@@ -313,6 +313,7 @@ public class Scatter {
     private JRadioButton secondDerivativeRadioButton;
     private JTextField textField1;
     private JPanel sphereResultsPanel;
+    private JButton diffButton;
     private JPanel plotPanel3Body;
 
     private String version = "3.0i";
@@ -2392,7 +2393,7 @@ public class Scatter {
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
                 //delta[0] = Math.PI/qmax/4.0;
-                delta[0] = 2.373;
+                delta[0] = 2.79;
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrastText.getText());
 
@@ -2545,7 +2546,7 @@ public class Scatter {
                 upperParams[0] = Double.parseDouble(majorAxisLabel.getText());
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
-                delta[0] = 2.373;
+                delta[0] = 2.79;
 
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrastText.getText());
@@ -3202,7 +3203,7 @@ public class Scatter {
                 upperParams[0] = Double.parseDouble(max3BodyTextField.getText());
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
-                delta[0] = 2.373;
+                delta[0] = 2.79;
 
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrast3Body.getText());
@@ -3280,7 +3281,7 @@ public class Scatter {
                 upperParams[0] = Double.parseDouble(radiiUpperCoreShell.getText());
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
-                delta[0] = 2.37;
+                delta[0] = 2.79;
 
                 double[] contrasts = new double[2];
                 contrasts[0] = Float.parseFloat(coreShellShellContrast.getText());
@@ -3360,6 +3361,13 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 maximumEntropyRadioButton.setSelected(false);
+            }
+        });
+
+        diffButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
             }
         });
     }
