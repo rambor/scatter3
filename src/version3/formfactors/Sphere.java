@@ -8,6 +8,9 @@ import org.apache.commons.math3.util.FastMath;
 public class Sphere extends Model {
 
     private double contrast;
+    private double invR3;
+    private double invR4;
+    private double invR6;
 
     /**
      * if contrast is unknown, set to 1
@@ -26,6 +29,11 @@ public class Sphere extends Model {
         this.setString();
         //this.setConstant(4.0*Math.PI*9.0*contrast*contrast);
         this.calculateModelIntensities(qvalues);
+
+        double inv = 1.0/radius[0];
+        invR3 = inv*inv*inv;
+        invR4 = invR3*inv;
+        invR6=invR3*invR3;
     }
 
 
@@ -53,6 +61,15 @@ public class Sphere extends Model {
     private void setString(){
         String newLines = String.format("REMARK 265 INDEX %5d RADIUS %.2f%n", getIndex(), getFittedParamByIndex(0));
         this.setStringToPrint(newLines);
+    }
+
+
+
+    public double calculatePr(double rvalue){
+        double s2 = rvalue*rvalue;
+        double s3 = s2*rvalue;
+
+        return 3.0*s2*invR3 - 9.0*0.25*s3*invR4 + 3*0.0625*s3*s2*invR6;
     }
 
 }

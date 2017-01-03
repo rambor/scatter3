@@ -20,10 +20,9 @@ public class TopList{
     //private ConcurrentSkipListSet<ScoreObject> scoreList;
     private ArrayList<ScoreObject> scoreList;
 
-
     private ConcurrentSkipListMap<Integer, ArrayList<Integer>> modelList;
     private List<Double> probabilities;
-    private ArrayList<SortedSet<Double>> setofValuesInParam;
+    //private ArrayList<SortedSet<Double>> setofValuesInParam;
     private int totalProbabilities;
     private double alpha, stepsize, invStepSize2, invStepSize;
     private int totalParamsFitted;
@@ -84,7 +83,6 @@ public class TopList{
         totalParamsFitted = this.models.get(0).getTotalFittedParams();
 
         //totalParamsFitted= 1;
-        setofValuesInParam = new ArrayList<>();
         this.useEntropy = entropy;
     }
 

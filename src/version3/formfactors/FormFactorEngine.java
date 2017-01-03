@@ -23,6 +23,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
     private String version;
     private double alpha = 0.63;
     private double smallestProb;
+    private Dataset dataset;
     private double shellThickness;
     private double dmaxOfSet=0;
     private double deltaqr = 0.00001;
@@ -123,6 +124,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                             String version
     ){
 
+        this.dataset = dataset;
         this.model = model;
         cpuCores = cores;
         this.rounds = rounds;
@@ -488,8 +490,16 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
         // write out results
         writeResults(round);
-        // how many in set
         // chi-square
+
+        // if P(r) distribution is determined, calculate P(r) from shape and then do diff
+        if (model == ModelType.SPHERICAL || model == ModelType.ELLIPSOID || model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID){
+            // estimate volume of P(r)-distribution
+            System.out.println("ESTIMATING FORM FACTOR PR");
+            estimateVolume();
+        }
+
+
 
         progressBar.setValue(0);
         return null;
@@ -573,6 +583,124 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
         System.out.println(tempHeader);
     }
+
+
+    /**
+     *
+     */
+    private void estimateVolume() {
+
+        ArrayList<Integer> list = keptList.getFirst();
+        // print parameters
+        int total = list.size();
+        int monteCarloSize = 10000;
+        int totalShannonBins = dataset.getRealSpaceModel().getTotalMooreCoefficients() - 1;
+        double binWidth = (double)dataset.getRealSpaceModel().getDmax()/(double)totalShannonBins;
+
+        double volume=0;
+        for(int i=0; i<total; i++){
+            Model model = models.get(list.get(i));
+            volume += model.getVolume();
+            System.out.println(i + " VOL => " + model.getVolume() + " " + volume);
+        }
+        volume *= 1.0/(double)total;
+
+
+        double calibrationScale=0;
+
+        if (model == ModelType.ELLIPSOID) {
+
+            SortedMap<Integer, Double> histogram = new TreeMap<>();
+            // build histogram
+            for (int i = 0; i < total; i++) {
+                Ellipse model = (Ellipse) models.get(list.get(i));
+
+                double[] distances = model.calculatePr(monteCarloSize);
+                System.out.println(i + " Estimating model " + model.getIndex());
+                for (int j = 0; j < monteCarloSize; j++) {
+                    int ratio = (int) (distances[j]/binWidth);
+                    if (histogram.containsKey(ratio)) {
+                        histogram.put(ratio, histogram.get(ratio) + 1.0d);
+                    } else {
+                        histogram.put(ratio, 1.0d);
+                    }
+                }
+            }
+
+            // calculate integral (Rectangle Method) and adjust to volume
+            Object[] bins = histogram.keySet().toArray();
+            double area = 0;
+            for(int i=0; i<bins.length; i++){
+                area += binWidth*histogram.get(bins[i]);
+            }
+
+            calibrationScale = volume/area;
+
+            // scale the model
+            System.out.println(0 + " " + 0);
+            for(int i=0; i<bins.length; i++){
+                double rvalue = i*binWidth + 0.5*binWidth;
+                System.out.println(rvalue + " " + histogram.get(bins[i]));
+                area += calibrationScale*histogram.get(bins[i]);
+            }
+            System.out.println(bins.length*binWidth + " " + 0);
+
+            // compare to real space
+
+
+        } else if (model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID){
+            SortedMap<Integer, Double> histogram = new TreeMap<>();
+
+            for (int i = 0; i < total; i++) {
+                ProlateEllipsoid model = (ProlateEllipsoid) models.get(list.get(i));
+                double[] distances = model.calculatePr(monteCarloSize);
+                for (int j = 0; j < monteCarloSize; j++) {
+                    int ratio = (int) (distances[j] / binWidth);
+                    if (histogram.containsKey(ratio)) {
+                        histogram.put(ratio, histogram.get(ratio) + 1.0d);
+                    } else {
+                        histogram.put(ratio, 1.0d);
+                    }
+                }
+            }
+
+            // calculate integral (Rectangle Method) and adjust to volume
+            Object[] bins = histogram.keySet().toArray();
+            double area = 0;
+            for(int i=0; i<bins.length; i++){
+                area += binWidth*histogram.get(bins[i]);
+            }
+
+            calibrationScale = volume/area;
+            System.out.println(" AREA " + area + " => " + volume);
+            // scale the model
+            System.out.println(0 + " " + 0);
+            area=0;
+
+            double contrast = (solventContrast - particleContrasts[0]);
+            double scale = keptList.getScaleByIndex(0);
+            for(int i=0; i<bins.length; i++){
+                double rvalue = i*binWidth + 0.5*binWidth;
+                System.out.println(rvalue + " " + contrast*contrast*scale*volume*histogram.get(bins[i]));
+                area += calibrationScale*binWidth*histogram.get(bins[i]);
+            }
+            System.out.println(bins.length*binWidth + " " + 0);
+            System.out.println("FINAL " + area);
+            System.out.println("scale " + scale);
+            System.out.println("CALIB " + calibrationScale);
+
+
+            double izero = contrast*contrast*scale*volume*volume;
+            System.out.println("IZERO " + izero);
+
+
+        } else { // analytical solutions
+
+        }
+
+    }
+
+
 
 
     /**

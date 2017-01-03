@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by robertrambo on 28/10/2016.
@@ -178,6 +179,49 @@ public class Ellipse extends Model {
     private void setString(){
         String newLines = String.format("REMARK 265 INDEX %5d RADII %.2f %.2f %.2f%n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1), getFittedParamByIndex(2));
         this.setStringToPrint(newLines);
+    }
+
+    public double[] calculatePr(int arraySize){
+
+        //
+        double[] values = new double[arraySize];
+        double inva2, invc2, invb2;
+        double diffx, diffy, diffz;
+        Double[] axis = new Double[3];
+
+            axis[0] = getRadius_a(); // a
+            axis[1] = getRadius_b(); // b
+            axis[2] = getRadius_c(); // c
+
+        inva2 = 1.0/(axis[0]*axis[0]);
+        invb2 = 1.0/(axis[1]*axis[1]);
+        invc2 = 1.0/(axis[2]*axis[2]);
+
+        double[] xvalues = new double[2];
+        double[] yvalues = new double[2];
+        double[] zvalues = new double[2];
+        for(int i=0; i<arraySize; i++){
+            // pick two random positions in ellipse
+            // calculate distance
+            int points = 0;
+            while(points < 2){
+
+                xvalues[points] = ThreadLocalRandom.current().nextDouble(-axis[0], axis[0]);
+                yvalues[points] = ThreadLocalRandom.current().nextDouble(-axis[1], axis[1]);
+                zvalues[points] = ThreadLocalRandom.current().nextDouble(-axis[2], axis[2]);
+
+                if ((xvalues[points]*xvalues[points]*inva2 + yvalues[points]*yvalues[points]*invb2 + zvalues[points]*zvalues[points]*invc2) <= 1){
+                    points++;
+                }
+            }
+            diffx = xvalues[0] - xvalues[1];
+            diffy = yvalues[0] - yvalues[1];
+            diffz = zvalues[0] - zvalues[1];
+
+            values[i] = Math.sqrt(diffx*diffx + diffy*diffy + diffz*diffz);
+        }
+
+        return values;
     }
 
 }

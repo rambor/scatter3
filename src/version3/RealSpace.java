@@ -504,6 +504,9 @@ public class RealSpace {
     }
 
 
+    /**
+     * Calculate P(r) distribution
+     */
     public void calculatePofR(){
         /*
          * create P(r) plot
@@ -514,9 +517,9 @@ public class RealSpace {
         double deltar = dmax/totalPrPoints;
 
         double resultM;
-        double inv_d = 1.0/dmax;
-        double pi_dmax = Math.PI*inv_d;
-        double inv_2d = 0.5*inv_d;
+        double pi_dmax = Math.PI/dmax;
+
+        double invtwopi2 = 1.0/(2*Math.PI*Math.PI)*standardizationStDev;
         double pi_dmax_r;
         double r_value;
         prDistribution.add(0.0d, 0.0d);
@@ -532,8 +535,8 @@ public class RealSpace {
                 resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
             }
 
-            prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
-            //System.out.println(j + " " + r_value);
+            //prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
+            prDistribution.add(r_value, invtwopi2 * r_value * resultM*scale);
             if (resultM < 0){
                 negativeValuesInModel = true;
             }
@@ -542,16 +545,24 @@ public class RealSpace {
         prDistribution.add(dmax,0);
     }
 
+    /**
+     * Calculate P(r) at specified r value
+     *
+     * @param r_value
+     * @return scaled value
+     */
     public double calculatePofRAtR(double r_value){
         double inv_d = 1.0/dmax;
-        double pi_dmax = Math.PI*inv_d;
-        double pi_dmax_r = pi_dmax*r_value;
+        //double pi_dmax = Math.PI*inv_d;
+        double pi_dmax_r = Math.PI*inv_d*r_value;
         double resultM = 0;
 
         for(int i=1; i < totalMooreCoefficients; i++){
             resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
         }
-        return 0.5*inv_d * r_value * resultM*scale;
+
+
+        return (1.0/(2*Math.PI*Math.PI)*standardizationStDev) * r_value * resultM*scale;
     }
 
 
@@ -651,14 +662,14 @@ public class RealSpace {
      */
     public double moore_qIq(double q){
 
-        double dmaxPi = dmax*Math.PI;
+        double dmaxPi = dmax*Math.PI*Constants.TWO_DIV_PI;
         double dmaxq = dmax*q;
 
         double resultM = mooreCoefficients[0];
 
         for(int i=1; i < totalMooreCoefficients; i++){
-            //resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*Math.pow(-1,i+1)*Math.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
-            resultM = resultM + Constants.TWO_DIV_PI*mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
+
+            resultM = resultM + mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
         }
 
         return resultM*standardizationStDev + standardizationMean;
@@ -836,11 +847,12 @@ public class RealSpace {
         double inv_pi_fourth = inv_pi_cube/Math.PI;
         double twodivPi = 2.0/Math.PI;
 
-        izero = standardizationStDev*(twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0]);
-        //rg = Math.sqrt(dmax4*inv_pi_cube/izero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
+        izero = standardizationStDev*(twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0] + standardizationMean);
+
         double izero_temp = (twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0]);
+        //double izero_temp = (twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0]);
+
         rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero_temp*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
-        //raverage = dmax3*inv_pi_cube/izero*rsum;
         raverage = 2*dmax3*inv_pi_fourth/izero_temp*rsum;
         this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);
     }
@@ -1234,10 +1246,7 @@ public class RealSpace {
             //tempIzero = twodivPi*tempIzero*dmax2*inv_pi + results.get(0)[0];
             //tempIzero = standardizationStDev*(twodivPi*tempIzero*dmax2*inv_pi + mooreCoefficients[0]) + standardizationMean;
             double izero_temp = (twodivPi*tempIzero*dmax2/Math.PI + results.get(0)[0]);
-            // rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero_temp*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
-            // rgValues[i] = Math.sqrt(dmax4_inv_pi_fourth/tempIzero*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
             rgValues[i] = Math.sqrt(dmax4_inv_pi_fourth/izero_temp*partial_rg)*0.7071067811865475;
-            //izeroValues[i] = tempIzero;
             izeroValues[i] = standardizationStDev*(twodivPi*tempIzero*dmax2*inv_pi + results.get(0)[0]) + standardizationMean;
         }
 

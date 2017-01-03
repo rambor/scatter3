@@ -4,6 +4,9 @@ import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.integration.SimpsonIntegrator;
 import org.apache.commons.math3.util.FastMath;
 
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Created by robertrambo on 23/11/2016.
  */
@@ -13,6 +16,8 @@ public class ProlateEllipsoid extends Model {
     //private double radius_c; // major axis
     private double contrast;
     double ratio2;
+    double eccentricity;
+    boolean amOblate=false;
 
     /**
      * Triaxial ellipsoid model
@@ -27,7 +32,11 @@ public class ProlateEllipsoid extends Model {
         super(index, ModelType.PROLATE_ELLIPSOID, (4.0/3.0*Math.PI*radii[0]*radii[0]*radii[1]), solventContrast, particleContrasts, qvalues.length, 2);
 
         if (radii[0] < radii[1]){ //oblate
+            // radii[0] is minor axis
+            // radii[1] is major axis
             this.setVolume((4.0/3.0*Math.PI*radii[0]*radii[1]*radii[1]));
+            eccentricity = Math.sqrt(1.0-(radii[0]*radii[0]/radii[1]*radii[1]));
+            amOblate = true;
         }
 
         // prolate r_a > r_c
@@ -39,7 +48,7 @@ public class ProlateEllipsoid extends Model {
         ratio2 = (radii[0]*radii[0])/(radii[1]*radii[1]);
 
         this.contrast = particleContrasts[0] - solventContrast;
-        this.setConstant(9.0*this.getVolume()*this.contrast*this.contrast);
+        this.setConstant(9.0*this.getVolume()*this.getVolume()*this.contrast*this.contrast);
 
         this.calculateModelIntensities(qvalues);
     }
@@ -104,5 +113,65 @@ public class ProlateEllipsoid extends Model {
         }
     }
 
+
+    // return an array of random distances found in the ellipse.
+    // use the array to add to other ellipses from selected set
+    public double[] calculatePr(int arraySize){
+
+        //
+        double[] values = new double[arraySize];
+        double inva2, invc2, invb2;
+        double diffx, diffy, diffz;
+        Double[] axis = new Double[3];
+
+        // in model definition
+        // x^2/a^2 + y^2/b^2 + z^2/c^2 = 1
+        //
+        // oblate a=b > c
+        // oblate r_c > r_a
+        //
+        // prolate a > b = c
+        // prolate r_a > r_c
+
+        if (amOblate){ // oblate r_c > r_a, a = b
+            axis[0] = getRadius_c(); // a
+            axis[1] = getRadius_c(); // b
+            axis[2] = getRadius_a(); // c
+        } else { // prolate b = c
+            axis[0] = getRadius_a(); // a
+            axis[1] = getRadius_c(); // b
+            axis[2] = getRadius_c(); // c
+        }
+
+        inva2 = 1.0/(axis[0]*axis[0]);
+        invb2 = 1.0/(axis[1]*axis[1]);
+        invc2 = 1.0/(axis[2]*axis[2]);
+
+        double[] xvalues = new double[2];
+        double[] yvalues = new double[2];
+        double[] zvalues = new double[2];
+        for(int i=0; i<arraySize; i++){
+            // pick two random positions in ellipse
+            // calculate distance
+            int points = 0;
+            while(points < 2){
+
+                xvalues[points] = ThreadLocalRandom.current().nextDouble(-axis[0], axis[0]);
+                yvalues[points] = ThreadLocalRandom.current().nextDouble(-axis[1], axis[1]);
+                zvalues[points] = ThreadLocalRandom.current().nextDouble(-axis[2], axis[2]);
+
+                if ((xvalues[points]*xvalues[points]*inva2 + yvalues[points]*yvalues[points]*invb2 + zvalues[points]*zvalues[points]*invc2) <= 1){
+                    points++;
+                }
+            }
+            diffx = xvalues[0] - xvalues[1];
+            diffy = yvalues[0] - yvalues[1];
+            diffz = zvalues[0] - zvalues[1];
+
+            values[i] = Math.sqrt(diffx*diffx + diffy*diffy + diffz*diffz);
+        }
+
+        return values;
+    }
 
 }
