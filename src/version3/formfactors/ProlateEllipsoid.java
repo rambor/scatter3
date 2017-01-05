@@ -48,7 +48,8 @@ public class ProlateEllipsoid extends Model {
         ratio2 = (radii[0]*radii[0])/(radii[1]*radii[1]);
 
         this.contrast = particleContrasts[0] - solventContrast;
-        this.setConstant(9.0*this.getVolume()*this.getVolume()*this.contrast*this.contrast);
+
+        this.setConstant(4*Math.PI*9.0*this.getVolume()*this.getVolume()*this.contrast*this.contrast);
 
         this.calculateModelIntensities(qvalues);
     }
@@ -73,14 +74,16 @@ public class ProlateEllipsoid extends Model {
 
         double qValue;
         double constant = getConstant();
-
          // prolate
         for(int i=0; i<getTotalIntensities(); i++){
             qValue = qValues[i];
             EllipsoidUnivariateFunction func = new EllipsoidUnivariateFunction(qValue);
             float integral = (float)t.integrate(100000000, func, 0, 1);
+            // the limit of the function has qValue tends to 0 is 0.111111....
+            // the function is multiple of 9 ( or 3 squared) and normalizes to 1
             this.addIntensity(i, qValue*constant*integral);
         }
+
     }
 
 
@@ -116,6 +119,7 @@ public class ProlateEllipsoid extends Model {
 
     // return an array of random distances found in the ellipse.
     // use the array to add to other ellipses from selected set
+
     public double[] calculatePr(int arraySize){
 
         //
@@ -172,6 +176,12 @@ public class ProlateEllipsoid extends Model {
         }
 
         return values;
+    }
+
+    @Override
+    String getConstrastString() {
+        double c = contrast*contrast;
+        return String.format("REMARK 265              SQUARED CONTRAST : %.6f %n", c);
     }
 
 }

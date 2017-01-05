@@ -9,6 +9,7 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.xy.DefaultXYZDataset;
@@ -32,9 +33,6 @@ public class EllipsoidPlots {
     private JPanel distributionRcPanel;
     private JPanel dataPlotPanel;
     private JPanel cross1Panel;
-    private JPanel cross2Panel;
-    private JPanel cross3Panel;
-    private JPanel cross4Panel;
 
     private ArrayList<Model> models;
 
@@ -52,6 +50,7 @@ public class EllipsoidPlots {
     private double minRc;
     private double maxRc;
     private boolean useNoBackGround;
+    private boolean useVolumeScaling=true;
     private DefaultXYZDataset xyzdataset;
     private DefaultXYZDataset bcdataset;
 
@@ -61,9 +60,6 @@ public class EllipsoidPlots {
 
     public EllipsoidPlots(JPanel residualsPanel,
                           JPanel cross1Panel,
-                          JPanel cross2Panel,
-                          JPanel cross3Panel,
-                          JPanel cross4Panel,
                           JPanel raPanel,
                           JPanel rbPanel,
                           JPanel rcPanel,
@@ -75,18 +71,16 @@ public class EllipsoidPlots {
                           Double[] qvalues,
                           ArrayList<Double> transformedObservedIntensities,
                           ArrayList<Double> transformedObservedErrors,
-                          boolean useNoBackground, double min, double max){
+                          boolean useNoBackground, boolean useVolumeScaling, double min, double max){
 
         this.residualsPanel = residualsPanel;
         this.cross1Panel = cross1Panel;
-        this.cross2Panel = cross2Panel;
-        this.cross3Panel = cross3Panel;
-        this.cross4Panel = cross4Panel;
         this.distributionRaPanel = raPanel;
         this.distributionRbPanel = rbPanel;
         this.distributionRcPanel = rcPanel;
         this.dataPlotPanel = dataFitPlot;
         this.useNoBackGround = useNoBackground;
+        this.useVolumeScaling = useVolumeScaling;
 
         this.models = models;
         this.keptList = keptList;
@@ -307,6 +301,7 @@ public class EllipsoidPlots {
 
         double max = Collections.max(probabilitiesPerModel);
         int totalcount = xyzdataset.getSeriesCount();
+
         System.out.println("Series count " + plot.getSeriesCount());
         for(int i=0; i<totalcount; i++){
             xyitemrenderer.setSeriesPaint(i, giveRGB(max, probabilitiesPerModel.get(i)));
@@ -364,8 +359,15 @@ public class EllipsoidPlots {
                 false
         );
 
-        // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
-        //XYPlot plot = (XYPlot) residualsChart.getPlot();
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setRangeGridlinePaint(Color.BLACK);
+        plot.setDomainGridlinePaint(Color.BLACK);
+        plot.setBackgroundPaint(Color.lightGray);
+        plot.getRenderer().setSeriesPaint(0, Color.CYAN);
+        plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.0f));
+
+        ValueMarker mark = new ValueMarker(0, Color.BLACK, new BasicStroke(1.8f));
+        plot.addRangeMarker(mark);
 
         ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
@@ -432,6 +434,10 @@ public class EllipsoidPlots {
     }
 
 
+    /**
+     * Calculate residuals using the best selected set
+     *
+     */
     private void makeResiduals(){
 
         // calculate model intensities
@@ -440,22 +446,24 @@ public class EllipsoidPlots {
         while(calculatedIntensities.size() < totalq) calculatedIntensities.add(0.0d);
 
         int count=0;
-       // for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
-        //Map.Entry<Double, ArrayList<Integer>> entry = keptList.firstEntry();
 
+        ArrayList<Integer> indices = keptList.getFirst();
+        // for each index, great XYSeries and Add
+        int total = indices.size();
 
-            ArrayList<Integer> indices = keptList.getFirst();
-            // for each index, great XYSeries and Add
-            int total = indices.size();
+        for (int i=0; i<total; i++){
+            Model model = models.get(indices.get(i));
 
-            for (int i=0; i<total; i++){
-                Model model = models.get(indices.get(i));
-                for(int q=0; q<totalq; q++){
-                    calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + model.getIntensity(q));
-                    count++;
-                }
+            double volumescale = 1.0;
+            if (!useVolumeScaling){
+                volumescale = 1.0/(model.getVolume());
             }
-       // }
+
+            for(int q=0; q<totalq; q++){
+                calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + volumescale*model.getIntensity(q));
+                count++;
+            }
+        }
 
         // average the calculated intensities
         double inv = 1.0/(double)count;
@@ -502,8 +510,8 @@ public class EllipsoidPlots {
         }
 
         residualsCollection.addSeries(residualsSeries);
-        averageCollection.addSeries(experimentalSeries);
         averageCollection.addSeries(averagedSeries);
+        averageCollection.addSeries(experimentalSeries);
     }
 
     private void makeDataPlot(){
@@ -528,10 +536,11 @@ public class EllipsoidPlots {
 //        logAxis.setAutoRange(true);
 //        plot.setRangeAxis(logAxis);
         XYPlot plot = (XYPlot) chart.getPlot();
-        plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.1f));
-        plot.getRenderer().setSeriesPaint(1, Color.CYAN);
         plot.getRenderer().setSeriesStroke(1,new BasicStroke(3.1f));
-        plot.getRenderer().setSeriesPaint(0, Color.BLACK);
+        plot.getRenderer().setSeriesPaint(1, Color.BLACK);
+        plot.getRenderer().setSeriesPaint(0, Color.CYAN);
+        plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.0f));
+
         plot.setRangeGridlinePaint(Color.BLACK);
         plot.setDomainGridlinePaint(Color.BLACK);
         plot.setBackgroundPaint(Color.lightGray);

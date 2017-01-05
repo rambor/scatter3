@@ -33,6 +33,7 @@ public class TestModel implements Callable<Double> {
     private double[] qValues;
     private boolean useNoBackground;
     private int totalqInModelIntensities;
+    private boolean useVolumeScaling = true;
 
     /**
      *  @param index
@@ -54,7 +55,8 @@ public class TestModel implements Callable<Double> {
                      ArrayList<Double> transformedIntensities,
                      ArrayList<Double> transformedErrors,
                      Double[] qvalues,
-                     boolean useNoBackground){
+                     boolean useNoBackground,
+                     boolean useVolumeScaling){
 
         this.modelIndex = index;
         this.totalToSelect = totalToSelect;
@@ -70,8 +72,9 @@ public class TestModel implements Callable<Double> {
         this.transformedIntensities = new ArrayList<>(totalq);
         this.transformedErrors = new ArrayList<>(totalq);
         this.useNoBackground = useNoBackground;
-
+        this.useVolumeScaling = useVolumeScaling;
         qValues = new double[totalq];
+
 
         this.modelIntensities = modelIntensities;
 
@@ -124,16 +127,22 @@ public class TestModel implements Callable<Double> {
             // combine with
             startIndex = index*totalq;
             // sum the intensities for each model
-            totalVolume = models.get(index).getVolume();
+            totalVolume += models.get(index).getVolume();
+
+            double volumeScaling=1.0d;
+            if (!useVolumeScaling){
+                volumeScaling = 1.0/(models.get(index).getVolume());
+            }
             for(int j=0; j<totalq; j++){
-                calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + modelIntensitiesTemp.get(startIndex+j).doubleValue());
+                calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + volumeScaling*modelIntensitiesTemp.get(startIndex+j).doubleValue());
             }
         }
 
         // perform the average by dividing by total
         double invTotal = 1.0/(double)totalToSelect;
+        // double invTotal = 1.0;
         // uncomment for volume weighting
-        //double invTotalVoume = 1.0/totalVolume;
+        // double invTotalVoume = 1.0/totalVolume;
         for(int j=0; j<totalq; j++){
             calculatedIntensities.set(j, invTotal*calculatedIntensities.get(j).doubleValue());
             // uncomment for volume weighting

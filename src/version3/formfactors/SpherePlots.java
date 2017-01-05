@@ -8,6 +8,7 @@ import org.jfree.chart.axis.LogAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.xy.*;
@@ -45,6 +46,7 @@ public class SpherePlots {
     private XYSeriesCollection averageCollection;
     private double minDomain;
     private double maxDomain;
+    private boolean useVolumeScale = true;
 
     private ChartPanel heatMapChartPanel;
     private ChartPanel histogramChartPanel;
@@ -84,7 +86,8 @@ public class SpherePlots {
                        Double[] qvalues,
                        ArrayList<Double> transformedObservedIntensities,
                        ArrayList<Double> transformedObservedErrors,
-                       boolean useNoBackground
+                       boolean useNoBackground,
+                       boolean useVolumeScale
     ){
 
         this.residualsPanel = residualsPanel;
@@ -99,6 +102,7 @@ public class SpherePlots {
         this.transformedObservedIntensities = transformedObservedIntensities;
         this.transformedObservedErrors = transformedObservedErrors;
         this.useNoBackground = useNoBackground;
+        this.useVolumeScale = useVolumeScale;
 
         heatMapCollection = new XYSeriesCollection();
         residualsCollection = new XYSeriesCollection();
@@ -129,9 +133,18 @@ public class SpherePlots {
         );
 
         // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
-        //XYPlot plot = (XYPlot) residualsChart.getPlot();
+        XYPlot plot = (XYPlot) residualsChart.getPlot();
 
+        plot.setRangeGridlinePaint(Color.BLACK);
+        plot.setDomainGridlinePaint(Color.BLACK);
+        plot.setBackgroundPaint(Color.lightGray);
         residualsChartPanel = new ChartPanel(residualsChart);
+        plot.getRenderer().setSeriesPaint(0, Color.CYAN);
+        plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.0f));
+
+        ValueMarker mark = new ValueMarker(0, Color.BLACK, new BasicStroke(1.8f));
+        plot.addRangeMarker(mark);
+
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
         residualsPanel.removeAll();
         residualsPanel.add(residualsChartPanel);
@@ -170,9 +183,13 @@ public class SpherePlots {
 
             for (int i=0; i<total; i++){
                 Sphere model =  (Sphere)models.get(indices.get(i));
+                double volumescale = 1.0;
+                if (!useVolumeScale){
+                    volumescale = 1.0/(model.getVolume());
+                }
 
                 for(int q=0; q<totalq; q++){
-                    calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + model.getIntensity(q));
+                    calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + volumescale*model.getIntensity(q));
                     count++;
                 }
             }
@@ -228,8 +245,8 @@ public class SpherePlots {
         }
 
         residualsCollection.addSeries(residualsSeries);
-        averageCollection.addSeries(experimentalSeries);
         averageCollection.addSeries(averagedSeries);
+        averageCollection.addSeries(experimentalSeries);
     }
 
 
@@ -284,10 +301,12 @@ public class SpherePlots {
 
         // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
         XYPlot plot = (XYPlot) chart.getPlot();
-        plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.1f));
-        plot.getRenderer().setSeriesPaint(1, Color.CYAN);
-        plot.getRenderer().setSeriesStroke(1,new BasicStroke(3.6f));
-        plot.getRenderer().setSeriesPaint(0, Color.BLACK);
+        plot.getRenderer().setSeriesStroke(1,new BasicStroke(3.1f));
+        plot.getRenderer().setSeriesPaint(1, Color.BLACK);
+
+        plot.getRenderer().setSeriesPaint(0, Color.CYAN);
+        plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.0f));
+
         plot.setRangeGridlinePaint(Color.BLACK);
         plot.setDomainGridlinePaint(Color.BLACK);
         plot.setBackgroundPaint(Color.lightGray);
@@ -392,8 +411,6 @@ public class SpherePlots {
 
         XYSeries ellipseSet = new XYSeries("ALL");
 
-       // for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
-        //Map.Entry<Double, ArrayList<Integer>> entry = keptList.firstEntry();
             ArrayList<Integer> indices = keptList.getFirst();
             // for each index, great XYSeries and Add
             int total = indices.size();
@@ -420,8 +437,6 @@ public class SpherePlots {
 
                 count++;
             }
-       //     setCount++;
-       // }
 
         System.out.println("VOLUME : " + (1.0/((double)count)*volume) );
         heatMapCollection.addSeries(ellipseSet);
