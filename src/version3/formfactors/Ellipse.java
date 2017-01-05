@@ -25,6 +25,7 @@ public class Ellipse extends Model {
     private final double pi_half = Math.PI*0.5;
     private double contrast, c2, a2, b2;
 
+    private double simpsonFactor;
     private double deltaqr;
 
     /**
@@ -38,45 +39,44 @@ public class Ellipse extends Model {
      */
     public Ellipse(int index, double solventContrast, double[] particleContrasts, double[] radii, Double[] qvalues, double deltaqr) {
 
-
         super(index, ModelType.ELLIPSOID, (4.0/3.0*Math.PI*radii[0]*radii[1]*radii[2]), solventContrast, particleContrasts, qvalues.length, 3);
-
-//        radius_a = radii[0];
-//        radius_b = radii[1];
-//        radius_c = radii[2];
 
         this.setFittedParamsByIndex(0, radii[0]);
         this.setFittedParamsByIndex(1, radii[1]);
         this.setFittedParamsByIndex(2, radii[2]);
-        //df.setRoundingMode(RoundingMode.CEILING);
+
         this.setString();
 
         this.contrast = particleContrasts[0] - solventContrast;
+
         this.integrationInterval = 1.0d/99.0d; // not sure what this should be
         // if interval is 0.01, then x,y is 100*100 = 10000 points
         // if interval is 0.001 then x,y is 1000*1000 = 1x10^6
         m_index = (int)(1.0/integrationInterval) + 1;
         n_index = m_index;
-
-        //this.setConstant(9.0/this.getVolume()*this.contrast*this.contrast);
+        simpsonFactor = 1.0/(9*m_index*n_index);
         this.setConstant(4*Math.PI*9.0*this.getVolume()*this.getVolume()*this.contrast*this.contrast);
 
         a2 = radii[0]*radii[0];
         b2 = radii[1]*radii[1];
         c2 = radii[2]*radii[2];
-        this.deltaqr = deltaqr;
 
+        this.deltaqr = deltaqr;
         this.calculateModelIntensities(qvalues);
+
     }
+
 
     public void printParams(){
         System.out.println(this.getIndex() + " PARAMS " + getRadius_a() + " " + getRadius_b() + " " + getRadius_c());
     }
 
-//    public double getRadius_a(){ return radius_a;}
-//    public double getRadius_b(){ return radius_b;}
-//    public double getRadius_c(){ return radius_c;}
 
+    /**
+     * Integrate using Simpson's rule
+     * x and y are integrated from 0 to 1
+     * @param qValues
+     */
     @Override
     void calculateModelIntensities(Double[] qValues) {
 
@@ -161,14 +161,19 @@ public class Ellipse extends Model {
                     locale = (int)Math.floor(effective_qr*invDeltaR) - indexReset;
                     // slowest step by 10x
                     phi = (sinxvalues[locale] - effective_qr*cosxvalues[locale])/(effective_qr*effective_qr*effective_qr);
-                    //phi = (FastMath.sin(effective_qr) - effective_qr*FastMath.cos(effective_qr))/(effective_qr*effective_qr*effective_qr);
-
+                    // phi = (FastMath.sin(effective_qr) - effective_qr*FastMath.cos(effective_qr))/(effective_qr*effective_qr*effective_qr);
                     sum += weights[x_value][y_value]*phi*phi;
                 }
             }
 
-            this.addIntensity(i, qValue*this.getConstant()*sum); // q*I(q)
+            this.addIntensity(i, qValue*this.getConstant()*sum*simpsonFactor); // q*I(q)
         }
+    }
+
+    @Override
+    String getConstrastString() {
+        double c = contrast*contrast;
+        return String.format("REMARK 265              SQUARED CONTRAST : %.6f %n", c);
     }
 
     public double getRadius_a(){return this.getFittedParamByIndex(0);}
@@ -182,16 +187,15 @@ public class Ellipse extends Model {
     }
 
     public double[] calculatePr(int arraySize){
-
         //
         double[] values = new double[arraySize];
         double inva2, invc2, invb2;
         double diffx, diffy, diffz;
         Double[] axis = new Double[3];
 
-            axis[0] = getRadius_a(); // a
-            axis[1] = getRadius_b(); // b
-            axis[2] = getRadius_c(); // c
+        axis[0] = getRadius_a(); // a
+        axis[1] = getRadius_b(); // b
+        axis[2] = getRadius_c(); // c
 
         inva2 = 1.0/(axis[0]*axis[0]);
         invb2 = 1.0/(axis[1]*axis[1]);
@@ -200,6 +204,7 @@ public class Ellipse extends Model {
         double[] xvalues = new double[2];
         double[] yvalues = new double[2];
         double[] zvalues = new double[2];
+
         for(int i=0; i<arraySize; i++){
             // pick two random positions in ellipse
             // calculate distance
@@ -214,6 +219,7 @@ public class Ellipse extends Model {
                     points++;
                 }
             }
+
             diffx = xvalues[0] - xvalues[1];
             diffy = yvalues[0] - yvalues[1];
             diffz = zvalues[0] - zvalues[1];
@@ -223,5 +229,4 @@ public class Ellipse extends Model {
 
         return values;
     }
-
 }
