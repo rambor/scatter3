@@ -77,7 +77,7 @@ public class PDBFile {
         this.convertPofRToIntensities();
 
         this.centerCoordinates();
-        this.convertToBeadModel(3.6);
+        this.convertToBeadModel(2.1);
     }
 
     private void calculatePofR() {
@@ -346,7 +346,7 @@ public class PDBFile {
         System.out.println("CONVERTING TO BEAD MODEL");
         double volume = 4.0/3.0*Math.PI*bead_radius*bead_radius*bead_radius;
         double radius = dmax*0.5;
-        double squaredBeadRadius = bead_radius*bead_radius;
+        double squaredBeadRadius = 4*bead_radius*bead_radius;
         double limit = radius + radius*0.23;
         double inv_bead_radius = 1.0/bead_radius;
         double invsqrt6 = 1.0/Math.sqrt(6), inv3 = 1.0/3.0d, sqrt6 = Math.sqrt(6), sqrt3=Math.sqrt(3);
@@ -401,17 +401,20 @@ public class PDBFile {
             PDBAtom temp = centeredAtoms.get(atom);
             // if atom is within radius of a bead,keep bead
             int totalBeads = beads.size();
-            findLoop:
+            ArrayList<Bead> removeThese = new ArrayList<>();
+            findLoop: // find all beads within bead_radius of atom
             for(int b=0; b<totalBeads; b++){
                 Bead tempbead = beads.get(b);
                 if (tempbead.getSquaredDistance(temp.getCoords()) <= squaredBeadRadius){
                     lines.add(tempbead.getPDBLine(count));
                     keepers.add(tempbead);
-                    beads.remove(b);
+                    //beads.remove(b);
+                    removeThese.add(tempbead);
                     count++;
                     //break findLoop;
                 }
             }
+            beads.removeAll(removeThese);
         }
 
         totalAtoms = keepers.size();

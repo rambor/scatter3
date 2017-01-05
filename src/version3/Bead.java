@@ -36,6 +36,6 @@ public class Bead {
     }
 
     public String getPDBLine(int count){
-        return String.format("%-6s%5d %4s%1s%3s %1s%4d%1s   %8.3f%8.3f%8.3f%6.2f%6.2f %n", "ATOM  ", count, "CA", " ", "GLY", "A", index, " ", xpos, ypos, zpos, 1.0, 1.0);
+        return String.format("%-6s%5d %4s%1s%3s %1s%4d%1s   %8.3f%8.3f%8.3f%6.2f%6.2f %n", "ATOM  ", count, "CA", " ", "GLY", "A", count, " ", xpos, ypos, zpos, 1.0, 1.0);
     }
 }
