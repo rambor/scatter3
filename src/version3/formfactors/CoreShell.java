@@ -16,8 +16,11 @@ public class CoreShell extends Model{
     private double shella2;
     private double shellc2;
 
+    private double coreConstant;
+    private double shellConstant;
     private double coreContrast;
     private double shellContrast;
+
     private double volumeCore;
     private double volumeShell;
     private boolean isEmpty=false;
@@ -63,14 +66,16 @@ public class CoreShell extends Model{
         shella2 = shellRadius_a*shellRadius_a;
         shellc2 = shellRadius_c*shellRadius_c;
 
-        this.shellContrast = 3.0d*(particleContrasts[0] - solventContrast)*volumeShell;
-        this.coreContrast = 3.0d*(particleContrasts[1] - particleContrasts[0])*volumeCore;
+        this.shellContrast = particleContrasts[0] - solventContrast;
+        this.coreContrast = particleContrasts[1] - particleContrasts[0];
+        this.shellConstant = 3.0d*shellContrast*volumeShell;
+        this.coreConstant = 3.0d*coreContrast*volumeCore;
 
         if (solventContrast==particleContrasts[1]){
             isEmpty=true;
         }
 
-        this.setConstant(1);
+        this.setConstant(4*Math.PI);
         this.calculateModelIntensities(qvalues);
     }
 
@@ -116,8 +121,8 @@ public class CoreShell extends Model{
             double  qcore = q*FastMath.sqrt( corec2*alpha2 +  corea2*(1.0d - alpha2));
             double qshell = q*FastMath.sqrt(shellc2*alpha2 + shella2*(1.0d - alpha2));
 
-            double sinCosCore = coreContrast*((FastMath.sin(qcore) - qcore * FastMath.cos(qcore)));
-            double sinCosShell = shellContrast*((FastMath.sin(qshell) - qshell * FastMath.cos(qshell)));
+            double sinCosCore = coreConstant *((FastMath.sin(qcore) - qcore * FastMath.cos(qcore)));
+            double sinCosShell = shellConstant *((FastMath.sin(qshell) - qshell * FastMath.cos(qshell)));
 
             double f = sinCosCore/(qcore*qcore*qcore) + sinCosShell/(qshell*qshell*qshell);
             return f*f;
@@ -139,4 +144,12 @@ public class CoreShell extends Model{
         newLines +=       String.format("REMARK 265 INDEX %5d      SHELL %.2f %n", getIndex(), getFittedParamByIndex(2));
         this.setStringToPrint(newLines);
     }
+
+    @Override
+    String getConstrastString() {
+        String temp =  String.format("REMARK 265         CORE SQUARED CONTRAST : %.6f %n", coreContrast*coreContrast);
+              temp +=  String.format("REMARK 265        SHELL SQUARED CONTRAST : %.6f %n", shellContrast*shellContrast);
+        return temp;
+    }
+
 }
