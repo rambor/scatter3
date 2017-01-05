@@ -21,6 +21,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
     private int cpuCores=1;
     private String version;
+    private String finalResults;
     private double alpha = 0.63;
     private double smallestProb;
     private Dataset dataset;
@@ -83,6 +84,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
     private XYSeries scorePerRound;
     private JFreeChart progressChart;
+    private boolean useVolumeScaling;
 
 
     /**
@@ -121,6 +123,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                             int randomModelsPerTrial,
                             boolean useNoBackground,
                             boolean entropy,
+                            boolean useVolumeScaling,
                             String version
     ){
 
@@ -151,6 +154,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
         this.useNoBackground = useNoBackground;
         this.useEntropy = entropy;
+        this.useVolumeScaling = useVolumeScaling;
         // index -> intensity curve
         // arraylist of models
         XYSeries alldata = dataset.getAllData();
@@ -344,7 +348,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 workingSetIntensities,
                                 workingSetErrors,
                                 qvalues,
-                                useNoBackground
+                                useNoBackground,
+                                useVolumeScaling
                         )));
             }
             // Use TopList to update CDF
@@ -400,7 +405,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         qvalues,
                         transformedIntensities,
                         transformedErrors,
-                        useNoBackground);
+                        useNoBackground,
+                        useVolumeScaling);
                 plots.create(true);
                 break;
 
@@ -428,9 +434,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 EllipsoidPlots eplots = new EllipsoidPlots(
                         residualsPanel,
                         crossSection1Panel,
-                        crossSection2Panel,
-                        crossSection3Panel,
-                        crossSection4Panel,
                         heatMapPanel,
                         heatMap1Panel,
                         heatMap2Panel,
@@ -441,7 +444,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         qvalues,
                         transformedIntensities,
                         transformedErrors,
-                        useNoBackground, minParams[0], maxParams[0]);
+                        useNoBackground, useVolumeScaling, minParams[0], maxParams[0]);
                 eplots.create(true);
                 break;
 //
@@ -468,9 +471,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 EllipsoidPlots prplots = new EllipsoidPlots(
                         residualsPanel,
                         crossSection1Panel,
-                        crossSection2Panel,
-                        crossSection3Panel,
-                        crossSection4Panel,
                         heatMapPanel,
                         heatMap1Panel,
                         heatMap2Panel,
@@ -481,7 +481,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         qvalues,
                         transformedIntensities,
                         transformedErrors,
-                        useNoBackground, minParams[0], maxParams[0]);
+                        useNoBackground, useVolumeScaling, minParams[0], maxParams[0]);
                 prplots.create(true);
                 break;
         }
@@ -489,16 +489,16 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         makeProgressPlot();
 
         // write out results
-        writeResults(round);
-        // chi-square
-
+        finalResults="";
         // if P(r) distribution is determined, calculate P(r) from shape and then do diff
-        if (model == ModelType.SPHERICAL || model == ModelType.ELLIPSOID || model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID){
+        System.out.println("DMAX " + dataset.getRealSpaceModel().getDmax());
+        if (dataset.getRealSpaceModel().getDmax() > 1 && (model == ModelType.SPHERICAL || model == ModelType.ELLIPSOID || model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID)){
             // estimate volume of P(r)-distribution
             System.out.println("ESTIMATING FORM FACTOR PR");
             estimateVolume();
         }
 
+        writeResults(round);
 
 
         progressBar.setValue(0);
@@ -571,16 +571,21 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             }
         }
 
+
         tempHeader += "REMARK 265\n";
+        tempHeader += "REMARK 265  IZERO => 4*PI*CONTRAST^2*SCALE*VOLUME^2\n";
+        tempHeader += models.get(0).getConstrastString();
         tempHeader += String.format("REMARK 265           MOST PROBABLE MODEL : %d %n", indexOfBest);
         tempHeader += String.format("REMARK 265                  SCALE FACTOR : %.5E %n", keptList.getScaleByIndex(0));
         tempHeader += String.format("REMARK 265               WEIGHTED VOLUME : %.1f %n", volume);
+        tempHeader += "REMARK 265\n";
 
         for(int p=0; p<totalParams; p++){
           tempHeader += String.format("REMARK 265               PARAM %d AVERAGE : %.3f %n", (p+1), averages[p]);
           tempHeader += String.format("REMARK 265                         STDEV : %.3f %n", Math.sqrt(variances[p]));
         }
 
+        tempHeader += finalResults;
         System.out.println(tempHeader);
     }
 
@@ -597,34 +602,66 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         int totalShannonBins = dataset.getRealSpaceModel().getTotalMooreCoefficients() - 1;
         double binWidth = (double)dataset.getRealSpaceModel().getDmax()/(double)totalShannonBins;
 
-        double volume=0;
+        double squared=0;
         for(int i=0; i<total; i++){
             Model model = models.get(list.get(i));
-            volume += model.getVolume();
-            System.out.println(i + " VOL => " + model.getVolume() + " " + volume);
+            squared += model.getVolume()*model.getVolume();
         }
-        volume *= 1.0/(double)total;
+        double volume = Math.sqrt(squared/(double)total);
+        double calibrationScale;
+        SortedMap<Integer, Double> histogram = new TreeMap<>();
 
+        if (model == ModelType.ELLIPSOID || model == ModelType.SPHERICAL || model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID) {
 
-        double calibrationScale=0;
+            if (model == ModelType.ELLIPSOID){
 
-        if (model == ModelType.ELLIPSOID) {
-
-            SortedMap<Integer, Double> histogram = new TreeMap<>();
-            // build histogram
-            for (int i = 0; i < total; i++) {
-                Ellipse model = (Ellipse) models.get(list.get(i));
-
-                double[] distances = model.calculatePr(monteCarloSize);
-                System.out.println(i + " Estimating model " + model.getIndex());
-                for (int j = 0; j < monteCarloSize; j++) {
-                    int ratio = (int) (distances[j]/binWidth);
-                    if (histogram.containsKey(ratio)) {
-                        histogram.put(ratio, histogram.get(ratio) + 1.0d);
-                    } else {
-                        histogram.put(ratio, 1.0d);
+                for (int i = 0; i < total; i++) {
+                    Ellipse model = (Ellipse) models.get(list.get(i));
+                    double[] distances = model.calculatePr(monteCarloSize);
+                    for (int j = 0; j < monteCarloSize; j++) {
+                        int ratio = (int) (distances[j] / binWidth);
+                        if (histogram.containsKey(ratio)) {
+                            histogram.put(ratio, histogram.get(ratio) + 1.0d);
+                        } else {
+                            histogram.put(ratio, 1.0d);
+                        }
                     }
                 }
+
+            } else if (model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID){
+
+                for (int i = 0; i < total; i++) {
+                    ProlateEllipsoid model = (ProlateEllipsoid) models.get(list.get(i));
+                    double[] distances = model.calculatePr(monteCarloSize);
+                    for (int j = 0; j < monteCarloSize; j++) {
+                        int ratio = (int) (distances[j] / binWidth);
+                        if (histogram.containsKey(ratio)) {
+                            histogram.put(ratio, histogram.get(ratio) + 1.0d);
+                        } else {
+                            histogram.put(ratio, 1.0d);
+                        }
+                    }
+                }
+
+            } else if (model == ModelType.SPHERICAL ) {
+
+                for (int i = 0; i < total; i++) {
+
+                    Sphere model = (Sphere) models.get(list.get(i));
+                    double dmaxOfModel = 2*model.getRadius();
+
+                    for (int j = 0; j*binWidth < dmaxOfModel; j++) {
+
+                        double rvalue = j*binWidth + 0.5*binWidth;
+
+                        if (histogram.containsKey(j)) {
+                            histogram.put(j, histogram.get(j) + model.calculatePr(rvalue));
+                        } else {
+                            histogram.put(j, model.calculatePr(rvalue));
+                        }
+                    }
+                }
+
             }
 
             // calculate integral (Rectangle Method) and adjust to volume
@@ -635,66 +672,54 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             }
 
             calibrationScale = volume/area;
-
             // scale the model
-            System.out.println(0 + " " + 0);
-            for(int i=0; i<bins.length; i++){
-                double rvalue = i*binWidth + 0.5*binWidth;
-                System.out.println(rvalue + " " + histogram.get(bins[i]));
-                area += calibrationScale*histogram.get(bins[i]);
-            }
-            System.out.println(bins.length*binWidth + " " + 0);
-
-            // compare to real space
-
-
-        } else if (model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID){
-            SortedMap<Integer, Double> histogram = new TreeMap<>();
-
-            for (int i = 0; i < total; i++) {
-                ProlateEllipsoid model = (ProlateEllipsoid) models.get(list.get(i));
-                double[] distances = model.calculatePr(monteCarloSize);
-                for (int j = 0; j < monteCarloSize; j++) {
-                    int ratio = (int) (distances[j] / binWidth);
-                    if (histogram.containsKey(ratio)) {
-                        histogram.put(ratio, histogram.get(ratio) + 1.0d);
-                    } else {
-                        histogram.put(ratio, 1.0d);
-                    }
-                }
-            }
-
-            // calculate integral (Rectangle Method) and adjust to volume
-            Object[] bins = histogram.keySet().toArray();
-            double area = 0;
-            for(int i=0; i<bins.length; i++){
-                area += binWidth*histogram.get(bins[i]);
-            }
-
-            calibrationScale = volume/area;
-            System.out.println(" AREA " + area + " => " + volume);
-            // scale the model
-            System.out.println(0 + " " + 0);
+            String prValues = "REMARK 265 R-VALUE P(R)-EXP P(R)-MODEL\n";
+            prValues += String.format("%.2f %.5E %.5E%n", 0.0,0.0,0.0);
             area=0;
 
             double contrast = (solventContrast - particleContrasts[0]);
             double scale = keptList.getScaleByIndex(0);
+
+            double areaObs=0;
+            double dmaxOfExp = dataset.getRealSpaceModel().getDmax();
+
             for(int i=0; i<bins.length; i++){
+
                 double rvalue = i*binWidth + 0.5*binWidth;
-                System.out.println(rvalue + " " + contrast*contrast*scale*volume*histogram.get(bins[i]));
-                area += calibrationScale*binWidth*histogram.get(bins[i]);
+                double prvalue = contrast*contrast*scale*volume*(calibrationScale*histogram.get(bins[i]));
+
+                if (rvalue > dmaxOfExp){
+                    prValues += String.format("%.2f %.5E %.5E%n", rvalue,0.0,prvalue);
+                } else {
+                    areaObs += dataset.getRealSpaceModel().calculatePofRAtR(rvalue)*binWidth;
+                    prValues += String.format("%.2f %.5E %.5E%n", rvalue,dataset.getRealSpaceModel().calculatePofRAtR(rvalue),prvalue);
+                }
+
+                area += prvalue*binWidth;
             }
-            System.out.println(bins.length*binWidth + " " + 0);
-            System.out.println("FINAL " + area);
-            System.out.println("scale " + scale);
-            System.out.println("CALIB " + calibrationScale);
+            prValues += String.format("%.2f %.5E %.5E %n", bins.length*binWidth,0.0,0.0);
 
+            // assume relationship between integrated area and volume is linear
+            double scaledVolume = areaObs/area*volume;
 
-            double izero = contrast*contrast*scale*volume*volume;
-            System.out.println("IZERO " + izero);
+//            System.out.println("FINAL SCALED AREA => " + area + " ~= " + volume);
+//            System.out.println("         EXP AREA => " + areaObs);
+//            System.out.println("   CALIBRATED VOL => " + scaledVolume);
+//            System.out.println("   SCALE FROM FIT => " + scale);
+//            System.out.println("      CALIBRATION => " + calibrationScale);
 
+            finalResults += "REMARK 265\n";
+            finalResults += "REMARK 265 CALIBRATION CONSTANT => RATIO OF VOLUME TO AREA OF P(R) OF MODEL \n";
+            finalResults += String.format("REMARK 265          CALIBRATION CONSTANT : %.4E %n", calibrationScale);
+            finalResults += String.format("REMARK 265        AREA EXPERIMENTAL P(R) : %.3E %n", areaObs);
+            finalResults += String.format("REMARK 265   CALIBRATED VOLUME FROM P(R) : %.1f %n", scaledVolume);
+            finalResults += String.format("REMARK 265                       I(ZERO) : %.3E %n", (4*Math.PI*contrast*contrast*scale*volume*volume));
 
-        } else { // analytical solutions
+            finalResults += prValues;
+            // compare to real space
+        } else {
+
+            System.out.println("Volume calibration not available for this form factor");
 
         }
 
@@ -1032,9 +1057,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
 
     public void setEllipsoidPlotPanels(JPanel crossSection1Panel,
-                                       JPanel crossSection2Panel,
-                                       JPanel crossSection3Panel,
-                                       JPanel crossSection4Panel,
                                        JPanel residualsPanel,
                                        JPanel histoRa,
                                        JPanel histoRb,
@@ -1043,10 +1065,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                        JPanel dataPanel) {
 
         this.crossSection1Panel = crossSection1Panel;
-        this.crossSection2Panel = crossSection2Panel;
-        this.crossSection3Panel = crossSection3Panel;
-        this.crossSection4Panel = crossSection4Panel;
-
         this.residualsPanel = residualsPanel;
         this.heatMapPanel = histoRa;
         this.heatMap1Panel = histoRb;
