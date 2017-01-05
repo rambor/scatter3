@@ -140,13 +140,9 @@ public class TestModel implements Callable<Double> {
 
         // perform the average by dividing by total
         double invTotal = 1.0/(double)totalToSelect;
-        // double invTotal = 1.0;
-        // uncomment for volume weighting
-        // double invTotalVoume = 1.0/totalVolume;
         for(int j=0; j<totalq; j++){
             calculatedIntensities.set(j, invTotal*calculatedIntensities.get(j).doubleValue());
             // uncomment for volume weighting
-            //calculatedIntensities.set(j, invTotalVoume*calculatedIntensities.get(j).doubleValue());
         }
 
         // calculate score
