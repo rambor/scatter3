@@ -1,8 +1,6 @@
 package version3;
 
 
-import net.jafama.FastMath;
-import org.jfree.data.ComparableObjectItem;
 import org.jfree.data.xy.*;
 
 import java.awt.*;
@@ -79,9 +77,9 @@ public class Dataset {
     private int porodVolume = 0;
     private int porodVolumeReal = 0;
 
-    private int porodMass1p1 = 0;
+    private int porodMass1p07 = 0;
     private int porodRealMass1p1 = 0;
-    private int porodMass1p37 = 0;
+    private int porodMass1p11 = 0;
     private int porodRealMass1p37 = 0;
 
 
@@ -1191,12 +1189,12 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
 
 
     public void calculatePorodMass(){
-        porodMass1p1 = (int)(porodVolume*1/1.66);
-        porodMass1p37 = (int)(porodVolume*1.37/1.66);
+        porodMass1p07 = (int)(porodVolume*1.07/1.66);
+        porodMass1p11 = (int)(porodVolume*1.1/1.66);
 
         if (porodVolumeReal > 0){
-            porodRealMass1p1 = (int)(porodVolumeReal*1/1.66);
-            porodRealMass1p37 = (int)(porodVolumeReal*1.37/1.66);
+            porodRealMass1p1 = (int)(porodVolumeReal*1.07/1.66);
+            porodRealMass1p37 = (int)(porodVolumeReal*1.1/1.66);
         }
     }
 
@@ -1209,8 +1207,8 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
     public int getPorodVolumeRealMass1p1(){return porodRealMass1p1;}
     public int getPorodVolumeRealMass1p37(){return porodRealMass1p37;}
 
-    public int getPorodVolumeMass1p1(){return porodMass1p1;}
-    public int getPorodVolumeMass1p37(){return porodMass1p37;}
+    public int getPorodVolumeMass1p1(){return porodMass1p07;}
+    public int getPorodVolumeMass1p37(){return porodMass1p11;}
 
     public void updateMass(){
         double qr, mass;
