@@ -68,8 +68,14 @@ public class Sphere extends Model {
     public double calculatePr(double rvalue){
         double s2 = rvalue*rvalue;
         double s3 = s2*rvalue;
-
         return 3.0*s2*invR3 - 9.0*0.25*s3*invR4 + 3*0.0625*s3*s2*invR6;
     }
+
+    @Override
+    String getConstrastString() {
+        double c = contrast*contrast;
+        return String.format("REMARK 265              SQUARED CONTRAST : %.6f %n", c);
+    }
+
 
 }

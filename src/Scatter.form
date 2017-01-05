@@ -1004,15 +1004,10 @@
                       <grid id="e4f76" binding="menuBarPrPanel" layout-manager="FormLayout">
                         <rowspec value="center:d:grow"/>
                         <colspec value="fill:d:grow"/>
-                        <colspec value="left:4dlu:noGrow"/>
                         <colspec value="fill:max(d;4px):noGrow"/>
-                        <colspec value="left:4dlu:noGrow"/>
                         <colspec value="fill:d:grow"/>
                         <colspec value="left:4dlu:noGrow"/>
                         <colspec value="right:d:noGrow"/>
-                        <colspec value="left:4dlu:noGrow"/>
-                        <colspec value="fill:max(d;4px):noGrow"/>
-                        <colspec value="left:4dlu:noGrow"/>
                         <colspec value="fill:max(d;4px):noGrow"/>
                         <constraints>
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="0" anchor="2" fill="1" indent="0" use-parent-layout="false">
@@ -1027,7 +1022,7 @@
                         <children>
                           <component id="980aa" class="javax.swing.JButton" binding="SVDReduceButton" default-binding="true">
                             <constraints>
-                              <grid row="0" column="10" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                              <grid row="0" column="5" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
                               <forms/>
                             </constraints>
                             <properties>
@@ -1036,7 +1031,7 @@
                           </component>
                           <component id="f4a0" class="javax.swing.JCheckBox" binding="qIQCheckBox" default-binding="true">
                             <constraints>
-                              <grid row="0" column="6" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                              <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
                               <forms defaultalign-horz="false"/>
                             </constraints>
                             <properties>
@@ -1067,7 +1062,7 @@
                           </grid>
                           <component id="59a57" class="javax.swing.JLabel" binding="prStatusLabel">
                             <constraints>
-                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                               <forms/>
                             </constraints>
                             <properties>
@@ -1076,20 +1071,11 @@
                           </component>
                           <component id="5c218" class="javax.swing.JCheckBox" binding="checkBoxDirect">
                             <constraints>
-                              <grid row="0" column="4" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                              <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
                               <forms defaultalign-horz="false"/>
                             </constraints>
                             <properties>
                               <text value="Use 2nd Deriv"/>
-                            </properties>
-                          </component>
-                          <component id="17938" class="javax.swing.JButton" binding="diffButton">
-                            <constraints>
-                              <grid row="0" column="8" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-                              <forms/>
-                            </constraints>
-                            <properties>
-                              <text value="Diff"/>
                             </properties>
                           </component>
                         </children>
@@ -1979,7 +1965,7 @@
             <properties>
               <enabled value="false"/>
               <opaque value="true"/>
-              <visible value="false"/>
+              <visible value="true"/>
             </properties>
             <border type="none"/>
             <children>
@@ -2084,7 +2070,7 @@
                       </grid>
                     </children>
                   </grid>
-                  <grid id="33b2c" layout-manager="GridLayoutManager" row-count="2" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                  <grid id="33b2c" layout-manager="GridLayoutManager" row-count="2" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                     <margin top="0" left="0" bottom="0" right="0"/>
                     <constraints>
                       <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -2097,7 +2083,7 @@
                       <grid id="345ee" layout-manager="GridLayoutManager" row-count="1" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
-                          <grid row="0" column="0" row-span="1" col-span="3" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <grid row="0" column="0" row-span="1" col-span="4" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
                           <background color="-3355444"/>
@@ -2191,7 +2177,7 @@
                       <grid id="e827" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
-                          <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                          <grid row="1" column="3" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
                           <background color="-3355444"/>
@@ -2209,11 +2195,11 @@
                           <component id="9ed8c" class="javax.swing.JTextField" binding="epsilonTextField">
                             <constraints>
                               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
-                                <preferred-size width="80" height="-1"/>
+                                <preferred-size width="60" height="-1"/>
                               </grid>
                             </constraints>
                             <properties>
-                              <text value="0.00001"/>
+                              <text value="0.0001"/>
                             </properties>
                           </component>
                         </children>
@@ -2226,6 +2212,15 @@
                           <enabled value="true"/>
                           <selected value="false"/>
                           <text value="fit Background?"/>
+                        </properties>
+                      </component>
+                      <component id="64ca4" class="javax.swing.JCheckBox" binding="volumeScalingBox">
+                        <constraints>
+                          <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                        </constraints>
+                        <properties>
+                          <selected value="true"/>
+                          <text value="Volume Scaling?"/>
                         </properties>
                       </component>
                     </children>
@@ -2264,7 +2259,6 @@
                             </constraints>
                             <properties>
                               <model>
-                                <item value="3"/>
                                 <item value="5"/>
                                 <item value="7"/>
                                 <item value="13"/>
@@ -2272,6 +2266,7 @@
                                 <item value="41"/>
                                 <item value="67"/>
                                 <item value="101"/>
+                                <item value="667"/>
                               </model>
                             </properties>
                           </component>
@@ -2720,7 +2715,7 @@
                             </properties>
                             <border type="etched"/>
                             <children>
-                              <grid id="221cc" layout-manager="GridLayoutManager" row-count="2" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                              <grid id="221cc" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                                 <margin top="0" left="0" bottom="0" right="0"/>
                                 <constraints>
                                   <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="2" indent="0" use-parent-layout="false">
@@ -2737,30 +2732,6 @@
                                   <grid id="636b0" binding="crossSection1Panel" layout-manager="BorderLayout" hgap="0" vgap="0">
                                     <constraints>
                                       <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                                    </constraints>
-                                    <properties/>
-                                    <border type="etched"/>
-                                    <children/>
-                                  </grid>
-                                  <grid id="70894" binding="crossSection2Panel" layout-manager="BorderLayout" hgap="0" vgap="0">
-                                    <constraints>
-                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="10" fill="0" indent="0" use-parent-layout="false"/>
-                                    </constraints>
-                                    <properties/>
-                                    <border type="etched"/>
-                                    <children/>
-                                  </grid>
-                                  <grid id="757e9" binding="crossSection4Panel" layout-manager="BorderLayout" hgap="0" vgap="0">
-                                    <constraints>
-                                      <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="4" fill="2" indent="0" use-parent-layout="false"/>
-                                    </constraints>
-                                    <properties/>
-                                    <border type="etched"/>
-                                    <children/>
-                                  </grid>
-                                  <grid id="54d3a" binding="crossSection3Panel" layout-manager="BorderLayout" hgap="0" vgap="0">
-                                    <constraints>
-                                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="4" fill="2" indent="0" use-parent-layout="false"/>
                                     </constraints>
                                     <properties/>
                                     <border type="etched"/>
@@ -4034,7 +4005,7 @@
                     <properties/>
                     <border type="none"/>
                     <children>
-                      <grid id="4aa69" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                      <grid id="4aa69" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                         <margin top="0" left="0" bottom="0" right="0"/>
                         <constraints>
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -4042,7 +4013,7 @@
                         <properties/>
                         <border type="none"/>
                         <children>
-                          <grid id="6fc96" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                          <grid id="6fc96" layout-manager="GridLayoutManager" row-count="2" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                             <margin top="0" left="0" bottom="0" right="0"/>
                             <constraints>
                               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -4050,21 +4021,136 @@
                             <properties/>
                             <border type="none"/>
                             <children>
-                              <component id="2662a" class="javax.swing.JLabel">
+                              <grid id="bdda4" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                <margin top="0" left="0" bottom="0" right="0"/>
                                 <constraints>
-                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                                 </constraints>
                                 <properties>
-                                  <text value="If gap is large, increase number of models"/>
+                                  <background color="-1"/>
                                 </properties>
-                              </component>
+                                <border type="etched" title="CROSS ENTROPY PARAMETERS">
+                                  <title-color color="-21437"/>
+                                </border>
+                                <children>
+                                  <component id="d4256" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="&lt;html&gt;&lt;b&gt;Volume Scaling&lt;/b&gt;: Turn Volume Scaling off if the particles are distributed over a very large range and increase number of models&lt;/html&gt;"/>
+                                    </properties>
+                                  </component>
+                                  <component id="2662a" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="&lt;html&gt;&lt;b&gt;Total Search Rounds&lt;/b&gt;: Increase if convergence is not reached&lt;/html&gt;"/>
+                                    </properties>
+                                  </component>
+                                  <component id="5aa4d" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="&lt;html&gt;&lt;b&gt;Lambda&lt;/b&gt;: Strength of the regularization parameter (i.e., increasing lambda increases smoothness)&lt;/html&gt;"/>
+                                    </properties>
+                                  </component>
+                                  <component id="8f814" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="&lt;html&gt;&lt;b&gt;Epsilon&lt;/b&gt;: Convergence criteria, if the change between rounds is less than epsilon then stop search&lt;/html&gt;"/>
+                                    </properties>
+                                  </component>
+                                </children>
+                              </grid>
+                              <grid id="dcd92" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                                <margin top="0" left="0" bottom="0" right="0"/>
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <background color="-1"/>
+                                </properties>
+                                <border type="etched" title="PER ROUND">
+                                  <font/>
+                                  <title-color color="-12997377"/>
+                                </border>
+                                <children>
+                                  <component id="d2eba" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="Regularization is required due to the bin size of the parameter search"/>
+                                    </properties>
+                                  </component>
+                                  <component id="b259d" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="&lt;html&gt;&lt;b&gt;Second Derivative&lt;/b&gt;: Applies a smoothness criteria to the distribution and works well for 1 to two parameters&lt;/html&gt;"/>
+                                    </properties>
+                                  </component>
+                                  <component id="ae831" class="javax.swing.JLabel">
+                                    <constraints>
+                                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                    </constraints>
+                                    <properties>
+                                      <text value="&lt;html&gt;&lt;b&gt;Maximum Entropy&lt;/b&gt;: Seeks the sparsist solution to the fit and is better for models with 2 or more parameters&lt;/html&gt;"/>
+                                    </properties>
+                                  </component>
+                                </children>
+                              </grid>
                             </children>
                           </grid>
                           <vspacer id="dd598">
                             <constraints>
-                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
+                              <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="6" hsize-policy="1" anchor="0" fill="2" indent="0" use-parent-layout="false"/>
                             </constraints>
                           </vspacer>
+                          <grid id="e268" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                            <margin top="0" left="0" bottom="0" right="0"/>
+                            <constraints>
+                              <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                            </constraints>
+                            <properties>
+                              <background color="-1"/>
+                            </properties>
+                            <border type="etched" title="NOTES">
+                              <title-color color="-11545754"/>
+                            </border>
+                            <children>
+                              <component id="4511b" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="If chi-square is high, increase the number-of-models per round"/>
+                                </properties>
+                              </component>
+                              <component id="1340a" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="Complexity of the distribution is controlled by the number-of-models per round and volume scaling."/>
+                                </properties>
+                              </component>
+                              <component id="bcb26" class="javax.swing.JLabel">
+                                <constraints>
+                                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                                </constraints>
+                                <properties>
+                                  <text value="Its best to not fit the high resolution data unless your particles are these shapes.  For proteins, we seek a low resolution approximation"/>
+                                </properties>
+                              </component>
+                            </children>
+                          </grid>
                         </children>
                       </grid>
                     </children>

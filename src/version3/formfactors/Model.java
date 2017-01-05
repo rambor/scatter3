@@ -35,6 +35,7 @@ abstract class Model {
     // abstract methods
     // calculate 1D SAXS curve using specified q-values
     abstract void calculateModelIntensities(Double[] qvalues);
+    abstract String getConstrastString();
 
     public ModelType getModelType(){ return modelType;}
 

@@ -35,7 +35,6 @@ public class PofRPlot {
     private XYLineAndShapeRenderer renderer1 = new XYSplineRenderer();
    // private Collection collectionInUse;
 
-    //Container content = f.getContentPane();
     private static PofRPlot singleton = new PofRPlot( );
 
     private PofRPlot(){
@@ -115,7 +114,7 @@ public class PofRPlot {
                 super.getChart().getXYPlot().getRangeAxis().setAutoRange(false);
 
                 int seriesCount = super.getChart().getXYPlot().getDataset(0).getSeriesCount();
-                int maxIndex;
+
                 int size;
                 double min = -0.00001;
                 double max = -10;

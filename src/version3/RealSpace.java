@@ -59,6 +59,7 @@ public class RealSpace {
     private BasicStroke stroke;
     private double kurtosis = 0;
     private double l1_norm = 0;
+    private double inv2PI2 = 1.0/(2*Math.PI*Math.PI);
     private double kurt_l1_sum;
     private Dataset dataset;
     private int lowerQIndexLimit=0;
@@ -519,7 +520,7 @@ public class RealSpace {
         double resultM;
         double pi_dmax = Math.PI/dmax;
 
-        double invtwopi2 = 1.0/(2*Math.PI*Math.PI)*standardizationStDev;
+        double invtwopi2 = inv2PI2*standardizationStDev;
         double pi_dmax_r;
         double r_value;
         prDistribution.add(0.0d, 0.0d);
@@ -552,17 +553,16 @@ public class RealSpace {
      * @return scaled value
      */
     public double calculatePofRAtR(double r_value){
-        double inv_d = 1.0/dmax;
+        //double inv_d = 1.0/dmax;
         //double pi_dmax = Math.PI*inv_d;
-        double pi_dmax_r = Math.PI*inv_d*r_value;
+        double pi_dmax_r = Math.PI*r_value/dmax;
         double resultM = 0;
 
         for(int i=1; i < totalMooreCoefficients; i++){
             resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
         }
 
-
-        return (1.0/(2*Math.PI*Math.PI)*standardizationStDev) * r_value * resultM*scale;
+        return (inv2PI2*standardizationStDev) * r_value * resultM*scale;
     }
 
 

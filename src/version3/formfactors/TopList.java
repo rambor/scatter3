@@ -624,27 +624,6 @@ public class TopList{
             int lastIndex = scoreList.size()-1;
             double currentBest = scoreList.get(lastIndex).getScorevalue() + smoothnessScore;
             // new configuration has to be better than the last and have a better overall smoothness
-//            if (score < scoreList.get(lastIndex).getScorevalue()){
-//
-//                double testSmooth = (useEntropy) ? this.calculateEntropyOfTestModel(model, numberOfModelsPerTrial) : this.calculate2ndDerivativeTestModel(model, numberOfModelsPerTrial);
-//
-//                if (testSmooth < smoothnessScore) {
-//                    // popoff last
-//                    // insert new entry
-//                    modelList.remove(scoreList.get(lastIndex).getIndex());
-//                    scoreList.remove(lastIndex);
-//
-//                    //System.out.println(index + " SCORE " + score + " " + testSmooth + " <= " + lastvalue);
-//                    scoreList.add(new ScoreObject(score, index));
-//                    modelList.put(index, new ArrayList<Integer>(numberOfModelsPerTrial));
-//                    // add indices from model to newly created entry
-//                    for (Integer item : model.getSelectedIndices()) modelList.get(index).add(item);
-//                    Collections.sort(scoreList, new ScoreComp());
-//                    //System.out.println(index + " SCORE " + score + " " + testSmooth + " <= " + lastvalue + " < " + scoreList.get(lastIndex).getScorevalue());
-//                    smoothnessScore = testSmooth;
-//                    //System.out.println("Score " + score + " => " + smoothnessScore);
-//                }
-//            }
 
             double testSmooth = (useEntropy) ? this.calculateEntropyOfTestModel(model, numberOfModelsPerTrial) : this.calculate2ndDerivativeTestModel(model, numberOfModelsPerTrial);
 
@@ -660,8 +639,8 @@ public class TopList{
                 for (Integer item : model.getSelectedIndices()) modelList.get(index).add(item);
 
                 Collections.sort(scoreList, new ScoreComp());
-                smoothnessScore = testSmooth;
 
+                smoothnessScore = testSmooth;
             }
         }
     }

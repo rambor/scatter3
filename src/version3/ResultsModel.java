@@ -10,7 +10,7 @@ public class ResultsModel extends AbstractTableModel {
 
     private final LinkedList<Dataset> datalist;
 
-    private String[] columnNames = new String[]{"", "", "I(0)", "real", "<html>R<sub>g</sub></html>", "real", "<html>V<sub>c</sub></html>", "Volume", "MW 1.0", "MW 1.37","Protein", "RNA", "r", "<html>d<sub>max</sub></html>", "<html>R<sub>c</sub></html>", "<html>P<sub>x</sub></html>"};
+    private String[] columnNames = new String[]{"", "", "I(0)", "real", "<html>R<sub>g</sub></html>", "real", "<html>V<sub>c</sub></html>", "Volume", "MW 1.07", "MW 1.1","Protein", "RNA", "r", "<html>d<sub>max</sub></html>", "<html>R<sub>c</sub></html>", "<html>P<sub>x</sub></html>"};
 
     public ResultsModel(){
         datalist = new LinkedList<Dataset>();

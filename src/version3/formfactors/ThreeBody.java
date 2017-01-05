@@ -151,4 +151,11 @@ public class ThreeBody extends Model {
         }
     }
 
+    @Override
+    String getConstrastString() {
+        double c = contrast*contrast;
+        return String.format("REMARK 265              SQUARED CONTRAST : %.1f %n", c);
+    }
+
+
 }

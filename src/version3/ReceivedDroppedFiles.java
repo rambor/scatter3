@@ -121,7 +121,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                     System.out.println("Detected PDB file");
                     bar.setStringPainted(false);
                     bar.setIndeterminate(true);
-                    PDBFile tempPDB = new PDBFile(files[i], qmax, exclude);
+                    PDBFile tempPDB = new PDBFile(files[i], qmax, exclude, workingDirectoryName);
 
                     int newIndex = targetCollection.getDatasetCount();
 

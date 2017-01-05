@@ -313,6 +313,8 @@ public class Scatter {
     private JRadioButton secondDerivativeRadioButton;
     private JTextField textField1;
     private JPanel sphereResultsPanel;
+    private JCheckBox volumeScalingBox;
+    //private JCheckBox volumeScalingCheckBox;
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
@@ -405,11 +407,14 @@ public class Scatter {
         simBinsComboBox.setSelectedIndex(0);
         lambdaBox.setSelectedIndex(6);
         cBox.setSelectedIndex(1);
-        lambdaCEcomboBox.setSelectedIndex(5);
+        lambdaCEcomboBox.setSelectedIndex(3);
         ceComboBoxRounds.setSelectedIndex(1);
-        trialsPerRoundComboBox.setSelectedIndex(2);
+        trialsPerRoundComboBox.setSelectedIndex(1);
         modelsPerRoundComboBox.setSelectedIndex(4);
         topNComboBox.setSelectedIndex(0);
+
+        maximumEntropyRadioButton.setSelected(true);
+        secondDerivativeRadioButton.setSelected(false);
 
         collections = new HashMap();
         bufferCollections = new Collection();
@@ -2424,6 +2429,7 @@ public class Scatter {
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()),
                                 !fitBackgroundCheckBox.isSelected(),
                                 maximumEntropyRadioButton.isSelected(),
+                                volumeScalingBox.isSelected(),
                                 version
                         );   // randomModelsPerTrial
 
@@ -2454,29 +2460,18 @@ public class Scatter {
         ffCEFileSelectionComboBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
                 JComboBox cb = (JComboBox)e.getSource();
-                System.out.println("dataset " + ((Dataset)cb.getSelectedItem()).getFileName());
                 Dataset tempDataset = (Dataset) cb.getSelectedItem();
 
-                if (qminCEText.getText().length() > 0){
-                    //double startq = tempDataset.getOriginalPositiveOnlyData().getX(tempDataset.getStart()).doubleValue();
-                    double currentqMin = Double.parseDouble(qminCEText.getText());
-                    double currentqMax = Double.parseDouble(qmaxCEText.getText());
+                double qminFromData = tempDataset.getScaledLog10DataItemAt(tempDataset.getStart()).getXValue();
+                qminCEText.setText(String.valueOf(qminFromData));
 
-                    if (currentqMin > tempDataset.getAllData().getMinX()){
-                        qminCEText.setText(String.valueOf(tempDataset.getAllData().getMinX()));
-                    }
 
-                    if (currentqMax < tempDataset.getAllData().getMaxX()){
-                        qmaxCEText.setText(String.valueOf(tempDataset.getAllData().getMaxX()));
-                    }
+                if (tempDataset.getAllData().getMaxX() > 0.097){
+                    qmaxCEText.setText(String.valueOf(0.097));
                 } else {
-                    qminCEText.setText(String.valueOf(tempDataset.getOriginalPositiveOnlyData().getX(tempDataset.getStart()-1).doubleValue()));
-                    if (tempDataset.getAllData().getMaxX() > 0.08){
-                        qmaxCEText.setText("0.08");
-                    } else {
-                        qmaxCEText.setText(String.valueOf(tempDataset.getAllData().getMaxX()));
-                    }
+                    qmaxCEText.setText(String.valueOf(tempDataset.getAllData().getMaxX()));
                 }
             }
         });
@@ -2590,6 +2585,7 @@ public class Scatter {
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
                                 !fitBackgroundCheckBox.isSelected(), // background
                                 maximumEntropyRadioButton.isSelected(),
+                                volumeScalingBox.isSelected(),
                                 version
                         );      // useNoBackground
 
@@ -2597,9 +2593,6 @@ public class Scatter {
 
                         ellipsoid.setEllipsoidPlotPanels(
                                 crossSection1Panel,
-                                crossSection2Panel,
-                                crossSection3Panel,
-                                crossSection4Panel,
                                 ellipsoidResidualPanel,
                                 histogramRaPanel,
                                 histogramRbPanel,
@@ -3236,6 +3229,7 @@ public class Scatter {
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
                                 !fitBackgroundCheckBox.isSelected(),      // useNoBackground
                                 maximumEntropyRadioButton.isSelected(),
+                                volumeScalingBox.isSelected(),
                                 version);
 
                         body3.setProgressBar(progressBar3Body);
@@ -3322,6 +3316,7 @@ public class Scatter {
                                 Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
                                 !fitBackgroundCheckBox.isSelected(),     // useNoBackground
                                 maximumEntropyRadioButton.isSelected(),
+                                volumeScalingBox.isSelected(),
                                 version);
 
                         csModel.setProgressBar(coreShellProgressBar);
@@ -3361,13 +3356,6 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 maximumEntropyRadioButton.setSelected(false);
-            }
-        });
-
-        diffButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-
             }
         });
     }
@@ -3455,9 +3443,6 @@ public class Scatter {
 
         prStatusLabel.setText("");
         status.setText("Cleared");
-
-
-
 
         closeWindows();
     }
