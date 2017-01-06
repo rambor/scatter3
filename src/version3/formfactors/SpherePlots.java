@@ -144,6 +144,10 @@ public class SpherePlots {
 
         ValueMarker mark = new ValueMarker(0, Color.BLACK, new BasicStroke(1.8f));
         plot.addRangeMarker(mark);
+        final NumberAxis domainAxis = new NumberAxis("q");
+        final NumberAxis rangeAxis = new NumberAxis("residuals");
+        plot.setDomainAxis(domainAxis);
+        plot.setRangeAxis(rangeAxis);
 
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
         residualsPanel.removeAll();

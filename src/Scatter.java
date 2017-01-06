@@ -394,11 +394,11 @@ public class Scatter {
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-        //mc.redirectOut();
-        //mc.redirectErr(Color.RED, null);
+        mc.redirectOut();
+        mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        //info.redirectOut();
+        info.redirectOut();
 
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
