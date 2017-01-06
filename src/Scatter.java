@@ -318,7 +318,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.0i";
+    private String version = "3.0h";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -400,8 +400,6 @@ public class Scatter {
         final MessageConsole info = new MessageConsole(generalText);
         //info.redirectOut();
 
-        //int[] subtractionBins = new int[] {11, 13, 17, 23, 29};
-        //comboBoxSubtractBins = new JComboBox(subtractionBins);
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
         simBinsComboBox.setSelectedIndex(0);
@@ -441,7 +439,6 @@ public class Scatter {
         MouseAdaptorForDragging mouseAdaptorForDragging = new MouseAdaptorForDragging();
         similarityList.addMouseListener(mouseAdaptorForDragging);
         similarityList.addMouseMotionListener(mouseAdaptorForDragging);
-        //fitFilesList = new JList();
 
         bufferFilesModel = new DefaultListModel<SampleBufferElement>();
         sampleFilesModel = new DefaultListModel<SampleBufferElement>();

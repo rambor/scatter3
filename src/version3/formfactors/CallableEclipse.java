@@ -17,16 +17,17 @@ public class CallableEclipse implements Callable<Ellipse> {
     private double deltaqr;
 
 
-    public CallableEclipse(int index, double solventContrast, double[] particleContrasts, double[] radii, Double[] qvalues, double deltaqr){
+    public CallableEclipse(int index, double solventContrast, double[] particleContrasts, double[] radii, List<Double> qvalues, double deltaqr){
         this.index = index;
         this.solventContrast = solventContrast;
-        this.qvalues = new Double[qvalues.length];
 
         this.deltaqr=deltaqr;
 
-        synchronized (qvalues){
-            System.arraycopy(qvalues, 0, this.qvalues, 0, qvalues.length);
-        }
+        this.qvalues = new Double[qvalues.size()];
+        this.qvalues = qvalues.toArray(this.qvalues);
+//        synchronized (qvalues){
+//            System.arraycopy(qvalues, 0, this.qvalues, 0, qvalues.length);
+//        }
 
         synchronized (particleContrasts){
             this.particleContrasts[0] = particleContrasts[0];

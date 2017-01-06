@@ -94,6 +94,14 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
      * @param cores
      * @param rounds
      * @param minParams
+     * sphere :
+     * 0 : lower radii
+     *
+     * ellipse :
+     * 0 : a axis
+     * 1 : b axis
+     * 2 : c axis
+     *
      * @param maxParams
      * @param delta
      * @param qmin
@@ -189,20 +197,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
         this.solventContrast = solventContrast;
         this.particleContrasts = particleContrasts;
-        // minParams[]
-        // sphere :
-        // 0: lower radii
-        // ellipse :
-        // 0: lower minor axis
-        // 1: lower major axis
-        //
 
-        // maxParams[]
-        // sphere :
-        // 0: upper radii
-        // ellipse :
-        // 0: upper minor axis
-        // 1: upper major axis
     }
 
     @Override
@@ -248,7 +243,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         // create working dataset for fitting
         bins = (int)(qmax*dmaxOfSet/Math.PI) + 1;
         System.out.println("Max Shannon Bins " + bins);
-        double deltaq = qmax/(double)bins;
+//        double deltaq = qmax/(double)bins;
 
 
 //        if (percentData > 0.99){
@@ -305,8 +300,9 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 modelIntensities.add(model.getIntensity(j));
             }
         }
+        final List<Double> THREAD_SAFE_LIST=Collections.unmodifiableList(modelIntensities);
         // modelIntensities is read only from this point on.
-        //createTestData();
+        // createTestData();
         /*
          * pick top X configurations
          * update probabilities for each
@@ -343,7 +339,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 cdf,
                                 tempTopList,
                                 models,
-                                modelIntensities,
+                                THREAD_SAFE_LIST,
                                 totalIntensitiesOfModels,
                                 workingSetIntensities,
                                 workingSetErrors,
@@ -916,7 +912,6 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             cdf.put(value, index);
             value += probabilities.get(index);
         }
-        //System.out.println("LAST " + (probabilities.size()-1) + " => " + cdf.lastEntry().getKey() + " <=> " + cdf.lastEntry().getValue() );
     }
 
 
@@ -1109,8 +1104,10 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
         dmaxOfSet = 2*maxParams[0];
         totalSearchSpace=0;
+        final List<Double> THREAD_SAFE_LIST=Collections.unmodifiableList(Arrays.asList(qvalues));
+
         while(params[0] < maxParams[0]){
-            models.add(new Sphere(totalSearchSpace, solventContrast, particleContrasts, params, qvalues));
+            models.add(new Sphere(totalSearchSpace, solventContrast, particleContrasts, params, THREAD_SAFE_LIST));
             params[0] += delta[0];
             totalSearchSpace++;
         }
@@ -1126,6 +1123,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         params[1] = maxParams[0]; // this is R_c
         dmaxOfSet = 2*maxParams[0];
 
+        final List<Double> THREAD_SAFE_LIST=Collections.unmodifiableList(Arrays.asList(qvalues));
+
         while(params[1] > minLimit){
             // set R_a
             params[0] = params[1] - delta[0];
@@ -1136,7 +1135,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         solventContrast,
                         particleContrasts,
                         params,
-                        qvalues
+                        THREAD_SAFE_LIST
                 ));
 
                 obfutures.add(future);
@@ -1184,6 +1183,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         }
 
         int totalOuterLoop = outer.size();
+        final List<Double> THREAD_SAFE_LIST=Collections.unmodifiableList(Arrays.asList(qvalues));
 
         // create models
         for(int i=0; i<(totalOuterLoop-1); i++){
@@ -1197,7 +1197,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                         solventContrast,
                         particleContrasts,
                         params,
-                        qvalues
+                        THREAD_SAFE_LIST
                 ));
 
                 epfutures.add(future);
@@ -1234,6 +1234,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         double[] params = new double[3];   // [0] => R_a, [1] => R_b, [2] => R_c
         params[2] = maxParams[0]; // this is R_c
         dmaxOfSet = 2*maxParams[0];
+
+        final List<Double> THREAD_SAFE_LIST=Collections.unmodifiableList(Arrays.asList(qvalues));
         //System.out.println("MAX " +  params[2] + " MIN " + minLimit + " " + delta[0]);
         // create atomic integer array that will hold weights
         // if interval is 0.01, then x,y is 100*100 = 10000 points
@@ -1256,7 +1258,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                             solventContrast,
                             particleContrasts,
                             params,
-                            qvalues,
+                            THREAD_SAFE_LIST,
                             deltaqr
                     ));
                     futures.add(future);
@@ -1370,6 +1372,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         double deltaShell = shellThickness*0.2;// set shell thickness
         double shellStart = shellThickness - 3*deltaShell;
 
+        final List<Double> THREAD_SAFE_LIST=Collections.unmodifiableList(Arrays.asList(qvalues));
+
         while(params[1] > minLimit){ // major
             // set R_a
             params[0] = params[1] - delta[0];
@@ -1385,7 +1389,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                             particleContrasts,
                             shell,
                             params,
-                            qvalues,
+                            THREAD_SAFE_LIST,
                             completeness
                     ));
                     coreOblatefutures.add(future);
@@ -1401,7 +1405,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 empty,
                                 shell,
                                 params,
-                                qvalues,
+                                THREAD_SAFE_LIST,
                                 completeness
                         ));
                         coreOblatefutures.add(emptyFuture);
@@ -1461,6 +1465,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         dmaxOfSet = 2*maxParams[0];
         double deltaShell = shellThickness*0.2;// set shell thickness
         double shellStart = shellThickness - 2*deltaShell;
+        final List<Double> THREAD_SAFE_LIST=Collections.unmodifiableList(Arrays.asList(qvalues));
 
         while(params[0] > minLimit){
             // set R_c
@@ -1477,7 +1482,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                             particleContrasts,
                             shell,
                             params,
-                            qvalues,
+                            THREAD_SAFE_LIST,
                             completeness
                     ));
                     coreProlatefutures.add(future);
@@ -1493,7 +1498,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 empty,
                                 shell,
                                 params,
-                                qvalues,
+                                THREAD_SAFE_LIST,
                                 completeness
                         ));
                         coreProlatefutures.add(emptyFuture);

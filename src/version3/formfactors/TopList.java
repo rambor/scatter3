@@ -24,7 +24,7 @@ public class TopList{
     private List<Double> probabilities;
     //private ArrayList<SortedSet<Double>> setofValuesInParam;
     private int totalProbabilities;
-    private double alpha, stepsize, invStepSize2, invStepSize;
+    private double alpha, invStepSize2, invStepSize;
     private int totalParamsFitted;
     // Integer in scoreList corresponds to Integer in ArrayList
     private AtomicInteger counter = new AtomicInteger(0);
@@ -74,7 +74,7 @@ public class TopList{
 
         this.alpha = alpha;
         this.lambda = lambda;
-        this.stepsize = stepsize;
+        //double stepsize = stepsize;
         this.invStepSize2 = 1.0/(stepsize*stepsize);
         this.invStepSize = 1.0/stepsize;
 

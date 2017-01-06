@@ -97,53 +97,61 @@ public class TestModel implements Callable<Double> {
     @Override
     public Double call() throws Exception {
 
-        List<Double> modelIntensitiesTemp;
-//        if (totalqInModelIntensities < 1000000){
-//            System.out.println("MAKING COPY : Total Model Intensities => " + totalqInModelIntensities);
-//            modelIntensitiesTemp = new ArrayList<>(totalqInModelIntensities);
-//            synchronized (modelIntensities){
-//                for (double item : modelIntensities) modelIntensitiesTemp.add(item); // can be quite large
-//            }
-//        } else {
-//            modelIntensitiesTemp = this.modelIntensities;
-//        }
-
-        modelIntensitiesTemp = this.modelIntensities;
+        //List<Double> modelIntensitiesTemp;
+       // long startTime = System.nanoTime();
+        //modelIntensitiesTemp = this.modelIntensities;
         // create the random Ensemble Model
-        DecimalFormat formatter = new DecimalFormat("0.#####E0");
+        //DecimalFormat formatter = new DecimalFormat("0.#####E0");
 
         Random random = new Random();
         int index, startIndex;
 
-        calculatedIntensities = new ArrayList<>();
-        while(calculatedIntensities.size() < totalq) calculatedIntensities.add(0.0d);
+        //calculatedIntensities = new ArrayList<>();
+        //while(calculatedIntensities.size() < totalq) calculatedIntensities.add(0.0d);
+        calculatedIntensities = new ArrayList<>(Collections.nCopies(totalq, 0.0d));
 
-        double totalVolume = 0;
+        //double totalVolume = 0;
+        double invTotal = 1.0/(double)totalToSelect;
+
         for(int i=0; i<totalToSelect; i++){
             double rand = random.nextDouble();
-
             index = cdf.floorEntry(rand).getValue();
             selectedIndices.set(i, index);
             // combine with
             startIndex = index*totalq;
+            ListIterator<Double> modelStart = modelIntensities.listIterator(index*totalq);
             // sum the intensities for each model
-            totalVolume += models.get(index).getVolume();
+            // totalVolume += models.get(index).getVolume();
 
-            double volumeScaling=1.0d;
-            if (!useVolumeScaling){
-                volumeScaling = 1.0/(models.get(index).getVolume());
+            //double volumeScaling=invTotal;
+            double volumeScaling = !useVolumeScaling ? invTotal/(models.get(index).getVolume()) : invTotal;
+//            if (!useVolumeScaling){
+//                volumeScaling = invTotal/(models.get(index).getVolume());
+//            }
+
+            // using iterator
+            //int count=0;
+            //startTime = System.nanoTime();
+            ListIterator<Double> listIterator = calculatedIntensities.listIterator();
+            while (listIterator.hasNext()){
+                listIterator.set(listIterator.next() + volumeScaling*modelStart.next());
+                //listIterator.set(listIterator.next() + volumeScaling*modelIntensities.get(startIndex+count).doubleValue());
+                //count++;
             }
-            for(int j=0; j<totalq; j++){
-                calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + volumeScaling*modelIntensitiesTemp.get(startIndex+j).doubleValue());
-            }
+
+//            startTime = System.nanoTime();
+//            for(int j=0; j<totalq; j++){
+//                calculatedIntensities.set(j, calculatedIntensities.get(j).doubleValue() + volumeScaling*modelIntensities.get(startIndex+j).doubleValue());
+//            }
+            //System.out.println(modelIndex + " SUM => " + (System.nanoTime() - startTime) );
         }
 
         // perform the average by dividing by total
-        double invTotal = 1.0/(double)totalToSelect;
-        for(int j=0; j<totalq; j++){
-            calculatedIntensities.set(j, invTotal*calculatedIntensities.get(j).doubleValue());
-            // uncomment for volume weighting
-        }
+
+//        for(int j=0; j<totalq; j++){
+//            calculatedIntensities.set(j, invTotal*calculatedIntensities.get(j).doubleValue());
+//            // uncomment for volume weighting
+//        }
 
         // calculate score
         calculateScore();

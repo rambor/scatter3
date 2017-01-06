@@ -2,6 +2,8 @@ package version3.formfactors;
 
 import org.apache.commons.math3.util.FastMath;
 
+import java.util.List;
+
 /**
  * Created by robertrambo on 28/10/2016.
  */
@@ -11,6 +13,7 @@ public class Sphere extends Model {
     private double invR3;
     private double invR4;
     private double invR6;
+    private Double[] qvalues;
 
     /**
      * if contrast is unknown, set to 1
@@ -20,15 +23,17 @@ public class Sphere extends Model {
      * @param radius
      * @param qvalues
      */
-    public Sphere(int index, double solventContrast, double[] particleContrasts, double[] radius, Double[] qvalues) {
+    public Sphere(int index, double solventContrast, double[] particleContrasts, double[] radius, List<Double> qvalues) {
 
-        super(index, ModelType.SPHERICAL, (4.0/3.0*Math.PI*radius[0]*radius[0]*radius[0]), solventContrast, particleContrasts, qvalues.length, 1);
+        super(index, ModelType.SPHERICAL, (4.0/3.0*Math.PI*radius[0]*radius[0]*radius[0]), solventContrast, particleContrasts, qvalues.size(), 1);
         this.contrast = particleContrasts[0] - solventContrast;
         this.setConstant(4.0*Math.PI*9.0*this.getVolume()*this.getVolume()*contrast*contrast); // 9*V*contrast^2
         this.setFittedParamsByIndex(0, radius[0]);
         this.setString();
         //this.setConstant(4.0*Math.PI*9.0*contrast*contrast);
-        this.calculateModelIntensities(qvalues);
+        this.qvalues = new Double[qvalues.size()];
+        this.qvalues = qvalues.toArray(this.qvalues);
+        this.calculateModelIntensities(this.qvalues);
 
         double inv = 1.0/radius[0];
         invR3 = inv*inv*inv;

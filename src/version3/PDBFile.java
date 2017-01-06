@@ -76,8 +76,8 @@ public class PDBFile {
         calculatePofR();
         this.convertPofRToIntensities();
 
-        this.centerCoordinates();
-        this.convertToBeadModel(2.1);
+        //this.centerCoordinates();
+        //this.convertToBeadModel(2.1);
     }
 
     private void calculatePofR() {

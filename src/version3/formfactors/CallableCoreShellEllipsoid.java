@@ -1,5 +1,6 @@
 package version3.formfactors;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -25,18 +26,19 @@ public class CallableCoreShellEllipsoid implements Callable<CoreShell> {
      * @param radii
      * @param qvalues
      */
-    public CallableCoreShellEllipsoid(int index, double solventContrast, double[] particleContrasts, double thickness, double[] radii, Double[] qvalues, boolean completeness){
+    public CallableCoreShellEllipsoid(int index, double solventContrast, double[] particleContrasts, double thickness, double[] radii, List<Double> qvalues, boolean completeness){
         this.index = index;
         this.solventContrast = solventContrast;
-        this.qvalues = new Double[qvalues.length];
         this.thickness = thickness;
+
+        this.qvalues = new Double[qvalues.size()];
+        this.qvalues = qvalues.toArray(this.qvalues);
 
         synchronized (this){
             this.particleContrasts[0] = particleContrasts[0]; // shell
             this.particleContrasts[1] = particleContrasts[1]; // core
             this.params[0] = radii[0];
             this.params[1] = radii[1];
-            System.arraycopy(qvalues, 0, this.qvalues, 0, qvalues.length);
         }
         this.completeness = completeness;
     }
