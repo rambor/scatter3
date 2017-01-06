@@ -681,12 +681,11 @@ public class TopList{
         }
 
         double average = (value/(double)index);
-
         double first = scoreList.get(0).getScorevalue();
         double last = scoreList.get(scoreList.size()-1).getScorevalue();
         gap = last-first;
 
-        System.out.println("FIRST: " + first + " LAST: " + last +  "  AVG: " + average + " GAP: "+ gap + " SIZE: " + scoreList.size() + " " +counter.get());
+        System.out.println(String.format(" <AVERAGE> : %.5f  | FIRST %.6f <=> LAST %.6f  GAP %.6f "));
         return Math.log10(average);
     }
 

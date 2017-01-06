@@ -124,7 +124,7 @@ public class SpherePlots {
         residualsChart = ChartFactory.createXYLineChart(
                 "",
                 "q",
-                "residuals",
+                "",
                 residualsCollection,
                 PlotOrientation.VERTICAL,
                 false,
@@ -145,9 +145,9 @@ public class SpherePlots {
         ValueMarker mark = new ValueMarker(0, Color.BLACK, new BasicStroke(1.8f));
         plot.addRangeMarker(mark);
         final NumberAxis domainAxis = new NumberAxis("q");
-        final NumberAxis rangeAxis = new NumberAxis("residuals");
+        //final NumberAxis rangeAxis = new NumberAxis("residuals");
         plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
+        //plot.setRangeAxis(rangeAxis);
 
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
         residualsPanel.removeAll();
@@ -163,43 +163,24 @@ public class SpherePlots {
         while(calculatedIntensities.size() < totalq) calculatedIntensities.add(0.0d);
 
         int count=0;
-//        for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
-//
-//            ArrayList<Integer> indices = entry.getValue();
-//            // for each index, great XYSeries and Add
-//            int total = indices.size();
-//
-//            for (int i=0; i<total; i++){
-//                Sphere model =  (Sphere)models.get(indices.get(i));
-//
-//                for(int q=0; q<totalq; q++){
-//                    calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + model.getIntensity(q));
-//                    count++;
-//                }
-//            }
-//        }
-        //Map.Entry<Double, ArrayList<Integer>> entry = keptList.firstEntry();
 
-            ArrayList<Integer> indices = keptList.getFirst();
+        ArrayList<Integer> indices = keptList.getFirst();
 
-            // for each index, great XYSeries and Add
-            int total = indices.size();
+        // for each index, great XYSeries and Add
+        int total = indices.size();
 
-            for (int i=0; i<total; i++){
-                Sphere model =  (Sphere)models.get(indices.get(i));
-                double volumescale = 1.0;
-                if (!useVolumeScale){
-                    volumescale = 1.0/(model.getVolume());
-                }
-
-                for(int q=0; q<totalq; q++){
-                    calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + volumescale*model.getIntensity(q));
-                    count++;
-                }
+        for (int i=0; i<total; i++){
+            Sphere model =  (Sphere)models.get(indices.get(i));
+            double volumescale = 1.0;
+            if (!useVolumeScale){
+                volumescale = 1.0/(model.getVolume());
             }
 
-
-
+            for(int q=0; q<totalq; q++){
+                calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + volumescale*model.getIntensity(q));
+                count++;
+            }
+        }
 
 
         // average the calculated intensities

@@ -351,7 +351,7 @@ public class EllipsoidPlots {
         JFreeChart chart = ChartFactory.createXYLineChart(
                 "",
                 "q",
-                "residuals",
+                "",
                 residualsCollection,
                 PlotOrientation.VERTICAL,
                 false,
@@ -369,9 +369,9 @@ public class EllipsoidPlots {
         ValueMarker mark = new ValueMarker(0, Color.BLACK, new BasicStroke(1.8f));
         plot.addRangeMarker(mark);
         final NumberAxis domainAxis = new NumberAxis("q");
-        final NumberAxis rangeAxis = new NumberAxis("residuals");
+        //final NumberAxis rangeAxis = new NumberAxis("residuals");
         plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
+        //plot.setRangeAxis(rangeAxis);
 
         ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
