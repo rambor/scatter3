@@ -1,6 +1,5 @@
 package version3;
 
-import org.apache.commons.io.comparator.NameFileComparator;
 
 import javax.swing.*;
 import java.awt.*;

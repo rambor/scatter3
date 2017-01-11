@@ -62,7 +62,7 @@ public class ProlateEllipsoid extends Model {
     public double getRadius_c(){ return this.getFittedParamByIndex(1);}
 
     private void setString(){
-        String newLines = String.format("REMARK 265 INDEX %5d RADII %.2f %.2f %n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1));
+        String newLines = String.format("REMARK 265  INDEX % 8d RADII %7.2f %7.2f %n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1));
         this.setStringToPrint(newLines);
     }
 

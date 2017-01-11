@@ -182,7 +182,7 @@ public class Ellipse extends Model {
 
 
     private void setString(){
-        String newLines = String.format("REMARK 265 INDEX %5d RADII %.2f %.2f %.2f%n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1), getFittedParamByIndex(2));
+        String newLines = String.format("REMARK 265  INDEX % 8d RADII %7.2f %7.2f %7.2f %n", getIndex(), getFittedParamByIndex(0), getFittedParamByIndex(1), getFittedParamByIndex(2));
         this.setStringToPrint(newLines);
     }
 

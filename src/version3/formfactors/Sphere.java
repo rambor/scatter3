@@ -64,7 +64,7 @@ public class Sphere extends Model {
     public double getRadius(){return getFittedParamByIndex(0);}
 
     private void setString(){
-        String newLines = String.format("REMARK 265 INDEX %5d RADIUS %.2f%n", getIndex(), getFittedParamByIndex(0));
+        String newLines = String.format("REMARK 265  INDEX % 8d RADIUS %5.1f%n", getIndex(), getFittedParamByIndex(0));
         this.setStringToPrint(newLines);
     }
 

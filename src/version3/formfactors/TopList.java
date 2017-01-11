@@ -685,7 +685,7 @@ public class TopList{
         double last = scoreList.get(scoreList.size()-1).getScorevalue();
         gap = last-first;
 
-        System.out.println(String.format(" <AVERAGE> : %.5f  | FIRST %.6f <=> LAST %.6f  GAP %.6f "));
+        System.out.println(String.format("==> <AVERAGE> : %.5f  |  FIRST %.6f <=> LAST %.6f  |  GAP %.6f ", average, first, last, gap));
         return Math.log10(average);
     }
 

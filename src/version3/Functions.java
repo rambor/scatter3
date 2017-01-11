@@ -2045,6 +2045,38 @@ int cols, rows;
     }
 */
 
+    /**
+     * Creates a Color object based on value and maximum for heat map like coloring
+     * @param maximum
+     * @param value
+     * @return Color as a heat map
+     */
+    public static Color giveRGB(double maximum, double value){
+
+        double ratio = 2 * value/maximum;
+
+        int blue = (int)(Math.max(0, 255*(1 - ratio)));
+        int red = (int)(Math.max(0, 255*(ratio - 1)));
+        int green = 255 - blue - red;
+        return new Color(red,green,blue);
+    }
+
+    /**
+     * Creates a Color object based on value and maximum for heat map like coloring
+     * @param maximum
+     * @param value
+     * @return Color as a heat map
+     */
+    public static Color giveTransRGB(double maximum, double value){
+
+        double ratio = 2 * value/maximum;
+
+        int blue = (int)(Math.max(0, 255*(1 - ratio)));
+        int red = (int)(Math.max(0, 255*(ratio - 1)));
+        int green = 255 - blue - red;
+        return new Color(red,green,blue, (int)(80*value/maximum));
+    }
+
 
     public static double s_n(ArrayList<Double> values){
         int sizeOf = values.size();

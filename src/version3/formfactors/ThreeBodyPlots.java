@@ -6,6 +6,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYBubbleRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
@@ -15,6 +16,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.data.xy.XYZDataset;
 import version3.Constants;
+import version3.Functions;
 
 import javax.swing.*;
 import java.awt.*;
@@ -46,6 +48,7 @@ public class ThreeBodyPlots {
     private boolean useNoBackGround;
     private final KeptModels keptList;
     private ArrayList<Double> probabilities;
+    private ArrayList<Double> probabilitiesForHeatMap;
     private XYSeries probabilitiesPerRadiiR12;
     private XYSeries probabilitiesPerRadiiR23;
     private XYSeries probabilitiesPerRadiiR13;
@@ -110,7 +113,17 @@ public class ThreeBodyPlots {
         );
 
         // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
-        //XYPlot plot = (XYPlot) residualsChart.getPlot();
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setRangeGridlinePaint(Color.BLACK);
+        plot.setDomainGridlinePaint(Color.BLACK);
+        plot.setBackgroundPaint(Color.lightGray);
+        plot.getRenderer().setSeriesPaint(0, Color.CYAN);
+        plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.0f));
+
+        ValueMarker mark = new ValueMarker(0, Color.BLACK, new BasicStroke(1.8f));
+        plot.addRangeMarker(mark);
+        final NumberAxis domainAxis = new NumberAxis("q");
+        plot.setDomainAxis(domainAxis);
 
         ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
@@ -168,8 +181,6 @@ public class ThreeBodyPlots {
                 false
         );
 
-
-        // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
         // XYPlot plot = (XYPlot) histogramChart.getPlot();
 
         ChartPanel histogramChartPanelA = new ChartPanel(chartA);
@@ -198,10 +209,11 @@ public class ThreeBodyPlots {
         probabilitiesPerRadiiR12 = new XYSeries("probabilitiesR12");
         probabilitiesPerRadiiR23 = new XYSeries("probabilitiesR23"); // empty series if no radii
         probabilitiesPerRadiiR13 = new XYSeries("probabilitiesR13");
+        probabilitiesForHeatMap = new ArrayList<>();
 
-        ArrayList<Double> firstRadii = new ArrayList<>();
-        ArrayList<Double> secondRadii = new ArrayList<>();
-        ArrayList<Double> thirdRadii = new ArrayList<>();
+//        ArrayList<Double> firstRadii = new ArrayList<>();
+//        ArrayList<Double> secondRadii = new ArrayList<>();
+//        ArrayList<Double> thirdRadii = new ArrayList<>();
 
         ArrayList<Double> xvalues = new ArrayList<>();
         ArrayList<Double> yvalues = new ArrayList<>();
@@ -209,98 +221,119 @@ public class ThreeBodyPlots {
 
         // model 1-2-3 == 3-2-1 == 2-3-1
         double[] triplet = new double[3];
-        double minLimit = 0.01;
-        double sum_x=0, sum_y=0, sumfirst=0, smallest=0, middle=0, largest=0;
-        double counter = 1.0d;
-        double volume=0;
+//        double minLimit = 0.01;
+//        double sum_x=0, sum_y=0, sumfirst=0, smallest=0, middle=0, largest=0;
+//        double counter = 1.0d;
+        double volume=0, prob;
 
+        ArrayList<Integer> indices = keptList.getFirst();
+        // for each index, great XYSeries and Add
+        int total = indices.size();
+
+        double left = 1;
+
+
+        for (int i=0; i<total; i++){
+            ThreeBody model =  (ThreeBody) models.get(indices.get(i));
+            prob = model.getProbability();
+
+            // determine weighted volume of items in first of keptList
+            volume += model.getVolume();
+
+            // get distances between each sphere
+            triplet[0] = model.getSortedDistanceByIndex(0);
+            triplet[1] = model.getSortedDistanceByIndex(1);
+            triplet[2] = model.getSortedDistanceByIndex(2);
+
+            double smallest2 = triplet[0]*triplet[0]; // squared distance
+            double middle2 = triplet[1]*triplet[1];   // squared distance
+            double largest2 = triplet[2]*triplet[2];  // squared distance, should be largest
+
+            // determine average
+//            smallest+=model.getSmallest()*prob;
+//            middle+=model.getMiddle()*prob;
+//            largest+=model.getLargest()*prob;
+
+            //smallest
+            // set coordinate along x-axis
+            xvalues.add(-1*triplet[0]);
+            yvalues.add(0.0d);
+            radii.add(2*model.getLeftMost());
+            probabilitiesForHeatMap.add(prob);
+
+            // middle
+            // centered at (0,0)
+            xvalues.add(0.0d);
+            yvalues.add(0.0d);
+            radii.add(2*model.getCenter());
+            probabilitiesForHeatMap.add(prob);
+
+            double radian = (smallest2+middle2-largest2)/(2*triplet[0]*triplet[1]);
+            // acos  1 => 0
+            // acos -1 => PI
+            if (radian > 1){
+                radian = 0;
+            } else if (radian < -1){
+                radian = Math.PI;
+            } else {
+                radian = Math.acos(radian);
+            }
+
+            double angle = Math.PI - radian;
+            System.out.println(i + " => " + triplet[0] + " <= " + triplet[1] + " <= " + triplet[2]);
+            System.out.println(i + " Angle " + (angle*180/Math.PI) + " " + (smallest2+middle2-largest2)/(2*triplet[0]*triplet[1]));
+            //sumfirst+=-1*triplet[0];
+
+            double xtemp;
+            if (angle > Math.PI/2){
+                xtemp = -1*triplet[1]*Math.cos(angle);
+            } else {
+                xtemp = triplet[1]*Math.cos(angle);
+            }
+
+            double ytemp =triplet[1]*Math.sin(angle);
+            //largest
+            xvalues.add(xtemp);
+            yvalues.add(ytemp);
+            radii.add(2*model.getLast());
+            probabilitiesForHeatMap.add(prob);
+
+//            sum_x+=xtemp;
+//            sum_y+=ytemp;
+//            counter++;
+        }
+
+        volume *= 1.0/(double)total;
+
+
+        // create distribution plots (how distances are distributed)
         for(int i=0; i<probabilities.size(); i++){
             // convert probabilities into radii
             ThreeBody model =  (ThreeBody) models.get(i);
-            volume+=probabilities.get(i)*model.getVolume();
-
+            prob = model.getProbability();
             // sort the three radii in order o=
             // for each model, i need to determine correct order
             triplet[0] = model.getSortedDistanceByIndex(0);
             triplet[1] = model.getSortedDistanceByIndex(1);
             triplet[2] = model.getSortedDistanceByIndex(2);
 
-            if (probabilities.get(i) > minLimit && triplet[2] > triplet[1]){
-                double smallest2 = triplet[0]*triplet[0];
-                double middle2 = triplet[1]*triplet[1];
-                double largest2 = triplet[2]*triplet[2];
-
-                smallest+=model.getSmallest();
-                middle+=model.getMiddle();
-                largest+=model.getLargest();
-
-                firstRadii.add(model.getSmallest());
-                secondRadii.add(model.getMiddle());
-                thirdRadii.add(model.getLargest());
-
-                //smallest
-                xvalues.add(-1*triplet[0]);
-                yvalues.add(0.0d);
-                radii.add(2*model.getSmallest());
-                //middle
-                xvalues.add(0.0d);
-                yvalues.add(0.0d);
-                radii.add(2*model.getMiddle());
-
-                double radian = (smallest2+middle2-largest2)/(2*triplet[0]*triplet[1]);
-                // acos  1 => 0
-                // acos -1 => PI
-                if (radian > 1){
-                    radian = 0;
-                } else if (radian < -1){
-                    radian = Math.PI;
-                } else {
-                    radian = Math.acos(radian);
-                }
-
-                double angle = Math.PI - radian;
-                model.printOrder();
-                System.out.println(i + " Angle " + (angle*180/Math.PI) + " " + (smallest2+middle2-largest2)/(2*triplet[0]*triplet[1]));
-                sumfirst+=-1*triplet[0];
-                //geometry1.add(-1*triplet[0],0); // along x-axis
-                //firstRadii.add()
-                //geometry2.add(0,0); // always at origin
-
-                double xtemp;
-                if (angle > Math.PI/2){
-                    xtemp = -1*triplet[1]*Math.cos(angle);
-                } else {
-                    xtemp = triplet[1]*Math.cos(angle);
-                }
-
-                double ytemp =triplet[1]*Math.sin(angle);
-                //largest
-                xvalues.add(xtemp);
-                yvalues.add(ytemp);
-                radii.add(2*model.getLargest());
-
-                sum_x+=xtemp;
-                sum_y+=ytemp;
-                counter++;
-            }
-
             // distribution of smallest radii
             if (r_12.containsKey(triplet[0])){
-                r_12.put(triplet[0], r_12.get(triplet[0]) + probabilities.get(i));
+                r_12.put(triplet[0], r_12.get(triplet[0]) + prob);
             } else {
-                r_12.put(triplet[0], probabilities.get(i));
+                r_12.put(triplet[0], prob);
             }
             // distribution second smallest
             if (r_23.containsKey(triplet[1])){
-                r_23.put(triplet[1], r_23.get(triplet[1]) + probabilities.get(i));
+                r_23.put(triplet[1], r_23.get(triplet[1]) + prob);
             } else {
-                r_23.put(triplet[1], probabilities.get(i));
+                r_23.put(triplet[1], prob);
             }
             // distribution of third radii
             if (r_13.containsKey(triplet[2])){
-                r_13.put(triplet[2], r_13.get(triplet[2]) + probabilities.get(i));
+                r_13.put(triplet[2], r_13.get(triplet[2]) + prob);
             } else {
-                r_13.put(triplet[2], probabilities.get(i));
+                r_13.put(triplet[2], prob);
             }
         }
 
@@ -317,39 +350,29 @@ public class ThreeBodyPlots {
             probabilitiesPerRadiiR13.add(entry.getKey(), entry.getValue());
         }
 
-        double[] xArray = new double[xvalues.size()];
-        double[] yArray = new double[xvalues.size()];
-        double[] radiiArray = new double[xvalues.size()];
+
+////        System.out.println("Radii first => " + (sumfirst/counter) + " third => " + (sum_x/counter));
+////        double[] x = {sumfirst/counter, 0, sum_x/counter};
+////        double[] y = {0, 0, sum_y/counter};
+////        double dis = Math.sqrt(x[2]*x[2]/(counter*counter) + y[2]*y[2]/(counter*counter));
+////
+////        System.out.println("first dis " + x[0] + " <= " + dis);
+////
+////        double[] z = {2*smallest/counter, 2*middle/counter, 2*largest/counter}; // radii
+////
+////        leftMostGeometry = x[0] - (z[0] + z[0]*0.5);
+////        rightMostGeometry = x[2] + z[2] + z[2]*0.5;
+////
+////        lowerMostGeometry = -(z[1] + z[1]*0.3);
+////        upperMostGeometry = y[2] + z[2] + z[2]*0.3;
+//
+//        System.out.println("first radii " + z[0] + " <= " + z[2]);
+        System.out.println("THREEBODY VOLUME VOLUME " + volume);
+        xyzdataset = new DefaultXYZDataset();
 
         for(int i=0; i<xvalues.size(); i++){
-            xArray[i] = xvalues.get(i);
-            yArray[i] = yvalues.get(i);
-            radiiArray[i] = radii.get(i);
+            xyzdataset.addSeries("-" + i, new double[][]{new double[]{xvalues.get(i)}, new double[]{yvalues.get(i)}, new double[]{radii.get(i)}});
         }
-
-        double[][] series = new double[][]{xArray, yArray, radiiArray};
-
-        System.out.println("Radii first => " + (sumfirst/counter) + " third => " + (sum_x/counter));
-        double[] x = {sumfirst/counter, 0, sum_x/counter};
-        double[] y = {0, 0, sum_y/counter};
-        double dis = Math.sqrt(x[2]*x[2]/(counter*counter) + y[2]*y[2]/(counter*counter));
-
-        System.out.println("first dis " + x[0] + " <= " + dis);
-
-        double[] z = {2*smallest/counter, 2*middle/counter, 2*largest/counter}; // radii
-
-        leftMostGeometry = x[0] - (z[0] + z[0]*0.5);
-        rightMostGeometry = x[2] + z[2] + z[2]*0.5;
-
-        lowerMostGeometry = -(z[1] + z[1]*0.3);
-        upperMostGeometry = y[2] + z[2] + z[2]*0.3;
-
-        System.out.println("first radii " + z[0] + " <= " + z[2]);
-        System.out.println("TRIAXIAL VOLUME " + volume);
-
-        xyzdataset = new DefaultXYZDataset();
-        xyzdataset.addSeries("Series 1", series);
-
     }
 
 
@@ -363,32 +386,18 @@ public class ThreeBodyPlots {
 
         int count=0;
 
-        //for (Map.Entry<Double, ArrayList<Integer>> entry : keptList.entrySet()) {
+        ArrayList<Integer> indices = keptList.getFirst();
+        // for each index, great XYSeries and Add
+        int total = indices.size();
 
-            ArrayList<Integer> indices = keptList.getFirst();
-            // for each index, great XYSeries and Add
-            int total = indices.size();
-
-            for (int i=0; i<total; i++){
-                Model model = models.get(indices.get(i));
-                for(int q=0; q<totalq; q++){
-                    calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + model.getIntensity(q));
-                    count++;
-                }
+        for (int i=0; i<total; i++){
+            Model model = models.get(indices.get(i));
+            for(int q=0; q<totalq; q++){
+                calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + model.getIntensity(q));
+                count++;
             }
+        }
 
-//            ArrayList<Integer> indices = entry.getValue();
-//            // for each index, great XYSeries and Add
-//            int total = indices.size();
-//
-//            for (int i=0; i<total; i++){
-//                Model model = models.get(indices.get(i));
-//                for(int q=0; q<totalq; q++){
-//                    calculatedIntensities.set(q, calculatedIntensities.get(q).doubleValue() + model.getIntensity(q));
-//                    count++;
-//                }
-//            }
-        //}
 
         // average the calculated intensities
         double inv = 1.0/(double)count;
@@ -435,8 +444,9 @@ public class ThreeBodyPlots {
         }
 
         residualsCollection.addSeries(residualsSeries);
-        averageCollection.addSeries(experimentalSeries);
         averageCollection.addSeries(averagedSeries);
+        averageCollection.addSeries(experimentalSeries);
+
     }
 
 
@@ -462,6 +472,15 @@ public class ThreeBodyPlots {
 //        logAxis.setMinorTickMarksVisible(false);
 //        logAxis.setAutoRange(true);
 //        plot.setRangeAxis(logAxis);
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.getRenderer().setSeriesStroke(1,new BasicStroke(3.1f));
+        plot.getRenderer().setSeriesPaint(1, Color.BLACK);
+        plot.getRenderer().setSeriesPaint(0, Color.CYAN);
+        plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.0f));
+
+        plot.setRangeGridlinePaint(Color.BLACK);
+        plot.setDomainGridlinePaint(Color.BLACK);
+        plot.setBackgroundPaint(Color.lightGray);
 
         ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
@@ -485,26 +504,35 @@ public class ThreeBodyPlots {
 
         XYPlot plot = (XYPlot) chart.getPlot();
         XYItemRenderer xyitemrenderer = plot.getRenderer();
-        xyitemrenderer.setSeriesPaint( 0 , new Color(0, 204, 0, 5) );
-        xyitemrenderer.setBaseOutlinePaint(new Color(0, 204, 0, 1) );
+        xyitemrenderer.setBaseOutlinePaint(new Color(105, 105, 105, 40) );
+
+        double max = Collections.max(probabilitiesForHeatMap);
+        int totalcount = xyzdataset.getSeriesCount();
+
+        Random rand = new Random();
+
+        for(int i=0; i<totalcount; i++){
+            //if (max*0.95 <= probabilitiesForHeatMap.get(i).doubleValue()){
+            //    xyitemrenderer.setSeriesOutlinePaint(i, new Color(rand.nextFloat(), rand.nextFloat(), rand.nextFloat()));
+            //}
+            xyitemrenderer.setSeriesPaint(i, Functions.giveTransRGB(max, probabilitiesForHeatMap.get(i)));
+            //xyitemrenderer.setSeriesPaint(i, new Color(rand.nextFloat(), rand.nextFloat(), rand.nextFloat()));
+            //xyitemrenderer.setBaseOutlineStroke(new BasicStroke(1.5f));
+        }
 
         final NumberAxis domainAxis = new NumberAxis("x");
         final NumberAxis rangeAxis = new NumberAxis("y");
         domainAxis.setAutoRange(true);
-        rangeAxis.setRange(leftMostGeometry, rightMostGeometry);
+        //rangeAxis.setRange(leftMostGeometry, rightMostGeometry);
         rangeAxis.setAutoRange(true);
-        rangeAxis.setRange(lowerMostGeometry, upperMostGeometry);
+        //rangeAxis.setRange(lowerMostGeometry, upperMostGeometry);
         rangeAxis.setAutoRangeStickyZero(false);
         plot.setDomainAxis(domainAxis);
         plot.setRangeAxis(rangeAxis);
 
-        plot.getRenderer().setSeriesStroke(0,new BasicStroke(2.1f));
-        plot.getRenderer().setSeriesPaint(1, Color.CYAN);
-        plot.getRenderer().setSeriesStroke(1,new BasicStroke(4.0f));
-        plot.getRenderer().setSeriesPaint(0, Color.BLACK);
-        plot.setRangeGridlinePaint(Color.BLACK);
-        plot.setDomainGridlinePaint(Color.BLACK);
-        plot.setBackgroundPaint(Color.lightGray);
+        plot.setRangeGridlinePaint(Color.GRAY);
+        plot.setDomainGridlinePaint(Color.GRAY);
+        plot.setBackgroundPaint(Color.WHITE);
 
         ChartPanel chartPanel = new ChartPanel(chart);
         //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));

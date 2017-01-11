@@ -369,7 +369,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
 
             double averageScore = tempTopList.getAverageScore(); // log 10 score
             scorePerRound.add(round, averageScore);
-            if (tempTopList.getGap() < epsilon || (Math.abs(priorAverage-averageScore) < epsilon)){
+            if (round > 5 && tempTopList.getGap() < epsilon || (Math.abs(priorAverage-averageScore) < epsilon)){
                 System.out.println("EARLY BREAK :   GAP => " + tempTopList.getGap());
                 System.out.println("            : DELTA => " + Math.abs(priorAverage-averageScore));
                 break fitLoop;
@@ -488,7 +488,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         finalResults="";
         // if P(r) distribution is determined, calculate P(r) from shape and then do diff
         System.out.println("DMAX " + dataset.getRealSpaceModel().getDmax());
-        if (dataset.getRealSpaceModel().getDmax() > 1 && (model == ModelType.SPHERICAL || model == ModelType.ELLIPSOID || model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID)){
+        if (dataset.getRealSpaceModel().getDmax() > 1 && (model == ModelType.THREE_BODY || model == ModelType.SPHERICAL || model == ModelType.ELLIPSOID || model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID)){
             // estimate volume of P(r)-distribution
             System.out.println("ESTIMATING FORM FACTOR PR");
             estimateVolume();
@@ -534,11 +534,14 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         double[] averages = new double[totalParams];
         double[] variances = new double[totalParams];
 
+
+        double squared = 0;
         double volume=0;
         for(int i=0; i<total; i++){
             Model model = models.get(list.get(i));
             tempHeader+=model.getParamsToPrint();
             volume += model.getVolume();
+            squared += model.getVolume()*model.getVolume();
             for(int p=0; p<totalParams; p++){
                 double value =model.getFittedParamByIndex(p);
                 averages[p]+=value;
@@ -574,12 +577,14 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         tempHeader += String.format("REMARK 265           MOST PROBABLE MODEL : %d %n", indexOfBest);
         tempHeader += String.format("REMARK 265                  SCALE FACTOR : %.5E %n", keptList.getScaleByIndex(0));
         tempHeader += String.format("REMARK 265               WEIGHTED VOLUME : %.1f %n", volume);
+        tempHeader += String.format("REMARK 265       SQUARED WEIGHTED VOLUME : %.1f %n", Math.sqrt(squared/(double)total));
         tempHeader += "REMARK 265\n";
 
         for(int p=0; p<totalParams; p++){
           tempHeader += String.format("REMARK 265               PARAM %d AVERAGE : %.3f %n", (p+1), averages[p]);
           tempHeader += String.format("REMARK 265                         STDEV : %.3f %n", Math.sqrt(variances[p]));
         }
+
 
         tempHeader += finalResults;
         System.out.println(tempHeader);
@@ -605,6 +610,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         }
         double volume = Math.sqrt(squared/(double)total);
         double calibrationScale;
+        double scale = keptList.getScaleByIndex(0);
         SortedMap<Integer, Double> histogram = new TreeMap<>();
 
         if (model == ModelType.ELLIPSOID || model == ModelType.SPHERICAL || model == ModelType.OBLATE_ELLIPSOID || model == ModelType.PROLATE_ELLIPSOID) {
@@ -658,6 +664,8 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                     }
                 }
 
+            } else if (model == ModelType.THREE_BODY){
+
             }
 
             // calculate integral (Rectangle Method) and adjust to volume
@@ -674,7 +682,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             area=0;
 
             double contrast = (solventContrast - particleContrasts[0]);
-            double scale = keptList.getScaleByIndex(0);
+
 
             double areaObs=0;
             double dmaxOfExp = dataset.getRealSpaceModel().getDmax();
@@ -714,7 +722,9 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             finalResults += prValues;
             // compare to real space
         } else {
-
+            double contrast = (solventContrast - particleContrasts[0]);
+            finalResults += "REMARK 265\n";
+            finalResults += String.format("REMARK 265                       I(ZERO) : %.3E %n", (4*Math.PI*contrast*contrast*scale*volume*volume));
             System.out.println("Volume calibration not available for this form factor");
 
         }
@@ -1300,13 +1310,14 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         double[] params = new double[3];   // [0] => R_1, [1] => R_2, [2] => R_3
         params[2] = maxParams[0]; //
         dmaxOfSet = 2*maxParams[0]*3.0;
+        final List<Double> THREAD_SAFE_LIST=Collections.unmodifiableList(Arrays.asList(qvalues));
 
         while(params[2] > minLimit){ // sphere 1
             // set R_b
             params[1] = params[2]; // sphere 2
             while (params[1] >= minLimit){
                 // set R_c
-                params[0] = params[1];
+                params[0] = params[2];
                 while (params[0] >= minLimit){ // sphere 3
 
                     double maxr13 = (2*params[1]+params[2]+params[0]); // furthest sphere_1 and sphere_2 can be
@@ -1321,7 +1332,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                                 particleContrasts,
                                 params,
                                 rad,
-                                qvalues
+                                THREAD_SAFE_LIST
                         ));
                         threeBodiesFutures.add(future);
                         totalSearchSpace++;

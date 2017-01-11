@@ -1,5 +1,6 @@
 package version3.formfactors;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -24,10 +25,12 @@ public class CallableThreeBody implements Callable<ThreeBody> {
      * @param radii
      * @param qvalues
      */
-    public CallableThreeBody(int index, double solventContrast, double[] particleContrasts, double[] radii, double rdis, Double[] qvalues){
+    public CallableThreeBody(int index, double solventContrast, double[] particleContrasts, double[] radii, double rdis, List<Double> qvalues){
         this.index = index;
         this.solventContrast = solventContrast;
-        this.qvalues = new Double[qvalues.length];
+
+        this.qvalues = new Double[qvalues.size()];
+        this.qvalues = qvalues.toArray(this.qvalues);
         this.rdis = rdis;
 
         synchronized (this){
@@ -35,7 +38,6 @@ public class CallableThreeBody implements Callable<ThreeBody> {
             this.params[0] = radii[0];
             this.params[1] = radii[1];
             this.params[2] = radii[2];
-            System.arraycopy(qvalues, 0, this.qvalues, 0, qvalues.length);
         }
     }
 

@@ -15,6 +15,7 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.xy.DefaultXYZDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import version3.Functions;
 
 import javax.swing.*;
 import java.awt.*;
@@ -181,7 +182,7 @@ public class EllipsoidPlots {
 
                 radiusA.add(model.getRadius_a());
                 radiusC.add(model.getRadius_c());
-                probabilitiesPerModel.add(currentProbability*20); // size of bubble
+                probabilitiesPerModel.add(currentProbability*70); // size of bubble
             }
 
             System.out.println("min " + minRc + " < " + maxRc);
@@ -220,16 +221,6 @@ public class EllipsoidPlots {
         createDistributionPlots();
     }
 
-    private Color giveRGB(double maximum, double value){
-
-        double ratio = 2 * value/maximum;
-
-        int blue = (int)(Math.max(0, 255*(1 - ratio)));
-        int red = (int)(Math.max(0, 255*(ratio - 1)));
-        int green = 255 - blue - red;
-        return new Color(red,green,blue);
-    }
-
 
     private XYPlot makeBCGeometricPlot(){
         JFreeChart chart = ChartFactory.createBubbleChart(
@@ -252,7 +243,7 @@ public class EllipsoidPlots {
         int totalcount = bcdataset.getSeriesCount();
 
         for(int i=0; i<totalcount; i++){
-            xyitemrenderer.setSeriesPaint(i, giveRGB(max, probabilitiesPerModel.get(i)));
+            xyitemrenderer.setSeriesPaint(i, Functions.giveRGB(max, probabilitiesPerModel.get(i)));
         }
 
         final NumberAxis domainAxis = new NumberAxis("c-axis");
@@ -304,7 +295,7 @@ public class EllipsoidPlots {
 
         System.out.println("Series count " + plot.getSeriesCount());
         for(int i=0; i<totalcount; i++){
-            xyitemrenderer.setSeriesPaint(i, giveRGB(max, probabilitiesPerModel.get(i)));
+            xyitemrenderer.setSeriesPaint(i, Functions.giveRGB(max, probabilitiesPerModel.get(i)));
         }
 
         final NumberAxis domainAxis = new NumberAxis("c-axis");

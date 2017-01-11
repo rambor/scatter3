@@ -393,12 +393,12 @@ public class Scatter {
 
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
-        MessageConsole mc = new MessageConsole(stdOutText);
-        mc.redirectOut();
-        mc.redirectErr(Color.RED, null);
+//        MessageConsole mc = new MessageConsole(stdOutText);
+//        mc.redirectOut();
+//        mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        info.redirectOut();
+        //info.redirectOut();
 
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
@@ -813,6 +813,17 @@ public class Scatter {
                 analysisModel.fireTableDataChanged();
             }
         }));
+
+        // add mouse functions, remove, select all, select none
+        popupMenu.add(new JMenuItem(new AbstractAction("Mass Estimator") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                // get highlighted/moused over
+                // open new object/window for estimating mass using several methods
+            }
+        }));
+
 
         analysisTable.setComponentPopupMenu(popupMenu);
 
@@ -3193,7 +3204,7 @@ public class Scatter {
                 upperParams[0] = Double.parseDouble(max3BodyTextField.getText());
                 double[] delta = new double[1];
                 // delta can be calculated from delta-q and dmax
-                delta[0] = 2.79;
+                delta[0] = 2.39;
 
                 double[] contrasts = new double[1];
                 contrasts[0] = Float.parseFloat(particleContrast3Body.getText());
