@@ -139,7 +139,7 @@ public class FileObject {
             coefs = new double[]{0};
 
         } else {
-            double incr = dmax/101.0;
+            double incr = dmax/201.0;
             coefs = realspaceModel.getMooreCoefficients();
             coefsSize = coefs.length;
 
@@ -175,9 +175,9 @@ public class FileObject {
             out.write(prIqheader(dataset));
             out.write("REMARK 265 \n");
             out.write("REMARK 265  MOORE COEFFICIENTS (UNSCALED)\n");
-            String newLine=String.format("REMARK 265      CONSTANT BACKGROUND a(0) : %.3E %n", coefs[0]);
+            String newLine=String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.3E %n", coefs[0]);
             for (int i=1; i<coefsSize;i++){
-                newLine += String.format("REMARK 265                        a_(%2d) : %.3E %n", i, coefs[i]);
+                newLine += String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefs[i]);
             }
 
             out.write(newLine);
