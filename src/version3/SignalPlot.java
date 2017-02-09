@@ -673,7 +673,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                 collectionWindow.addDataset(samplesCollection.getDataset(m));
             }
 
-            if (calculateAverageAndVarianceOfAllPairWiseRatiosInWindow(collectionWindow, noSignal)){
+            if (calculateAverageAndVarianceOfAllPairWiseRatiosInWindow(collectionWindow, noSignal, lowerIndex, upperIndex)){
                 for (int m=(w-window); m < w; m++){
                     keepers.add(m);
                 }
@@ -706,7 +706,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     }
 
 
-    private boolean calculateAverageAndVarianceOfAllPairWiseRatiosInWindow(Collection collection, double ideal){
+    private boolean calculateAverageAndVarianceOfAllPairWiseRatiosInWindow(Collection collection, double ideal, int lowerIndex, int upperIndex){
 
         boolean keep = false;
 
@@ -734,7 +734,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
                 ratio.clear();
                 // go through each q-value in reference
-                for (int q = 0; q < totalXY; q++) {
+                for (int q = lowerIndex; q < (upperIndex+1); q++) {
+                //for (int q = 0; q < totalXY; q++) {
                     refXY = refData.getDataItem(q);
                     foundIndex = tempData.indexOf(refXY.getX());
                     if (foundIndex > -1 ) {
@@ -776,26 +777,28 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         outerloop:
         for(int j=0; j < referenceData.getItemCount(); j++){
 
-            refItem = referenceData.getDataItem(j); // is refItem found in all sets
-            minQvalueInCommon = refItem.getX();
-            isCommon = true;
+            if (referenceData.getY(j).doubleValue() > 0){
+                refItem = referenceData.getDataItem(j); // is refItem found in all sets
+                minQvalueInCommon = refItem.getX();
+                isCommon = true;
 
-            startAt = 1;
-            innerloop:
-            for(; startAt < totalInSampleSet; startAt++) {
+                startAt = 1;
+                innerloop:
+                for(; startAt < totalInSampleSet; startAt++) {
 
-                tempDataset = samplesCollection.getDataset(startAt);
-                tempData = tempDataset.getAllData();
-                // check if refItem q-value is in tempData
-                // if true, check next value
-                if (tempData.indexOf(refItem.getX()) < 0) {
-                    isCommon = false;
-                    break innerloop;
+                    tempDataset = samplesCollection.getDataset(startAt);
+                    tempData = tempDataset.getAllData();
+                    // check if refItem q-value is in tempData
+                    // if true, check next value
+                    if (tempData.indexOf(refItem.getX()) < 0 && (tempData.getY(startAt).doubleValue() > 0)) {
+                        isCommon = false;
+                        break innerloop;
+                    }
                 }
-            }
 
-            if (startAt == totalInSampleSet && isCommon){
-                break outerloop;
+                if (startAt == totalInSampleSet && isCommon){
+                    break outerloop;
+                }
             }
         }
 
@@ -821,27 +824,30 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         outerloop:
         for(int j=(referenceData.getItemCount()-1); j > -1; j--){
 
+
             refItem = referenceData.getDataItem(j); // is refItem found in all sets
-            maxQvalueInCommon = refItem.getX();
-            isCommon = true;
+            if (refItem.getYValue() > 0){
+                maxQvalueInCommon = refItem.getX();
+                isCommon = true;
 
-            startAt = 1;
-            innerloop:
-            for(; startAt < totalInSampleSet; startAt++) {
+                startAt = 1;
+                innerloop:
+                for(; startAt < totalInSampleSet; startAt++) {
 
 
-                tempDataset = samplesCollection.getDataset(startAt);
-                tempData = tempDataset.getAllData();
-                // check if refItem q-value is in tempData
-                // if true, check next value
-                if (tempData.indexOf(refItem.getX()) < 0) {
-                    isCommon = false;
-                    break innerloop;
+                    tempDataset = samplesCollection.getDataset(startAt);
+                    tempData = tempDataset.getAllData();
+                    // check if refItem q-value is in tempData
+                    // if true, check next value
+                    if (tempData.indexOf(refItem.getX()) < 0 && tempData.getY(startAt).doubleValue() > 0) {
+                        isCommon = false;
+                        break innerloop;
+                    }
                 }
-            }
 
-            if (startAt == totalInSampleSet && isCommon){
-                break outerloop;
+                if (startAt == totalInSampleSet && isCommon){
+                    break outerloop;
+                }
             }
         }
 

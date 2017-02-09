@@ -318,7 +318,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.0h";
+    private String version = "3.0j";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -393,12 +393,12 @@ public class Scatter {
 
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
-//        MessageConsole mc = new MessageConsole(stdOutText);
+        MessageConsole mc = new MessageConsole(stdOutText);
 //        mc.redirectOut();
 //        mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        //info.redirectOut();
+//        info.redirectOut();
 
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
@@ -3969,6 +3969,14 @@ public class Scatter {
                 collectionSelected = (Collection)collections.get(selected);
                 collectionNote.setText(collectionSelected.getNote());
 
+//                ffCEFileSelectionComboBox.setModel(new CEComboBoxModel(collectionSelected));
+//                ((CEComboBoxModel)ffCEFileSelectionComboBox.getModel()).updateCollection(collectionSelected);
+
+
+                System.out.println("REPAINTING");
+                ffCEFileSelectionComboBox.revalidate();
+                ffCEFileSelectionComboBox.repaint();
+
                 closeWindows();
             }
         }
@@ -5258,6 +5266,10 @@ class CEComboBoxModel extends AbstractListModel implements ComboBoxModel {
     public Object getElementAt(int i){
         return collection.getDataset(i);
     }
+
+    public void updateCollection(Collection collectionInUse){
+        this.collection = collectionInUse;
+    }
 }
 
 class CECellRenderer implements ListCellRenderer {
@@ -5271,15 +5283,9 @@ class CECellRenderer implements ListCellRenderer {
                 isSelected, cellHasFocus);
 
         if (value instanceof Dataset) {
-
 //            renderer.setBackground((Color) value);
             renderer.setText(((Dataset) value).getFileName());
         }
-
-        //renderer.setText(((Dataset) value).getFileName());
-        //if (index >= 0){
-        //    renderer.setText(((Dataset) value).getFileName());
-        //}
 
         return renderer;
     }

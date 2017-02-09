@@ -1,6 +1,5 @@
 package version3;
 
-import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
