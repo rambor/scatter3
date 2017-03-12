@@ -318,7 +318,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.0j";
+    private String version = "3.0k";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -753,8 +753,6 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //To change body of implemented methods use File | Settings | File Templates.
-
-
                 int[] rowIndex = analysisTable.getSelectedRows();
 
                 int endat = collectionSelected.getDatasetCount();
@@ -780,7 +778,6 @@ public class Scatter {
                 //To change body of implemented methods use File | Settings | File Templates.
 
                 int[] rowIndex = analysisTable.getSelectedRows();
-
                 int start = rowIndex.length - 1;
 
                 for(int j = start; j >= 0; j--){ // count in reverse and remove selected dataset
@@ -821,6 +818,49 @@ public class Scatter {
                 //To change body of implemented methods use File | Settings | File Templates.
                 // get highlighted/moused over
                 // open new object/window for estimating mass using several methods
+            }
+        }));
+
+        // add mouse functions, remove, select all, select none
+        popupMenu.add(new JMenuItem(new AbstractAction("Flexibility") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                // get highlighted/moused over
+                // open new object/window for estimating mass using several methods
+                int index = analysisTable.getSelectedRow();
+
+                if (index > -1){
+                    //To change body of implemented methods use File | Settings | File Templates.
+                    System.out.println("DeSelecting All");
+                    int total = collectionSelected.getDatasets().size();
+                    for(int i=0; i<total; i++){
+                        collectionSelected.getDataset(i).setInUse(false);
+                    }
+                    collectionSelected.getDataset(index).setInUse(true);
+                    analysisModel.fireTableDataChanged();
+                    createFlexPlots();
+                } else {
+                    status.setText("Must select the row");
+                }
+            }
+        }));
+
+
+        // add mouse functions, remove, select all, select none
+        popupMenu.add(new JMenuItem(new AbstractAction("Porod Volume") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                // get highlighted/moused over
+                // open new object/window for estimating mass using several methods
+                int index = analysisTable.getSelectedRow();
+
+                if (index > -1){
+                    createVolumePlot(collectionSelected.getDataset(index).getId());
+                } else {
+                    status.setText("Must select the row");
+                }
             }
         }));
 
@@ -1172,7 +1212,7 @@ public class Scatter {
                     return;
                 }
 
-                createVolumePlot(collectionSelected.getDataset(id).getId());
+                createVolumePlot( collectionSelected.getDataset(id).getId() );
             }
         });
 
@@ -3770,7 +3810,7 @@ public class Scatter {
                 final int panel = 69;
                 new Thread() {
                     public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setSampleBufferModels(programInstance.bufferFilesModel);
                         rec1.useShortenedConstructor();
@@ -3800,7 +3840,7 @@ public class Scatter {
                 final int panel = 96;
                 new Thread() {
                     public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setSampleBufferModels(programInstance.sampleFilesModel);
                         rec1.useShortenedConstructor();
@@ -4943,6 +4983,17 @@ public class Scatter {
                 this.button.setForeground(Color.GREEN);
                 //normalize - divide P(r) by I-Zero
                 double invIzero = 1.0/prModel.getDataset(rowID).getIzero();
+                //
+                // normalize to volume
+                //
+                if (prModel.getDataset(rowID).getVolume() > 1){
+                    invIzero *= prModel.getDataset(rowID).getVolume();
+                    prStatusLabel.setText("Normalized to Volume");
+                } else {
+                    invIzero = 1;
+                    prStatusLabel.setText("Please determine Volume first to normalize");
+                }
+                System.out.println(rowID + " => InvIzero " + invIzero);
                 prModel.getDataset(rowID).setScale((float) invIzero);
 
            //     prModel.fireTableDataChanged();

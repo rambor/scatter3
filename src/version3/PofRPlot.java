@@ -33,7 +33,6 @@ public class PofRPlot {
 
     private XYSplineRenderer splineRend = new XYSplineRenderer();
     private XYLineAndShapeRenderer renderer1 = new XYSplineRenderer();
-   // private Collection collectionInUse;
 
     private static PofRPlot singleton = new PofRPlot( );
 
@@ -140,6 +139,7 @@ public class PofRPlot {
                                 dmax = tempdMax;
                             }
                         }
+                        System.out.println(i + " SIZE " + size + " " + dmax + " maxI " + max);
                     }
                 }
 

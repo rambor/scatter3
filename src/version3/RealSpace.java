@@ -292,6 +292,19 @@ public class RealSpace {
         this.color = color;
     }
 
+
+    public double getVolume(){
+        double value = 1;
+        if (dataset.getPorodVolume() > 0 ){
+            value =(double)dataset.getPorodVolume();
+        }
+
+        if (dataset.getPorodVolumeReal() > 0) {
+            value =(double)dataset.getPorodVolumeReal();
+        }
+        return value;
+    }
+
     public int getPointSize(){
         return pointSize;
     }
