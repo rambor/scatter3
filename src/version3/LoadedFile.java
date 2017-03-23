@@ -233,7 +233,8 @@ public class LoadedFile {
                 !row[0].matches("^[A-Za-z#:_\\/$%*!\\'-].+") &&  // checks for header or footer stuff
                 isNumeric(row[0]) &&                             // check that value can be parsed as Double
                 isNumeric(row[1]) &&                             // check that value can be parsed as Double
-                !isZero(row[0]) &&              // no zero q values
+                !isZero(row[0]) &&                               // no zero q values
+                !isZero(row[1]) &&                               // no zero I(q) values
                 dataFormat.matcher(row[0]).matches() &&          // format must be either scientific with E or decimal
                 dataFormat.matcher(row[1]).matches() ))          // format must be either scientific with E or decimal
         {
@@ -266,6 +267,7 @@ public class LoadedFile {
             }
 
         } else {  // this is required to tell me that the data line created is false
+            System.out.println("REJECTING LINE: " + line);
             data = new DataLine(0,0,0,false);
         }
         return data;
@@ -304,7 +306,6 @@ public class LoadedFile {
 
     private boolean isZero(String str){
         // 0.000 or 0,000 or 0.00E0
-
         if (hasOnlyComma(str) && !isUSUK){
             if (convertToUS(str) <= 0){
                 return true;
