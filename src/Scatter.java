@@ -318,7 +318,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.0k";
+    private String version = "3.0j";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -394,11 +394,11 @@ public class Scatter {
     public Scatter() { // constructor
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-//        mc.redirectOut();
-//        mc.redirectErr(Color.RED, null);
+        mc.redirectOut();
+        mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-//        info.redirectOut();
+        info.redirectOut();
 
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
@@ -820,6 +820,29 @@ public class Scatter {
                 // open new object/window for estimating mass using several methods
             }
         }));
+
+
+        // add mouse functions, remove, select all, select none
+        popupMenu.add(new JMenuItem(new AbstractAction("GPA") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                // get highlighted/moused over
+                // open new object/window for estimating mass using several methods
+                int index = analysisTable.getSelectedRow();
+                if (index > -1){
+
+                    if (collectionSelected.getDataset(index).getGuinierRg() <= 0 && collectionSelected.getDataset(index).getGuinierIzero() <= 0){
+                        status.setText("Perform Manual Guinier first, auto-Rg failed");
+                        return;
+                    }
+
+                    createGPAPlot(collectionSelected.getDataset(index).getId());
+                }
+            }
+        }));
+
+
 
         // add mouse functions, remove, select all, select none
         popupMenu.add(new JMenuItem(new AbstractAction("Flexibility") {

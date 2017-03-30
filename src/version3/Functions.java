@@ -1054,6 +1054,8 @@ int cols, rows;
 
         return tempXYSeries;
     }
+
+
     /**
      * Trapezoid integral approximation
      * @param data XYSeries curve you want to calculate an integral

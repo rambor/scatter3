@@ -21,6 +21,7 @@ public class PDBFile {
     private double delta_r;
     private boolean useWaters = false;
     private XYSeries pdbdata;
+    private XYSeries high_res_pr_data;
     private XYSeries icalc;
     private XYSeries error;
     private ArrayList<PDBAtom> atoms;
@@ -29,6 +30,8 @@ public class PDBFile {
     private String currentWorkingDirectory;
     private double[] mooreCoefficients;
     private double izero, rg;
+
+    private double highresWidth = 3.1d;
 
     public PDBFile(File selectedFile, double qmax, boolean exclude, String workingDirectoryName){
         filename = selectedFile.getName();
@@ -105,12 +108,16 @@ public class PDBFile {
             // calculate PofR from workingAtoms
             // use resolution to determine number of Shannon bins
             pr_bins = (int)Math.ceil((dmax * qmax / Math.PI)) + 1;
-            //pr_bins = 35; // can have a bin less than 2 Angstroms
-            pr_bins = (int)(dmax/2.1);
+            int high_res_pr_bins = (int)Math.round((double)dmax/highresWidth);
+
             delta_r = (double) dmax / (double)pr_bins;
             double inv_delta = 1.0 /delta_r;
 
+            double inv_high_res_delta = 1.0/highresWidth;
+
             int[] histo = new int[pr_bins];
+            int[] highResHisto = new int[high_res_pr_bins];
+
             double[] atom, atom2;
             double refx, refy, refz, difx, dify, difz, distance;
             int startIndex, bin;
@@ -130,20 +137,34 @@ public class PDBFile {
                     difz = refz - atom2[2];
 
                     distance = FastMath.sqrt(difx * difx + dify * dify + difz * difz);
-                    // which bin?
-                    bin = (int) (distance * inv_delta); // casting to int is equivalent to floor
-
+                    // which bin low res?
+                    bin = (int) Math.floor(distance * inv_delta); // casting to int is equivalent to floor
                     histo[(bin >= pr_bins) ? bin - 1 : bin] += 1;
+
+                    // which bin high res?
+                    bin = (int) Math.floor(distance * inv_high_res_delta); // casting to int is equivalent to floor
+                    highResHisto[(bin >= high_res_pr_bins) ? bin - 1 : bin] += 1;
+
                     startIndex++;
                 }
             }
 
             pdbdata = new XYSeries(filename);
+            high_res_pr_data = new XYSeries(filename);
+
             pdbdata.add(0, 0);
             for (int i = 0; i < pr_bins; i++) {
                 pdbdata.add((i + 0.5) * delta_r, histo[i]);  // middle position of the histogram bin
             }
             pdbdata.add(dmax, 0);
+
+            // fill high resolution bins
+            high_res_pr_data.add(0, 0);
+            for (int i = 0; i < high_res_pr_bins; i++) {
+                high_res_pr_data.add((i + 0.5) * highresWidth, highResHisto[i]);  // middle position of the histogram bin
+            }
+            high_res_pr_data.add(dmax, 0);
+
 
             int all = pdbdata.getItemCount();
 
@@ -166,15 +187,14 @@ public class PDBFile {
                 pdbdata.updateByIndex(i, pdbdata.getY(i).doubleValue() * invarea);
             }
 
-            System.out.println("POFR POINTS FROM PDB MODEL (UNSCALED) : " + all + " <=> " + pr_bins);
+            System.out.println("POFR POINTS FROM PDB MODEL (UNSCALED) : " + all + " > " + pr_bins);
             for (int i = 0; i < all; i++) {
                 System.out.println(String.format("%5.2f %.5E", pdbdata.getX(i).doubleValue(), pdbdata.getY(i).doubleValue()));
             }
             System.out.println("END OF POFR POINTS");
-            calculateMooreCoefficients((int)Math.ceil((dmax * qmax / Math.PI)) + 1);
+            calculateMooreCoefficients(pr_bins);
             // calcualte p(r) distribution to the specified resolution
             int shannonLimit = (int)Math.ceil((dmax * qmax / Math.PI)) + 1;
-
 
         }
     }
@@ -473,44 +493,64 @@ public class PDBFile {
      */
     private void calculateMooreCoefficients(int totalShannonPoints){
         // pr_bins - does not include 0 and dmax
-        double invDmax = 1.0/dmax, sum, qr, rvalue;
-        mooreCoefficients = new double[pr_bins];
+        double invDmax = Math.PI/(double)dmax, sum, qr, rvalue;
 
-        for(int i=0; i < pr_bins; i++){
-            double qvalue = (i+1)*Math.PI*invDmax;
+        int totalBins = high_res_pr_data.getItemCount();
+        mooreCoefficients = new double[totalShannonPoints];  // estimate Moore Coefficients from resolution of the P(r)distribution
+
+        //double constant = 0.5/(double)(totalBins-2)*dmax;
+        double constant = 1;
+
+        for(int i=0; i < totalShannonPoints; i++){
+            // set the cardinal point
+            double qvalue = (i+1)*invDmax; // Shannon points are fixed, so to truncate resolution, just truncate Moore function to requisite resolution
             sum = 0;
             // for a given q, integrate Debye function from r=0 to r=dmax
             // skip first one since it is r=0
             // can't use Simpson's rule if odd
             // must have even number of intervals
-            for(int j=1; j<(pdbdata.getItemCount()-1); j++){
-                rvalue = delta_r*(0.5+(j-1));
-                XYDataItem tempItem = pdbdata.getDataItem(j);
-                //qr = tempItem.getXValue()*qvalue;
+            for(int j=1; j<(totalBins-1); j++){ // exclude end points where P(r) = 0
+
+                XYDataItem tempItem = high_res_pr_data.getDataItem(j);
+                rvalue = highresWidth*j;
+                //rvalue = tempItem.getXValue();
                 qr = rvalue*qvalue;
-                //sum += 2*( (tempItem.getYValue())* FastMath.sin(qr)/qr);
-                sum+= delta_r*tempItem.getYValue()*FastMath.sin(qr)/rvalue;
+                //sum+=2*tempItem.getYValue()*Math.sin(qr)/rvalue;
+                sum+=highresWidth*tempItem.getYValue()*Math.sin(qr)/rvalue;
             }
-
-            mooreCoefficients[i] = sum;
+            mooreCoefficients[i] = sum*constant;
         }
-
 
 
         System.out.println("SYNTHETIC MOORE");
         // excludes background term
-        double pi_dmax = Math.PI/(double)dmax, resultM, r_value, pi_dmax_r, inv_2d = 0.5/dmax;
-        for (int j=1; j < pdbdata.getItemCount(); j++){
+        // compare to low-resolution approximation
+        // calculate P(r) using Moore Coefficients at r-values in pdbdata
+        double resultM, r_value, pi_dmax_r, inv_2d = 0.5/dmax, r_value_moore;
+        for (int j=1; j < pdbdata.getItemCount()-1; j++){
 
             r_value = pdbdata.getX(j).doubleValue();
-            pi_dmax_r = pi_dmax*r_value;
+            r_value_moore = delta_r*j;
+            //pi_dmax_r = invDmax*r_value;
+            pi_dmax_r = invDmax*r_value_moore; // have to calculate it at the bin_width
             resultM = 0;
 
-            for(int m=0; m < pr_bins; m++){
-                resultM += mooreCoefficients[m]* FastMath.sin(pi_dmax_r*(m+1));
+            for(int m=0; m < totalShannonPoints; m++){
+                resultM += mooreCoefficients[m]*Math.sin(pi_dmax_r*(m+1));
             }
 
             System.out.println(r_value + " " + (inv_2d * r_value * resultM) + " " + pdbdata.getY(j));
         }
+
+        System.out.println(dmax + " " + 0.0 + " " + 0.0);
+
+        String newLine = "REMARK 265 \n";
+        newLine += "REMARK 265  MOORE COEFFICIENTS (UNSCALED)\n";
+        newLine += String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.3E %n", 0.0);
+        for (int i=0; i< totalShannonPoints;i++){
+            newLine += String.format("REMARK 265                        m_(%2d) : %.3E %n", (i+1), mooreCoefficients[i]);
+        }
+        System.out.println(newLine);
+
     }
 }
