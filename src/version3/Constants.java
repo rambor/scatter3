@@ -54,6 +54,7 @@ public final class Constants {
     public static final DecimalFormat Scientific1 = new DecimalFormat("0.#E0", otherSymbols);
     public static final DecimalFormat Scientific2 = new DecimalFormat("0.00E0", otherSymbols);
     public static final DecimalFormat Scientific1dot5e2 = new DecimalFormat("0.00000E00", otherSymbols);
+    public static final DecimalFormat Scientific1dot4e2 = new DecimalFormat("0.0000E00", otherSymbols);
     public static final DecimalFormat Scientific1dot3e1 = new DecimalFormat("0.000E0", otherSymbols);
     public static final DecimalFormat Scientific1dot2e1 = new DecimalFormat("0.00E0", otherSymbols);
 

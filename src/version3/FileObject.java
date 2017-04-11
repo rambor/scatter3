@@ -188,7 +188,7 @@ public class FileObject {
             out.write("REMARK 265    COLUMNS : r, P(r), error\n");
             out.write(String.format("REMARK 265          r : defined in Angstroms%n"));
             for(int i =0; i < r_pr.getItemCount(); i++){
-                out.write( Constants.Scientific1dot2e1.format(r_pr.getX(i).doubleValue()) + "\t" + Constants.Scientific1dot2e1.format(r_pr.getY(i).doubleValue()*realspaceModel.getScale()) + "\t 0.00 "+ "\n");
+                out.write( Constants.Scientific1dot4e2.format(r_pr.getX(i).doubleValue()) + "\t" + Constants.Scientific1dot2e1.format(r_pr.getY(i).doubleValue()*realspaceModel.getScale()) + "\t 0.00 "+ "\n");
             }
             //Close the output stream
             out.close();

@@ -1339,10 +1339,21 @@ public class Scatter {
                                 mainProgressBar,
                                 status);
 
-                        scaling.scaleNow(0,0);
+
+                        double minq = Double.parseDouble(qminLimitField.getText());
+                        double maxq = Double.parseDouble(qmaxLimitField.getText());
+
+                        if (minq > maxq){
+                            minq = 0;
+                            maxq = 0;
+                        }
+
+                        scaling.scaleNow(minq,maxq);
+
                         if (log10IntensityPlot.isVisible()){
                             log10IntensityPlot.setNotify(true);
                         }
+
                         mainProgressBar.setValue(0);
                         mainProgressBar.setStringPainted(false);
                         scaleButton.setEnabled(true);
@@ -1588,7 +1599,16 @@ public class Scatter {
                         mainProgressBar,
                         status);
 
-                scaling.scaleNow(0.01,0.15);
+                double minq = Double.parseDouble(qminLimitField.getText());
+                double maxq = Double.parseDouble(qmaxLimitField.getText());
+
+                if (minq > maxq){
+                    minq = 0;
+                    maxq = 0;
+                }
+
+                scaling.scaleNow(minq,maxq);
+
                 if (log10IntensityPlot.isVisible()){
                     log10IntensityPlot.setNotify(true);
                 }
