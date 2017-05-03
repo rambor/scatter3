@@ -90,7 +90,7 @@ public class LoadedFile {
 
                     //endPtNN = originalNNData.getItemCount();
                 } catch (IOException ex) {
-                    System.out.println("File Index out of bounds");
+                    System.err.println("File Index out of bounds");
                 }
             }
             // might have a cansas format, open file and read contents
@@ -99,7 +99,7 @@ public class LoadedFile {
             fstream.close();
 
         } catch (FileNotFoundException ex) {
-            System.out.println("Error: " + ex.getMessage());
+            System.err.println("Error: " + ex.getMessage());
         }
     }
 
@@ -109,7 +109,7 @@ public class LoadedFile {
         if (loc.toString().equals("en_GB") || loc.toString().equals("en_US")){
             isUSUK = true;
         }
-        System.out.println("Default location " + Locale.getDefault(Locale.Category.FORMAT) + " isUSUK " + isUSUK);
+        //System.out.println("Default location " + Locale.getDefault(Locale.Category.FORMAT) + " isUSUK " + isUSUK);
 
         // get file base and extension
         String[] filename = file.getName().split("\\.(?=[^\\.]+$)");
@@ -140,9 +140,9 @@ public class LoadedFile {
 
                     if (ext.equals("fit")){
 
-                        DataLine dataPoint;
+                        //DataLine dataPoint;
                         while ((strLine = br.readLine()) != null) {
-                            dataPoint = dataFromText(strLine);
+                            DataLine dataPoint = dataFromText(strLine);
                             if (dataPoint.getTest()) {
                                 tempQValue = (convert) ? dataPoint.getq() / 10 : dataPoint.getq();
 
@@ -158,9 +158,9 @@ public class LoadedFile {
 
                         //long start = System.nanoTime();
                         int count = 0;
-                        DataLine dataPoint;
+                        //DataLine dataPoint;
                         while ((strLine = br.readLine()) != null) {
-                            dataPoint = dataFromText(strLine);
+                            DataLine dataPoint = dataFromText(strLine);
                             if (dataPoint.getTest()){
                                 tempQValue = (convert) ? dataPoint.getq() / 10 : dataPoint.getq();
                                 allData.addOrUpdate(tempQValue, dataPoint.getI());
@@ -168,7 +168,7 @@ public class LoadedFile {
                                 count++;
 
                                 if (allData.getItemCount() != count){
-                                    System.out.println(count + "(" + allData.getItemCount() + ")" + " POSSIBLE DUPLICATE ENTRIES SEE LINE => " + strLine);
+                                    System.err.println(count + "(" + allData.getItemCount() + ")" + " POSSIBLE DUPLICATE ENTRIES SEE LINE => " + strLine);
                                 }
                             }
 
@@ -177,13 +177,16 @@ public class LoadedFile {
 //                            } // move to next line
                         }
 
+                        // take the longest range of positive values, excluding negatives?
+
+
 //                        if (allData.getItemCount() != count){
 //                            System.out.println("POSSIBLE DUPLICATE ENTRIES: READ " + count + " LINES in => " + (System.nanoTime() - start)/1000 + " nanoseconds");
 //                        }
                     }
 
                 } catch (IOException ex) {
-                    System.out.println("File Index out of bounds");
+                    System.err.println("File Index out of bounds");
                 }
             } else if (ext.equals("pdb")) { // read in PDB file, make intensity from P(r)?
 
@@ -192,7 +195,7 @@ public class LoadedFile {
 
         } catch (FileNotFoundException ex) {
             jLabel.setText("File is empty");
-            System.out.println("Error: " + ex.getMessage());
+            System.err.println("Error: " + ex.getMessage());
         }
     }
 
@@ -229,12 +232,12 @@ public class LoadedFile {
         //df.applyPattern("#.##");
         // df.format() returns a string
         // System.out.println("LOCALE " + loc); // en_GB, en_US
-        if ( ((row.length >= 2 && row.length <= 4) &&
+        if ( (!trimmed.contains("#") && (row.length >= 2 && row.length <= 4) &&
                 !row[0].matches("^[A-Za-z#:_\\/$%*!\\'-].+") &&  // checks for header or footer stuff
-                isNumeric(row[0]) &&                             // check that value can be parsed as Double
-                isNumeric(row[1]) &&                             // check that value can be parsed as Double
                 !isZero(row[0]) &&                               // no zero q values
                 !isZero(row[1]) &&                               // no zero I(q) values
+                isNumeric(row[0]) &&                             // check that value can be parsed as Double
+                isNumeric(row[1]) &&                             // check that value can be parsed as Double
                 dataFormat.matcher(row[0]).matches() &&          // format must be either scientific with E or decimal
                 dataFormat.matcher(row[1]).matches() ))          // format must be either scientific with E or decimal
         {
@@ -267,7 +270,7 @@ public class LoadedFile {
             }
 
         } else {  // this is required to tell me that the data line created is false
-            System.out.println("REJECTING LINE: " + line);
+            //System.out.println("REJECTING LINE: " + line);
             data = new DataLine(0,0,0,false);
         }
         return data;
@@ -307,14 +310,17 @@ public class LoadedFile {
     private boolean isZero(String str){
         // 0.000 or 0,000 or 0.00E0
         if (hasOnlyComma(str) && !isUSUK){
+
             if (convertToUS(str) <= 0){
                 return true;
             }
         } else if (isUSUK) {
+
             if (Float.parseFloat(str) <= 0) {
                 return true;
             }
         }
+
         return false;
     }
 

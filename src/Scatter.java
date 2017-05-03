@@ -314,6 +314,7 @@ public class Scatter {
     private JTextField textField1;
     private JPanel sphereResultsPanel;
     private JCheckBox volumeScalingBox;
+    private JCheckBox buildListFromFileCheckBox;
     //private JCheckBox volumeScalingCheckBox;
     private JButton diffButton;
     private JPanel plotPanel3Body;
@@ -392,13 +393,17 @@ public class Scatter {
     private static int cpuCores;
 
     public Scatter() { // constructor
+
+
+
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
-        mc.redirectOut();
-        mc.redirectErr(Color.RED, null);
+        //mc.redirectOut();
+        //mc.redirectErr(Color.RED, null);
 
         final MessageConsole info = new MessageConsole(generalText);
-        info.redirectOut();
+        //info.setMessageLines(20);
+        //info.redirectOut();
 
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
@@ -749,6 +754,7 @@ public class Scatter {
         }));
 
 
+
         popupMenu.add(new JMenuItem(new AbstractAction("Select Highlighted") {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -765,12 +771,49 @@ public class Scatter {
 
                 total = rowIndex.length;
                 for(int i=0; i<total; i++){
-                    collectionSelected.getDataset(rowIndex[i]).setInUse(true);
+                    collectionSelected.getDataset(rowIndex[i]).setInUse(false);
                 }
 
                 analysisModel.fireTableDataChanged();
             }
         }));
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("DeSelect Highlighted") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                int[] rowIndex = analysisTable.getSelectedRows();
+
+                int total = rowIndex.length;
+                for(int i=0; i<total; i++){
+                    collectionSelected.getDataset(rowIndex[i]).setInUse(false);
+                }
+
+                analysisModel.fireTableDataChanged();
+            }
+        }));
+
+
+
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("Clear All Plots") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                System.out.println("DeSelecting All");
+                int total = collectionSelected.getDatasets().size();
+                for(int i=0; i<total; i++){
+                    collectionSelected.getDataset(i).setInUse(false);
+                }
+                analysisModel.fireTableDataChanged();
+            }
+        }));
+
+
+
+
 
         popupMenu.add(new JMenuItem(new AbstractAction("Remove") {
             @Override
@@ -1836,6 +1879,17 @@ public class Scatter {
 
                 tempSignalPlot.setSampleJList(samplesList);
                 tempSignalPlot.setPointsToExclude(Integer.valueOf((String)excludeComboBox.getSelectedItem()));
+
+//                double tempqmax = Double.parseDouble(subtractQmaxField.getText());
+//                double tempqmin = Double.parseDouble(subtractQminField.getText());
+
+//                if (tempqmax > 0.1 && ((tempqmax > tempqmin) || (tempqmin==0))){
+//                    tempSignalPlot.setMaxQvalueInCommon(tempqmax);
+//                }
+//
+//                if (tempqmin < 0.2 && ((tempqmax > tempqmin) || (tempqmax==0))){
+//                    tempSignalPlot.setMinQvalueInCommon(tempqmin);
+//                }
 
                 Thread temp1 = new Thread(tempSignalPlot);
                 temp1.start();
@@ -3449,6 +3503,7 @@ public class Scatter {
                 maximumEntropyRadioButton.setSelected(false);
             }
         });
+
     }
 
     private void updateSamplesListSelection(boolean boo) {
@@ -3595,13 +3650,6 @@ public class Scatter {
 
     public static void main(String[] args) {
         //check from property file
-
-        int totalFiles = args.length;
-        // if files, add to Collection
-        for(int i=0; i<totalFiles; i++){
-            System.out.println(i + " Files " + args[i]);
-        }
-
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -3853,7 +3901,28 @@ public class Scatter {
                 final int panel = 69;
                 new Thread() {
                     public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+
+                        ReceivedDroppedFiles rec1 = null;
+
+                        if (programInstance.buildListFromFileCheckBox.isSelected()){
+
+                            if (files.length == 1){
+                                try{
+                                    FileListBuilder builder = new FileListBuilder(files[0], WORKING_DIRECTORY.getWorkingDirectory());
+                                    rec1 = new ReceivedDroppedFiles(builder.getFoundFiles(), (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                                    programInstance.status.setText("Loading files, please wait");
+                                } catch (Exception e){
+
+                                }
+                            } else {
+                                programInstance.status.setText(" DROP only one file please");
+                            }
+
+                            programInstance.buildListFromFileCheckBox.setSelected(false);
+                        } else {
+                            rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                        }
+
                         // add other attributes and then run
                         rec1.setSampleBufferModels(programInstance.bufferFilesModel);
                         rec1.useShortenedConstructor();
@@ -3883,7 +3952,30 @@ public class Scatter {
                 final int panel = 96;
                 new Thread() {
                     public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+
+
+                        ReceivedDroppedFiles rec1 = null;
+
+                        if (programInstance.buildListFromFileCheckBox.isSelected()){
+
+                            if (files.length == 1){
+                                try{
+                                    FileListBuilder builder = new FileListBuilder(files[0], WORKING_DIRECTORY.getWorkingDirectory());
+                                    rec1 = new ReceivedDroppedFiles(builder.getFoundFiles(), (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                                    programInstance.status.setText("Loading files, please wait");
+                                } catch (Exception e){
+                                    //programInstance.status.setText(" DROP only one file please");
+                                }
+                            } else {
+                                programInstance.status.setText(" DROP only one file please");
+                            }
+
+                            programInstance.buildListFromFileCheckBox.setSelected(false);
+                        } else {
+                            rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                        }
+
+                        //ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setSampleBufferModels(programInstance.sampleFilesModel);
                         rec1.useShortenedConstructor();
@@ -3970,6 +4062,55 @@ public class Scatter {
             }
         });
 
+
+
+        // if files, add to Collection
+        if (args.length > 0){
+            int totalFiles = args.length;
+            ArrayList<File> filestoload = new ArrayList<>();
+            for(int i=0; i<totalFiles; i++){
+                // if *.dat files, then add to collection
+                // verify they are files and then add to Files Array
+                File f = new File(args[i]);
+                if(f.exists() && !f.isDirectory()) {
+                    // do something
+                    if (args[i].endsWith(".dat")){
+                        filestoload.add(new File(args[i]));
+                        System.out.println(i + " Loading File : " + args[i]);
+                    }
+                }
+            }
+
+            if (filestoload.size() > 0){
+                collectionSelected = (Collection)collections.get(0);
+                collectionSelected.setPanelID(0);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+
+                collectionButtons.get(0).setSelected(true);
+                miniPlots.get(0).chart.setNotify(false);
+
+
+                File[] files =  filestoload.toArray(new File[filestoload.size()]);
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(0), programInstance.getStatus(), 0, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
+                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
+                        Thread temp1 = new Thread(rec1);
+                        temp1.start();
+                        try {
+                            temp1.join();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        miniPlots.get(0).frame.removeAll();
+                        miniPlots.get(0).chart.setNotify(false);
+                        miniPlots.get(0).plot(collectionSelected);
+                        minis.get(0).add(miniPlots.get(0).frame.getChartPanel());
+                        miniPlots.get(0).chart.setNotify(true);
+            }
+        }
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();

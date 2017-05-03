@@ -46,8 +46,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     private int firstFrame;
     private int lastFrame;
 
-    private Number minQvalueInCommon;
-    private Number maxQvalueInCommon;
+    private Number minQvalueInCommon = 0;
+    private Number maxQvalueInCommon = 0;
 
     private JProgressBar mainStatus;
     private XYSeries buffer = new XYSeries("buffer");
@@ -326,6 +326,13 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         mainStatus.setStringPainted(false);
     }
 
+    /**
+     * create median and average dataset only on the qmin and max that are in common
+     * all data contains all positive values.
+     *
+     * @param collection
+     * @return
+     */
     private ArrayList<XYSeries> createMedianAverageXYSeries(Collection collection){
         ArrayList<XYSeries> returnMe = new ArrayList<XYSeries>();
 
@@ -649,8 +656,13 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
         int total = samplesCollection.getDatasetCount();
 
-        this.findLeastCommonQvalue();
-        this.findMaximumCommonQvalue();
+        //if (maxQvalueInCommon.doubleValue() == 0){
+            this.findMaximumCommonQvalue();
+        //}
+
+        //if (minQvalueInCommon.doubleValue() == 0){
+            this.findLeastCommonQvalue();
+        //}
 
         int upperIndex = samplesCollection.getDataset(0).getAllData().indexOf(maxQvalueInCommon);
         int lowerIndex = samplesCollection.getDataset(0).getAllData().indexOf(minQvalueInCommon);
@@ -824,7 +836,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         outerloop:
         for(int j=(referenceData.getItemCount()-1); j > -1; j--){
 
-
             refItem = referenceData.getDataItem(j); // is refItem found in all sets
             if (refItem.getYValue() > 0){
                 maxQvalueInCommon = refItem.getX();
@@ -834,11 +845,12 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                 innerloop:
                 for(; startAt < totalInSampleSet; startAt++) {
 
-
                     tempDataset = samplesCollection.getDataset(startAt);
                     tempData = tempDataset.getAllData();
                     // check if refItem q-value is in tempData
                     // if true, check next value
+                    // not found returns -1 for indexOf
+                    // startAt in tempData should return non-negative value
                     if (tempData.indexOf(refItem.getX()) < 0 && tempData.getY(startAt).doubleValue() > 0) {
                         isCommon = false;
                         break innerloop;
@@ -852,6 +864,14 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         }
 
         System.out.println("Maximum Common q-value : " + maxQvalueInCommon);
+    }
+
+    public void setMinQvalueInCommon(double value){
+        this.minQvalueInCommon = value;
+    }
+
+    public void setMaxQvalueInCommon(double value){
+        this.maxQvalueInCommon = value;
     }
 
 

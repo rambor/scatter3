@@ -136,7 +136,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 } else {
                     LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
                     addToCollection(temp);
-                    System.out.println(i + " Loaded File " + targetCollection.getLast().getFileName());
+                    System.out.println(i + "Loaded File " + targetCollection.getLast().getFileName());
                 }
             }
 
@@ -261,6 +261,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 // throw exception - incorrect file format
                 throw new Exception("Incorrect file format: Use either brml, dat, fit, Adat, or Bdat file formats: " + currentFile);
             }
+
         } catch (Exception ex) {
             status.setText(ex.getMessage().toString());
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
