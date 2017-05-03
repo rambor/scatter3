@@ -319,7 +319,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.0j";
+    private String version = "3.0k";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -771,7 +771,7 @@ public class Scatter {
 
                 total = rowIndex.length;
                 for(int i=0; i<total; i++){
-                    collectionSelected.getDataset(rowIndex[i]).setInUse(false);
+                    collectionSelected.getDataset(rowIndex[i]).setInUse(true);
                 }
 
                 analysisModel.fireTableDataChanged();
