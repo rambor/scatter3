@@ -19,6 +19,7 @@ public class AutoRg {
 
     private XYSeries inputData;
     private XYSeries inputErrors;
+    private XYSeries finalDataSetForFit;
 
     // data Intensities should be positive only
     public AutoRg(XYSeries data, XYSeries error, int startAt){
@@ -220,8 +221,7 @@ public class AutoRg {
             ArrayList<Integer> keepers = new ArrayList<Integer>();
 
             XYDataItem dataItem;
-            for (int i = 0; i < endAt; i++) {
-                //residualAt = Math.pow((data.getY(i).doubleValue() - (keptSlope * data.getX(i).doubleValue() + keptIntercept)), 2);
+            for (int i = 0; i < endAt; i++) { // get the indices of the data items to keep
                 dataItem = qSquaredData.getDataItem(i);
                 //if (Math.abs((dataItem.getYValue() - (keptSlope * dataItem.getXValue() + keptIntercept))) * inv_sigma < 2.5) {
                 if (Math.abs((dataItem.getYValue() - (keptSlope * dataItem.getXValue() + keptIntercept))) * inv_s_o < 2.0) {
@@ -234,15 +234,14 @@ public class AutoRg {
             // determines values to keep for fitting to determine Rg and I(zero)
             double[] final_x = new double[count];
             double[] final_y = new double[count];
+            finalDataSetForFit = new XYSeries("FinalDataset");
             //double[] final_w = new double[count];
-            int keep;
 
-            XYDataItem dat;
             for (int i = 0; i < count; i++) {
-                keep = keepers.get(i);
-                dat=qSquaredData.getDataItem(keep);
-                final_x[i] = dat.getXValue();
-                final_y[i] = dat.getYValue();
+                dataItem=qSquaredData.getDataItem(keepers.get(i));
+                finalDataSetForFit.add(dataItem);
+                final_x[i] = dataItem.getXValue();
+                final_y[i] = dataItem.getYValue();
                 //final_w[i] = errors.getY(keep).doubleValue();
             }
 
