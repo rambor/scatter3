@@ -340,10 +340,10 @@ public class Scatter {
     private DefaultListModel<String> damminfModelsModel;
 
     private static HashMap collections = new HashMap();
-    private static Collection bufferCollections = new Collection();;
-    private static Collection sampleCollections = new Collection();;
-    private static Collection similarityCollection = new Collection();;
-    private static Collection collectionSelected = new Collection();;
+    private static Collection bufferCollections = new Collection();
+    private static Collection sampleCollections = new Collection();
+    private static Collection similarityCollection = new Collection();
+    private static Collection collectionSelected = new Collection();
     public static ArrayList<JRadioButton> collectionButtons;
     public static ArrayList<Graph> miniPlots;
     public static ArrayList<JPanel> minis;
@@ -662,6 +662,7 @@ public class Scatter {
                                     if (log10IntensityPlot.isVisible()){
                                         log10IntensityPlot.setNotify(false);
                                     }
+
                                     final LowerUpperBoundManager boundLower = new LowerUpperBoundManager(
                                             cpuCores,
                                             collectionSelected,
@@ -675,7 +676,6 @@ public class Scatter {
                                         log10IntensityPlot.setNotify(true);
                                     }
                                     //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
-
                     }
 
                 } else if (index == 5) {
@@ -793,7 +793,6 @@ public class Scatter {
                 analysisModel.fireTableDataChanged();
             }
         }));
-
 
 
 
@@ -1981,7 +1980,7 @@ public class Scatter {
                 //buffersList.removeAll();
                 if (clearALL){
                     ((Collection)collections.get(96)).removeAllDatasets();
-                    sampleFilesModel.clear();;
+                    sampleFilesModel.clear();
                 }
             }
         });
@@ -2480,7 +2479,7 @@ public class Scatter {
                 if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
 
                     damstartLabel.setText(chooser.getSelectedFile().toString());
-                    damstartStatus = true;;
+                    damstartStatus = true;
                     int test = chooser.getSelectedFile().toString().indexOf("damstart.pdb");
 
                     if (test < 0){
@@ -3637,7 +3636,7 @@ public class Scatter {
 
     public void updateProgress(final int newValue) {
         mainProgressBar.setValue(newValue);
-    };
+    }
 
     public void setPValue(final int j) {
         SwingUtilities.invokeLater(new Runnable() {

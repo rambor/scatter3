@@ -233,14 +233,24 @@ public class StatMethods {
             }
         }
 
+        System.out.println("REFERENCE SET TO : " + selected.getDataset(ref).getFileName());
+
+
+
         ArrayList<XYSeries> returnMe = new ArrayList<XYSeries>();
 
         Dataset reference = selected.getDataset(ref); // reference is the last frame
         XYSeries tempRefData;
 
         tempRefData = reference.getData(); // log10 data used for plotting
-        double referenceQmin = tempRefData.getMinX();
-        double referenceQmax = tempRefData.getMaxX();
+        //double referenceQmin = tempRefData.getMinX();
+        //double referenceQmax = tempRefData.getMaxX();
+
+        Number referenceQmin = findLeastCommonQvalue(selected);
+        Number referenceQmax = findMaximumCommonQvalue(selected);
+
+
+
 
         double scale, lower, upper, referenceQ;
         int refIndex, count;
@@ -286,8 +296,8 @@ public class StatMethods {
                 lowerT = targetData.indexOf(targetMin);
                 upperT = targetData.indexOf(targetMax);
 
-                lower = Math.max(referenceQmin, (Double)targetMin);
-                upper = Math.min(referenceQmax, targetMax);
+                lower = Math.max(referenceQmin.doubleValue(), targetMin.doubleValue());
+                upper = Math.min(referenceQmax.doubleValue(), targetMax);
 
                 scale = tempDataset.getScaleFactor();
                 // iterate of the plotted range but within AllData (includes negative intensities)
@@ -321,7 +331,7 @@ public class StatMethods {
                             summedSet.updateByIndex(refIndex, (tempSummedItem.getYValue() + scale * targetData.getY(j).doubleValue() * var));
                             summedSetError.updateByIndex(refIndex, (summedSetError.getY(refIndex).doubleValue() + var));
 
-                        } else if (lower < target_q && (target_q < upper)) {
+                        } else if (lower < target_q && (target_q < upper)) { // no more interpolating
                          /*
                           * interpolate
                           */
@@ -527,6 +537,102 @@ public class StatMethods {
         returnMe.add(summedSetError);
 
         return returnMe;
+    }
+
+
+    /**
+     *
+     */
+    public static Number findMaximumCommonQvalue(Collection dataCollection){
+
+        boolean isCommon;
+
+        Dataset firstSet = dataCollection.getDataset(0);
+        Dataset tempDataset;
+        int totalInSampleSet = dataCollection.getTotalSelected();
+        XYSeries referenceData = firstSet.getAllData(), tempData;
+        XYDataItem refItem;
+        int startAt;
+        Number maxQvalueInCommon = 0;
+
+        outerloop:
+        for(int j=(referenceData.getItemCount()-1); j > -1; j--){
+
+            refItem = referenceData.getDataItem(j); // is refItem found in all sets
+            if (refItem.getYValue() > 0){
+                maxQvalueInCommon = refItem.getX();
+                isCommon = true;
+
+                startAt = 1;
+                innerloop:
+                for(; startAt < totalInSampleSet; startAt++) {
+
+                    tempDataset = dataCollection.getDataset(startAt);
+                    tempData = tempDataset.getAllData();
+                    // check if refItem q-value is in tempData
+                    // if true, check next value
+                    // not found returns -1 for indexOf
+                    // startAt in tempData should return non-negative value
+                    if (tempData.indexOf(refItem.getX()) < 0 && tempData.getY(startAt).doubleValue() > 0) {
+                        isCommon = false;
+                        break innerloop;
+                    }
+                }
+
+                if (startAt == totalInSampleSet && isCommon){
+                    break outerloop;
+                }
+            }
+        }
+
+        return maxQvalueInCommon;
+    }
+
+
+    /**
+     *
+     */
+    public static Number findLeastCommonQvalue(Collection dataCollection){
+
+        boolean isCommon;
+
+        Dataset firstSet = dataCollection.getDataset(0);
+        Dataset tempDataset;
+        int totalInSampleSet = dataCollection.getTotalSelected();
+        XYSeries referenceData = firstSet.getAllData(), tempData;
+        XYDataItem refItem;
+        int startAt;
+        Number minQvalueInCommon = 10;
+
+        outerloop:
+        for(int j=0; j < referenceData.getItemCount(); j++){
+
+            if (referenceData.getY(j).doubleValue() > 0){
+                refItem = referenceData.getDataItem(j); // is refItem found in all sets
+                minQvalueInCommon = refItem.getX();
+                isCommon = true;
+
+                startAt = 1;
+                innerloop:
+                for(; startAt < totalInSampleSet; startAt++) {
+
+                    tempDataset = dataCollection.getDataset(startAt);
+                    tempData = tempDataset.getAllData();
+                    // check if refItem q-value is in tempData
+                    // if true, check next value
+                    if (tempData.indexOf(refItem.getX()) < 0 && (tempData.getY(startAt).doubleValue() > 0)) {
+                        isCommon = false;
+                        break innerloop;
+                    }
+                }
+
+                if (startAt == totalInSampleSet && isCommon){
+                    break outerloop;
+                }
+            }
+        }
+
+        return minQvalueInCommon;
     }
 
 

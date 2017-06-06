@@ -174,7 +174,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         mainStatus.setValue(0);
         mainStatus.setStringPainted(true);
         mainStatus.setString("Processing");
-        System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
+        //System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
 
         if (lastFrame <= 0 || lastFrame <= firstFrame){
             lastFrame = total;
@@ -244,7 +244,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         mainStatus.setValue(0);
         mainStatus.setStringPainted(true);
         mainStatus.setString("Processing");
-        System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
+        //System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
 
         if (lastFrame <= 0 || lastFrame <= firstFrame){
             lastFrame = total;

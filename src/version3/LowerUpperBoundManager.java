@@ -99,12 +99,10 @@ public class LowerUpperBoundManager {
                         break;
                     }
                 }
-
                 //data.setEnd(setLimit);
                 data.upperBoundPlottedLog10IntensityData(setLimit);
                 analysisModel.setValueAt(setLimit, data.getId(), column);
             }
-
             //data.scalePlottedLog10IntensityData();
             //analysisModel.fireTableDataChanged();
         }

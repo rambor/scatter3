@@ -217,12 +217,14 @@ public class RcXSectionalPlot {
 
         //transform data for x-sectional Rc
         for(int i=0; i < maxCount; i++){
-            xvalue=Math.pow(tempData.getX(i).doubleValue(), 2);
+            double tempx = tempData.getX(i).doubleValue();
+            xvalue = tempx*tempx;
+            //xvalue=Math.pow(tempData.getX(i).doubleValue(), 2);
             tempy = tempData.getY(i).doubleValue();
             //q^2
             x_data[i]=xvalue;
             //ln(q*I)
-            yvalue=Math.log(tempy*tempData.getX(i).doubleValue());
+            yvalue=Math.log(tempy*tempx);
             y_data[i]=yvalue;
             //ln(y)*error*y
             w_data[i]=yvalue*error.getY(i).doubleValue()*tempy;

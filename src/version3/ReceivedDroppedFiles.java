@@ -136,7 +136,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 } else {
                     LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
                     addToCollection(temp);
-                    System.out.println(i + "Loaded File " + targetCollection.getLast().getFileName());
+                    //System.out.println(i + " : Loaded File => " + targetCollection.getLast().getFileName());
                 }
             }
 
@@ -185,7 +185,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
 
                 String name = targetCollection.getDataset(i).getFileName();
                 name = name + "_" + i;
-                System.out.println(i + " renaming after loading : " + name + " " + targetCollection.getDataset(i).getId());
+                // System.out.println(i + " renaming after loading : " + name + " " + targetCollection.getDataset(i).getId());
                 // targetCollection.getDataset(i).setFileName(name);
                 tempColor = targetCollection.getDataset(i).getColor();
                 sampleBufferFilesModel.addElement(new SampleBufferElement(name, i, tempColor, targetCollection.getDataset(i)));
@@ -194,7 +194,6 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
             //sampleBufferFilesList.setModel(sampleBufferFilesModel);
             sampleBufferFilesModel.notifyAll();
         }
-
     }
 
     public void useShortenedConstructor(){

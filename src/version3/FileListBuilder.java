@@ -23,6 +23,7 @@ public class FileListBuilder {
     String directory;
     String outputDirectory;
     File[] foundFiles;
+    int indexOfDroppedFile;
     /** File type ZIP archive */
     public static final int ZIPFILE = 0x504b0304;
     /** File type GZIP compressed Data */
@@ -49,12 +50,16 @@ public class FileListBuilder {
 
         } else {
 
+            indexOfDroppedFile = this.getFileIndex(file);
             filename = FilenameUtils.removeExtension(file.getName());
             String[] parts = filename.split("[-_]+");
 
-            for(int i=0; i<parts.length; i++){
-                System.out.println(i + " " + parts[i]);
-            }
+//            for(int i=0; i<parts.length; i++){
+//                System.out.println(i + " " + parts[i]);
+//            }
+
+            // ####_pbs_2.dat
+
 
             directory = file.getParent();
             // build a list of files that match
@@ -69,17 +74,94 @@ public class FileListBuilder {
             // make sure last part matches a number
             String onlyDigits = "\\d+";
 
-            if ( parts[parts.length-1].matches(onlyDigits) ) {
+            // match a digit and its length is greater than 1
+            // 2_filename_000001.dat
+            if (parts[parts.length-1].matches(onlyDigits) && parts[0].matches(onlyDigits)){ // if first and last match digits
+                // decide if the front increments or last?
+                if (parts[parts.length-1].length() > parts[0].length()){ // assume last is the digit to follow
+                    this.collectFilesWithDigitsLast(parts[parts.length - 1]);
+                } else { // 000001_filename_2.dat
+                    this.collectFilesWithDigitsFirst(parts[0]);
+                }
+
+            } else if ( parts[parts.length-1].matches(onlyDigits)) { // if only last matches digits
 
                 this.collectFilesWithDigitsLast(parts[parts.length - 1]);
 
-            } else if (parts[0].matches(onlyDigits)) { // 00001_filename.dat
+            } else if (parts[0].matches(onlyDigits) ) { // 00001_filename.dat if only last matches digits
 
                 this.collectFilesWithDigitsFirst(parts[0]);
 
             } else {
                 throw new Exception();
             }
+
+
+            int total = foundFiles.length;
+            int locale=0;
+            for(int i=0; i<total; i++){
+
+                if (filename.equals(FilenameUtils.removeExtension(foundFiles[i].getName()))){
+                    locale = i;
+                    break;
+                }
+            }
+
+
+            // check the time stamp before and after,
+            double delta = 0;
+            if (locale > 1){ // either zero or one
+                //delta = 0.5*(foundFiles[locale+1].lastModified() - foundFiles[locale-1].lastModified()) ;
+                double deltafirst, deltasecond;
+                if (locale == (total-1)){ // locale is the last one
+                    deltafirst = this.getFileIndex(foundFiles[locale]) - this.getFileIndex(foundFiles[locale-1]);
+                    deltasecond = this.getFileIndex(foundFiles[locale-1]) - this.getFileIndex(foundFiles[locale-2]);
+                } else {
+                    deltafirst = this.getFileIndex(foundFiles[locale+1]) - indexOfDroppedFile;
+                    deltasecond = indexOfDroppedFile - this.getFileIndex(foundFiles[locale-1]);
+
+                }
+
+                if (deltafirst/(deltafirst+deltasecond) < 0.58){ // nearly half
+                    delta = 0.5*(deltafirst+deltasecond); // average the delta
+                } else {
+                    if (deltafirst < deltasecond){ // take smaller of the two
+                        delta = deltafirst;
+                    } else {
+                        delta = deltasecond;
+                    }
+                }
+
+            } else {
+                delta = 0.5*(this.getFileIndex(foundFiles[2]) - this.getFileIndex(foundFiles[0]));
+            }
+            // purge files that are greater than 20% different from the time stamp?
+
+            int startAt=0;
+            for(int i=locale; i>1; i--){ // work backwards find first file that falls outside of delta
+
+                if (( this.getFileIndex(foundFiles[i]) - this.getFileIndex(foundFiles[i-1])) > delta){
+                    startAt = i;
+                    break;
+                }
+            }
+
+
+
+            int endAt = foundFiles.length;
+            for(int i=locale+1; i<foundFiles.length; i++){
+                if (( this.getFileIndex(foundFiles[i]) - this.getFileIndex(foundFiles[i-1])) > delta){
+                    endAt = i;
+                    break;
+                }
+            }
+
+
+            //
+            if ((endAt-startAt) < endAt){
+                foundFiles = Arrays.copyOfRange(foundFiles, startAt, endAt);
+            }
+
         }
 
     }
@@ -89,7 +171,7 @@ public class FileListBuilder {
     private void collectFilesWithDigitsLast(String digits){
 
         String prefix = filename.split(digits)[0];
-
+        System.out.println("PREFIX => " + prefix );
         // grab all files with the prefix
         File lookInThisDir = new File(directory);
 
@@ -118,7 +200,8 @@ public class FileListBuilder {
                     //int s = name.indexOf('_')+1;
                     //int e = name.lastIndexOf('.');
                     //String number = name.substring(s, e);
-                    String number = tempName.split(prefix)[0];
+                    String number = tempName.substring(prefix.length(), tempName.length());
+
                     i = Integer.parseInt(number);
                 } catch(Exception e) {
                     i = 0; // if filename does not match the format
@@ -127,23 +210,25 @@ public class FileListBuilder {
                 return i;
             }
         });
+
     }
 
 
 
     private void collectFilesWithDigitsFirst(String digits){
 
-        String prefix = filename.split(digits)[1];
+        String postfix = filename.split(digits)[1];
+        System.out.println("POSTFIX => " + postfix );
 
-        // grab all files with the prefix
+        // grab all files with the postfix
         File lookInThisDir = new File(directory);
 
         foundFiles = lookInThisDir.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
-                return name.endsWith(prefix) && name.endsWith(".dat");
-                //return name.startsWith(prefix);
+                return name.endsWith(postfix+".dat");
             }
         });
+
 
         // sort on custom Comparator
         Arrays.sort(foundFiles, new Comparator<File>() {
@@ -160,7 +245,8 @@ public class FileListBuilder {
 
                 try {
                     String tempName = FilenameUtils.removeExtension(name);
-                    String number = tempName.split(prefix)[0];
+                    //String number = tempName.split(postfix)[0]; // split on common part
+                    String number = tempName.substring(0, tempName.indexOf(postfix));
                     i = Integer.parseInt(number);
                 } catch(Exception e) {
                     i = 0; // if filename does not match the format
@@ -169,6 +255,23 @@ public class FileListBuilder {
                 return i;
             }
         });
+    }
+
+    private int getFileIndex(File file){
+        int index = 0;
+
+        String tempfilename = FilenameUtils.removeExtension(file.getName());
+        String[] parts = tempfilename.split("[-_]+");
+
+        // make sure last part matches a number
+        String onlyDigits = "\\d+";
+
+        if ( parts[parts.length-1].matches(onlyDigits) ) { // digits at end
+            index = Integer.parseInt(parts[parts.length-1]);
+        } else if (parts[0].matches(onlyDigits)) { // 00001_filename.dat
+            index = Integer.parseInt(parts[0]);
+        }
+        return index;
     }
 
 

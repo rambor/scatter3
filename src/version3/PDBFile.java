@@ -174,14 +174,17 @@ public class PDBFile {
 
             //pdbdata.add(ns_dmax, 0);
             // fill high resolution bins
+            System.out.println("PRINTING HIGH RESOLUTION PR DISTRIBUTION");
+            System.out.println("0 0 0");
             high_res_pr_data.add(0, 0);
             for (int i = 0; i < high_res_pr_bins; i++) {
                 high_res_pr_data.add((i + 0.5) * highresWidth, highResHisto[i]);  // middle position of the histogram bin
                 XYDataItem tempItem = high_res_pr_data.getDataItem(i+1);
-                System.out.println(i + " " + tempItem.getXValue() + " " + tempItem.getYValue());
+                System.out.println(tempItem.getXValue() + " " + tempItem.getYValue() + " 0 ");
             }
             high_res_pr_data.add(highresWidth*high_res_pr_bins, 0);
-
+            System.out.println(dmax + " 0  0");
+            System.out.println("END");
 
             int all = pdbdata.getItemCount();
             // r, P(r)
@@ -210,7 +213,6 @@ public class PDBFile {
             calculateMooreCoefficients(pr_bins, ns_dmax);
             // calcualte p(r) distribution to the specified resolution
             //int shannonLimit = (int)Math.ceil((dmax * qmax / Math.PI)) + 1;
-
         }
     }
 

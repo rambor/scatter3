@@ -727,7 +727,8 @@ public class PrObject implements Runnable {
 
         ArrayList<double[]> results = new ArrayList<>(2);
 
-        int ns = (int) Math.round(qmax*dmax*INV_PI); //
+        //int ns = (int) Math.round(qmax*dmax*INV_PI); //
+        int ns = (int) Math.ceil(qmax*dmax*INV_PI); //
         int coeffs_size = ns;   // + 1 for constant background
 
         double incr = 2.0;
@@ -1038,7 +1039,7 @@ public class PrObject implements Runnable {
         results.add(new double[coeffs_size+1]);
         results.add(r_vector);
 
-        results.get(0)[0] = 0;
+        results.get(0)[0] = 0; // no background sets first element to Zero
         for (int j=0; j < coeffs_size; j++){
             results.get(0)[j+1] = am.get(j,0);
         }
@@ -1055,7 +1056,8 @@ public class PrObject implements Runnable {
 
         ArrayList<double[]> results = new ArrayList<>(2);
         System.out.println("LAMBDA : " + lambda + " Moore COEFF => dmax " + dmax);
-        int ns = (int) Math.floor(qmax*dmax*INV_PI) + 1; //shannon points
+        //int ns = (int) Math.floor(qmax*dmax*INV_PI) + 1; //shannon points
+        int ns = (int) Math.ceil(qmax*dmax*INV_PI); //shannon points
         int coeffs_size = ns + 1;   //+1 for constant background
         //int coeffs_size = ns // no background correction
 
@@ -1437,7 +1439,8 @@ public class PrObject implements Runnable {
         double inv_d = 1.0/dmax;
         //  double inv_2d = 0.5*inv_d;
 
-        int ns = (int) Math.round(qmax*dmax*INV_PI); //
+        //int ns = (int) Math.round(qmax*dmax*INV_PI); //
+        int ns = (int) Math.ceil(qmax*dmax*INV_PI);
         int coeffs_size = ns + 1;   //+1 for constant background
         //int coeffs_size = ns;
 
