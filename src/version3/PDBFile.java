@@ -108,19 +108,21 @@ public class PDBFile {
             dmax = dmaxFromPDB(workingCoords, totalAtoms);
             // calculate PofR from workingAtoms
             // use resolution to determine number of Shannon bins
-            pr_bins = (int)Math.ceil((dmax * qmax / Math.PI));
+            delta_r = Math.PI/qmax;
+            pr_bins = (int)Math.ceil((dmax / delta_r));
+
             // dmax according to Max Shannon number
             // ns_dmax = shannon_bins*M_PI/qmax; // dmax corresponding to number of Shannon Bins in Moore Coefficients
-            double ns_dmax = pr_bins*Math.PI/qmax;
+            double ns_dmax = pr_bins*delta_r;
             distances = new ArrayList<>();
 
             // should bin based on ns_dmax
-            int high_res_pr_bins = (int)Math.ceil((double)dmax/highresWidth);
+            int high_res_pr_bins = (int)Math.ceil((double)dmax/highresWidth) + 1;
 
             //delta_r = (double) dmax / (double)pr_bins;
-            delta_r = ns_dmax/(double)pr_bins;
+            //delta_r = ns_dmax/(double)pr_bins;
 
-            double inv_delta = 1.0 /delta_r;
+            double inv_delta = qmax/Math.PI;
 
             // high res bin width =>
             // implies dmax/high_res_bin_width
@@ -134,7 +136,7 @@ public class PDBFile {
             double refx, refy, refz, difx, dify, difz, distance;
             int startIndex, bin;
 
-            for (int i = 0; i < totalAtoms; i++) {
+            for (int i = 0; i < totalAtoms; i++) { // n*(n-1)/2 distances
                 atom = workingCoords.get(i).getCoords(); // use different weights for atom type here
                 refx = atom[0];
                 refy = atom[1];
@@ -153,11 +155,13 @@ public class PDBFile {
                     // which bin low res?
                     // lower < value <= upper
                     bin = (int) Math.floor(distance * inv_delta); // casting to int is equivalent to floor
-                    histo[(bin >= pr_bins) ? bin - 1 : bin] += 1;
+                    //histo[(bin >= pr_bins) ? bin - 1 : bin] += 1;
+                    histo[bin] += 1;
+
                     // which bin high res?
                     bin = (int) Math.floor(distance * inv_high_res_delta); // casting to int is equivalent to floor
-                    highResHisto[(bin >= high_res_pr_bins) ? bin - 1 : bin] += 1;
-
+                    //highResHisto[(bin >= high_res_pr_bins) ? bin - 1 : bin] += 1;
+                    highResHisto[bin] += 1;
                     startIndex++;
                 }
             }
@@ -168,9 +172,9 @@ public class PDBFile {
             pdbdata.add(0, 0);
             for (int i = 0; i < pr_bins; i++) {
                 pdbdata.add((i + 0.5) * delta_r, histo[i]);  // middle position of the histogram bin
-                //pdbdata.add((i+1) * delta_r, histo[i]);  // middle position of the histogram bin
+                //pdbdata.add((i+1) * delta_r, histo[i]);    // edge position of the histogram bin
             }
-            pdbdata.add(delta_r*(pr_bins), 0);
+            //pdbdata.add(delta_r*(pr_bins), 0);
 
             //pdbdata.add(ns_dmax, 0);
             // fill high resolution bins
@@ -182,8 +186,8 @@ public class PDBFile {
                 XYDataItem tempItem = high_res_pr_data.getDataItem(i+1);
                 System.out.println(tempItem.getXValue() + " " + tempItem.getYValue() + " 0 ");
             }
-            high_res_pr_data.add(highresWidth*high_res_pr_bins, 0);
-            System.out.println(dmax + " 0  0");
+            //high_res_pr_data.add(highresWidth*high_res_pr_bins, 0);
+            //System.out.println(dmax + " 0  0");
             System.out.println("END");
 
             int all = pdbdata.getItemCount();
@@ -386,7 +390,6 @@ public class PDBFile {
         lines.add(String.format("END %n"));
         writeToFile(lines, "centeredPDB");
     }
-
 
 
 
