@@ -110,23 +110,15 @@ public class PDBFile {
             // use resolution to determine number of Shannon bins
             delta_r = Math.PI/qmax;
             pr_bins = (int)Math.ceil((dmax / delta_r));
-
-            // dmax according to Max Shannon number
-            // ns_dmax = shannon_bins*M_PI/qmax; // dmax corresponding to number of Shannon Bins in Moore Coefficients
-            double ns_dmax = pr_bins*delta_r;
+            double ns_dmax = pr_bins*delta_r; // dmax corresponding to number of Shannon Bins
             distances = new ArrayList<>();
-
             // should bin based on ns_dmax
-            int high_res_pr_bins = (int)Math.ceil((double)dmax/highresWidth) + 1;
-
-            //delta_r = (double) dmax / (double)pr_bins;
-            //delta_r = ns_dmax/(double)pr_bins;
-
+            int high_res_pr_bins = (int)Math.ceil((double)dmax/highresWidth);
             double inv_delta = qmax/Math.PI;
 
             // high res bin width =>
             // implies dmax/high_res_bin_width
-            //int totalBinsHiRes = (int)Math.ceil(dmax/high_res_pr_bins);
+            // int totalBinsHiRes = (int)Math.ceil(dmax/high_res_pr_bins);
             double inv_high_res_delta = 1.0/highresWidth;
 
             int[] histo = new int[pr_bins];
@@ -151,7 +143,6 @@ public class PDBFile {
                     difz = refz - atom2[2];
 
                     distance = FastMath.sqrt(difx * difx + dify * dify + difz * difz);
-                    //distances.add(distance);
                     // which bin low res?
                     // lower < value <= upper
                     bin = (int) Math.floor(distance * inv_delta); // casting to int is equivalent to floor
@@ -168,29 +159,33 @@ public class PDBFile {
 
             pdbdata = new XYSeries(filename);
             high_res_pr_data = new XYSeries(filename);
-
-            pdbdata.add(0, 0);
+            pdbdata.add(0,0);
             for (int i = 0; i < pr_bins; i++) {
                 pdbdata.add((i + 0.5) * delta_r, histo[i]);  // middle position of the histogram bin
-                //pdbdata.add((i+1) * delta_r, histo[i]);    // edge position of the histogram bin
+                //pdbdata.add((i+1) * delta_r, histo[i]);    // far edge position of the histogram bin
+                //pdbdata.add(i * delta_r, histo[i]);        // near edge position of the histogram bin
+                XYDataItem tempItem = pdbdata.getDataItem(i);
+                System.out.println(tempItem.getXValue() + " " + tempItem.getYValue() + " 0 ");
             }
-            //pdbdata.add(delta_r*(pr_bins), 0);
+            // pdbdata.add(delta_r*(pr_bins), 0); // dmax is contained in the last bin
+            pdbdata.add(ns_dmax, 0);
 
-            //pdbdata.add(ns_dmax, 0);
             // fill high resolution bins
             System.out.println("PRINTING HIGH RESOLUTION PR DISTRIBUTION");
-            System.out.println("0 0 0");
+            System.out.println(String.format("%5.2f 0 0", 0.0));
             high_res_pr_data.add(0, 0);
             for (int i = 0; i < high_res_pr_bins; i++) {
                 high_res_pr_data.add((i + 0.5) * highresWidth, highResHisto[i]);  // middle position of the histogram bin
+                //high_res_pr_data.add((i + 1) * highresWidth, highResHisto[i]);  // middle position of the histogram bin
                 XYDataItem tempItem = high_res_pr_data.getDataItem(i+1);
-                System.out.println(tempItem.getXValue() + " " + tempItem.getYValue() + " 0 ");
+                System.out.println(String.format("%5.2f %.5E 0", tempItem.getXValue(), tempItem.getYValue()));
             }
-            //high_res_pr_data.add(highresWidth*high_res_pr_bins, 0);
-            //System.out.println(dmax + " 0  0");
+            high_res_pr_data.add(highresWidth*high_res_pr_bins, 0);
+            System.out.println(String.format("%5.2f 0 0", highresWidth*high_res_pr_bins));
             System.out.println("END");
 
             int all = pdbdata.getItemCount();
+
             // r, P(r)
             izero = Functions.trapezoid_integrate(pdbdata);
             double invarea = 1.0 / izero, rvalue;
@@ -205,7 +200,7 @@ public class PDBFile {
 
             // normalize Pr distribution
             System.out.println("P(R) InvArea " + invarea + " Rg => " + rg);
-            for (int i = 0; i < pr_bins + 1; i++) {
+            for (int i = 0; i < pdbdata.getItemCount(); i++) {
                 pdbdata.updateByIndex(i, pdbdata.getY(i).doubleValue() * invarea);
             }
 
@@ -216,7 +211,6 @@ public class PDBFile {
             System.out.println("END OF POFR POINTS");
             calculateMooreCoefficients(pr_bins, ns_dmax);
             // calcualte p(r) distribution to the specified resolution
-            //int shannonLimit = (int)Math.ceil((dmax * qmax / Math.PI)) + 1;
         }
     }
 
@@ -234,7 +228,7 @@ public class PDBFile {
         double sum;
         int totalr = pdbdata.getItemCount();
 
-        double constant = 0.5*dmax/(totalr-1);
+        double constant = 0.5*dmax/(totalr-1); // first bin is just 0,0
 
         XYDataItem tempItem;
         System.out.println("ICALC");
