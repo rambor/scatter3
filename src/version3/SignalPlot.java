@@ -207,8 +207,10 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                         status.setText("AUTO-Rg FOR : " + dataInUse.getFileName());
                         plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
                         if (area > threshold){
-                            izeroRg = Functions.autoRgTransformIt(tempData, tempDataset.getAllDataError(), startAtPoint+1);
-                            plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+                            AutoRg tempRg = new AutoRg(tempData, tempDataset.getAllDataError(), startAtPoint+1);
+                            //izeroRg = Functions.autoRgTransformIt(tempData, tempDataset.getAllDataError(), startAtPoint+1);
+                            //plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+                            plotRg.getSeries(seriesCount).add(i, tempRg.getRg());
                         } else {
                             plotRg.getSeries(seriesCount).add(i,0);
                         }

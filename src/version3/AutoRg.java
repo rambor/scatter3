@@ -21,11 +21,23 @@ public class AutoRg {
     private XYSeries inputErrors;
     private XYSeries finalDataSetForFit;
 
+    private double slope;
+    private double intercept;
+    private double errorSlope;
+    private double errorIntercept;
+    private double rg;
+    private double i_zero;
+    private double i_zero_error;  //Izero Error
+    private double rg_error;  //Rg Error
+    private double correlation_coefficient;
+
+
     // data Intensities should be positive only
     public AutoRg(XYSeries data, XYSeries error, int startAt){
         inputData = data;
         inputErrors = error;
         this.autoRgTransformIt(startAt);
+        this.autoRg();
     }
 
     /**
@@ -51,12 +63,14 @@ public class AutoRg {
     }
 
 
-
+    /**
+     * Failure results in Rg = 0;
+     */
     private void autoRg() {
 
         //int last = data.getItemCount()-1;
-        double slope, intercept, temp_resi, tempMedian, median = 100000;
-        double tempRg, rg=0;
+        double temp_resi, tempMedian, median = 100000;
+        double tempRg;
 
         XYDataItem lastItem, item;
         ArrayList<Double> resList = new ArrayList<>();
@@ -65,7 +79,6 @@ public class AutoRg {
         // calculate line between first and last points
         int lastAtLimit = 0;
         double lowerqlimitSquared = 0.15*0.15; // q2
-        double qRgLow = 0.2*0.2;
         double qRgUp = 1.31*1.31;
 
         // find the index of the upper q-value that is less than lowerqlimit
@@ -111,13 +124,10 @@ public class AutoRg {
             tempDataItem = qSquaredData.getDataItem(first);
         }
 
-        rg = Statistics.calculateMedian(rgList, true); // rough estimate of Rg
-
-        double errorSlope = 0.0;
-        double errorIntercept = 0.0;
+        tempRg = Statistics.calculateMedian(rgList, true); // rough estimate of Rg
 
         //create vector
-        double xvalue, yqvalue;
+        double xvalue;
 
         int count=0;
         double c0, c1;
@@ -130,21 +140,20 @@ public class AutoRg {
 
         double[] residuals3;
         //rg = Math.sqrt(-3.0*slope);
-        double rg2 = rg*rg;
-        double i_zero;
+        double rg2 = tempRg*tempRg;
 
         int endAt = 0;
         int startAtLimit = 0;
-
+        double qRgLow = 0.2*0.2;
         // how many points are within upperlimit?
         int itemCount = qSquaredData.getItemCount();
         for(int i=0; i < itemCount; i++){
             XYDataItem dat = qSquaredData.getDataItem(i);
             xvalue = dat.getXValue();
 
-            if (xvalue*rg2 <= qRgLow){ // exclude points that are too low, like near beamstop?
-                startAtLimit++;
-            }
+//            if (xvalue*rg2 <= qRgLow){ // exclude points that are too low, like near beamstop?
+//                startAtLimit++;
+//            }
 
             if ((xvalue*rg2 <= qRgUp)) {
                 endAt++;
@@ -155,21 +164,19 @@ public class AutoRg {
 
         int sizeOfArray = endAt - startAtLimit + 1;
         // perform least median square fitting
-        int arrayIndex = 0;
+        double sumX=0, sumY=0, sumXY=0, sumXX=0, sumYY=0;
 
-//        long startTime = System.nanoTime();
-
-        if (sizeOfArray > 5){
+        if (sizeOfArray > 5){ // using a window of fixed size (13 data points), fit repeated lines
             int window = 13;
             x_range = new double[window];
             y_range = new double[window];
-            double[] keptResiduals = new double[0];
-            int keptStartAt=0;
+            // double[] keptResiduals = new double[0];
+            //int keptStartAt=0;
             double keptSlope=0, keptIntercept=0;
 
             int upTO = startAtLimit + window;
             residuals3 = new double[endAt];
-            keptResiduals = new double[endAt];
+            double[] keptResiduals = new double[endAt];
 
             while(upTO < endAt){
 
@@ -184,12 +191,7 @@ public class AutoRg {
                 c0 = param3[1];
 
                 if (c1 < 0){ // slope has to be negative
-                    //double tempRgat = Math.sqrt(-3*c1);
-                    //tempqmaxLimit = 1.3/tempRgat;
-
-                    //  if (tempqmaxLimit > qmax13Limit && (tempqmaxLimit*tempqmaxLimit) < x_range[window-1]){
-
-                    for (int v = 0; v < endAt; v++) {
+                    for (int v = 0; v < endAt; v++) { // determine residuals for all points in qSquared up to endAt
                         XYDataItem dat = qSquaredData.getDataItem(v);
                         residuals3[v] = Math.pow((dat.getYValue() - (c1 * dat.getXValue() + c0)), 2);
                     }
@@ -203,10 +205,7 @@ public class AutoRg {
                         //keptStartAt = startAtLimit;
                         keptSlope = c1;
                         keptIntercept = c0;
-                        //         qmax13Limit = tempqmaxLimit;
                     }
-                    //   }
-
                 }
 
                 startAtLimit++;
@@ -237,15 +236,19 @@ public class AutoRg {
             finalDataSetForFit = new XYSeries("FinalDataset");
             //double[] final_w = new double[count];
 
+
             for (int i = 0; i < count; i++) {
                 dataItem=qSquaredData.getDataItem(keepers.get(i));
                 finalDataSetForFit.add(dataItem);
                 final_x[i] = dataItem.getXValue();
                 final_y[i] = dataItem.getYValue();
+                sumX+=dataItem.getXValue();
+                sumY+=dataItem.getYValue();
+                sumXX+=dataItem.getXValue()*dataItem.getXValue();
                 //final_w[i] = errors.getY(keep).doubleValue();
+                sumYY+=dataItem.getYValue()*dataItem.getYValue();
+                sumXY+=dataItem.getXValue()*dataItem.getYValue();
             }
-
-            arrayIndex = count;
 
             double[] param3 = Functions.leastSquares(final_x, final_y);
             slope = param3[0];
@@ -254,10 +257,14 @@ public class AutoRg {
             errorIntercept = param3[3];
             rg = Math.sqrt(-3.0 * slope);
             i_zero = Math.exp(intercept);
+            i_zero_error=i_zero*errorIntercept;  //Izero Error
+            rg_error=1.5*errorSlope*Math.sqrt(1/3.0*1/rg);  //Rg Error
+            correlation_coefficient = Math.abs(count*sumXY - sumX*sumY)/(Math.sqrt((count*sumXX-sumX*sumX)*(count*sumYY-sumY*sumY)));
+
 
         } else {  // not enough points, so just fit a line to what we have
             // ignore first three points, take the next 5 and fit
-            int arrayLimit = 7;
+            int arrayLimit = 7, arrayIndex=0;
             x_range = new double[arrayLimit];
             y_range = new double[arrayLimit];
             //w_range = new double[5];
@@ -266,16 +273,21 @@ public class AutoRg {
             for (int i = 3; i < itemCount; i++) {
                 XYDataItem dat = qSquaredData.getDataItem(i);
                 xvalue = dat.getXValue(); // q^2
-             //   yvalue = dat.getYValue();
                 //x^2
                 if (arrayIndex < arrayLimit) {
                     //x_data[i] = Math.pow(xvalue, 2);
                     x_range[arrayIndex] = xvalue;  // q^2
                     //ln(y)
-             //       y_range[arrayIndex] = yvalue;  // ln(I(q))
+                    y_range[arrayIndex] = dat.getYValue();  // ln(I(q))
                     //ln(y)*error*y
                     //w_range[arrayIndex] = yvalue * errors.getY(i).doubleValue() * Math.exp(yvalue);
                     //original data
+                    sumX+=dat.getXValue();
+                    sumY+=dat.getYValue();
+                    sumXX+=dat.getXValue()*dat.getXValue();
+                    //final_w[i] = errors.getY(keep).doubleValue();
+                    sumYY+=dat.getYValue()*dat.getYValue();
+                    sumXY+=dat.getXValue()*dat.getYValue();
                     arrayIndex++;
                 } else {
                     break getDataLoop;
@@ -288,31 +300,44 @@ public class AutoRg {
             errorSlope = param3[2];
             errorIntercept = param3[3];
 
-            rg = Math.sqrt(-3.0 * slope);
-            i_zero = Math.exp(intercept);
-        }
-
-        //procedure for calculating Izero and Rg
-        System.out.println("Determined Rg " + rg);
-        double[] parameters = new double[6];
-
-        if ((arrayIndex <= 7) || (Double.isNaN(rg) || (Double.isNaN(i_zero)))){
-            System.out.println("AutoRg failed, too few points in Guinier Region: " + qSquaredData.getKey());
-            parameters[0]=0;
-            parameters[1]=0;
-            parameters[2]=0;
-            parameters[3]=0;
-            parameters[4]=0;
-            parameters[5]=1; // percent rejected
-        } else {
-            parameters[0]=i_zero;
-            parameters[1]=rg;
-            parameters[2]=i_zero*errorIntercept;  //Izero Error
-            parameters[3]=1.5*errorSlope*Math.sqrt(1/3.0*1/rg);  //Rg Error
-            parameters[4]=r2_coeff;
-            parameters[5]=(arrayIndex - count)/(double)arrayIndex; // percent rejected
+            if (slope < 0){
+                rg = Math.sqrt(-3.0 * slope);
+                i_zero = Math.exp(intercept);
+                i_zero_error=i_zero*errorIntercept;  //Izero Error
+                rg_error=1.5*errorSlope*Math.sqrt(1/3.0*1/rg);  //Rg Error
+                correlation_coefficient = Math.abs(arrayIndex*sumXY - sumX*sumY)/(Math.sqrt((arrayIndex*sumXX-sumX*sumX)*(arrayIndex*sumYY-sumY*sumY)));
+            } else { // if it fails, get a zero Rg
+                rg = 0;
+                i_zero = 1;
+                i_zero_error = 1;
+                rg_error = 100;
+                correlation_coefficient = 0;
+            }
         }
 
     }
 
+    /**
+     * Failure of autoRg returns zero
+     * @return
+     */
+    public double getRg(){
+        return rg;
+    }
+
+    public double getI_zero() {
+        return i_zero;
+    }
+
+    public double getRg_error() {
+        return rg_error;
+    }
+
+    public double getI_zero_error() {
+        return i_zero_error;
+    }
+
+    public double getCorrelation_coefficient(){
+        return correlation_coefficient;
+    }
 }

@@ -306,13 +306,22 @@ public class Dataset {
         // if possible do preliminary analysis here
         if (doGuinier){
             //double[] izeroRg = Functions.calculateIzeroRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError);
-            double[] izeroRg = Functions.autoRgTransformIt(this.originalPositiveOnlyData, this.originalPositiveOnlyError, this.startAt);
-            if (izeroRg[0] > 0){
-                guinierIZero=izeroRg[0];
-                guinierIZero_sigma = izeroRg[2];
-                guinierRg=izeroRg[1];
-                guinierRG_sigma = izeroRg[3];
+            //double[] izeroRg = Functions.autoRgTransformIt(this.originalPositiveOnlyData, this.originalPositiveOnlyError, this.startAt);
+            AutoRg tempRg = new AutoRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError, startAt);
+            if (tempRg.getRg() > 0){
+                guinierIZero = tempRg.getI_zero();
+                guinierIZero_sigma = tempRg.getI_zero_error();
+                guinierRg = tempRg.getRg();
+                guinierRG_sigma = tempRg.getRg_error();
             }
+
+//            if (izeroRg[0] > 0){
+//                guinierIZero=izeroRg[0];
+//                guinierIZero_sigma = izeroRg[2];
+//                guinierRg=izeroRg[1];
+//                guinierRG_sigma = izeroRg[3];
+//            }
+
         } else {
             guinierIZero=0;
             guinierIZero_sigma = 0;
