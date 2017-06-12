@@ -128,10 +128,9 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                             tempPDB.getIcalc(),  //data
                             tempPDB.getError(),  //original
                             filebase,
-                            newIndex, false ));
+                            newIndex, true ));
 
                     targetCollection.getDataset(newIndex).setIsPDB(tempPDB.getPrDistribution(), (int)tempPDB.getDmax(), tempPDB.getRg(), tempPDB.getIzero());
-
                     bar.setIndeterminate(false);
                 } else {
                     LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
