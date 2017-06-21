@@ -1,4 +1,5 @@
 import net.iharder.dnd.FileDrop;
+import org.jfree.chart.ChartFrame;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
@@ -391,10 +392,9 @@ public class Scatter {
     private File supcombFile;
 
     private static int cpuCores;
+    private SignalPlot signalPlotThread;
 
     public Scatter() { // constructor
-
-
 
         versionLabel.setText("Version : "+ version);
         MessageConsole mc = new MessageConsole(stdOutText);
@@ -415,6 +415,8 @@ public class Scatter {
         trialsPerRoundComboBox.setSelectedIndex(1);
         modelsPerRoundComboBox.setSelectedIndex(4);
         topNComboBox.setSelectedIndex(0);
+        dammifRadioButton.setSelected(true);
+        fastRadioButton.setSelected(true);
 
         maximumEntropyRadioButton.setSelected(true);
         secondDerivativeRadioButton.setSelected(false);
@@ -1865,19 +1867,29 @@ public class Scatter {
                     }
                 }
 
-                SignalPlot tempSignalPlot;
-                if (selectB < 1 && selectS > 3){
-                    // if no buffers, assuming subtracted and do q*Iq plot
-                    tempSignalPlot = new SignalPlot(sampleCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
-                    //return;
-                } else {
-                    tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+                Frame[] temp = Frame.getFrames();
+                for (int i=0; i<temp.length; i++){
+                    //System.out.println(i + " " + temp[i].getTitle());
+                    if (temp[i].getTitle().matches("(.*)SIGNAL PLOT(.*)")){
+                        signalPlotThread.terminateFrame();
+                        signalPlotThread.cancel(true);
+                    }
                 }
 
-                tempSignalPlot.setFirstLastFrame(firstIndexInSignalPlot, lastIndexInSignalPlot);
 
-                tempSignalPlot.setSampleJList(samplesList);
-                tempSignalPlot.setPointsToExclude(Integer.valueOf((String)excludeComboBox.getSelectedItem()));
+                //SignalPlot tempSignalPlot;
+                if (selectB < 1 && selectS > 3){
+                    // if no buffers, assuming subtracted and do q*Iq plot
+                    signalPlotThread = new SignalPlot(sampleCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+                    //return;
+                } else {
+                    signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+                }
+
+                signalPlotThread.setFirstLastFrame(firstIndexInSignalPlot, lastIndexInSignalPlot);
+
+                signalPlotThread.setSampleJList(samplesList);
+                signalPlotThread.setPointsToExclude(Integer.valueOf((String)excludeComboBox.getSelectedItem()));
 
 //                double tempqmax = Double.parseDouble(subtractQmaxField.getText());
 //                double tempqmin = Double.parseDouble(subtractQminField.getText());
@@ -1889,9 +1901,9 @@ public class Scatter {
 //                if (tempqmin < 0.2 && ((tempqmax > tempqmin) || (tempqmax==0))){
 //                    tempSignalPlot.setMinQvalueInCommon(tempqmin);
 //                }
-
-                Thread temp1 = new Thread(tempSignalPlot);
-                temp1.start();
+signalPlotThread.execute();
+                //Thread temp1 = new Thread(tempSignalPlot);
+                //temp1.start();
             }
         });
 
@@ -2849,6 +2861,18 @@ public class Scatter {
                 bufferCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
 
                 int total = sampleFilesModel.getSize();
+
+
+                    Frame[] temp = Frame.getFrames();
+                    for (int i=0; i<temp.length; i++){
+                        //System.out.println(i + " " + temp[i].getTitle());
+                        if (temp[i].getTitle().matches("(.*)SIGNAL PLOT(.*)")){
+                            signalPlotThread.terminateFrame();
+                            signalPlotThread.cancel(true);
+                        }
+                    }
+
+
                 int selectS=0;
                 for(int i=0;i<total; i++){
                     if (sampleFilesModel.get(i).isSelected()){
@@ -2863,11 +2887,14 @@ public class Scatter {
                     return;
                 }
 
-                SignalPlot tempSignalPlot = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
-                tempSignalPlot.setSampleJList(samplesList);
+                signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+                signalPlotThread.setSampleJList(samplesList);
+                signalPlotThread.execute();
 
-                Thread temp1 = new Thread(tempSignalPlot);
-                temp1.start();
+//                Thread temp1 = new Thread(tempSignalPlot);
+//                temp1.start();
+//
+//                temp1.interrupt();
             }
         });
 
@@ -3252,8 +3279,8 @@ public class Scatter {
         testButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                NonNegativeMatrixFactorization nmf = new NonNegativeMatrixFactorization();
-                nmf.test();
+//                NonNegativeMatrixFactorization nmf = new NonNegativeMatrixFactorization();
+//                nmf.test();
 
 //                Dataset temp;
 //
@@ -3503,6 +3530,17 @@ public class Scatter {
             }
         });
 
+        testButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Window[] windows = Window.getWindows();
+                int totalWindows = windows.length;
+
+                for(int i=0; i<totalWindows; i++){
+                    System.out.println(i + " window " + windows[i].getParent());
+                }
+            }
+        });
     }
 
     private void updateSamplesListSelection(boolean boo) {

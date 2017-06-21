@@ -18,10 +18,7 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -57,6 +54,8 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
     private JPanel label1;
     private JPanel leftPanel;
     private JPanel rightPanel;
+
+    private int markedDatasetInSECPlot;
 
     private ArrayList<Double> means;
     private double minQValueOfSet;
@@ -100,6 +99,20 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
     // user define full range of data to apply factor analysis
     // perform factor analysis (forward reverse)
     //
+
+
+    /**
+     * Constructor requires un-subtracted curves
+     * @param samples Collection of Datasets that contain the SAXS data of the samples
+     * @param selectedBuffers Collection of Datasets that contain the buffer to use for subtraction
+     * @param finalQmin
+     * @param finalQmax
+     * @param status
+     * @param bar
+     * @param outputDirectory
+     * @param version
+     */
+
     public FactorAnalysis(Collection samples, Collection selectedBuffers, double finalQmin, double finalQmax, JLabel status, final JProgressBar bar, String outputDirectory, String version){
         // take specified buffer and do subtraction from each frame
         // samplesCollection = samples;
@@ -193,6 +206,11 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         SignalPlot signal = new SignalPlot(samples, selectedBuffers, status, bar);
         signal.setFirstLastFrame(0, samples.getDatasetCount());
         signalPlotCollection = signal.createSignalPlotData();
+        System.out.println("TOTAL IN SIGNAL PLOT ");
+        int totalinsignal = signalPlotCollection.getSeriesCount();
+        for(int i=0; i<totalinsignal; i++){
+            System.out.println(i +  " " + signalPlotCollection.getSeries(i).getX(0) + " => " + signalPlotCollection.getSeries(i).getY(0));
+        }
 
         saxsPlotCollection = new XYSeriesCollection();
 
@@ -205,6 +223,7 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
 
         makeSAXSPlot();
         makeSignalPlot();
+        secPanel.requestFocusInWindow();
 
         setPeakButton.addActionListener(new ActionListener() {
             @Override
@@ -312,6 +331,12 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
                 decompositionAnalysis(false);
             }
         });
+
+
+        panel1.setFocusable(true);
+        panel1.addFocusListener(getFocusListener());
+        //panel1.addKeyListener(new ArrowKeyListener());
+        //secPanel.addKeyListener(new ArrowKeyListener());
     }
 
     private void decompositionAnalysis(boolean doEFA){
@@ -631,6 +656,10 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         plot.mapDatasetToRangeAxis(0, 0);//1st dataset to 1st y-axis
         double negativePointSize, pointSize;
 
+        plot.setDomainCrosshairVisible(true);
+        plot.setRangeCrosshairVisible(true);
+        plot.setDomainCrosshairLockedOnData(true);
+
         plot.setBackgroundAlpha(0.0f);
         plot.setOutlineVisible(false);
 
@@ -693,6 +722,7 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         combinedPlot.setDomainAxis(domainAxis);
         combinedPlot.setGap(10.0);
         combinedPlot.add(plot, 1);
+
         combinedPlot.add(efaplot,1);
 
         combinedPlot.setOrientation(PlotOrientation.VERTICAL);
@@ -704,9 +734,11 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
 
         signalChartPanel = chartframe.getChartPanel();
 
-        signalPlotMouseMarker = new MouseMarker(signalChartPanel, (XYPlot) combinedPlot.getSubplots().get(0), saxsPlotCollection, subtractedDataCollection, saxsChartTitle);
+        signalPlotMouseMarker = new MouseMarker(signalChartPanel, (XYPlot) combinedPlot.getSubplots().get(0), saxsPlotCollection, subtractedDataCollection, signalPlotCollection, saxsChartTitle);
         signalChartPanel.addMouseListener(signalPlotMouseMarker);
 
+
+        // single click fires off this listener
         signalChartPanel.addChartMouseListener(new ChartMouseListener() {
             private Double markerStart = Double.NaN;
             private Double markerEnd = Double.NaN;
@@ -737,6 +769,9 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         signalChartPanel.setHorizontalAxisTrace(true);
         signalChartPanel.setVerticalAxisTrace(false);
 
+        signalChartPanel.setFocusable(true);
+        signalChartPanel.addKeyListener(new ArrowKeyListener(signalPlotMouseMarker));
+
         secPanel.add(chartframe.getContentPane());
     }
 
@@ -754,46 +789,27 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         private XYSeriesCollection plottedXYSeries;
         private Collection subtractedCollection;
         private TextTitle saxsChartTitleInUse;
+        private XYSeriesCollection signalPlotInUse;
 
-        public MouseMarker(ChartPanel panel, XYPlot xyplot, XYSeriesCollection samples, Collection subtractedDataCollection, TextTitle saxsChartTitle) {
+        public MouseMarker(ChartPanel panel, XYPlot xyplot, XYSeriesCollection samples, Collection subtractedDataCollection, XYSeriesCollection signalPlotInuse, TextTitle saxsChartTitle) {
             this.panel = panel;
             this.chart = panel.getChart();
             this.plot = xyplot;
             //this.plot = (XYPlot) chart.getPlot();
 
             this.plottedXYSeries = samples;
-            this.subtractedCollection = subtractedDataCollection;
+            this.subtractedCollection = subtractedDataCollection;  // subtracted SAXS data in plot on upper left corner
             this.saxsChartTitleInUse = saxsChartTitle;
+            this.signalPlotInUse = signalPlotInuse;
             this.selectedDataset = 0;
             selectedDatasetMarker = new ValueMarker(selectedDataset);
             plot.addDomainMarker(selectedDatasetMarker);
-        }
-
-        private void updateMarker(){
-            if (marker != null){
-                plot.removeDomainMarker(marker, Layer.BACKGROUND);
-            }
-
-
-            plot.removeDomainMarker(selectedDatasetMarker);
-            selectedDatasetMarker = new ValueMarker(selectedDataset);
-            plot.addDomainMarker(selectedDatasetMarker);
-
-            if (!( markerStart.isNaN() && markerEnd.isNaN())){
-                if ( markerEnd > markerStart){
-                    marker = new IntervalMarker(markerStart.intValue(), markerEnd.intValue());
-                    marker.setPaint(new Color(0xDD, 0xFF, 0xDD, 0x80));
-                    marker.setAlpha(0.5f);
-                    plot.addDomainMarker(marker,Layer.BACKGROUND);
-                }
-            }
         }
 
         private Double getPosition(MouseEvent e){
             Point2D p = panel.translateScreenToJava2D( e.getPoint());
             Rectangle2D plotArea = panel.getScreenDataArea();
             XYPlot plot = (XYPlot) chart.getPlot();
-
             // int mouseX = e.getX();
             // int onscreen = e.getXOnScreen();
             // System.out.println("x = " + mouseX + " onscreen " + onscreen);
@@ -807,25 +823,13 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
             int trueStart = markerStart.intValue();
             int trueEnd = markerEnd.intValue();
 
+            // update the SAXS data in SAXS plot (upper left)
             int toPlot = trueStart;
             if ((trueEnd - trueStart) > 2){
                 toPlot += Math.round(0.5*(trueEnd - trueStart));
             }
 
-            selectedDataset = toPlot;
-            plottedXYSeries.getSeries(0).clear();
-            XYSeries tempLog10 = subtractedCollection.getDataset(toPlot).getOriginalLog10Data();
-            //XYSeries tempLog10 = subtractedCollection.getDataset(toPlot).getQIQData();
-            int total = tempLog10.getItemCount();
-            //System.out.println("toPlot " + toPlot + " total " + total);
-
-            for (int i=0; i<total; i++){
-                plottedXYSeries.getSeries(0).add(tempLog10.getDataItem(i));
-            }
-
-            String name = subtractedCollection.getDataset(toPlot).getFileName().split("_sub")[0];
-            saxsChartTitleInUse.setText(name + " (frame "+toPlot+")");
-
+            updateSASplot(toPlot);
             // get coordinate of mouse start and make plot from subtractedset
             // set everything within range to true, everything else false
 //            for(int i=0; i<size; i++){
@@ -837,16 +841,118 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
 //                }
 //            }
 
+
             updateMarker();
+            panel.requestFocus();
         }
+
+        private void updateSASplot(int indexToPlot){
+            selectedDataset = indexToPlot; // draw vertical line approximately in the middle of the selected region
+            // set crosshairs toPlot
+
+            plottedXYSeries.getSeries(0).clear();
+            // log10 SAXS plot in upper left corner only holds a single dataset
+            // repopulate the plotted series based on toPlot
+            XYSeries tempLog10 = subtractedCollection.getDataset(selectedDataset).getOriginalLog10Data();
+            //XYSeries tempLog10 = subtractedCollection.getDataset(toPlot).getQIQData();
+            int total = tempLog10.getItemCount();
+            for (int i=0; i<total; i++){
+                plottedXYSeries.getSeries(0).add(tempLog10.getDataItem(i));
+            }
+
+            String name = subtractedCollection.getDataset(selectedDataset).getFileName().split("_sub")[0];
+            saxsChartTitleInUse.setText(name + " (frame "+selectedDataset+")");
+        }
+
+        private void moveLeft(){
+            selectedDataset--;
+            plot.setDomainCrosshairValue(selectedDataset);
+            plot.setRangeCrosshairValue(signalPlotInUse.getYValue(selectedDataset,0));
+            updateSASplot(selectedDataset);
+        }
+
+
+        private void moveRight(){
+            selectedDataset++;
+            plot.setDomainCrosshairValue(selectedDataset);
+            plot.setRangeCrosshairValue(signalPlotInUse.getYValue(selectedDataset,0));
+            updateSASplot(selectedDataset);
+        }
+
+
+        private void updateMarker(){
+            if (marker != null){
+                plot.removeDomainMarker(marker, Layer.BACKGROUND);
+            }
+
+
+            plot.removeDomainMarker(selectedDatasetMarker);
+            selectedDatasetMarker = new ValueMarker(selectedDataset);
+            plot.addDomainMarker(selectedDatasetMarker);
+
+            plot.setDomainCrosshairValue(selectedDataset);
+            plot.setRangeCrosshairValue(signalPlotInUse.getYValue(selectedDataset,0));
+
+            if (!( markerStart.isNaN() && markerEnd.isNaN())){
+                if ( markerEnd > markerStart){
+                    marker = new IntervalMarker(markerStart.intValue(), markerEnd.intValue());
+                    marker.setPaint(new Color(0xDD, 0xFF, 0xDD, 0x80));
+                    marker.setAlpha(0.5f);
+                    plot.addDomainMarker(marker,Layer.BACKGROUND);
+                }
+            }
+        }
+
 
         @Override
         public void mousePressed(MouseEvent e) {
             markerStart = getPosition(e);
-
             // if key pressed
         }
+    }
+
+    private class ArrowKeyListener implements KeyListener {
 
 
+        private MouseMarker mousemarker;
+        private int totalInCollection;
+
+        public ArrowKeyListener(MouseMarker signalPlotMouseMarker){
+            this.mousemarker = signalPlotMouseMarker;
+            this.totalInCollection = signalPlotMouseMarker.signalPlotInUse.getSeriesCount();
+        }
+
+        public void keyPressed(KeyEvent event){
+            if (event.getKeyCode() == KeyEvent.VK_LEFT) {
+                //System.out.println("SELECTED DATA SET " + mousemarker.selectedDataset  + " < " + totalInCollection);
+                if (mousemarker.selectedDataset > 0){ // subtract one and replot
+                    mousemarker.moveLeft();
+                } else {
+
+                }
+
+            } else if (event.getKeyCode() == KeyEvent.VK_RIGHT) {
+                if ((mousemarker.selectedDataset+1) < totalInCollection){
+                    mousemarker.moveRight();
+                }
+            }
+        }
+
+        public void keyReleased(KeyEvent e) {
+        }
+
+        public void keyTyped(KeyEvent e) {
+        }
+    }
+
+    private FocusListener getFocusListener() {
+        return new FocusAdapter() {
+
+            @Override
+            public void focusGained(FocusEvent e) {
+                super.focusGained(e);
+                System.out.println("action");
+            }
+        };
     }
 }

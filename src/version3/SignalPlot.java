@@ -19,6 +19,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -283,8 +284,10 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                         plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
                         if (area > threshold){
                             ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
-                            izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), startAtPoint+1);
-                            plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+                            //izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), startAtPoint+1);
+                            //plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+                            AutoRg temp = new AutoRg(subtraction.get(0), subtraction.get(1), startAtPoint+1);
+                            plotRg.getSeries(seriesCount).add(i, temp.getRg());
                         } else {
                             plotRg.getSeries(seriesCount).add(i,0);
                         }
@@ -442,6 +445,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     public void setSampleJList(JList list){
         this.samplesList = list;
     }
+
+    public ChartFrame getChartFrame(){ return frame;}
 
     public void makePlot(){
 
@@ -642,8 +647,13 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         this.makePlot();
         mainStatus.setIndeterminate(false);
 
-
         return null;
+    }
+
+
+    @Override
+    protected void done() {
+//frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
 
     /**
@@ -971,5 +981,8 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         }
     }
 
+    public void terminateFrame(){
+        frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+    }
 
 }
