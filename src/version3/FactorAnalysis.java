@@ -54,6 +54,7 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
     private JPanel label1;
     private JPanel leftPanel;
     private JPanel rightPanel;
+    private JButton ratioTestsButton;
 
     private int markedDatasetInSECPlot;
 
@@ -206,11 +207,11 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         SignalPlot signal = new SignalPlot(samples, selectedBuffers, status, bar);
         signal.setFirstLastFrame(0, samples.getDatasetCount());
         signalPlotCollection = signal.createSignalPlotData();
-        System.out.println("TOTAL IN SIGNAL PLOT ");
-        int totalinsignal = signalPlotCollection.getSeriesCount();
-        for(int i=0; i<totalinsignal; i++){
-            System.out.println(i +  " " + signalPlotCollection.getSeries(i).getX(0) + " => " + signalPlotCollection.getSeries(i).getY(0));
-        }
+//        System.out.println("TOTAL IN SIGNAL PLOT ");
+//        int totalinsignal = signalPlotCollection.getSeriesCount();
+//        for(int i=0; i<totalinsignal; i++){
+//            System.out.println(i +  " " + signalPlotCollection.getSeries(i).getX(0) + " => " + signalPlotCollection.getSeries(i).getY(0));
+//        }
 
         saxsPlotCollection = new XYSeriesCollection();
 
@@ -337,7 +338,40 @@ public class FactorAnalysis extends SwingWorker<String, Object> {
         panel1.addFocusListener(getFocusListener());
         //panel1.addKeyListener(new ArrowKeyListener());
         //secPanel.addKeyListener(new ArrowKeyListener());
+        ratioTestsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // take ratio of selected region and make correlation plot
+                autoCorrelationAnalysisOfRatios();
+            }
+        });
     }
+
+
+    private void autoCorrelationAnalysisOfRatios(){
+        double finalQmin = Double.parseDouble(minQValueLabel.getText());
+        double finalQmax = Double.parseDouble(maxQValueLabel.getText());
+
+
+        int startFrame = signalPlotMouseMarker.markerStart.intValue();
+        int endFrame = signalPlotMouseMarker.markerEnd.intValue();
+
+        if (endFrame - startFrame < 3){
+            messagesLabel.setText("Too few frames, 3 or more!");
+            return;
+        }
+
+        // create collection
+        XYSeriesCollection tempCollection = new XYSeriesCollection();
+        int totalInCollection = subtractedDataCollection.getDatasetCount();
+        for (int i=0; i<totalInCollection; i++){
+            if (i >= startFrame && i <= endFrame){
+                tempCollection.addSeries(subtractedDataCollection.getDataset(i).getAllData());
+            }
+        }
+
+    }
+
 
     private void decompositionAnalysis(boolean doEFA){
         //double qmin, double qmax, XYSeriesCollection datasets, int startIndexOfFrame, int numberOfEigenValuesToPlot, JProgressBar bar)

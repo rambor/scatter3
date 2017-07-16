@@ -1,42 +1,43 @@
 package version3;
 
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatistics;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
+import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
-import org.jfree.data.xy.XYDataItem;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.data.xy.YIntervalSeries;
+import org.jfree.data.xy.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
-import java.util.ArrayList;
 
 /**
- * Created by robertrambo on 13/01/2016.
+ * Created by xos81802 on 05/07/2017.
  */
-public class RatioPlot {
-
+public class BinaryComparisonPlot {
+    private JPanel panel1;
+    private JPanel mainPanel;
+    private JPanel combinedPlotPanel;
+    private JPanel differenceDistributionPanel;
+    private JPanel cauchyDistributionPlotPanel;
+    private JPanel gaussianDistributionPlotPanel;
     private final XYSeriesCollection ratioCollection;
     private final XYSeriesCollection differenceCollection;
-    private YIntervalSeries ratioErrorSeries;
+
     private Collection inUse;
     private Dataset referenceDataset, targetDataset;
     private String refName;
     private String targetName;
     private ResidualDifferences differences;
-    //private double yMarker;
+    // private double yMarker;
     private ValueMarker yMarker; //= new ValueMarker(1.1);
     private ValueMarker yMarkerLog; //= new ValueMarker(1.1);
 
@@ -46,33 +47,145 @@ public class RatioPlot {
     private Ratio ratioObject;
 
     private int target_id, ref_id;
-    JFrame f = new JFrame("SC\u212BTTER \u2263 Intensity Ratio Plot");
+    JFrame f = new JFrame("SC\u212BTTER \u2263 Intensity Comparison Plots");
     Container content = f.getContentPane();
     //label to be changed
-    JLabel label;
-
-    String title;
+    private JLabel label;
+    private String title;
     private String workingDirectoryName;
 
-    ChartFrame frame = new ChartFrame("Ratio", chart);
+    private ChartFrame comboChartFrame;
     CombinedDomainXYPlot combinedPlot;
 
-    public RatioPlot(Collection collection, String workingDirectoryName) {
+
+    public BinaryComparisonPlot(Collection collection, String workingDirectoryName) {
         inUse = collection;
         this.workingDirectoryName = workingDirectoryName;
 
         ratioCollection = new XYSeriesCollection();
         differenceCollection = new XYSeriesCollection();
 
-        ratioErrorSeries = new YIntervalSeries("RatioError", false, false);
-
         //XYSeries target;
         this.setTargetAndReference();
-        this.createRatioDataSets();
+        this.createDataSets();
+        this.makeComboPlot();
+        this.makeCauchyDistributionPlot();
+        this.makeResidualDistributionPlot();
+        //this.makePlot();
     }
 
-    private void createRatioDataSets(){
 
+    private void makeResidualDistributionPlot(){
+
+//        JFreeChart histogramChart = ChartFactory.createXYBarChart(
+//                "",
+//                "Difference",
+//                false,
+//                "",
+//                new XYSeriesCollection(differences.getBinnedData()),
+//                PlotOrientation.VERTICAL,
+//                false,
+//                false,
+//                false
+//        );
+
+        JFreeChart histogramChart = ChartFactory.createHistogram(
+                "",
+                "difference",
+                "",
+                 differences.getHistogram(),
+                PlotOrientation.VERTICAL,
+                false,
+                false,
+                false
+        );
+
+        // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
+        XYPlot plot = (XYPlot) histogramChart.getPlot();
+        plot.getRangeAxis().setVisible(false);
+        XYBarRenderer renderer = (XYBarRenderer) ((XYPlot) histogramChart.getPlot()).getRenderer(0);
+        //renderer.setBasePaint(new Color(240, 228,66, 50));
+        //renderer.setBaseFillPaint(new Color(0, 204,255, 50));
+        //renderer.setSeriesFillPaint(0, new Color(0, 204,255, 50));
+        renderer.setSeriesPaint(0, new Color(0, 204,255, 70));
+        //renderer.setSeriesPaint(0, new Color(169,169,169,70));
+        renderer.setSeriesOutlinePaint(0, new Color(169,169,169,100));
+        //renderer.setBaseOutlinePaint(new Color(169,169,169,50));
+        //renderer.setMargin(0.0);
+        renderer.setDrawBarOutline(true);
+
+        //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
+        XYSplineRenderer splineRend = new XYSplineRenderer();
+        splineRend.setBaseShapesVisible(false);
+        splineRend.setSeriesStroke(0,new BasicStroke(3.2f));
+
+        plot.getDomainAxis().setAutoRange(true);
+        plot.setDataset(1, new XYSeriesCollection(differences.getModelData())); //PDB data
+        plot.setRenderer(1, splineRend);
+        plot.setBackgroundAlpha(0.0f);
+
+        ChartPanel histogramChartPanel = new ChartPanel(histogramChart);
+        gaussianDistributionPlotPanel.removeAll();
+        gaussianDistributionPlotPanel.add(histogramChartPanel);
+    }
+
+
+    private void makeCauchyDistributionPlot(){
+
+        JFreeChart histogramChart = ChartFactory.createXYBarChart(
+                "",
+                "ratio",
+                false,
+                "",
+                ratioObject.getSimpleHistogramDataset(),
+                PlotOrientation.VERTICAL,
+                false,
+                false,
+                false
+        );
+
+
+////        JFreeChart histogramChart = ChartFactory.createHistogram(
+////                "",
+////                "ratio",
+////                "",
+////                ratioObject.getHistogram(),
+////                PlotOrientation.VERTICAL,
+////                false,
+////                false,
+////                false
+//        );
+
+        // "Color Intensity   Histogram","X",false,"Y",dataset,PlotOrientation.VERTICAL,true,true,false
+        XYPlot plot = (XYPlot) histogramChart.getPlot();
+        XYBarRenderer renderer = (XYBarRenderer) ((XYPlot) histogramChart.getPlot()).getRenderer();
+
+        //renderer.setMargin(0.0);
+        renderer.setSeriesPaint(0, new Color(0, 204,255, 70));
+        //renderer.setSeriesPaint(0, new Color(169,169,169,70));
+        renderer.setSeriesOutlinePaint(0, new Color(169,169,169,100));
+        renderer.setDrawBarOutline(true);
+        //renderer.setBaseOutlinePaint(new Color(169,169,169,50));
+
+        //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
+        XYSplineRenderer splineRend = new XYSplineRenderer();
+        splineRend.setBaseShapesVisible(false);
+        splineRend.setSeriesStroke(0,new BasicStroke(3.2f));
+
+        plot.getDomainAxis().setAutoRange(true);
+        plot.setDataset(1, new XYSeriesCollection(ratioObject.getModelData())); //PDB data
+        plot.setRenderer(1, splineRend);
+        plot.setBackgroundAlpha(0.0f);
+
+
+        ChartPanel histogramChartPanel = new ChartPanel(histogramChart);
+        //outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
+        cauchyDistributionPlotPanel.removeAll();
+        cauchyDistributionPlotPanel.add(histogramChartPanel);
+    }
+
+
+    private void createDataSets(){
 
         differences = new ResidualDifferences(referenceDataset.getAllData(),
                 targetDataset.getAllData(),
@@ -82,6 +195,7 @@ public class RatioPlot {
                 12);
 
         differences.printTests(" DIFF");
+
 
         ratioObject = new Ratio(referenceDataset.getAllData(),
                 targetDataset.getAllData(),
@@ -121,8 +235,9 @@ public class RatioPlot {
         title = "Ratio: " + refName+" / "+targetName;
     }
 
-    public void plot() {
 
+
+    public void makeComboPlot() {
 
         chart = ChartFactory.createXYLineChart(
                 title,                // chart title
@@ -168,6 +283,7 @@ public class RatioPlot {
                 2.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
                 1.0f, new float[] {6.0f, 6.0f}, 0.0f
         ));
+
         plot.addRangeMarker(yMarker);
 
         plot.setDomainAxis(domainAxis);
@@ -177,6 +293,7 @@ public class RatioPlot {
         renderer1.setBaseLinesVisible(false);
         renderer1.setSeriesShape(0, new Ellipse2D.Double(-3.6, -3.6, 3.6, 3.6));
         renderer1.setSeriesPaint(0, Constants.DarkGray);
+
         plot.getAnnotations().size();
         plot.setBackgroundAlpha(0.0f);
         plot.setBackgroundPaint(Color.WHITE);
@@ -192,7 +309,6 @@ public class RatioPlot {
         plotLogRatio.setRenderer(renderer2);
         plotLogRatio.setBackgroundAlpha(0.0f);
         final NumberAxis rangeAxisLog = new NumberAxis(" [I\u2081(q) - c\u00D7I\u2082(q)]");
-
 
         average = differences.getLocation();
         stdev = Math.sqrt(differences.getScale());
@@ -220,54 +336,33 @@ public class RatioPlot {
         combChart = new JFreeChart("", JFreeChart.DEFAULT_TITLE_FONT, combinedPlot, true);
         combChart.setBackgroundPaint(Color.WHITE);
         combChart.removeLegend();
+//        f.setLocation(300, 300);
+        comboChartFrame  = new ChartFrame("Ratio", chart);
+        comboChartFrame.getChartPanel().setChart(combChart);
+//        frame.getContentPane().setBackground(Color.WHITE);
+//        frame.getChartPanel().setBackground(Color.WHITE);
+//        frame.getChartPanel().setDisplayToolTips(true);
+//        frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
+//        frame.pack();
+//
+//        content.add(frame.getChartPanel(), BorderLayout.CENTER);
+//        f.setSize(600, 300);
+//        f.pack();
+//
+//        f.setVisible(true);
+    }
 
-        f.setLocation(300, 300);
-        frame.getChartPanel().setChart(combChart);
-        frame.getContentPane().setBackground(Color.WHITE);
-        frame.getChartPanel().setBackground(Color.WHITE);
-        frame.getChartPanel().setDisplayToolTips(true);
-        frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
+
+    public void makePlot(){
+
+        combinedPlotPanel.add(comboChartFrame.getChartPanel());
+
+        JFrame frame = new JFrame("Plot");
+        frame.setContentPane(this.panel1);
+        frame.setPreferredSize(new Dimension(800,600));
         frame.pack();
-
-        content.add(frame.getChartPanel(), BorderLayout.CENTER);
-        f.setSize(600, 300);
-        f.pack();
-
-        f.setVisible(true);
-
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
-    private DescriptiveStatistics averageByMAD(ArrayList<Double> values){
-
-        int total = values.size();
-        DescriptiveStatistics stats = new SynchronizedDescriptiveStatistics();
-
-        for (int i=0; i<total; i++) {
-            stats.addValue(values.get(i));
-        }
-
-        double median = stats.getPercentile(50);
-        DescriptiveStatistics deviations = new SynchronizedDescriptiveStatistics();
-
-        ArrayList<Double> testValues = new ArrayList<>(total);
-
-        for (int i=0; i<total; i++){
-            testValues.add(Math.abs(values.get(i) - median));
-            deviations.addValue(testValues.get(i));
-        }
-
-        double mad = 1.4826*deviations.getPercentile(50);
-        double invMAD = 1.0/mad;
-
-        // create
-        DescriptiveStatistics keptValues = new DescriptiveStatistics();
-
-        for (int i=0; i<total; i++){
-            if (testValues.get(i)*invMAD < 2.5 ){
-                keptValues.addValue(values.get(i));
-            }
-        }
-
-        return keptValues;
-    }
 }

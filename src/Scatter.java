@@ -320,7 +320,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.0k";
+    private String version = "3.0m";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -1731,7 +1731,7 @@ public class Scatter {
 
                 plotMedianAndAverageSampleButton.setEnabled(false);
                 Collection tempCollection = (Collection) collections.get(96);
-                tempCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                tempCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
                 int total = sampleFilesModel.getSize();
                 int select=0;
@@ -1781,7 +1781,7 @@ public class Scatter {
                         System.out.println("Not: " + chooser.getSelectedFile().toString());
                     }
 
-                    subtractOutPutDirectoryLabel.setText(OUTPUT_DIR_SUBTRACTION_NAME);
+                    subtractOutPutDirectoryLabel.setText(":/"+chooser.getSelectedFile().getName());
                     updateProp();
                 }
             }
@@ -1792,7 +1792,7 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 plotLog10AverageSampleButton.setEnabled(false);
                 Collection tempCollection = (Collection) collections.get(96);
-                tempCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                tempCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
                 int total = sampleFilesModel.getSize();
                 int select=0;
@@ -1827,8 +1827,8 @@ public class Scatter {
 
                 Collection sampleCollection = (Collection) collections.get(96);
                 Collection bufferCollection = (Collection) collections.get(69);
-                sampleCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
-                bufferCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                sampleCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
+                bufferCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
                 int total = sampleFilesModel.getSize();
                 int selectS=0;
@@ -1953,7 +1953,7 @@ signalPlotThread.execute();
                 plotAverageAndMedianBuffers.setEnabled(false);
                 Collection tempCollection = (Collection) collections.get(69);
 
-                tempCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                tempCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
                 int total = bufferFilesModel.getSize();
                 int select=0;
@@ -2003,7 +2003,7 @@ signalPlotThread.execute();
             public void actionPerformed(ActionEvent e) {
                 plotLog10AverageBufferButton.setEnabled(false);
                 Collection tempCollection = (Collection) collections.get(69);
-                tempCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                tempCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
                 int total = bufferFilesModel.getSize();
                 int select=0;
@@ -2037,8 +2037,8 @@ signalPlotThread.execute();
 
                 double qmin=0;
                 double qmax=0;
-                ((Collection)collections.get(69)).setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
-                ((Collection)collections.get(96)).setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                ((Collection)collections.get(69)).setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
+                ((Collection)collections.get(96)).setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
                 if (!isNumber(qminSubtractionField.getText()) || !isNumber(qmaxSubtractionField.getText())){
                     status.setText("q-range (qmin, qmax) is not a number ");
@@ -2099,7 +2099,7 @@ signalPlotThread.execute();
                         // add other attributes and then run
                         // Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString())/100.00;
                         subTemp.setBinsAndCutoff(Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString()), Double.parseDouble(subtractionCutOff.getSelectedItem().toString()));
-                        subTemp.setNameAndDirectory(subtractionFileNameField.getText(), subtractOutPutDirectoryLabel.getText());
+                        subTemp.setNameAndDirectory(subtractionFileNameField.getText(), OUTPUT_DIR_SUBTRACTION_NAME);
                         subTemp.setCollectionToUpdate(collectionSelected);
 
                         Thread temp1 = new Thread(subTemp);
@@ -2857,8 +2857,8 @@ signalPlotThread.execute();
             public void actionPerformed(ActionEvent e) {
                 Collection sampleCollection = (Collection) collections.get(96);
                 Collection bufferCollection = new Collection();
-                sampleCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
-                bufferCollection.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                sampleCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
+                bufferCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
                 int total = sampleFilesModel.getSize();
 
@@ -3150,7 +3150,7 @@ signalPlotThread.execute();
                             tempCollectionForSubtraction.addDataset( new Dataset(sampleCollections.getDataset(i)));
                         }
                     }
-                    tempCollectionForSubtraction.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                    tempCollectionForSubtraction.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
 
                     // collect buffers that are selected
@@ -3162,9 +3162,9 @@ signalPlotThread.execute();
                             tempCollectionForBuffer.addDataset( new Dataset(bufferCollections.getDataset(i)));
                         }
                     }
-                    tempCollectionForSubtraction.setWORKING_DIRECTORY_NAME(subtractOutPutDirectoryLabel.getText());
+                    tempCollectionForSubtraction.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
-                    FactorAnalysis tempFactorAnalysis = new FactorAnalysis(tempCollectionForSubtraction, tempCollectionForBuffer, finalQmin, finalQmax, status, mainProgressBar, subtractOutPutDirectoryLabel.getText(), version);
+                    FactorAnalysis tempFactorAnalysis = new FactorAnalysis(tempCollectionForSubtraction, tempCollectionForBuffer, finalQmin, finalQmax, status, mainProgressBar, OUTPUT_DIR_SUBTRACTION_NAME, version);
                     Thread temp1 = new Thread(tempFactorAnalysis);
                     temp1.start();
 
@@ -3786,7 +3786,10 @@ signalPlotThread.execute();
         }
 
         System.out.println("SUBTRACTION DIRECTORY => " + OUTPUT_DIR_SUBTRACTION_NAME);
-        programInstance.subtractOutPutDirectoryLabel.setText(OUTPUT_DIR_SUBTRACTION_NAME);
+
+        File theCWD = new File(OUTPUT_DIR_SUBTRACTION_NAME);
+        //programInstance.subtractOutPutDirectoryLabel.setText(OUTPUT_DIR_SUBTRACTION_NAME);
+        programInstance.subtractOutPutDirectoryLabel.setText(theCWD.getName());
 
         programInstance.sourceTextField.setText(BEAMLINEMANUFACTURER);
 
@@ -4284,8 +4287,9 @@ signalPlotThread.execute();
 
     private void createRatioPlot(){
 
-        RatioPlot ratioPlot = new RatioPlot(collectionSelected, WORKING_DIRECTORY.getWorkingDirectory());
-        ratioPlot.plot();
+        //RatioPlot ratioPlot = new RatioPlot(collectionSelected, WORKING_DIRECTORY.getWorkingDirectory());
+        BinaryComparisonPlot ratioPlot = new BinaryComparisonPlot(collectionSelected, WORKING_DIRECTORY.getWorkingDirectory());
+        ratioPlot.makePlot();
     }
 
     private void createFlexPlots(){
@@ -5226,7 +5230,6 @@ signalPlotThread.execute();
                 prStatusLabel.setText("Starting dmax search of " + prModel.getDataset(rowID).getFilename());
                 // PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()));
                 //prModel.getDataset(rowID).estimateDmax(Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()));
-
                 Thread refineIt = new Thread(){
                     public void run() {
 
@@ -5255,7 +5258,6 @@ signalPlotThread.execute();
                 };
 
                 refineIt.start();
-
 
             } else if (this.colID == 14){
                 //refine_Pr

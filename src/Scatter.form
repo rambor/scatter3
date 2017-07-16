@@ -1478,7 +1478,7 @@
                           <grid row="0" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <enabled value="true"/>
+                          <enabled value="false"/>
                           <text value="SEC Factor Analysis (ICA)"/>
                         </properties>
                       </component>
@@ -5660,7 +5660,7 @@
                     </constraints>
                     <properties>
                       <font/>
-                      <text value="&lt;html&gt;&#10;&lt;p&gt;&lt;b&gt;(2016) Developed by Robert Rambo  | Diamond Light Source | Didcot, Oxfordshire UK&lt;/b&gt;&lt;/p&gt;&#10;&lt;p&gt;&lt;b&gt;Supported by:&lt;/p&gt;&#10;&lt;ul&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#000099&quot;&gt;Diamond Light Source&lt;/font&gt; &lt;/b&gt; (Oxfordshire, UK)&lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#006600&quot;&gt;SIBYLS Beamline&lt;/font&gt;&lt;/b&gt; (Advanced Light Source, Berkeley, CA)&lt;br&gt;Department of Energy Integrated Diffraction Analysis Technologies (IDAT) program &lt;br&gt; National Institute of Health grant MINOS (R01GM105404) &lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#0066FF&quot;&gt;BRUKER&lt;/font&gt; Corporation&lt;/b&gt; (Karlsruhe, Germany)&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;p&gt;Version 1 (2012-2013) by Robert P. Rambo and Ivan Rodic, Lawrence Berkeley National Laboratory, Berkeley, California&lt;/p&gt;&lt;/html&gt;"/>
+                      <text value="&lt;html&gt;&#10;&lt;p&gt;&lt;b&gt;(2016-2017) Developed by Robert Rambo  | Diamond Light Source | Didcot, Oxfordshire UK&lt;/b&gt;&lt;/p&gt;&#10;&lt;p&gt;&lt;b&gt;Supported by:&lt;/p&gt;&#10;&lt;ul&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#000099&quot;&gt;Diamond Light Source&lt;/font&gt; &lt;/b&gt; (Oxfordshire, UK)&lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#006600&quot;&gt;SIBYLS Beamline&lt;/font&gt;&lt;/b&gt; (Advanced Light Source, Berkeley, CA)&lt;br&gt;Department of Energy Integrated Diffraction Analysis Technologies (IDAT) program &lt;br&gt; National Institute of Health grant MINOS (R01GM105404) &lt;/li&gt;&#10;&lt;li&gt;&lt;b&gt;&lt;font color=&quot;#0066FF&quot;&gt;BRUKER&lt;/font&gt; Corporation&lt;/b&gt; (Karlsruhe, Germany)&lt;/li&gt;&#10;&lt;/ul&gt;&#10;&lt;p&gt;Version 1 (2012-2013) by Robert P. Rambo and Ivan Rodic, Lawrence Berkeley National Laboratory, Berkeley, California&lt;/p&gt;&lt;/html&gt;"/>
                     </properties>
                   </component>
                   <hspacer id="50716">

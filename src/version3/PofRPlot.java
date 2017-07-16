@@ -156,7 +156,7 @@ public class PofRPlot {
         plot.setDomainAxis(domainAxis);
         plot.setRangeAxis(rangeAxis);
         plot.setDomainCrosshairLockedOnData(true);
-        plot.setBackgroundAlpha(0.0f);
+        //plot.setBackgroundAlpha(0.0f);
         plot.setRangeZeroBaselineVisible(true);
 
         //make crosshair visible

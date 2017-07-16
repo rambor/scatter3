@@ -579,6 +579,7 @@ public class Similarity implements Runnable {
      */
     private double shapiroWilk(DescriptiveStatistics values){
         //Shapiro-Wilk test equal weights
+
         int totalKept = (int)values.getN();
         int m_index = totalKept/2;
         if ( (totalKept & 1) == 1 ) { // check if odd

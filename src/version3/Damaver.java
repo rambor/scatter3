@@ -38,6 +38,7 @@ public class Damaver implements Runnable {
         String command = "";
 
         if (isWindows >= 0){
+           // command = atsasDir+"\\damaver.exe";
             command = atsasDir+"\\damaver.exe";
             pr = new ProcessBuilder("cmd.exe", "/C", command + " -s " +  symm +  " -a *-1.pdb");
         } else {
@@ -46,8 +47,9 @@ public class Damaver implements Runnable {
 
         }
 
+        System.out.println("DAMAVER COMMAND " + command);
         //damaver -a -s P1 *-1.pdb
-
+        System.out.println("FROM COMMAND LIST " + pr.command().get(0));
         pr.directory(new File(workingDirectory));
         Process ps = null;
 

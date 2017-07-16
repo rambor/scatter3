@@ -87,11 +87,12 @@ public class DammiNF implements Runnable {
             }
 
 
-
         } else {
             commandLine = processDammif();
             pr = new ProcessBuilder(commandLine, "-m", mode, "-p", "run_"+processNumber, "-s", symm, filename);
         }
+
+        System.out.println("DAMMIN/F COMMAND " + commandLine);
 
         pr.directory(new File(workingDirectory));
         Process ps = null;

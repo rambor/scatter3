@@ -232,6 +232,7 @@ public class LoadedFile {
         //df.applyPattern("#.##");
         // df.format() returns a string
         // System.out.println("LOCALE " + loc); // en_GB, en_US
+
         if ( (!trimmed.contains("#") && (row.length >= 2 && row.length <= 4) &&
                 !row[0].matches("^[A-Za-z#:_\\/$%*!\\'-].+") &&  // checks for header or footer stuff
                 !isZero(row[0]) &&                               // no zero q values
@@ -316,7 +317,7 @@ public class LoadedFile {
             }
         } else if (isUSUK) {
 
-            if (Float.parseFloat(str) <= 0) {
+            if (Float.parseFloat(str) == 0) {
                 return true;
             }
         }
@@ -341,7 +342,7 @@ public class LoadedFile {
             e.printStackTrace();
         }
 
-        //System.out.println("FormatParser : " + str + " => " + number + " parsed => " + number.doubleValue());
+        System.out.println("FormatParser : " + str + " => " + number + " parsed => " + number.doubleValue());
         return number.doubleValue();
     }
 

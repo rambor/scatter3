@@ -1055,7 +1055,7 @@ public class PrObject implements Runnable {
     public ArrayList<double[]> moore_coeffs_L1(){
 
         ArrayList<double[]> results = new ArrayList<>(2);
-        System.out.println("LAMBDA : " + lambda + " Moore COEFF => dmax " + dmax);
+        //System.out.println("LAMBDA : " + lambda + " Moore COEFF => dmax " + dmax);
         //int ns = (int) Math.floor(qmax*dmax*INV_PI) + 1; //shannon points
         int ns = (int) Math.ceil(qmax*dmax*INV_PI); //shannon points
         int coeffs_size = ns + 1;   //+1 for constant background
@@ -1069,7 +1069,6 @@ public class PrObject implements Runnable {
         // does not include 0 or dmax
         for(int i=0; i< r_limit; i++){
             r_vector[i] = (i+1)*del_r;
-        //    System.out.println(i + " => " + r_vector[i] + " delr " + del_r);
         }
 
         double pi_d = Math.PI*dmax;
