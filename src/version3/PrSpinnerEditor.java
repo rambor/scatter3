@@ -81,6 +81,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         int valueOfSpinner = (Integer)this.spinner.getValue();
 
         if (this.colID == 4){ // lower(start) spinner
+
             if (((Integer)this.spinner.getValue() < prDataset.getLowerQIndexLimit()) || (valueOfSpinner > oldStop)){
                 this.spinner.setValue(prDataset.getLowerQIndexLimit());
                 this.priorValue = prDataset.getLowerQIndexLimit();

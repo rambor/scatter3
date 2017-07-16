@@ -477,6 +477,15 @@ public class RealSpace {
         }
     }
 
+    /**
+     *
+     * Returns qmax used in fitting of Moore equation
+     * @return
+     */
+    public double getQmax(){
+        return qmax;
+    }
+
 
     public void calculatePofRDirect(){
         /*

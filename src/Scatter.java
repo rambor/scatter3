@@ -5228,19 +5228,22 @@ signalPlotThread.execute();
                 this.button.setForeground(Color.GREEN);
                 status.setText("");
                 prStatusLabel.setText("Starting dmax search of " + prModel.getDataset(rowID).getFilename());
-                // PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()));
-                //prModel.getDataset(rowID).estimateDmax(Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()));
+
                 Thread refineIt = new Thread(){
                     public void run() {
 
-                        final DmaxManager refineMe = new DmaxManager(prModel.getDataset(rowID), (cpuCores-1),
-                                Double.parseDouble(lambdaBox.getSelectedItem().toString()),
-                                l1NormCheckBox.isSelected());
+                        StructureFactor SF = new StructureFactor(collectionSelected.getDataset(prModel.getDataset(rowID).getId()), WORKING_DIRECTORY.getWorkingDirectory());
+                        SF.createPlot();
 
-                        prStatusLabel.setText("");
 
-                        //refineMe.setBar(progressBar1, prStatusLabel);
-                        refineMe.execute();
+//                        final DmaxManager refineMe = new DmaxManager(prModel.getDataset(rowID), (cpuCores-1),
+//                                Double.parseDouble(lambdaBox.getSelectedItem().toString()),
+//                                l1NormCheckBox.isSelected());
+//
+//                        prStatusLabel.setText("");
+//
+//                        //refineMe.setBar(progressBar1, prStatusLabel);
+//                        refineMe.execute();
 /*
                         synchronized (refineMe) {
                             if (!refineMe.getIsFinished()) {
