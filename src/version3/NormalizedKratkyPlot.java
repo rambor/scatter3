@@ -42,10 +42,13 @@ public class NormalizedKratkyPlot {
     private static ValueMarker yMarker = new ValueMarker(1.1);
     private static ValueMarker xMarker = new ValueMarker(1.7320508);
     private Point locationOfWindow;
+    private WorkingDirectory workingDirectory;
+    private Collection collectionInUse;
 
     String chartTitle;
     String xLabel;
     String yLabel;
+    private String typeOf;
 
     public NormalizedKratkyPlot(final String title) {
         locationOfWindow = new Point(100,100);
@@ -58,10 +61,12 @@ public class NormalizedKratkyPlot {
      * @param collectionSelected
      * @param type String (RECIRG, RECIVC, REALRG, REALVC)
      */
-    public void plot(Collection collectionSelected, String type, String workingDirectoryName) {
+    public void plot(Collection collectionSelected, String type, WorkingDirectory workingDirectoryName) {
 
-        int totalSets = collectionSelected.getDatasetCount();
-        int horizontalDisplacement = 200;
+        typeOf=type;
+        collectionInUse = collectionSelected;
+        int totalSets = collectionInUse.getDatasetCount();
+        int horizontalDisplacement =200;
 
         plottedData.removeAllSeries();
         vcDataReciprocal.removeAllSeries();
@@ -72,7 +77,7 @@ public class NormalizedKratkyPlot {
 
         if (type.equals("RECIRG")) {
             for (int i = 0; i < totalSets; i++){
-                Dataset temp = collectionSelected.getDataset(i);
+                Dataset temp = collectionInUse.getDataset(i);
                 temp.clearNormalizedKratkyReciRgData();
 
                 if (temp.getInUse()){
@@ -86,7 +91,7 @@ public class NormalizedKratkyPlot {
             horizontalDisplacement += 75;
         } else if (type.equals("REALRG")) {
             for (int i = 0; i < totalSets; i++){
-                Dataset temp = collectionSelected.getDataset(i);
+                Dataset temp = collectionInUse.getDataset(i);
                 temp.clearNormalizedKratkyRealRgData();
                 if (temp.getInUse()){
                     temp.createNormalizedKratkyRealRgData();
@@ -184,6 +189,7 @@ public class NormalizedKratkyPlot {
             }
         };
 
+
         final XYPlot plot = chart.getXYPlot();
         final NumberAxis domainAxis = new NumberAxis(xLabel);
         final NumberAxis rangeAxis = new NumberAxis(yLabel);
@@ -213,7 +219,7 @@ public class NormalizedKratkyPlot {
         double negativePointSize, pointSize;
 
         for (int i=0; i < totalSets; i++) {
-            Dataset tempDataset = collectionSelected.getDataset(i);
+            Dataset tempDataset = collectionInUse.getDataset(i);
             if (tempDataset.getInUse()) {
                 pointSize = tempDataset.getPointSize();
                 negativePointSize = -0.5*pointSize;
@@ -248,7 +254,7 @@ public class NormalizedKratkyPlot {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //To change body of implemented methods use File | Settings | File Templates.
-                ExportData temp = new ExportData(plottedData, workingDirectoryName, "NKratky");
+                ExportData temp = new ExportData(plottedData, workingDirectoryName.getWorkingDirectory(), "dimlessKratky");
                 temp.pack();
                 temp.setVisible(true);
             }
@@ -266,7 +272,7 @@ public class NormalizedKratkyPlot {
 
         //chartPanel.setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.getContentPane().add(chartPanel);
-        frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
+        frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName.getWorkingDirectory()));
         frame.pack();
         frame.setVisible(true);
 

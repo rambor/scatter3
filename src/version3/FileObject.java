@@ -72,6 +72,30 @@ public class FileObject {
         }
     }
 
+
+    public void writeXYSeries(String name, XYSeries xySeries){
+        int total = xySeries.getItemCount();
+
+        try {
+            FileWriter fw = new FileWriter(directoryInfo +"/"+name+".dat");
+            BufferedWriter out = new BufferedWriter(fw);
+            out.write(String.format("# %s %n", name));
+
+            int numberOfDigits;
+            for (int n=0; n < total; n++) {
+                numberOfDigits = getDigits(xySeries.getX(n).doubleValue());
+                out.write( String.format("%s\t%s%n",
+                        formattedQ(xySeries.getX(n).doubleValue(), numberOfDigits),
+                        Constants.Scientific1dot5e2.format(xySeries.getY(n).doubleValue())
+                ));
+            }
+
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void writeSingleSAXSFile(String name, Dataset data){
 
         int startAt = data.getStart()-1;

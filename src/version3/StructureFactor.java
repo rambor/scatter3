@@ -15,8 +15,8 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+
+import java.awt.event.ActionEvent;
 import java.io.File;
 
 /**
@@ -34,6 +34,7 @@ public class StructureFactor {
     private XYSeries calculateIntensities;
     private XYSeries structureFactorData;
     private XYSeries plottedDataForFitting;
+    private XYSeries plottedDataForFittingError;
     private JFreeChart chart;
     private String workingDirectoryName;
     public ChartFrame frame;
@@ -223,18 +224,21 @@ public class StructureFactor {
 
         calculateIntensities = new XYSeries("Calculated");
         structureFactorData = new XYSeries("StructureFactor");
-        plottedDataForFitting  = new XYSeries("PlottedData");
+        plottedDataForFitting  = new XYSeries("plottedSFData");
+        plottedDataForFittingError  = new XYSeries("Error");
         XYDataItem tempXY;
 
         double qmaxLimit = realspace.getQmax();
 
-
+double value;
         for(int i=0; i<totalInAllData; i++){
             tempXY = allData.getDataItem(i);
             if (tempXY.getXValue() < qmaxLimit){
                 calculateIntensities.add(tempXY.getXValue(), realspace.moore_Iq(tempXY.getXValue()));
-                structureFactorData.add(tempXY.getXValue(), tempXY.getYValue()/calculateIntensities.getY(i).doubleValue());
+                value = 1.0/calculateIntensities.getY(i).doubleValue();
+                structureFactorData.add(tempXY.getXValue(), tempXY.getYValue()*value);
                 plottedDataForFitting.add(structureFactorData.getDataItem(i));
+                plottedDataForFittingError.add(tempXY.getX(), structureFactorDataset.getAllDataError().getY(i).doubleValue()*value);
             } else {
                 break;
             }
@@ -273,10 +277,10 @@ public class StructureFactor {
         quote = "S(q)";
         rangeAxis.setLabel(quote);
         rangeAxis.setAutoRangeStickyZero(true);
+        rangeAxis.setAutoRangeIncludesZero(false);
         rangeAxis.setLabelFont(Constants.BOLD_16);
         rangeAxis.setTickLabelFont(Constants.FONT_12);
-        //rangeAxis.setAxisLineVisible(false);
-        //rangeAxis.setRange(0, dataset.getRangeUpperBound(true) + 0.1*dataset.getRangeUpperBound(true));
+
         chart.getLegend().setVisible(false);
         plot.setDomainAxis(domainAxis);
         plot.setRangeAxis(rangeAxis);
@@ -287,6 +291,19 @@ public class StructureFactor {
         plot.setOutlineVisible(false);
 
         chartPanel = new ChartPanel(chart);
+
+        chartPanel.getPopupMenu().add(new JMenuItem(new AbstractAction("Export Plotted Data") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                ExportData temp = new ExportData(plottedDataForFitting, plottedDataForFittingError, workingDirectoryName, "StructureFactor");
+                temp.pack();
+                temp.setVisible(true);
+            }
+        }));
+
+
+
         JPlotPanel.removeAll();
         JPlotPanel.add(chartPanel);
 

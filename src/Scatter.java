@@ -756,6 +756,24 @@ public class Scatter {
         }));
 
 
+        popupMenu.add(new JMenuItem(new AbstractAction("Structure Factor Test") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+
+                int index = analysisTable.getSelectedRow();
+
+                if (index > -1){
+
+                    // select dataset with form factor
+                    StructureFactorTest temp = new StructureFactorTest(collectionSelected, collectionSelected.getDataset(index), WORKING_DIRECTORY);
+                    temp.pack();
+                    temp.setVisible(true);
+                }
+            }
+        }));
+
+
 
         popupMenu.add(new JMenuItem(new AbstractAction("Select Highlighted") {
             @Override
@@ -4275,7 +4293,7 @@ signalPlotThread.execute();
      */
     private void createKratkyPlot(){
         kratky = KratkyPlot.getInstance();
-        kratky.plot(collectionSelected, WORKING_DIRECTORY.getWorkingDirectory());
+        kratky.plot(collectionSelected, WORKING_DIRECTORY);
     }
 
     private void createGPAPlot(int id){
@@ -4318,7 +4336,7 @@ signalPlotThread.execute();
     private void createNormalizedKratkyPlot(){
 
         normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
-        normalKratkyRg.plot(collectionSelected, "RECIRG", WORKING_DIRECTORY.getWorkingDirectory());
+        normalKratkyRg.plot(collectionSelected, "RECIRG", WORKING_DIRECTORY);
 
 
         // test if Real Space Invariants have been determined
@@ -4326,11 +4344,10 @@ signalPlotThread.execute();
             Dataset temp = collectionSelected.getDataset(i);
             if (temp.getRealIzero() > 0 && temp.getRealRg() > 0){
                 normalKratkyRgReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (Real space)");
-                normalKratkyRgReal.plot(collectionSelected, "REALRG", WORKING_DIRECTORY.getWorkingDirectory());
+                normalKratkyRgReal.plot(collectionSelected, "REALRG", WORKING_DIRECTORY);
                 break;
             }
         }
-
 
         //normalKratkyVc = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Guinier)");
         //normalKratkyVcReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Real space)");
