@@ -154,7 +154,7 @@ public class StructureFactorTest extends JDialog {
 
             if (value instanceof Dataset) {
 //            renderer.setBackground((Color) value);
-                renderer.setText(((Dataset) value).getId() + " - " + ((Dataset) value).getFileName());
+                renderer.setText((((Dataset) value).getId()+1) + " - " + ((Dataset) value).getFileName());
             }
 
             return renderer;
