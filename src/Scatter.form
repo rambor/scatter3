@@ -1519,6 +1519,7 @@
                                 <item value="47"/>
                                 <item value="51"/>
                               </model>
+                              <selectedIndex value="2"/>
                             </properties>
                           </component>
                         </children>

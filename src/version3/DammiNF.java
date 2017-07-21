@@ -116,6 +116,7 @@ public class DammiNF implements Runnable {
         //System.out.println(Thread.currentThread().getName()+ " Ending run " + processNumber);
     }
 
+
     private String processDammin(){
         command = "";
 

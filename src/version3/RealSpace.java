@@ -453,7 +453,7 @@ public class RealSpace {
         negativeValuesInModel = false;
 
         saxs_invariants();
-
+        System.out.println("SETTING MOORE");
         // calculate P(r) distribution
         this.calculatePofR();
         this.qmax = this.fittedqIq.getMaxX();

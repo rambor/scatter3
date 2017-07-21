@@ -8,6 +8,7 @@ import org.apache.commons.math3.analysis.solvers.MullerSolver;
 import org.apache.commons.math3.analysis.solvers.NewtonRaphsonSolver;
 import org.apache.commons.math3.distribution.CauchyDistribution;
 import org.apache.commons.math3.exception.DimensionMismatchException;
+import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.SynchronizedDescriptiveStatistics;
 import org.jfree.data.statistics.HistogramDataset;
@@ -35,7 +36,7 @@ public class Ratio {
     private XYSeries targetError;
     private double average;
     private double variance, skewness;
-    private double location, scale, scale2;
+    private double location, scale, scale2, estimatedScale;
     private double ljungBoxStatistic, durbinWatsonStatistic, gurtlerHenzeStatistic;
     private int totalInRatio;
     private int lags; // should approximate the degrees of freedom of the data ??? // arbitrary bin size?
@@ -46,6 +47,8 @@ public class Ratio {
     private XYSeries binnedData;
     private XYSeries modelData;
     private double peakHeight;
+    private boolean isDone = false;
+    private int refIndex, tarIndex;
 
 
     /**
@@ -67,6 +70,7 @@ public class Ratio {
         this.qmin = qmin.doubleValue();
         this.targetError = targetError;
         lags = 12;
+
         this.makeRatio();
         this.estimateCauchyScale();
         // this.testFunction();
@@ -88,6 +92,7 @@ public class Ratio {
         this.createBinnedData();
     }
 
+
     /**
      * Perform alternating goodness of fit tests for determining Cauchy parameters
      * @param rounds
@@ -97,20 +102,34 @@ public class Ratio {
         for(int i=0; i<rounds; i++){
             this.solveForLocation();
             this.solveForScale();
-           // System.out.println("iter: " + (i+1) + " " + this.location + " " + this.scale);
         }
     }
 
     private void solveForLocation(){
         NewtonRaphsonSolver test = new NewtonRaphsonSolver(0.001);
         MLEEquationCauchyLocation tempFunc = new MLEEquationCauchyLocation(this.scale, this.sortedRatio);
-        location = test.solve(1000, tempFunc, this.medianHLE - this.scale, this.medianHLE + this.scale);
+
+        //location = test.solve(1000, tempFunc, this.medianHLE - this.scale, this.medianHLE + this.scale);
+        try {
+            location = test.solve(1000, tempFunc, this.medianHLE - this.scale, this.medianHLE + this.scale);
+        } catch (TooManyEvaluationsException e) {
+            System.out.println(e.getMessage());
+            location = this.medianHLE;
+        }
+
     }
 
     private void solveForScale(){
         NewtonRaphsonSolver test = new NewtonRaphsonSolver(0.001);
         MLEEquationCauchyScale tempFunc = new MLEEquationCauchyScale(this.location, this.sortedRatio);
-        scale = test.solve(1000, tempFunc, this.scale - 0.1*this.scale, this.scale + 0.1*this.scale, this.scale);
+
+        try {
+            scale = test.solve(1000, tempFunc, this.scale - 0.1*this.scale, this.scale + 0.1*this.scale, this.scale);
+        } catch (TooManyEvaluationsException e) {
+            System.out.println(e.getMessage());
+            scale = estimatedScale;
+        }
+
     }
 
     private void makeRatio(){
@@ -133,7 +152,6 @@ public class Ratio {
                 break;
             }
         }
-
 
         int locale;
         XYDataItem tarXY, refItem;
@@ -183,7 +201,7 @@ public class Ratio {
 
         if ( (totalInSorted & 1) == 0 ) { // even
             int middle = (totalInSorted)/2;
-            medianHLE = 0.5*(sortedRatio.get(middle-1) + sortedRatio.get(middle));
+            medianHLE = 0.5*(sortedRatio.get(middle-1) + sortedRatio.get(middle));  // estimator for location
         } else { // odd
             int middle = (totalInSorted-1)/2;
             medianHLE = 0.5*(sortedRatio.get(middle-1) + sortedRatio.get(middle+1));
@@ -326,6 +344,7 @@ public class Ratio {
         return gammaSum*1.0/(double)totalInRatio;
     }
 
+
     public void printTests(String text){
         System.out.println(text + " : " + durbinWatsonStatistic + " " + ljungBoxStatistic);
     }
@@ -352,19 +371,20 @@ public class Ratio {
             }
         }
 
-        int location = values.size();
+        int locale = values.size();
         Collections.sort(values);
         double tempScale = 0;
-        if ( (location & 1) == 0 ) { // even
-            int middle = (location)/2;
+        if ( (locale & 1) == 0 ) { // even
+            int middle = (locale)/2;
             tempScale = 0.5*(values.get(middle-1) + values.get(middle));
         } else { // odd
-            int middle = (location-1)/2;
+            int middle = (locale-1)/2;
             tempScale = 0.5*(values.get(middle));
         }
 
         scale =  Math.exp(tempScale);
-
+        estimatedScale = scale;
+        //System.out.println("Estimated Scale " + scale + " " + tempScale);
     }
 
     private void createBinnedData(){

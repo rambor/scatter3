@@ -256,7 +256,6 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                     editable_cells.get(lastone).set(13, false); // refine dmax
                     editable_cells.get(lastone).set(14, false); // refine
                 }
-
             }
         }
 

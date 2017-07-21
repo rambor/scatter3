@@ -756,25 +756,6 @@ public class Scatter {
         }));
 
 
-        popupMenu.add(new JMenuItem(new AbstractAction("Structure Factor Test") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-
-                int index = analysisTable.getSelectedRow();
-
-                if (index > -1){
-
-                    // select dataset with form factor
-                    StructureFactorTest temp = new StructureFactorTest(collectionSelected, collectionSelected.getDataset(index), WORKING_DIRECTORY);
-                    temp.pack();
-                    temp.setVisible(true);
-                }
-            }
-        }));
-
-
-
         popupMenu.add(new JMenuItem(new AbstractAction("Select Highlighted") {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -870,6 +851,53 @@ public class Scatter {
                 dataFilesList.validate();
                 dataFilesList.repaint();
                 analysisModel.fireTableDataChanged();
+            }
+        }));
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("Structure Factor Test") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+
+                int index = analysisTable.getSelectedRow();
+
+                if (index > -1){
+
+                    // select dataset with form factor
+                    StructureFactorTest temp = new StructureFactorTest(collectionSelected, collectionSelected.getDataset(index), WORKING_DIRECTORY);
+                    temp.pack();
+                    temp.setVisible(true);
+                }
+            }
+        }));
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("Similarity Test") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+
+                int total = 0;
+                for(int i=0; i<collectionSelected.getDatasetCount(); i++){
+                    if (collectionSelected.getDataset(i).getInUse()){
+                        total+=1;
+                    }
+                }
+
+                if (total >2){
+                    // select dataset with form factor
+                    try {
+                        RatioSimilarityTest temp = new RatioSimilarityTest(collectionSelected, 0.01, 0.25);
+temp.makePlot();
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
+                    }
+//                    StructureFactorTest temp = new StructureFactorTest(collectionSelected, collectionSelected.getDataset(index), WORKING_DIRECTORY);
+//                    temp.pack();
+//                    temp.setVisible(true);
+                }
+
             }
         }));
 
@@ -2402,7 +2430,7 @@ signalPlotThread.execute();
 
 
                 prModel.clear();
-                prModel.addDatasetsFromCollection(collectionSelected);
+                prModel.addDatasetsFromCollection(collectionSelected); // add datasets and do initial Pr-estimation
                 prModel.fireTableDataChanged();
                 mainPane.setSelectedIndex(2);
 
@@ -3807,7 +3835,7 @@ signalPlotThread.execute();
 
         File theCWD = new File(OUTPUT_DIR_SUBTRACTION_NAME);
         //programInstance.subtractOutPutDirectoryLabel.setText(OUTPUT_DIR_SUBTRACTION_NAME);
-        programInstance.subtractOutPutDirectoryLabel.setText(theCWD.getName());
+        programInstance.subtractOutPutDirectoryLabel.setText(":/"+theCWD.getName());
 
         programInstance.sourceTextField.setText(BEAMLINEMANUFACTURER);
 
@@ -4308,6 +4336,7 @@ signalPlotThread.execute();
         //RatioPlot ratioPlot = new RatioPlot(collectionSelected, WORKING_DIRECTORY.getWorkingDirectory());
         BinaryComparisonPlot ratioPlot = new BinaryComparisonPlot(collectionSelected, WORKING_DIRECTORY.getWorkingDirectory());
         ratioPlot.makePlot();
+
     }
 
     private void createFlexPlots(){

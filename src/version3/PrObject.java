@@ -368,7 +368,7 @@ public class PrObject implements Runnable {
 
         ArrayList<double[]> tempResults;
 
-        if (useDirectFT) {
+        if (false) {
             tempResults = rambo_coeffs_L1();
             this.dataset.setPrDistributionDirectFT(tempResults.get(1), tempResults.get(0), tempResults.get(2));
             System.out.println("L1-norm DirectFT ");
