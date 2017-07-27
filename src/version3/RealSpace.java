@@ -47,7 +47,7 @@ public class RealSpace {
     private ArrayList<Double> rValuesDirectFT;
     private ArrayList<Double> directFT;
 
-    private int dmax;
+    private double dmax;
     private double qmax;
     private double raverage;
     private double chi2;
@@ -74,7 +74,7 @@ public class RealSpace {
         this.dataset = dataset;
         this.filename = dataset.getFileName();
         this.id = dataset.getId();
-        this.dmax = (int)dataset.getDmax();
+        this.dmax = dataset.getDmax();
         selected = true;
         analysisToPrScaleFactor = 1;
         int totalAllData = dataset.getAllData().getItemCount();
@@ -221,11 +221,11 @@ public class RealSpace {
         return stopAt;
     }
 
-    public int getDmax(){
+    public double getDmax(){
         return dmax;
     }
 
-    public void setDmax(int d){
+    public void setDmax(double d){
         this.dataset.setDmax(d);
         dmax = d;
     }
@@ -1067,7 +1067,7 @@ public class RealSpace {
         // how well does the fit estimate the cardinal series (shannon points)
         double chi=0;
         double inv_card;
-        final double inv_dmax = 1.0/(double)dmax;
+        final double inv_dmax = 1.0/dmax;
         final double dmax_inv_pi = dmax/Math.PI;
         // n*PI/qmax
         final double pi_dmax = inv_dmax*Math.PI;

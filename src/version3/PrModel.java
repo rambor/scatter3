@@ -30,6 +30,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     private JProgressBar mainBar, prBar;
     private JSlider dmaxStart;
 
+    private DecimalFormat oneDecimalPlace = new DecimalFormat("0.0");
     private DecimalFormat twoDecPlac = new DecimalFormat("0.00");
     private DecimalFormat scientific = new DecimalFormat("0.00E0");
     private DecimalFormat twoOneFormat = new DecimalFormat("0.0");
@@ -117,10 +118,9 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 // rebuild plot
                 // replotPr(row, dataset);
             } else if (col == 9){
-                dataset.setDmax((Integer)obj);
+                dataset.setDmax((double)obj); // should only render to 10th decimal place
             }
            // fireTableCellUpdated(row, col);
-
         } catch(IndexOutOfBoundsException e) {
             System.out.println("Please wait, reindexing PrModel Class" + e);
         }
@@ -170,7 +170,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
             case 8: //r-average
                 return twoOneFormat.format(dataset.getRaverage());
             case 9:
-                return dataset.getDmax();
+                return twoOneFormat.format(dataset.getDmax());
             case 10:
                 return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
             case 11:
@@ -277,7 +277,6 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         //no matter where the cell appears onscreen
 
         return editable_cells.get(row).get(col);
-
     }
 
     private boolean isNumber( String input ) {
@@ -318,7 +317,6 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
             }
         }
     }
-
 
     @Override
     public void stateChanged(ChangeEvent e) {

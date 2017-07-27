@@ -22,12 +22,15 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     private int colID;
     private int priorValue;
     private int lastValue;
+
+    private double dPriorValue;
+
     private JLabel status;
     private JCheckBox qIqFit;
     private JComboBox lambdaBox;
     private JCheckBox l1NormCheckBox;
     private JComboBox cBox;
-    private JCheckBox useDirectFT;
+    //private JCheckBox useDirectFT;
     private JCheckBox backgroundCheckBox;
 
     // Initializes the spinner.
@@ -38,7 +41,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         this.lambdaBox = lambdaBox;
         this.l1NormCheckBox = l1NormCheckBox;
         this.cBox = cBox;
-        this.useDirectFT = useDirectFT;
+        //this.useDirectFT = useDirectFT;
         this.backgroundCheckBox = excludeBackground;
 
         this.prModel = prModel;
@@ -72,15 +75,16 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
 
         RealSpace prDataset = prModel.getDataset(rowID);
 
-        int temp = (Integer)this.spinner.getValue();
-
         int oldStart = prDataset.getStart();
         int oldStop = prDataset.getStop();
 
         int limit;
-        int valueOfSpinner = (Integer)this.spinner.getValue();
+
 
         if (this.colID == 4){ // lower(start) spinner
+
+            int valueOfSpinner = (Integer)this.spinner.getValue();
+            int temp = (Integer)this.spinner.getValue();
 
             if (((Integer)this.spinner.getValue() < prDataset.getLowerQIndexLimit()) || (valueOfSpinner > oldStop)){
                 this.spinner.setValue(prDataset.getLowerQIndexLimit());
@@ -99,7 +103,9 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
             prDataset.setStart(valueOfSpinner);
 
         } else if (colID == 5) {
+            int temp = (Integer)this.spinner.getValue();
             limit = prDataset.getMaxCount();
+            int valueOfSpinner = (Integer)this.spinner.getValue();
 
             if (valueOfSpinner >= limit){
                 this.spinner.setValue(prDataset.getStop());
@@ -116,8 +122,8 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
             }
 
         } else if (colID==9){
-            temp = (Integer)this.spinner.getValue();
-            prDataset.setDmax(temp);
+            double temp = (Double)this.spinner.getValue();
+            prDataset.setDmax((float)temp);
             status.setText("Finished: d_max set to " + prDataset.getDmax());
         }
         //recalculate P(r) distributions
@@ -147,11 +153,11 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
             priorValue = prModel.getDataset(rowID).getStop();
             spinner.setModel(new SpinnerNumberModel(priorValue, 1, lastValue, 10));
         } else if (colID == 9) {
-            priorValue = prModel.getDataset(rowID).getDmax();
-            spinner.setValue(priorValue);
+            dPriorValue = prModel.getDataset(rowID).getDmax();
+            spinner.setModel(new SpinnerNumberModel(dPriorValue, 10, 1000, 0.25));
+            //spinner.setValue(dPriorValue);
         }
 
-        //new SpinnerNumberModel(spinnerStart, 1, spinnerEnd, 10)
         SwingUtilities.invokeLater( new Runnable() {
             public void run() {
                 textField.requestFocus();
@@ -162,14 +168,11 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     }
 
     public boolean isCellEditable( EventObject eo ) {
-        //System.err.println("isCellEditable");
+
         if ( eo instanceof KeyEvent) {
             KeyEvent ke = (KeyEvent)eo;
             System.err.println("key event: "+ke.getKeyChar());
             textField.setText(String.valueOf(ke.getKeyChar()));
-            //textField.select(1,1);
-            //textField.setCaretPosition(1);
-            //textField.moveCaretPosition(1);
             valueSet = true;
         } else {
             valueSet = false;

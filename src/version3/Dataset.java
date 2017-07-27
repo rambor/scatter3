@@ -1453,7 +1453,7 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
         dataToWrite.writeSAXSFile(base, this);
     }
 
-    public void setIsPDB(XYSeries pofrDistribution, int dmax, double rg, double izero){
+    public void setIsPDB(XYSeries pofrDistribution, float dmax, double rg, double izero){
         this.realSpace.setPrDistribution(pofrDistribution);
         this.realSpace.setDmax(dmax);
         this.isPDB = true;

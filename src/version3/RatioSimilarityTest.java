@@ -446,12 +446,12 @@ public class RatioSimilarityTest {
 
                 data[2][j] = tempStat;
 
-                if (temp.getStatistic() > maxBottomDataset){
-                    maxBottomDataset = temp.getStatistic();
+                if (tempStat > maxBottomDataset){
+                    maxBottomDataset = tempStat;
                 }
 
                 if (tempStat < minBottomDataset){
-                    minBottomDataset = temp.getStatistic();
+                    minBottomDataset = tempStat;
                 }
                 index++;
             }
@@ -495,6 +495,7 @@ public class RatioSimilarityTest {
 //                if (tempStat >= 2.35 || tempStat < 1.65) {
 //                    tempStat = 1.5;
 //                }
+
                 if (tempStat == 1){
                     tempStat = 0.5;
                 }

@@ -90,6 +90,7 @@ public class ResidualDifferences extends BinaryComparisonModel {
         // shapiroWilkStatistic => 0.7 seems to suggest a good cutoff
 
         if ((shapiroWilkStatistic > 0.75) && (durbinWatsonStatistic > 1.5 && durbinWatsonStatistic < 2.5)){
+            this.printTests("ORDER " + this.order);
             return 1;
         }
 

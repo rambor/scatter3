@@ -1640,10 +1640,10 @@ public class PrObject implements Runnable {
             //------------------------------------------------------------
             //       Shall we Stop?
             //------------------------------------------------------------
-            //System.out.println(ntiter + " GAP  ratio " + (gap/dobj ) + " " + pobj + " dobj " + dobj);
+            //System.out.println(ntiter + " : " + gap +" GAP  ratio " + (gap/dobj ) + " " + pobj + " dobj " + dobj);
             if (gap/dobj < reltol) {
                 status = "Solved";
-                //System.out.println(ntiter + " Solved => " + gap/dobj + " " + reltol);
+                System.out.println(ntiter + " Solved => " + gap/dobj + " " + reltol + " " + r_vector.length + " " + normL1);
                 break calculationLoop;
             }
 
@@ -1663,7 +1663,6 @@ public class PrObject implements Runnable {
             // gradphi = [At*(z*2)-(q1-q2)/t; lambda*ones(n,1)-(q1+q2)/t];
             // p_am_r = p_dd_r_of_am.extractVector(false,0);
             p_am_r2 = p_dd_r_of_am.elementMult(p_dd_r_of_am);
-
             p_u_r2 = u.elementMult(u);
 
             /*
