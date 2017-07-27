@@ -12,14 +12,10 @@ import java.util.Random;
 /**
  * Created by xos81802 on 26/06/2017.
  */
-public class ResidualDifferences {
+public class ResidualDifferences extends BinaryComparisonModel {
 
-    private double qmin, qmax;
-    private XYSeries residuals;
-    private XYSeries reference;
-    private XYSeries targetSeries;
-    private XYSeries targetError;
-    private double average;
+
+    //private XYSeries residuals;
     private double variance, skewness;
     private double scaleFactor;
     private double durbinWatsonStatistic;
@@ -29,9 +25,13 @@ public class ResidualDifferences {
     private ArrayList<Double> sortedResiduals;
     private XYSeries binnedData;
     private XYSeries modelData;
+    private XYSeries reverseSeries;
     private double invGaussianNormalizationFactor;
     private double inv2variance ;
     private HistogramDataset histogram;
+    private double[] pvalue = {0.01, 0.02, 0.05, 0.1, 0.5, 0.9, 0.95, 0.98, 0.99};
+    private double[] shapiroWilkPValueTable={0.929, 0.939, 0.947, 0.955, 0.974, 0.985, 0.988, 0.990, 0.991};
+
 
     private int lags; // should approximate the degrees of freedom of the data ??? // arbitrary bin size?
 
@@ -41,129 +41,27 @@ public class ResidualDifferences {
             0.0288,0.0215,0.0143,0.0071
     };
 
-    public ResidualDifferences(XYSeries referenceSet, XYSeries targetSet, XYSeries targetError, Number qmin, Number qmax, int lags) {
 
-        this.reference = referenceSet;
-        this.targetSeries = targetSet;
-        this.qmax = qmax.doubleValue();
-        this.qmin = qmin.doubleValue();
-        this.targetError = targetError;
+    public ResidualDifferences(
+            XYSeries referenceSet,
+            XYSeries targetSet,
+            XYSeries targetError,
+            Number qmin,
+            Number qmax,
+            int lags,
+            int refIndex,
+            int tarIndex,
+            int order) {
+
+        super(referenceSet, targetSet, targetError, qmin, qmax, "residuals", refIndex, tarIndex, order);
         this.lags = lags;
-        this.makeResiduals();
-        this.calculateDurbinWatson();
-        this.calculateLjungBoxTest();
-        this.estimateShapiroWilksTest(7);
-
+        this.makeComparisonSeries();
+        this.calculateComparisonStatistics();
         // perform some tests on the residuals
         // distribution should be random
         this.createBinnedData();
     }
 
-
-    private void makeResiduals(){
-
-        // for each dataset, compute pairwise ratios and quantitate
-        int totalInReference = reference.getItemCount();
-        int startPt=0;
-        int endPt=totalInReference-1;
-
-        for(int m=0; m<totalInReference; m++){
-            if (reference.getX(m).doubleValue() >= qmin){
-                startPt =m;
-                break;
-            }
-        }
-
-        for(int m=endPt; m>0; m--){
-            if (reference.getX(m).doubleValue() <= qmax){
-                endPt=m;
-                break;
-            }
-        }
-
-
-        int locale;
-        XYDataItem tarXY, refItem;
-
-
-        XYSeries tempvalues = new XYSeries("tempvalues");
-        // compute ratio within qmin and qmax
-        int totalInRatio=0;
-        double valueE;
-        double scale_numerator=0, scale_denominator=0;
-        for (int q=startPt; q<=endPt; q++){
-            refItem = reference.getDataItem(q);
-            double xValue = refItem.getXValue();
-            locale = targetSeries.indexOf(refItem.getX());
-
-            if (locale > -1){
-                tarXY = targetSeries.getDataItem(locale);
-                tempvalues.add(tarXY);
-                // reference/target
-                valueE = targetError.getY(locale).doubleValue();
-                scale_numerator += tarXY.getYValue()*refItem.getYValue()/(valueE*valueE);
-                scale_denominator += tarXY.getYValue()*tarXY.getYValue()/(valueE*valueE);
-            } else { // interpolate
-
-                if ( (xValue > targetSeries.getX(1).doubleValue()) || (xValue < targetSeries.getX(targetSeries.getItemCount()-2).doubleValue()) ){
-                    Double[] results =  Functions.interpolateOriginal(targetSeries, targetError, xValue);
-                    //target.add(xValue, results[1]);
-                    tempvalues.add(refItem.getX(), results[1]);
-                    scale_numerator += results[1]*refItem.getYValue()/(results[2]*results[2]);
-                    scale_denominator += results[1]*results[1]/(results[2]*results[2]);
-                }
-            }
-        }
-
-        scaleFactor = scale_numerator/scale_denominator;
-
-        residuals = new XYSeries("residuals");
-        sortedResiduals = new ArrayList<>();
-        double diff, sum=0, sumqsquared=0, sumcubed=0;
-        double counter=0;
-
-        for (int q=startPt; q<=endPt; q++){
-            refItem = reference.getDataItem(q);
-            tarXY = tempvalues.getDataItem(tempvalues.indexOf(refItem.getX()));
-            diff = (refItem.getYValue() - scaleFactor*tarXY.getYValue());
-            residuals.add(refItem.getX(), diff);
-            sortedResiduals.add(diff);
-            sum += diff;
-            sumqsquared += diff*diff;
-            sumcubed += diff*diff*diff;
-            counter += 1.0;
-        }
-
-        average = sum/counter;
-        variance = sumqsquared/counter - average*average;
-        invGaussianNormalizationFactor = 1.0/Math.sqrt(2.0*Math.PI*variance);
-        inv2variance = 1.0/(2.0*variance);
-        skewness = (sumcubed/counter - 3*average*variance - average*average*average)/(variance*Math.sqrt(variance));
-
-        totalResiduals = residuals.getItemCount();
-
-        Collections.sort(sortedResiduals);
-    }
-
-    // ratio of two random processes should fit a distribution (not Gaussian)
-    public XYSeries getResiduals() {
-        return residuals;
-    }
-
-    /**
-     * Location is the average or mean of the distribution
-     * @return
-     */
-    public double getLocation(){return average;}
-
-    /**
-     * scale is the variance of the distribution (square of sigma)
-     * @return
-     */
-    public double getScale(){return variance;}
-
-    // calculate statistics of the ratio
-    // no signal, should be flat line (randomly distributed)
 
     /**
      * d = 2 means no autocorrelation
@@ -172,11 +70,11 @@ public class ResidualDifferences {
     private void calculateDurbinWatson(){
 
         double numerator=0, value, diff;
-        double denominator = residuals.getY(0).doubleValue()*residuals.getY(0).doubleValue();
+        double denominator = testSeries.getY(0).doubleValue()*testSeries.getY(0).doubleValue();
 
         for(int i=1; i<totalResiduals; i++){
-          value = residuals.getY(i).doubleValue();
-          diff = value - residuals.getY(i-1).doubleValue();
+          value = testSeries.getY(i).doubleValue();
+          diff = value - testSeries.getY(i-1).doubleValue();
             numerator += diff*diff;
             denominator += value*value;
         }
@@ -184,6 +82,20 @@ public class ResidualDifferences {
         durbinWatsonStatistic = numerator/denominator;
     }
 
+
+    @Override
+    double getStatistic(){
+        //return ljungBoxStatistic;
+        // return durbinWatsonStatistic;
+        // shapiroWilkStatistic => 0.7 seems to suggest a good cutoff
+
+        if ((shapiroWilkStatistic > 0.75) && (durbinWatsonStatistic > 1.5 && durbinWatsonStatistic < 2.5)){
+            return 1;
+        }
+
+        return 0;
+        //return shapiroWilkStatistic;
+    }
 
     private void calculateLjungBoxTest(){
 
@@ -208,23 +120,27 @@ public class ResidualDifferences {
         double gammaSum =0;
         int limit = totalResiduals - lag;
         for(int t=0; t<limit; t++){
-            gammaSum += (residuals.getY(t+lag).doubleValue()-average)*(residuals.getY(t).doubleValue() - average);
+            gammaSum += (testSeries.getY(t+lag).doubleValue()-location)*(testSeries.getY(t).doubleValue() - location);
         }
 
         return gammaSum*1.0/(double)totalResiduals;
     }
 
-    public void printTests(String text){
-        System.out.println(text + " : DW " + durbinWatsonStatistic + " LB " + ljungBoxStatistic + " SW " + shapiroWilkStatistic + " " + average);
+    @Override
+    void printTests(String text){
+        System.out.println(String.format("%s DW : %.5f LB : %.4E SW : %.5f", text, durbinWatsonStatistic, ljungBoxStatistic, shapiroWilkStatistic));
     }
 
+    public String getSH(){ return String.format("%.4f", shapiroWilkStatistic);}
+    public String getDW(){ return String.format("%.4f", durbinWatsonStatistic);}
+
+    public double getShapiroWilkStatistic(){ return shapiroWilkStatistic;}
+    public double getDurbinWatsonStatistic(){ return durbinWatsonStatistic;}
 
     // Assume residuals are Gaussian, use Kolmogorov–Smirnov to test for normality
     private double calculateKolmogorovSmirnovTest(){
-
         return 0;
     }
-
 
 
     private void estimateShapiroWilksTest(int rounds){
@@ -235,34 +151,37 @@ public class ResidualDifferences {
             estimates.add(calculateShapiroWilksTest());
         }
 
-        Collections.sort(estimates);
+        Collections.sort(estimates); // take median
 
         shapiroWilkStatistic = estimates.get((rounds-1)/2);
+        // calculate probability
+
     }
 
 
     private double calculateShapiroWilksTest(){
         // divide into 11 bins, sample 5 from each bin and calculate
-        double lqmin = residuals.getMinX();
-        double lqmax = residuals.getMaxX();
+        double lqmin = testSeries.getMinX();
+        double lqmax = testSeries.getMaxX();
 
         int bins = 11;
         int[] perBin = {4,6,6,5,4,4,4,4,4,4,4}; // odd number of elements => 49
 
         double increment = (lqmax-lqmin)/(double)bins;
 
-        ArrayList<Double> selectFrom = new ArrayList<>();
+
         ArrayList<Double> keptResiduals = new ArrayList<>(49);
         int start=0;
         double qvalue;
         double lowerq = lqmin, upperq = lowerq+increment;
 
         for(int i=0; i<bins; i++){
+            ArrayList<Double> selectFrom = new ArrayList<>();
 
             for(int j=start; j<totalResiduals; j++){
-                qvalue = residuals.getX(j).doubleValue();
+                qvalue = testSeries.getX(j).doubleValue();
                 if(qvalue >= lowerq && qvalue < upperq){
-                    selectFrom.add(residuals.getY(j).doubleValue());
+                    selectFrom.add(testSeries.getY(j).doubleValue());
                 } else {
                     start = j;
                     break;
@@ -276,7 +195,6 @@ public class ResidualDifferences {
             for (int m=0; m<perBin[i]; m++){
                 keptResiduals.add(selectFrom.get(m).doubleValue());
             }
-            selectFrom.clear();
         }
 
         // throw excepction if keptResiduals is not 49 in lenght
@@ -285,7 +203,8 @@ public class ResidualDifferences {
 
         double ss=0, temp;
         for(int s=0; s<totalInKept; s++){
-            temp = keptResiduals.get(s) - average;
+            temp = keptResiduals.get(s) - location;
+            //temp = keptResiduals.get(s); // should be zero mean if the two curves are identical
             ss+= temp*temp;
         }
 
@@ -293,6 +212,7 @@ public class ResidualDifferences {
         int limit = (totalInKept-1)/2;
         double b_factor=0;
         for(int s=0; s < limit; s++){
+            //System.out.println(s + " | " + keptResiduals.get(totalInKept-1-s) + " " + keptResiduals.get(s));
             b_factor += shapiroWilkTable[s]*(keptResiduals.get(totalInKept-1-s) - keptResiduals.get(s));
         }
 
@@ -300,7 +220,8 @@ public class ResidualDifferences {
     }
 
 
-    private void createBinnedData(){
+    @Override
+    void createBinnedData(){
         // binning
         ArrayList<Double> bins = new ArrayList<>();
         ArrayList<Integer> binned = new ArrayList<>();
@@ -316,7 +237,7 @@ public class ResidualDifferences {
         double midpoint;
         int counted = 1;
         for(int binIndex=0; binIndex < startIndex; binIndex++){
-            double lower = this.average - (startIndex-binIndex)*binWidth;
+            double lower = this.location - (startIndex-binIndex)*binWidth;
             double upper = lower + binWidth;
 
             int count=0;
@@ -340,7 +261,7 @@ public class ResidualDifferences {
 
 
         for(int binIndex=0; binIndex < startIndex; binIndex++){
-            double lower = this.average + binWidth*binIndex;
+            double lower = this.location + binWidth*binIndex;
             double upper = lower + binWidth;
 
             int count=0;
@@ -384,14 +305,110 @@ public class ResidualDifferences {
         return binnedData;
     }
 
-    private double calculateModel(double value){
-        double diff = value - average;
+    /**
+     * calculate residual between reference and target series
+     * A scale factor is determined, so that the data should have zero mean if target and reference are the same
+     *
+     */
+    @Override
+    void makeComparisonSeries() {
+
+        int totalInReference = this.getReference().getItemCount();
+        int startPt=0;
+        int endPt=totalInReference-1;
+
+        // find qmin and qmax in reference dataset
+        for(int m=0; m<totalInReference; m++){
+            if (this.getReference().getX(m).doubleValue() >= qmin){
+                startPt =m;
+                break;
+            }
+        }
+
+        for(int m=endPt; m>0; m--){
+            if (this.getReference().getX(m).doubleValue() <= qmax){
+                endPt=m;
+                break;
+            }
+        }
+
+        int locale;
+        XYDataItem tarXY, refItem;
+        XYSeries tempvalues = new XYSeries("tempvalues");
+        // calculate scale factor that scales target series to reference series
+        double valueE;
+        double scale_numerator=0, scale_denominator=0;
+        for (int q=startPt; q<=endPt; q++){
+            refItem = this.getReference().getDataItem(q);
+            double xValue = refItem.getXValue();
+            locale = this.getTargetSeries().indexOf(refItem.getX());
+
+            if (locale > -1){
+                tarXY = this.getTargetSeries().getDataItem(locale);
+                tempvalues.add(tarXY);
+                // reference/target
+                valueE = this.getTargetError().getY(locale).doubleValue();
+                scale_numerator += tarXY.getYValue()*refItem.getYValue()/(valueE*valueE);
+                scale_denominator += tarXY.getYValue()*tarXY.getYValue()/(valueE*valueE);
+            } else { // interpolate
+
+                if ( (xValue > this.getTargetSeries().getX(1).doubleValue()) || (xValue < this.getTargetSeries().getX(this.getTargetSeries().getItemCount()-2).doubleValue()) ){
+                    Double[] results =  Functions.interpolateOriginal(this.getTargetSeries(), this.getTargetError(), xValue);
+                    //target.add(xValue, results[1]);
+                    tempvalues.add(refItem.getX(), results[1]);
+                    scale_numerator += results[1]*refItem.getYValue()/(results[2]*results[2]);
+                    scale_denominator += results[1]*results[1]/(results[2]*results[2]);
+                }
+            }
+        }
+
+        scaleFactor = scale_numerator/scale_denominator;
+
+        sortedResiduals = new ArrayList<>();
+        double diff, sum=0, sumqsquared=0, sumcubed=0;
+        double counter=0;
+
+        // subtract the scaled targetseries from reference
+        for (int q=startPt; q<=endPt; q++){
+            refItem = this.getReference().getDataItem(q);
+            tarXY = tempvalues.getDataItem(tempvalues.indexOf(refItem.getX()));
+            diff = (refItem.getYValue() - scaleFactor*tarXY.getYValue());
+            //System.out.println(this.refIndex + " " + this.tarIndex + " " + refItem.getXValue() + " <=> " + tarXY.getXValue() + " " + tarXY.getYValue() + " diff " + diff);
+            addToTestSeries(refItem.getX(), diff);
+            sortedResiduals.add(diff);
+            sum += diff;
+            sumqsquared += diff*diff;
+            sumcubed += diff*diff*diff;
+            counter += 1.0;
+        }
+
+        //average = sum/counter;
+        location = sum/counter; // => average
+        variance = sumqsquared/counter - location*location;
+        scale = variance;
+
+        invGaussianNormalizationFactor = 1.0/Math.sqrt(2.0*Math.PI*variance);
+        inv2variance = 1.0/(2.0*variance);
+        skewness = (sumcubed/counter - 3*location*variance - location*location*location)/(variance*Math.sqrt(variance));
+
+        totalResiduals = testSeries.getItemCount();
+
+        Collections.sort(sortedResiduals);
+    }
+
+    @Override
+    void calculateComparisonStatistics() {
+        this.calculateDurbinWatson();
+        this.calculateLjungBoxTest();
+        this.estimateShapiroWilksTest(11);
+    }
+
+    @Override
+    double calculateModel(double value){
+        double diff = value - location;
         return invGaussianNormalizationFactor*Math.exp(-(diff*diff)*inv2variance);
     }
 
-    public XYSeries getModelData() {
-        return modelData;
-    }
 
     public HistogramDataset getHistogram(){ return histogram;}
 }

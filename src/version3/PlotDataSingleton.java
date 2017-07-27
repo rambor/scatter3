@@ -302,16 +302,22 @@ public class PlotDataSingleton {
     public void addToBase(Dataset tempData){
 
         int count = plottedDatasets.getSeriesCount();
+
+
         plottedDatasets.addSeries(tempData.getData());
 
         double offset = -0.5*tempData.getPointSize();
 
-        renderer1.setSeriesShape(count, new Ellipse2D.Double(offset, offset, tempData.getPointSize(), tempData.getPointSize()));
-        renderer1.setSeriesLinesVisible(count, false);
-        renderer1.setSeriesPaint(count, tempData.getColor());
-        renderer1.setSeriesShapesFilled(count, tempData.getBaseShapeFilled());
-        renderer1.setSeriesVisible(count, tempData.getInUse());
-        renderer1.setSeriesOutlineStroke(count, tempData.getStroke());
+        try {
+            renderer1.setSeriesShape(count, new Ellipse2D.Double(offset, offset, tempData.getPointSize(), tempData.getPointSize()));
+            renderer1.setSeriesLinesVisible(count, false);
+            renderer1.setSeriesPaint(count, tempData.getColor());
+            renderer1.setSeriesShapesFilled(count, tempData.getBaseShapeFilled());
+            renderer1.setSeriesVisible(count, tempData.getInUse());
+            renderer1.setSeriesOutlineStroke(count, tempData.getStroke());
+        } catch (NullPointerException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     public void removeFromMerged(int index){

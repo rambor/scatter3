@@ -25,15 +25,11 @@ import java.util.Collections;
 /**
  * Created by xos81802 on 22/06/2017.
  */
-public class Ratio {
-    private double qmin, qmax;
-    private XYSeries ratio;
+public class Ratio extends BinaryComparisonModel {
+    //private XYSeries ratio;
     private ArrayList<Double> sortedRatio;
     private int totalInSorted;
     private double medianHLE;
-    private XYSeries reference;
-    private XYSeries targetSeries;
-    private XYSeries targetError;
     private double average;
     private double variance, skewness;
     private double location, scale, scale2, estimatedScale;
@@ -47,8 +43,6 @@ public class Ratio {
     private XYSeries binnedData;
     private XYSeries modelData;
     private double peakHeight;
-    private boolean isDone = false;
-    private int refIndex, tarIndex;
 
 
     /**
@@ -62,16 +56,12 @@ public class Ratio {
      * @param qmin
      * @param qmax
      */
-    public Ratio(XYSeries referenceSet, XYSeries targetSet, XYSeries targetError, Number qmin, Number qmax) {
+    public Ratio(XYSeries referenceSet, XYSeries targetSet, XYSeries targetError, Number qmin, Number qmax, int refIndex, int tarIndex, int ratio) {
 
-        this.reference = referenceSet;
-        this.targetSeries = targetSet;
-        this.qmax = qmax.doubleValue();
-        this.qmin = qmin.doubleValue();
-        this.targetError = targetError;
+        super(referenceSet, targetSet, targetError, qmin, qmax, "ratio", refIndex, tarIndex, ratio);
         lags = 12;
 
-        this.makeRatio();
+        this.makeComparisonSeries();
         this.estimateCauchyScale();
         // this.testFunction();
         refineLocationAndScale(5);
@@ -81,14 +71,8 @@ public class Ratio {
             scale2 = scale*scale;
         }
 
-        // is the ratio of the distribution Cauchy?
-        // do both a auto-correlaton test and distribution test
-        this.calculateDurbinWatson(); // auto-correlation test
-        this.calculateLjungBoxTest();
-
-        this.calculateGurtlerHenzeTest(5.0);
-        System.out.println("GH " + this.gurtlerHenzeStatistic + " : " + this.totalInRatio);
-
+        this.calculateComparisonStatistics();
+        //System.out.println("GH " + this.gurtlerHenzeStatistic + " : " + this.totalInRatio);
         this.createBinnedData();
     }
 
@@ -132,86 +116,8 @@ public class Ratio {
 
     }
 
-    private void makeRatio(){
-
-        // for each dataset, compute pairwise ratios and quantitate
-        int totalInReference = reference.getItemCount();
-        int startPt=0;
-        int endPt=totalInReference-1;
-
-        for(int m=0; m<totalInReference; m++){
-            if (reference.getX(m).doubleValue() >= qmin){
-                startPt =m;
-                break;
-            }
-        }
-
-        for(int m=endPt; m>0; m--){
-            if (reference.getX(m).doubleValue() <= qmax){
-                endPt=m;
-                break;
-            }
-        }
-
-        int locale;
-        XYDataItem tarXY, refItem;
-
-        ratio = new XYSeries("ratio");
-        sortedRatio = new ArrayList<>();
-        // compute ratio within qmin and qmax
-        totalInRatio=0;
-        double sum=0, sumqsquared=0, value, cubed=0;
-        for (int q=startPt; q<=endPt; q++){
-            refItem = reference.getDataItem(q);
-            double xValue = refItem.getXValue();
-            locale = targetSeries.indexOf(refItem.getX());
-
-            if (locale > -1){
-                tarXY = targetSeries.getDataItem(locale);
-                // reference/target
-                ratio.add(refItem.getX(), refItem.getYValue()/tarXY.getYValue());
-                value = ratio.getY(totalInRatio).doubleValue();
-                sortedRatio.add(value);
-                sum+=value;
-                sumqsquared += value*value;
-                cubed += value*value*value;
-                totalInRatio++;
-            } else { // interpolate
-
-                if ( (xValue > targetSeries.getX(1).doubleValue()) || (xValue < targetSeries.getX(targetSeries.getItemCount()-2).doubleValue()) ){
-
-                    Double[] results =  Functions.interpolateOriginal(targetSeries, targetError, xValue);
-                    //target.add(xValue, results[1]);
-                    ratio.add(refItem.getX(), refItem.getYValue()/results[1]);
-                    value = ratio.getY(totalInRatio).doubleValue();
-                    sortedRatio.add(value);
-                    sum+=value;
-                    sumqsquared += value*value;
-                    cubed += value*value*value;
-                    totalInRatio++;
-                }
-            }
-        }
-
-        Collections.sort(sortedRatio);
-        average = sum/(double)totalInRatio;
-        variance = sumqsquared/(double)totalInRatio - average*average;
-        totalInSorted = sortedRatio.size();
-        skewness = (cubed/(double)totalInRatio - 3*average*variance - average*average*average)/(variance*Math.sqrt(variance));
-
-        if ( (totalInSorted & 1) == 0 ) { // even
-            int middle = (totalInSorted)/2;
-            medianHLE = 0.5*(sortedRatio.get(middle-1) + sortedRatio.get(middle));  // estimator for location
-        } else { // odd
-            int middle = (totalInSorted-1)/2;
-            medianHLE = 0.5*(sortedRatio.get(middle-1) + sortedRatio.get(middle+1));
-        }
-    }
 
     // ratio of two random processes should fit a distribution (not Gaussian)
-    public XYSeries getRatio() {
-        return ratio;
-    }
     public double getAverage(){return average;}
     public double getVariance(){return variance;}
 
@@ -253,19 +159,6 @@ public class Ratio {
     }
 
 
-    private int getIndexFromTarget(Number value){
-        int index = -1;
-        int totalInTarget = targetSeries.getItemCount();
-        for(int i=0; i<totalInTarget; i++){
-            if (value.equals(targetSeries.getX(i))){
-                index = i;
-                break;
-            }
-        }
-
-        return index;
-    }
-
     /**
      * d = 2 means no autocorrelation
      * d-value should always lie between 0 and 4
@@ -273,11 +166,11 @@ public class Ratio {
     private void calculateDurbinWatson(){
 
         double numerator=0, value, diff;
-        double denominator = ratio.getY(0).doubleValue()*ratio.getY(0).doubleValue();
+        double denominator = testSeries.getY(0).doubleValue()*testSeries.getY(0).doubleValue();
 
         for(int i=1; i<totalInRatio; i++){
-            value = ratio.getY(i).doubleValue();
-            diff = value - ratio.getY(i-1).doubleValue();
+            value = testSeries.getY(i).doubleValue();
+            diff = value - testSeries.getY(i-1).doubleValue();
             numerator += diff*diff;
             denominator += value*value;
         }
@@ -338,15 +231,16 @@ public class Ratio {
         double gammaSum =0;
         int limit = totalInRatio - lag;
         for(int t=0; t<limit; t++){
-            gammaSum += (ratio.getY(t+lag).doubleValue()-average)*(ratio.getY(t).doubleValue() - average);
+            gammaSum += (testSeries.getY(t+lag).doubleValue()-average)*(testSeries.getY(t).doubleValue() - average);
         }
 
         return gammaSum*1.0/(double)totalInRatio;
     }
 
 
-    public void printTests(String text){
-        System.out.println(text + " : " + durbinWatsonStatistic + " " + ljungBoxStatistic);
+    @Override
+    void printTests(String text){
+        System.out.println(String.format("%s DW : %.5f LB : %.4E", text, durbinWatsonStatistic, ljungBoxStatistic));
     }
 
 
@@ -387,7 +281,8 @@ public class Ratio {
         //System.out.println("Estimated Scale " + scale + " " + tempScale);
     }
 
-    private void createBinnedData(){
+    @Override
+    void createBinnedData(){
         // binning
         //
         double binWidth = this.scale * 0.91;
@@ -618,7 +513,100 @@ public class Ratio {
         }
     }
 
-    private double calculateModel(double value){
+    @Override
+    void makeComparisonSeries() {
+
+        int totalInReference = this.getReference().getItemCount();
+        int startPt=0;
+        int endPt=totalInReference-1;
+
+        for(int m=0; m<totalInReference; m++){
+            if (this.getReference().getX(m).doubleValue() >= qmin){
+                startPt =m;
+                break;
+            }
+        }
+
+        for(int m=endPt; m>0; m--){
+            if (this.getReference().getX(m).doubleValue() <= qmax){
+                endPt=m;
+                break;
+            }
+        }
+
+        int locale;
+        XYDataItem tarXY, refItem;
+
+
+        sortedRatio = new ArrayList<>();
+        // compute ratio within qmin and qmax
+        totalInRatio=0;
+        double sum=0, sumqsquared=0, value, cubed=0;
+        for (int q=startPt; q<=endPt; q++){
+            refItem = this.getReference().getDataItem(q);
+            double xValue = refItem.getXValue();
+            locale = this.getTargetSeries().indexOf(refItem.getX());
+
+            if (locale > -1){
+                tarXY = this.getTargetSeries().getDataItem(locale);
+                // reference/target
+                this.addToTestSeries(refItem.getX(), refItem.getYValue()/tarXY.getYValue());
+                value = testSeries.getY(totalInRatio).doubleValue();
+                sortedRatio.add(value);
+                sum+=value;
+                sumqsquared += value*value;
+                cubed += value*value*value;
+                totalInRatio++;
+            } else { // interpolate
+
+                if ( (xValue > this.getTargetSeries().getX(1).doubleValue()) || (xValue < this.getTargetSeries().getX(this.getTargetSeries().getItemCount()-2).doubleValue()) ){
+
+                    Double[] results =  Functions.interpolateOriginal(this.getTargetSeries(), this.getTargetError(), xValue);
+                    //target.add(xValue, results[1]);
+                    this.addToTestSeries(refItem.getX(), refItem.getYValue()/results[1]);
+                    value = testSeries.getY(totalInRatio).doubleValue();
+                    sortedRatio.add(value);
+                    sum+=value;
+                    sumqsquared += value*value;
+                    cubed += value*value*value;
+                    totalInRatio++;
+                }
+            }
+        }
+
+        Collections.sort(sortedRatio);
+        average = sum/(double)totalInRatio;
+        variance = sumqsquared/(double)totalInRatio - average*average;
+        totalInSorted = sortedRatio.size();
+        skewness = (cubed/(double)totalInRatio - 3*average*variance - average*average*average)/(variance*Math.sqrt(variance));
+
+        if ( (totalInSorted & 1) == 0 ) { // even
+            int middle = (totalInSorted)/2;
+            medianHLE = 0.5*(sortedRatio.get(middle-1) + sortedRatio.get(middle));  // estimator for location
+        } else { // odd
+            int middle = (totalInSorted-1)/2;
+            medianHLE = 0.5*(sortedRatio.get(middle-1) + sortedRatio.get(middle+1));
+        }
+    }
+
+    @Override
+    double getStatistic(){
+        //return ljungBoxStatistic;
+        return durbinWatsonStatistic;
+        //return gurtlerHenzeStatistic;
+    }
+
+    @Override
+    void calculateComparisonStatistics() {
+        // is the ratio of the distribution Cauchy?
+        // do both a auto-correlaton test and distribution test
+        this.calculateDurbinWatson(); // auto-correlation test
+        this.calculateLjungBoxTest();
+        this.calculateGurtlerHenzeTest(5.0);
+    }
+
+    @Override
+    double calculateModel(double value){
         double diff = value - location;
         return piterm*scale2/((diff*diff)+scale2);
     }

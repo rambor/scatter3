@@ -71,7 +71,7 @@ public class BinaryComparisonPlot {
         this.makeComboPlot();
         this.makeCauchyDistributionPlot();
         this.makeResidualDistributionPlot();
-        //this.makePlot();
+
     }
 
 
@@ -187,27 +187,44 @@ public class BinaryComparisonPlot {
 
     private void createDataSets(){
 
-        differences = new ResidualDifferences(referenceDataset.getAllData(),
+        differences = new ResidualDifferences(
+                referenceDataset.getAllData(),
                 targetDataset.getAllData(),
                 targetDataset.getAllDataError(),
                 referenceDataset.getData().getMinX(),
                 referenceDataset.getData().getMaxX(),
-                12);
+                12,
+                referenceDataset.getId(),
+                targetDataset.getId(),0);
 
         differences.printTests(" DIFF");
 
+        ResidualDifferences reverseDifferences = new ResidualDifferences(
+                targetDataset.getAllData(),
+                referenceDataset.getAllData(),
+                referenceDataset.getAllDataError(),
+                referenceDataset.getData().getMinX(),
+                referenceDataset.getData().getMaxX(),
+                12,
+                targetDataset.getId(),
+                referenceDataset.getId(),0);
 
-        ratioObject = new Ratio(referenceDataset.getAllData(),
+        reverseDifferences.printTests(" REVE");
+
+        ratioObject = new Ratio(
+                referenceDataset.getAllData(),
                 targetDataset.getAllData(),
                 targetDataset.getAllDataError(),
                 referenceDataset.getData().getMinX(),
-                referenceDataset.getData().getMaxX());
+                referenceDataset.getData().getMaxX(),
+                referenceDataset.getId(),
+                targetDataset.getId(),0);
 
         ratioObject.printTests("RATIO");
 
         //double mark = averageByMAD(valuesPerBin).getMean();
-        ratioCollection.addSeries(ratioObject.getRatio());
-        differenceCollection.addSeries(differences.getResiduals());
+        ratioCollection.addSeries(ratioObject.getTestSeries());
+        differenceCollection.addSeries(differences.getTestSeries());
     }
 
 

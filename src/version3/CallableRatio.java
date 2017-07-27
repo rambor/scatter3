@@ -9,11 +9,11 @@ import java.util.concurrent.Callable;
  */
 public class CallableRatio implements Callable<Ratio> {
 
-    private int refIndex, tarIndex;
+    private int refIndex, tarIndex, order;
     private Number qmin, qmax;
     private XYSeries refXY, tarXY, tarError;
 
-    public CallableRatio(XYSeries referenceSet, XYSeries targetSet, XYSeries targetError, Number qmin, Number qmax, int refIndex, int tarIndex){
+    public CallableRatio(XYSeries referenceSet, XYSeries targetSet, XYSeries targetError, Number qmin, Number qmax, int refIndex, int tarIndex, int order){
         this.refIndex = refIndex;
         this.tarIndex = tarIndex;
         this.qmin = qmin;
@@ -22,6 +22,8 @@ public class CallableRatio implements Callable<Ratio> {
         this.refXY = new XYSeries("ref");
         this.tarXY = new XYSeries( "tar");
         this.tarError = new XYSeries("err");
+
+        this.order = order;
 
         synchronized (referenceSet){
             int total = referenceSet.getItemCount();
@@ -43,15 +45,14 @@ public class CallableRatio implements Callable<Ratio> {
                 tarError.add(targetError.getDataItem(i));
             }
         }
-
-
-
     }
+
+    public int getOrder(){return order;}
 
     @Override
     public Ratio call() throws Exception {
-        Ratio temp = new Ratio(refXY, tarXY, tarError, qmin,  qmax);
-        temp.printTests(String.format("r: %d %d", refIndex, tarIndex));
+        Ratio temp = new Ratio(refXY, tarXY, tarError, qmin,  qmax, refIndex, tarIndex, order);
+        //temp.printTests(String.format("RATIO r: %d %d", refIndex, tarIndex));
         return temp;
     }
 }

@@ -67,7 +67,7 @@ public class AutoCorrelationOfRatios extends SwingWorker {
             int indexOfratios=0;
 
             for(int j=next; j<totalSeries; j++){
-                ratios.add(new Ratio(reference, unratiodData.getSeries(j), unratiodError.getSeries(j), qminStartNumber, qmaxStartNumber));
+                ratios.add(new Ratio(reference, unratiodData.getSeries(j), unratiodError.getSeries(j), qminStartNumber, qmaxStartNumber, 1,1, 0));
                 ratios.get(indexOfratios);
                 indexOfratios++;
             }

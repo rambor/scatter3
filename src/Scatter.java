@@ -1,5 +1,4 @@
 import net.iharder.dnd.FileDrop;
-import org.jfree.chart.ChartFrame;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
@@ -888,8 +887,8 @@ public class Scatter {
                 if (total >2){
                     // select dataset with form factor
                     try {
-                        RatioSimilarityTest temp = new RatioSimilarityTest(collectionSelected, 0.01, 0.25);
-temp.makePlot();
+                        RatioSimilarityTest temp = new RatioSimilarityTest(collectionSelected, 0.01, 0.22);
+                        temp.makePlot();
                     } catch (Exception e1) {
                         e1.printStackTrace();
                     }
@@ -1417,28 +1416,29 @@ temp.makePlot();
 
                 new Thread(){
                     public void run() {
-                        // int numberOfCPUs, Collection collection, double lower, double upper, JProgressBar bar, JLabel label){
-                        //Integer.valueOf(cpuBox.getSelectedItem().toString())
+
                         scaleButton.setEnabled(false);
                         if (log10IntensityPlot.isVisible()){
                             log10IntensityPlot.setNotify(false);
                         }
-                        ScaleManager scaling = new ScaleManager(
+
+                        version3.ScaleIt.ScaleManager scalings = new version3.ScaleIt.ScaleManager(
                                 cpuCores,
                                 collectionSelected,
                                 mainProgressBar,
                                 status);
 
+                        scalings.setUpperLowerQLimits(0.017, 0.17);
 
-                        double minq = Double.parseDouble(qminLimitField.getText());
-                        double maxq = Double.parseDouble(qmaxLimitField.getText());
+                        scalings.execute();
 
-                        if (minq > maxq){
-                            minq = 0;
-                            maxq = 0;
+                        try {
+                            scalings.get();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
                         }
-
-                        scaling.scaleNow(minq,maxq);
 
                         if (log10IntensityPlot.isVisible()){
                             log10IntensityPlot.setNotify(true);
@@ -1447,9 +1447,10 @@ temp.makePlot();
                         mainProgressBar.setValue(0);
                         mainProgressBar.setStringPainted(false);
                         scaleButton.setEnabled(true);
+                        analysisModel.fireTableDataChanged();
+                        resultsModel.fireTableDataChanged();
                     }
                 }.start();
-
             }
         });
 
@@ -1677,87 +1678,97 @@ temp.makePlot();
         scaleMergeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                scaleMergeButton.setEnabled(false);
 
-                // scale the data, then merge
-                if (log10IntensityPlot.isVisible()){
-                    log10IntensityPlot.setNotify(false);
-                }
-                ScaleManager scaling = new ScaleManager(
-                        cpuCores,
-                        collectionSelected,
-                        mainProgressBar,
-                        status);
+                Thread tempThread  = new Thread(){
+                    public void run() {
+                        scaleMergeButton.setEnabled(false);
+                        if (log10IntensityPlot.isVisible()){
+                            log10IntensityPlot.setNotify(false);
+                        }
 
-                double minq = Double.parseDouble(qminLimitField.getText());
-                double maxq = Double.parseDouble(qmaxLimitField.getText());
+                        version3.ScaleIt.ScaleManager scalings = new version3.ScaleIt.ScaleManager(
+                                cpuCores,
+                                collectionSelected,
+                                mainProgressBar,
+                                status);
 
-                if (minq > maxq){
-                    minq = 0;
-                    maxq = 0;
-                }
+                        scalings.setUpperLowerQLimits(0.017, 0.17);
 
-                scaling.scaleNow(minq,maxq);
+                        scalings.execute();
 
-                if (log10IntensityPlot.isVisible()){
-                    log10IntensityPlot.setNotify(true);
-                }
+                        try {
+                            scalings.get();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
 
-                // merge by averaging?
-                Averager tempAverage = new Averager(collectionSelected);
+                        if (log10IntensityPlot.isVisible()){
+                            log10IntensityPlot.setNotify(true);
+                        }
 
-                JFileChooser fc = new JFileChooser(WORKING_DIRECTORY.getWorkingDirectory());
-                int option = fc.showSaveDialog(panel1);
-                //set directory to default directory from Settings tab
-                Dataset tempDataset = new Dataset(tempAverage.getAveraged(), tempAverage.getAveragedError(), "averaged", collectionSelected.getDatasetCount(), false);
+                        mainProgressBar.setValue(0);
+                        mainProgressBar.setStringPainted(false);
 
-                // update notes info
+                        Averager tempAverage = new Averager(collectionSelected);
 
-                tempDataset.setAverageInfo(collectionSelected);
+                        JFileChooser fc = new JFileChooser(WORKING_DIRECTORY.getWorkingDirectory());
+                        int option = fc.showSaveDialog(panel1);
+                        //set directory to default directory from Settings tab
+                        Dataset tempDataset = new Dataset(tempAverage.getAveraged(), tempAverage.getAveragedError(), "averaged", collectionSelected.getDatasetCount(), false);
 
-                int mergedIndex = log10IntensityPlot.addToMerged(tempAverage.getAveraged());
+                        // update notes info
 
-                if(option == JFileChooser.CANCEL_OPTION) {
-                    log10IntensityPlot.removeFromMerged(mergedIndex);
-                    return;
-                }
+                        tempDataset.setAverageInfo(collectionSelected);
 
-                if(option == JFileChooser.APPROVE_OPTION){
-                    // remove dataset and write to file
-                    log10IntensityPlot.removeFromMerged(mergedIndex);
-                    // make merged data show on top of other datasets
-                    File theFileToSave = fc.getSelectedFile();
+                        int mergedIndex = log10IntensityPlot.addToMerged(tempAverage.getAveraged());
 
-                    String cleaned = cleanUpFileName(fc.getSelectedFile().getName());
+                        if(option == JFileChooser.CANCEL_OPTION) {
+                            log10IntensityPlot.removeFromMerged(mergedIndex);
+                            return;
+                        }
 
-                    if(fc.getSelectedFile()!=null){
+                        if(option == JFileChooser.APPROVE_OPTION){
+                            // remove dataset and write to file
+                            log10IntensityPlot.removeFromMerged(mergedIndex);
+                            // make merged data show on top of other datasets
 
-                        WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
+                            String cleaned = cleanUpFileName(fc.getSelectedFile().getName());
 
-                        FileObject dataToWrite = new FileObject(fc.getCurrentDirectory(), version);
-                        dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
-                        dataToWrite.writeSAXSFile(cleaned, tempDataset);
+                            if(fc.getSelectedFile()!=null){
 
-                        //close the output stream
-                        status.setText(cleaned + ".dat written to "+fc.getCurrentDirectory());
+                                WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
 
-                        collectionSelected.addDataset(tempDataset);
-                        collectionSelected.getLast().setColor(Color.red);
-                        collectionSelected.getLast().setFileName(cleaned);
-                        log10IntensityPlot.addToBase(collectionSelected.getLast());
+                                FileObject dataToWrite = new FileObject(fc.getCurrentDirectory(), version);
+                                dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
+                                dataToWrite.writeSAXSFile(cleaned, tempDataset);
 
-                        analysisModel.addDataset(collectionSelected.getLast());
-                        resultsModel.addDataset(collectionSelected.getLast());
+                                //close the output stream
+                                status.setText(cleaned + ".dat written to "+fc.getCurrentDirectory());
 
-                        int location = dataFilesModel.getSize();
-                        dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
-                        analysisModel.fireTableDataChanged();
-                        resultsModel.fireTableDataChanged();
+                                collectionSelected.addDataset(tempDataset);
+                                collectionSelected.getLast().setColor(Color.red);
+                                collectionSelected.getLast().setFileName(cleaned);
+                                log10IntensityPlot.addToBase(collectionSelected.getLast());
 
-                        //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
+                                analysisModel.addDataset(collectionSelected.getLast());
+                                resultsModel.addDataset(collectionSelected.getLast());
+
+                                int location = dataFilesModel.getSize();
+                                dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
+                                analysisModel.fireTableDataChanged();
+                                resultsModel.fireTableDataChanged();
+
+                                //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                        scaleMergeButton.setEnabled(true);
                     }
-                }
-                scaleMergeButton.setEnabled(true);
+                };
+
+                tempThread.start();
+
             }
         });
 

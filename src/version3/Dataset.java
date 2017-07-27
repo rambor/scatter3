@@ -556,7 +556,7 @@ public class Dataset {
     }
 
     /**
-     * Returns starting point of the series
+     * Returns starting point of the series with respect to Positive Only Data
      * @return Start point
      */
     public int getStart(){
@@ -564,7 +564,7 @@ public class Dataset {
     }
 
     /**
-     * Returns end point of the series
+     * Returns end point of the series with respect to Positive Only Data
      * @return end point
      */
     public int getEnd(){

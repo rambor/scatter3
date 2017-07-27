@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Created by robertrambo on 18/01/2016.
@@ -374,10 +375,27 @@ private int refId, scaleToID;
         if (scaleBeforeMerging) {
             status.setText("scaling sets");
             //scaleSets(subtractedCollection, scaleToID);
-            ScaleManager scaler = new ScaleManager(cpus, subtractedCollection, bar, status);
-            scaler.setReference(scaleToID);
-            // launch scaler
-            scaler.scaleNow(sqmin, sqmax);
+//            ScaleManager scaler = new ScaleManager(cpus, subtractedCollection, bar, status);
+//            scaler.setReference(scaleToID);
+//            // launch scaler
+//            scaler.scaleNow(sqmin, sqmax);
+
+            version3.ScaleIt.ScaleManager scalings = new version3.ScaleIt.ScaleManager(
+                    cpus,
+                    subtractedCollection,
+                    bar,
+                    status);
+
+            scalings.setUpperLowerQLimits(sqmin, sqmax);
+            scalings.execute();
+
+            try {
+                scalings.get();
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            } catch (ExecutionException e1) {
+                e1.printStackTrace();
+            }
         }
 
         status.setText("Merging sets");
@@ -414,10 +432,27 @@ private int refId, scaleToID;
         if (scaleBeforeMerging) {
             status.setText("scaling sets");
             //scaleSets(subtractedCollection, scaleToID);
-            ScaleManager scaler = new ScaleManager(cpus, subtractedCollection, bar, status);
-            scaler.setReference(scaleToID);
-            // launch scaler
-            scaler.scaleNow(sqmin, sqmax);
+//            ScaleManager scaler = new ScaleManager(cpus, subtractedCollection, bar, status);
+//            scaler.setReference(scaleToID);
+//            // launch scaler
+//            scaler.scaleNow(sqmin, sqmax);
+
+            version3.ScaleIt.ScaleManager scalings = new version3.ScaleIt.ScaleManager(
+                    cpus,
+                    subtractedCollection,
+                    bar,
+                    status);
+
+            scalings.setUpperLowerQLimits(sqmin, sqmax);
+            scalings.execute();
+
+            try {
+                scalings.get();
+            } catch (InterruptedException e1) {
+                e1.printStackTrace();
+            } catch (ExecutionException e1) {
+                e1.printStackTrace();
+            }
         }
 
         status.setText("Merging sets");

@@ -79,7 +79,7 @@ public class RatioPlot {
                 targetDataset.getAllDataError(),
                 referenceDataset.getData().getMinX(),
                 referenceDataset.getData().getMaxX(),
-                12);
+                12, referenceDataset.getId(), targetDataset.getId(), 0);
 
         differences.printTests(" DIFF");
 
@@ -87,13 +87,13 @@ public class RatioPlot {
                 targetDataset.getAllData(),
                 targetDataset.getAllDataError(),
                 referenceDataset.getData().getMinX(),
-                referenceDataset.getData().getMaxX());
+                referenceDataset.getData().getMaxX(), referenceDataset.getId(), targetDataset.getId(),0);
 
         ratioObject.printTests("RATIO");
 
         //double mark = averageByMAD(valuesPerBin).getMean();
-        ratioCollection.addSeries(ratioObject.getRatio());
-        differenceCollection.addSeries(differences.getResiduals());
+        ratioCollection.addSeries(ratioObject.getTestSeries());
+        differenceCollection.addSeries(differences.getTestSeries());
     }
 
 
