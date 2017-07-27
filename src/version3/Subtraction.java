@@ -23,10 +23,10 @@ public class Subtraction extends SwingWorker<String, Object> {
     private final XYSeries averageBuffer;
     private final XYSeries averageBufferError;
 
-private int refId, scaleToID;
+private int refId;//, scaleToID;
     private Collection samples;
     private Collection buffers;
-    private boolean subtractFromMedianBuffer = false;
+    //private boolean subtractFromMedianBuffer = false;
     private boolean mergebyAverage = false;
     private boolean mergebyMedian = false;
     private boolean scaleBeforeMerging = false;
@@ -122,9 +122,9 @@ private int refId, scaleToID;
                 subtractedCollection.getLast().setMinq(subtraction.get(0).getMinX());
                 subtractedCollection.getLast().setMaxq(subtraction.get(0).getMaxX());
 
-                if (i == refId){
-                    scaleToID = subtractedCollection.getDatasetCount() - 1; //sets refID relative to the new subtracted collection dataset that will get scaled
-                }
+//                if (i == refId){
+//                    scaleToID = subtractedCollection.getDatasetCount() - 1; //sets refID relative to the new subtracted collection dataset that will get scaled
+//                }
             }
             bar.setValue((int) (i / (double) total * 100));
         }
@@ -162,9 +162,9 @@ private int refId, scaleToID;
                         subtractedCollection.getLast().setMinq(subtraction.get(0).getMinX());
                         subtractedCollection.getLast().setMaxq(subtraction.get(0).getMaxX());
 
-                        if (i == refId){
-                            scaleToID = subtractedCollection.getDatasetCount()-1; //sets refID relative to the new subtracted collection dataset that will get scaled
-                        }
+//                        if (i == refId){
+//                            scaleToID = subtractedCollection.getDatasetCount()-1; //sets refID relative to the new subtracted collection dataset that will get scaled
+//                        }
                     }
                     bar.setValue((int) (i / (double) total * 100));
                 }
@@ -205,9 +205,9 @@ private int refId, scaleToID;
                         subtractedCollection.getLast().setMinq(subtraction.get(0).getMinX());
                         subtractedCollection.getLast().setMaxq(subtraction.get(0).getMaxX());
 
-                        if (i == refId){
-                            scaleToID = subtractedCollection.getDatasetCount()-1; //sets refID relative to the new subtracted collection dataset that will get scaled
-                        }
+//                        if (i == refId){
+//                            scaleToID = subtractedCollection.getDatasetCount()-1; //sets refID relative to the new subtracted collection dataset that will get scaled
+//                        }
                     }
                     bar.setValue((int) (i / (double) total * 100));
                 }
@@ -374,11 +374,6 @@ private int refId, scaleToID;
 
         if (scaleBeforeMerging) {
             status.setText("scaling sets");
-            //scaleSets(subtractedCollection, scaleToID);
-//            ScaleManager scaler = new ScaleManager(cpus, subtractedCollection, bar, status);
-//            scaler.setReference(scaleToID);
-//            // launch scaler
-//            scaler.scaleNow(sqmin, sqmax);
 
             version3.ScaleIt.ScaleManager scalings = new version3.ScaleIt.ScaleManager(
                     cpus,
@@ -399,8 +394,6 @@ private int refId, scaleToID;
         }
 
         status.setText("Merging sets");
-
-        ArrayList<XYSeries> finalSets;
         String output_name;
 
         // createMedian
@@ -431,11 +424,6 @@ private int refId, scaleToID;
 
         if (scaleBeforeMerging) {
             status.setText("scaling sets");
-            //scaleSets(subtractedCollection, scaleToID);
-//            ScaleManager scaler = new ScaleManager(cpus, subtractedCollection, bar, status);
-//            scaler.setReference(scaleToID);
-//            // launch scaler
-//            scaler.scaleNow(sqmin, sqmax);
 
             version3.ScaleIt.ScaleManager scalings = new version3.ScaleIt.ScaleManager(
                     cpus,
