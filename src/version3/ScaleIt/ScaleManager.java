@@ -52,7 +52,11 @@ public class ScaleManager extends SwingWorker<Void, Void> {
         int totalDatasetsInCollection = collectionInUse.getDatasetCount();
         int refIndex = 0;
         double maxInt = 0.0d;
-        int totalToCalculate =0;
+        int totalToCalculate=0;
+        progressBar.setStringPainted(true);
+        progressBar.setValue(0);
+        progressBar.setMaximum(totalDatasetsInCollection);
+        label.setText("Determining reference frame");
         for(int i=0; i<totalDatasetsInCollection; i++){
             Dataset tempDatset = collectionInUse.getDataset(i);
             XYDataItem xyItem;
@@ -69,14 +73,15 @@ public class ScaleManager extends SwingWorker<Void, Void> {
                     }
                 }
             }
+            progressBar.setValue(i);
         }
 
-        progressBar.setStringPainted(true);
         progressBar.setValue(0);
-        progressBar.setMaximum(totalToCalculate);
+        progressBar.setMaximum(totalDatasetsInCollection);
 
         Dataset referenceDataset = collectionInUse.getDataset(refIndex);
-        label.setText("Scaling " + totalToCalculate + " datasets to row : " + (refIndex + 1) );
+
+
         referenceDataset.setScaleFactor(1.0);
         referenceDataset.scalePlottedLog10IntensityData();
 
@@ -89,6 +94,8 @@ public class ScaleManager extends SwingWorker<Void, Void> {
         ScheduledExecutorService scalerExecutor = Executors.newScheduledThreadPool(cpus);
 
         List<Future<Scaler>> scalerFutures = new ArrayList<>();
+        label.setText("Building Threads ");
+
         for(int i=0; i<totalDatasetsInCollection; i++){
             if (collectionInUse.getDataset(i).getInUse() && i != refIndex){
 
@@ -104,8 +111,11 @@ public class ScaleManager extends SwingWorker<Void, Void> {
 
                 scalerFutures.add(future);
             }
+            progressBar.setValue(i);
         }
 
+        progressBar.setValue(0);
+        progressBar.setMaximum(totalToCalculate);
 
         int completed = 0;
         for(Future<Scaler> fut : scalerFutures){
@@ -115,6 +125,7 @@ public class ScaleManager extends SwingWorker<Void, Void> {
                 //update progress bar
                 completed++;
                 progressBar.setValue(completed);
+                label.setText("Scaled " + completed);
                 //publish(completed);
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
@@ -122,7 +133,7 @@ public class ScaleManager extends SwingWorker<Void, Void> {
         }
 
         scalerExecutor.shutdown();
-
+        label.setText("Scaled to " + (refIndex + 1) );
         return null;
     }
 

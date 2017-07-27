@@ -795,8 +795,6 @@ public class Scatter {
         }));
 
 
-
-
         popupMenu.add(new JMenuItem(new AbstractAction("Clear All Plots") {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -832,8 +830,10 @@ public class Scatter {
                 //update list on Files tab
                 dataFilesModel.clear();
                 dataFilesList.removeAll();
-                // update dataFilesList in dataFilesPanel;
-                // rebuild dataFilesPanel from collection.get(i)
+                /*
+                update dataFilesList in dataFilesPanel;
+                rebuild dataFilesPanel from collection.get(i)
+                */
                 for(int j=0; j<collectionSelected.getDatasets().size(); j++){
                     String name = collectionSelected.getDataset(j).getFileName();
                     dataFilesModel.addElement(new DataFileElement(name, j));
@@ -2144,17 +2144,14 @@ signalPlotThread.execute();
 
                 for (int i = 0; i < total; i++) {
                     if (sampleCollections.getDataset(i).getInUse()) {
-                        //int newIndex = subtractedCollection.getDatasetCount();
                         tempCollectionForSubtraction.addDataset( new Dataset(sampleCollections.getDataset(i)));
                     }
                 }
 
                 new Thread() {
                     public void run() {
-                        //Collection buffers, Collection samples, double tqmin, double tqmax, boolean mergeByAverage,  boolean scaleBefore, boolean svd, int cpus, JLabel status, final JProgressBar bar){
+
                         Subtraction subTemp = new Subtraction(bufferCollections, tempCollectionForSubtraction, finalQmin, finalQmax, mergeByAverage, finalSingles, scaleBefore, svd, cpuCores, status, mainProgressBar, version);
-                        // add other attributes and then run
-                        // Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString())/100.00;
                         subTemp.setBinsAndCutoff(Double.parseDouble(comboBoxSubtractBins.getSelectedItem().toString()), Double.parseDouble(subtractionCutOff.getSelectedItem().toString()));
                         subTemp.setNameAndDirectory(subtractionFileNameField.getText(), OUTPUT_DIR_SUBTRACTION_NAME);
                         subTemp.setCollectionToUpdate(collectionSelected);
