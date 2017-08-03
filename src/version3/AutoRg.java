@@ -275,13 +275,13 @@ public class AutoRg {
                 xvalue = dat.getXValue(); // q^2
                 //x^2
                 if (arrayIndex < arrayLimit) {
-                    //x_data[i] = Math.pow(xvalue, 2);
+                    // x_data[i] = Math.pow(xvalue, 2);
                     x_range[arrayIndex] = xvalue;  // q^2
-                    //ln(y)
+                    // ln(y)
                     y_range[arrayIndex] = dat.getYValue();  // ln(I(q))
-                    //ln(y)*error*y
-                    //w_range[arrayIndex] = yvalue * errors.getY(i).doubleValue() * Math.exp(yvalue);
-                    //original data
+                    // ln(y)*error*y
+                    // w_range[arrayIndex] = yvalue * errors.getY(i).doubleValue() * Math.exp(yvalue);
+                    // original data
                     sumX+=dat.getXValue();
                     sumY+=dat.getYValue();
                     sumXX+=dat.getXValue()*dat.getXValue();
@@ -314,7 +314,6 @@ public class AutoRg {
                 correlation_coefficient = 0;
             }
         }
-
     }
 
     /**

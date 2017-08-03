@@ -3,8 +3,10 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
 import version3.Collection;
+import version3.PowerLawFit.PowerLaw;
 import version3.formfactors.FormFactorEngine;
 import version3.formfactors.ModelType;
+import version3.powerlawfits.PowerLawFitGui;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -795,23 +797,6 @@ public class Scatter {
         }));
 
 
-        popupMenu.add(new JMenuItem(new AbstractAction("Clear All Plots") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-                System.out.println("DeSelecting All");
-                int total = collectionSelected.getDatasets().size();
-                for(int i=0; i<total; i++){
-                    collectionSelected.getDataset(i).setInUse(false);
-                }
-                analysisModel.fireTableDataChanged();
-            }
-        }));
-
-
-
-
-
         popupMenu.add(new JMenuItem(new AbstractAction("Remove") {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -931,6 +916,38 @@ public class Scatter {
             }
         }));
 
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("PowerLaw Fit") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                int index = analysisTable.getSelectedRow();
+
+                if (index > -1){
+                    PowerLaw temp = new PowerLaw(collectionSelected.getDataset(index));
+                    temp.setWorkingDirectory(WORKING_DIRECTORY);
+                    temp.makeVisible();
+                } else {
+                    status.setText("Please highlight a row with  mouse click");
+                }
+            }
+        }));
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("PowerLaw Fit to Selected Datasets") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                if (collectionSelected.getTotalSelected() < 2){
+                    status.setText("Please select more than 1 dataset for fitting");
+                } else {
+                    PowerLawFitGui tempGUI = new PowerLawFitGui(collectionSelected, WORKING_DIRECTORY, cpuCores);
+                    tempGUI.pack();
+                    tempGUI.setVisible(true);
+                }
+            }
+        }));
 
 
         // add mouse functions, remove, select all, select none
@@ -4209,7 +4226,7 @@ signalPlotThread.execute();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
-        //System.exit(0);
+
     }
 
 
@@ -4569,7 +4586,7 @@ signalPlotThread.execute();
         public KratkyPlot kratky;
         public QIQPlot qIqPlot;
         public ErrorPlot errorPlot;
-        public PowerLawPlot powerLawPlot;
+        public PowerLawFit powerLawPlot;
 */
         if (KratkyPlot.frame.isVisible()){
 
@@ -5275,7 +5292,7 @@ signalPlotThread.execute();
                 System.out.println(rowID + " => InvIzero " + invIzero);
                 prModel.getDataset(rowID).setScale((float) invIzero);
 
-           //     prModel.fireTableDataChanged();
+
             } else if (this.colID == 13){ // dmax search
 
                 this.button.setBackground(Color.WHITE);

@@ -1112,6 +1112,7 @@ int cols, rows;
         double sumXsq = 0.0;
         double sumYsq = 0.0;
         double n = x_data.length;
+        double invN = 1.0/n;
         for (int i=0; i < n; i++) {
             sumXsq = sumXsq + (x_data[i] * x_data[i]);
             sumXxY = sumXxY + (x_data[i] * y_data[i]);
@@ -1121,10 +1122,10 @@ int cols, rows;
         }
         double sumX2 = Math.pow(sumX, 2);
         double m = ((n*sumXxY)-(sumX*sumY))/((n*sumXsq)- sumX2);
-        double b = ((sumY/n)-((m*sumX)/n));
+        double b = ((sumY*invN)-((m*sumX)*invN));
         double s_e_2 = 1/(n*(n-2))*(n*sumYsq - Math.pow(sumY,2) - Math.pow(m,2)*(n*sumXsq - sumX2));
         double s_m_2 = n*s_e_2/(n*sumXsq- sumX2);
-        double s_b_2 =  s_m_2/n*sumXsq;
+        double s_b_2 =  s_m_2*invN*sumXsq;
 
         parameters[0]=m;
         parameters[1]=b;

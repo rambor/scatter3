@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class LowerUpperBoundManager {
 
     private Collection collection;
-    private int numberOfCPUs = 1;
+    private int numberOfCPUs;
     private JProgressBar bar;
     private JLabel status;
 

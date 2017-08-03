@@ -41,8 +41,6 @@ public class PowerLawPlot {
     private static Shape elipse6 = new Ellipse2D.Double(-3, -3, 6, 6);
 
     CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
-    private static double upper;
-    private static double lower;
     private static Point locationOfWindow;
 
     private static PowerLawPlot singleton = new PowerLawPlot( );
@@ -120,10 +118,8 @@ public class PowerLawPlot {
         chart.getTitle().setMargin(10, 10, 4, 0);
         chart.setBorderVisible(false);
 
-        upper = collection.getMaxI();
-        lower = collection.getMinI(); // will always be with regards to entire dataset, not just visible
-
-        double tempMin, tempMax;
+//        upper = collection.getMaxI();
+//        lower = collection.getMinI(); // will always be with regards to entire dataset, not just visible
 
         ChartPanel chartPanel = new ChartPanel(chart){
             @Override
@@ -193,7 +189,7 @@ public class PowerLawPlot {
 
         //rangeAxis.setRange(lower-lower*0.03, upper+0.1*upper);
         rangeAxis.setLowerBound(plottedDatasets.getRangeLowerBound(true));
-        rangeAxis.setUpperBound(plottedDatasets.getRangeUpperBound(true)*1.1);
+        rangeAxis.setUpperBound(plottedDatasets.getRangeUpperBound(true) + 0.5);
         domainAxis.setUpperBound(plottedDatasets.getDomainUpperBound(true));
         domainAxis.setLowerBound(plottedDatasets.getDomainLowerBound(true));
 
@@ -214,8 +210,11 @@ public class PowerLawPlot {
         renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
         renderer1.setBaseShapesVisible(true);
 
-        plot.setDataset(plottedDatasets);
+        //plot.setDataset(plottedDatasets);
         plot.setRenderer(renderer1);
+
+        // need the color from the Collection
+
 
         //set dot size for all series
         double offset;
