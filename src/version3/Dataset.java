@@ -960,14 +960,17 @@ public class Dataset {
     public void scalePlottedKratkyData(){
         plottedKratkyData.clear();
         XYDataItem temp;
-        int startHere = startAt - 1;
+
+        int endHere = qIqData.indexOf(plottedData.getX(plottedData.getItemCount()-1));
+        int startHere = qIqData.indexOf(plottedData.getX(0));
+
 
         if (scaleFactor == 1){
-            for (int i = startHere; i<endAt; i++){
+            for (int i = startHere; i<endHere; i++){
                 plottedKratkyData.add(kratkyData.getDataItem(i));
             }
         } else {
-            for (int i = startHere; i<endAt; i++){
+            for (int i = startHere; i<endHere; i++){
                 temp = kratkyData.getDataItem(i);
                 plottedKratkyData.add(temp.getX(), temp.getYValue()*scaleFactor);
             }
@@ -984,20 +987,22 @@ public class Dataset {
 
 
     /**
-     * scales Kratky data if visible
+     * scales data if visible
      */
     public void scalePlottedQIQData(){
         plottedqIqData.clear();
         XYDataItem temp;
-        int startHere = startAt - 1;
+
+        int endHere = qIqData.indexOf(plottedData.getX(plottedData.getItemCount()-1));
+        int startHere = qIqData.indexOf(plottedData.getX(0));
 
         if (scaleFactor != 1){
-            for (int i = startHere; i<endAt; i++){
+            for (int i = startHere; i<endHere; i++){
                 temp = qIqData.getDataItem(i);
                 plottedqIqData.add(temp.getX(), temp.getYValue()*scaleFactor);
             }
         } else {
-            for (int i = startHere; i<endAt; i++){
+            for (int i = startHere; i<endHere; i++){
                 plottedqIqData.add(qIqData.getDataItem(i));
             }
         }
@@ -1018,15 +1023,16 @@ public class Dataset {
         this.clearPlottedPowerLaw();
         XYDataItem temp;
 
-        int startHere = startAt - 1;
+        int endHere = powerLawData.indexOf(Math.log10(plottedData.getX(plottedData.getItemCount()-1).doubleValue()));
+        int startHere = powerLawData.indexOf(Math.log10(plottedData.getX(0).doubleValue()));
 
         if (scaleFactor != 1){
-            for (int i = startHere; i < endAt; i++){
+            for (int i = startHere; i < endHere; i++){
                 temp = powerLawData.getDataItem(i);
                 plottedPowerLaw.add(temp.getX(), temp.getYValue() + log10ScaleFactor);
             }
         } else {
-            for (int i = startHere; i < endAt; i++){
+            for (int i = startHere; i < endHere; i++){
                 plottedPowerLaw.add(powerLawData.getDataItem(i));
             }
         }
@@ -1100,45 +1106,50 @@ public class Dataset {
     }
 
 
-public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
-
-    if (newStart < startAt){ // addValues
-        int startHere = this.startAt - 1; // current location in originalLog10Data
-        int limit = startAt-newStart;
-
-        plottedData.setNotify(false);
-        for(int i=0; i<limit && startHere > -1; i++){
-            startHere--;
-            XYDataItem temp = originalLog10Data.getDataItem(startHere);
-            plottedData.addOrUpdate(temp.getX(), temp.getYValue() + log10ScaleFactor);
-        }
-        plottedData.setNotify(true);
-
-    } else if (newStart > startAt){ //remove values
-
-        int limit = newStart - this.startAt;
-
-        for(int i=0; i<limit; i++){
-            plottedData.remove(0);
-        }
+    public void setPlottedDataNotify(boolean value){
+        plottedData.setNotify(value);
     }
-    this.startAt = newStart;
+
+public void lowBoundPlottedLog10IntensityData(int newStart){
+
+            plottedData.setNotify(false);
+
+            if (newStart < startAt){ // addValues
+                int startHere = this.startAt - 1; // current location in originalLog10Data
+                int limit = startAt-newStart;
+
+
+                for(int i=0; i<limit && startHere > -1; i++){
+                    startHere--;
+                    XYDataItem temp = originalLog10Data.getDataItem(startHere);
+                    plottedData.addOrUpdate(temp.getX(), temp.getYValue() + log10ScaleFactor);
+                }
+
+            } else if (newStart > startAt){ //remove values
+
+                int limit = newStart - this.startAt;
+                    for(int i=0; i < limit; i++){
+                        plottedData.remove(0);
+                    }
+                    //plottedData.delete(0, (limit-1));
+            }
+//            plottedData.setNotify(true);
+            this.startAt = newStart;
 }
 
-    public synchronized void upperBoundPlottedLog10IntensityData(int newEnd){
+    public void upperBoundPlottedLog10IntensityData(int newEnd){
 
+        plottedData.setNotify(false);
         if (newEnd > endAt){ // addValues
             int startHere = this.endAt; // upper bound in originalLog10 exclusive
             int limit = newEnd - this.endAt;
             int upper = originalLog10Data.getItemCount();
 
-            plottedData.setNotify(false);
             for(int i=0; i<limit && startHere < upper; i++){
                 XYDataItem temp = originalLog10Data.getDataItem(startHere);
                 plottedData.addOrUpdate(temp.getX(), temp.getYValue() + log10ScaleFactor);
                 startHere++;
             }
-            plottedData.setNotify(true);
 
         } else if (newEnd < endAt){ //remove values
 
@@ -1150,7 +1161,6 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
                 lastValue--;
                 plottedData.remove(lastValue);
             }
-            plottedData.setNotify(true);
         }
         this.endAt = newEnd;
     }
@@ -1383,7 +1393,6 @@ public synchronized void lowBoundPlottedLog10IntensityData(int newStart){
     public String getBufferComposition(){
         return this.bufferComposition;
     }
-
 
     public RealSpace getRealSpaceModel(){
         return realSpace;

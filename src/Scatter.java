@@ -661,6 +661,10 @@ public class Scatter {
 
                     if (inputValue != null && isQValue(inputValue)){
 
+//                        TableColumnModel tcm = analysisTable.getColumnModel();
+//                        TableColumn tc = tcm.getColumn(4);
+//                        tc.setCellEditor(new SpinnerEditor());
+
 
                                     if (log10IntensityPlot.isVisible()){
                                         log10IntensityPlot.setNotify(false);
@@ -673,12 +677,15 @@ public class Scatter {
                                             status);
 
                                     boundLower.boundNow(analysisModel, 4, Double.parseDouble(inputValue));
+
+
                                     if (log10IntensityPlot.isVisible()){
                                         //update plot
                                         //log10IntensityPlot.updatePlot();
                                         log10IntensityPlot.setNotify(true);
                                     }
                                     //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+                                    analysisModel.fireTableDataChanged();
                     }
 
                 } else if (index == 5) {
