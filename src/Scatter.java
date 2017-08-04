@@ -664,8 +664,6 @@ public class Scatter {
 //                        TableColumnModel tcm = analysisTable.getColumnModel();
 //                        TableColumn tc = tcm.getColumn(4);
 //                        tc.setCellEditor(new SpinnerEditor());
-
-
                                     if (log10IntensityPlot.isVisible()){
                                         log10IntensityPlot.setNotify(false);
                                     }
@@ -685,7 +683,7 @@ public class Scatter {
                                         log10IntensityPlot.setNotify(true);
                                     }
                                     //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
-                                    analysisModel.fireTableDataChanged();
+                                   // analysisModel.fireTableDataChanged();
                     }
 
                 } else if (index == 5) {
@@ -695,7 +693,6 @@ public class Scatter {
 
                                 if (log10IntensityPlot.isVisible()){
                                     log10IntensityPlot.setNotify(false);
-                                    //log10IntensityPlot.closeWindow();
                                 }
                                 final LowerUpperBoundManager boundLower = new LowerUpperBoundManager(
                                         cpuCores,
@@ -708,12 +705,11 @@ public class Scatter {
                                     log10IntensityPlot.setNotify(true);
                                 }
                                 //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
-
-
+                               // analysisModel.fireTableDataChanged();
                     }
 
                 }
-                // analysisModel.fireTableDataChanged();
+                 analysisModel.fireTableDataChanged();
                 // check if key is depresed
             }
         });

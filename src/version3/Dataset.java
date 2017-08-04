@@ -1156,7 +1156,6 @@ public void lowBoundPlottedLog10IntensityData(int newStart){
             int limit = this.endAt - newEnd;
             int lastValue = plottedData.getItemCount();
 
-            plottedData.setNotify(false);
             for(int i=0; i<limit; i++){ // remove the last point
                 lastValue--;
                 plottedData.remove(lastValue);
