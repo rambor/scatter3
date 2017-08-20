@@ -3,6 +3,7 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
 import version3.Collection;
+import version3.InverseTransform.RefinePrManager;
 import version3.PowerLawFit.PowerLaw;
 import version3.formfactors.FormFactorEngine;
 import version3.formfactors.ModelType;
@@ -317,6 +318,8 @@ public class Scatter {
     private JPanel sphereResultsPanel;
     private JCheckBox volumeScalingBox;
     private JCheckBox buildListFromFileCheckBox;
+    private JCheckBox useDirectFourierTransformCheckBox;
+    private JLabel methodInUseLabel;
     //private JCheckBox volumeScalingCheckBox;
     private JButton diffButton;
     private JPanel plotPanel3Body;
@@ -409,7 +412,7 @@ public class Scatter {
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
         simBinsComboBox.setSelectedIndex(0);
-        lambdaBox.setSelectedIndex(6);
+        lambdaBox.setSelectedIndex(3);
         cBox.setSelectedIndex(1);
         lambdaCEcomboBox.setSelectedIndex(3);
         ceComboBoxRounds.setSelectedIndex(1);
@@ -472,9 +475,7 @@ public class Scatter {
             }
         });
 
-
         //similarityList.setCellRenderer(new SelectedListCellRenderer());
-
         covFilesScrollPanel.setViewportView(similarityList);
         //fitFilesList.setModel(fitFilesModel);
         //chiValuesList.setModel(chiFilesModel);
@@ -482,7 +483,6 @@ public class Scatter {
 
         buffersList.setCellRenderer(new SampleBufferListRenderer());
         buffersList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-
 
         samplesList.setCellRenderer(new SampleBufferListRenderer());
         samplesList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -996,7 +996,6 @@ public class Scatter {
             }
         }));
 
-
         analysisTable.setComponentPopupMenu(popupMenu);
 
         JTableHeader header = analysisTable.getTableHeader();
@@ -1046,7 +1045,7 @@ public class Scatter {
         dmaxStart = new DoubleValue(97);
 
         //Pr Table JLabel status, WorkingDirectory cwd, Double lambda
-        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox, checkBoxDirect, excludeBackgroundInFitCheckBox));
+        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox));
 
         prModel = (PrModel) prTable.getModel();
 
@@ -1054,11 +1053,11 @@ public class Scatter {
         TableColumnModel pcm = prTable.getColumnModel();
 
         TableColumn pc = pcm.getColumn(4);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, checkBoxDirect, excludeBackgroundInFitCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox));
         pc = pcm.getColumn(5);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, checkBoxDirect, excludeBackgroundInFitCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox));
         pc = pcm.getColumn(9);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, checkBoxDirect, excludeBackgroundInFitCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox));
 
         pc = pcm.getColumn(2);
         pc.setCellEditor(new CheckBoxCellEditorRenderer());
@@ -1071,8 +1070,6 @@ public class Scatter {
 
         JTableHeader pheader = prTable.getTableHeader();
         pheader.setDefaultRenderer(new HeaderRenderer(prTable));
-
-        //final JScrollPane prList = new JScrollPane(prTable);
 
         pc = prTable.getColumnModel().getColumn(0);
         pc.setCellEditor(new ColorEditor());
@@ -1107,7 +1104,6 @@ public class Scatter {
         prTable.getColumnModel().getColumn(7).setCellRenderer(centerRenderer);
         prTable.getColumnModel().getColumn(8).setCellRenderer(centerRenderer); // r_ave
         prTable.getColumnModel().getColumn(9).setCellRenderer(centerRenderer); // dmax
-
 
         prScrollPane.add(prTable);
         prScrollPane.setViewportView(prTable);
@@ -1156,7 +1152,6 @@ public class Scatter {
             }
         });
 
-
         // toggles selected Files in
         buffersList.addMouseListener(new MouseAdapter() {
             @Override
@@ -1170,7 +1165,6 @@ public class Scatter {
                     DataFileElement item = (DataFileElement) list.getModel().getElementAt(index);
                     // Repaint cell
                     item.setSelected(! item.isSelected());
-
                     //Collection inUse = (Collection) collections.get(69); //set dataset in the collection
                     //inUse.getDataset(index).setInUse(item.isSelected());
                     list.repaint(list.getCellBounds(index,index));
@@ -1286,6 +1280,7 @@ public class Scatter {
 
         });
 
+
         intensityPlotButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1304,6 +1299,7 @@ public class Scatter {
                 createKratkyPlot();
             }
         });
+
 
         qIqPlotButton.addActionListener(new ActionListener() {
             @Override
@@ -3113,18 +3109,26 @@ signalPlotThread.execute();
 
                 //l1NormCheckBox.setSelected(true);
                 if (checkBoxDirect.isSelected()){
-                    l1NormCheckBox.setSelected(true);
-                    excludeBackgroundInFitCheckBox.setSelected(false);
-                } else {
+                    useDirectFourierTransformCheckBox.setSelected(true);
                     l1NormCheckBox.setSelected(false);
-                    excludeBackgroundInFitCheckBox.setSelected(true);
-                }
+                    if (excludeBackgroundInFitCheckBox.isSelected()){
+                        methodInUseLabel.setText("Direct Inverse FT Method with constant background");
+                    } else {
+                        methodInUseLabel.setText("Direct Inverse FT Method no background ");
+                    }
+                } else {
+                    useDirectFourierTransformCheckBox.setSelected(false);
 
-//                if (checkBoxDirect.isSelected()){
-//                    checkBoxDirect.setSelected(true);
-//                } else {
-//                    checkBoxDirect.setSelected(false);
-//                }
+                    if (l1NormCheckBox.isSelected()){
+                        methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
+                    } else {
+                        if (excludeBackgroundInFitCheckBox.isSelected()){
+                            methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
+                        } else {
+                            methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
+                        }
+                    }
+                }
             }
         });
 
@@ -3134,11 +3138,19 @@ signalPlotThread.execute();
             public void actionPerformed(ActionEvent e) {
 
                 if (l1NormCheckBox.isSelected()){
-                    checkBoxDirect.setSelected(true);
-                    excludeBackgroundInFitCheckBox.setSelected(false);
-                } else {
                     checkBoxDirect.setSelected(false);
+                    useDirectFourierTransformCheckBox.setSelected(false);
                     excludeBackgroundInFitCheckBox.setSelected(true);
+                    methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
+                } else {
+                   // checkBoxDirect.setSelected(false);
+                   // useDirectFourierTransformCheckBox.setSelected(true);
+                   // excludeBackgroundInFitCheckBox.setSelected(true);
+                    if (excludeBackgroundInFitCheckBox.isSelected()){
+                        methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
+                    } else {
+                        methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
+                    }
                 }
             }
         });
@@ -3250,8 +3262,27 @@ signalPlotThread.execute();
         excludeBackgroundInFitCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                l1NormCheckBox.setSelected(false);
-                checkBoxDirect.setSelected(false);
+
+                    if (excludeBackgroundInFitCheckBox.isSelected()){
+
+                        if (useDirectFourierTransformCheckBox.isSelected()){
+                            methodInUseLabel.setText("Direct Inverse FT with constant background");
+                        } else if (l1NormCheckBox.isSelected()) {
+                            methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
+                        } else {
+                            methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
+                        }
+
+                    } else { // no background
+                        if (useDirectFourierTransformCheckBox.isSelected()){
+                            methodInUseLabel.setText("Direct Inverse FT no background");
+                        } else if (!l1NormCheckBox.isSelected()) {
+                            methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
+                        } else if (l1NormCheckBox.isSelected()){
+                            methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
+                            l1NormCheckBox.setSelected(false);
+                        }
+                    }
             }
         });
 
@@ -3377,7 +3408,7 @@ signalPlotThread.execute();
             }
         });
 
-        l1NormCheckBox.setSelected(true);
+//        l1NormCheckBox.setSelected(true);
         checkBoxDirect.setSelected(true);
 
         subtractThresholdField.addFocusListener(new FocusAdapter() {
@@ -3422,8 +3453,6 @@ signalPlotThread.execute();
                 }
             }
         });
-
-
 
 
 
@@ -3612,6 +3641,28 @@ signalPlotThread.execute();
 
                 for(int i=0; i<totalWindows; i++){
                     System.out.println(i + " window " + windows[i].getParent());
+                }
+            }
+        });
+
+        useDirectFourierTransformCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (useDirectFourierTransformCheckBox.isSelected()){
+                    l1NormCheckBox.setSelected(false);
+                    checkBoxDirect.setSelected(true);
+                    if(excludeBackgroundInFitCheckBox.isSelected()){
+                        methodInUseLabel.setText("Direct Inverse FT with constant background");
+                    } else {
+                        methodInUseLabel.setText("Direct Inverse FT no background");
+                    }
+                } else {
+                    checkBoxDirect.setSelected(false);
+                    if (excludeBackgroundInFitCheckBox.isSelected()){
+                        methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
+                    } else {
+                        methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
+                    }
                 }
             }
         });
@@ -5343,25 +5394,29 @@ signalPlotThread.execute();
                 status.setText("");
                 prStatusLabel.setText("Starting refinement of " + prModel.getDataset(rowID).getFilename());
                 // launch a thread
-                System.out.println("Stopped in refinemananer");
 
                 Thread refineIt = new Thread(){
                     public void run() {
 
-                        final RefineManager refineMe = new RefineManager(prModel.getDataset(rowID), cpuCores,
+                        final RefinePrManager refinePrMe = new RefinePrManager(
+                                prModel.getDataset(rowID),
+                                cpuCores,
                                 Integer.parseInt(refinementRoundsBox.getSelectedItem().toString()),
                                 Double.parseDouble(rejectionCutOffBox.getSelectedItem().toString()),
                                 Double.parseDouble(lambdaBox.getSelectedItem().toString()),
-                                l1NormCheckBox.isSelected(), excludeBackgroundInFitCheckBox.isSelected());
+                                Integer.parseInt(cBox.getSelectedItem().toString()),
+                                l1NormCheckBox.isSelected(),
+                                excludeBackgroundInFitCheckBox.isSelected(),
+                                useDirectFourierTransformCheckBox.isSelected());
 
                         prStatusLabel.setText("");
-                        refineMe.setBar(progressBar1, prStatusLabel);
-                        refineMe.execute();
+                        refinePrMe.setBar(progressBar1, prStatusLabel);
+                        refinePrMe.execute();
 
-                        synchronized (refineMe) {
-                            if (!refineMe.getIsFinished()) {
+                        synchronized (refinePrMe) {
+                            if (!refinePrMe.getIsFinished()) {
                                 try {
-                                    refineMe.wait();
+                                    refinePrMe.wait();
                                 } catch (InterruptedException ee) {
                                     // handle it somehow
                                     System.out.println("Catch " + ee.getMessage());
@@ -5379,7 +5434,7 @@ signalPlotThread.execute();
                         );
 
                         prStatusLabel.setText("Files written to " + WORKING_DIRECTORY.getWorkingDirectory() + ", ready to run DAMMIN/F");
-                        runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
+//                        runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
                         // run gnom
                         prModel.fireTableDataChanged();
                     }

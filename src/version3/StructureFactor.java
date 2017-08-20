@@ -230,11 +230,11 @@ public class StructureFactor {
 
         double qmaxLimit = realspace.getQmax();
 
-double value;
+        double value;
         for(int i=0; i<totalInAllData; i++){
             tempXY = allData.getDataItem(i);
             if (tempXY.getXValue() < qmaxLimit){
-                calculateIntensities.add(tempXY.getXValue(), realspace.moore_Iq(tempXY.getXValue()));
+                calculateIntensities.add(tempXY.getXValue(), realspace.getICalcAtQ(tempXY.getXValue()));
                 value = 1.0/calculateIntensities.getY(i).doubleValue();
                 structureFactorData.add(tempXY.getXValue(), tempXY.getYValue()*value);
                 plottedDataForFitting.add(structureFactorData.getDataItem(i));

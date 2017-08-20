@@ -63,7 +63,7 @@ public class RefinedPlot {
         int totalKept = temp.getItemCount();
         XYDataItem tempItem;
 
-        for(int i=0; i<totalKept; i++){
+        for(int i=0; i<totalKept; i++){ // take the kept series which is I(q) vs q and transform it
             tempItem = temp.getDataItem(i);
             qiq.add(tempItem.getX(), tempItem.getXValue()*tempItem.getYValue());
         }

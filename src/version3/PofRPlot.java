@@ -72,11 +72,11 @@ public class PofRPlot {
         //collectionInUse = collection;
 
         int totalC = collection.getDatasetCount();
-        System.out.println("Total C " + totalC);
+
         for (int i=0; i<totalC; i++){
             if (collection.getDataset(i).getInUse()){
                 splineCollection.addSeries(collection.getDataset(i).getRealSpaceModel().getPrDistribution());
-                System.out.println(i + " TOTAL IN PR " +collection.getDataset(i).getRealSpaceModel().getPrDistribution().getItemCount());
+                //System.out.println(i + " TOTAL IN PR " +collection.getDataset(i).getRealSpaceModel().getPrDistribution().getItemCount());
             }
         }
 

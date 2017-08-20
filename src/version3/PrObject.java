@@ -275,7 +275,7 @@ public class PrObject implements Runnable {
     private final double TWO_INV_PI = 2.0/Math.PI;
     private boolean useL1;
     private boolean useDirectFT = false;
-    private XYSeries data;
+    private XYSeries data; // should be qI(q) dataset
     private RealSpace dataset;
     private int cBoxValue=2;
     private double standardizedMin;
@@ -342,8 +342,8 @@ public class PrObject implements Runnable {
         }
 
 //        standardizedMin = ymin;
-//        standardizedRange = ymax - standardizedMin;
-//        invstdev = 1.0/standardizedRange;
+//        standardizedScale = ymax - standardizedMin;
+//        invstdev = 1.0/standardizedScale;
 //
 //        for(int r=0; r < totalItems; r++){
 //            tempData = qIqDatset.getDataItem(r);
@@ -361,18 +361,26 @@ public class PrObject implements Runnable {
 //        }
     }
 
-
+    // Moore method returns a set of coefficients that can be used to calculate various parameters
+    // Direct Integral transform returns distribution
 
     @Override
     public void run() {
 
         ArrayList<double[]> tempResults;
 
-        if (false) {
+        if (true) {
+
             tempResults = rambo_coeffs_L1();
+            // temp[0] => coefficients; first value is background
+            // temp[1] => rvalues
+            // temp[2] => model qIq values
             this.dataset.setPrDistributionDirectFT(tempResults.get(1), tempResults.get(0), tempResults.get(2));
-            System.out.println("L1-norm DirectFT ");
+            System.out.println("L1-norm IndirectFT ");
+
         } else {
+
+            tempResults = rambo_coeffs_L1();
 
             if (useL1){
                 tempResults = moore_pr_L1();  // minimize on second derivative
@@ -405,21 +413,27 @@ public class PrObject implements Runnable {
 
         ArrayList<double[]> results = new ArrayList<>(2);
 
-        int ns = (int) Math.round(qmax*dmax*INV_PI) + 1;  //
+        int ns = (int) Math.ceil(qmax*dmax*INV_PI) ;  //
         int coeffs_size = ns + 1;   //+1 for constant background, +1 to include dmax in r_vector list
 
         //double incr = 2.0;
         //int r_limit = (int)incr*ns-1;
-        int r_limit = ns; // +1 to include dmax in r_vector list
+        int r_limit = ns; //
 
-        double del_r = dmax/((double)ns+1);
+        double del_r = Math.PI/qmax; // dmax is based del_r*ns
+        // if I think I can squeeze out one more Shannon Number, then I need to define del_r by dmax/ns+1
+        //double del_r = dmax/(double)ns;
+
         double[] r_vector = new double[r_limit];
 
-        for(int i=0; i < r_limit; i++){
+        for(int i=0; i < r_limit; i++){ // last bin should be dmax
             //r_vector[i] = i*del_r;
-            r_vector[i] = (i+1)*del_r;
+            //r_vector[i] = (i+1)*del_r;
+            r_vector[i] = (0.5 +i)*del_r;
             //System.out.println(i + " => " + r_vector[i] + " del " + del_r + " dmax " + dmax);
         }
+
+        double binnedDmax = r_limit*del_r;
 
 
         XYDataItem tempData;
@@ -436,7 +450,7 @@ public class PrObject implements Runnable {
         double beta  = 0.5;             // stepsize decrease factor
         int max_ls_iter = 400;          // maximum backtracking line search iteration
 
-        int m = data.getItemCount();    // rows
+        int rows = data.getItemCount();    // rows
 
         int hessian_size = coeffs_size;
 
@@ -472,7 +486,7 @@ public class PrObject implements Runnable {
         CommonOps.fill(utemp,1);
         //SimpleMatrix u = SimpleMatrix.wrap(utemp);
 
-        SimpleMatrix y = new SimpleMatrix(m,1);
+        SimpleMatrix y = new SimpleMatrix(rows,1);
 
         //
         // Initialize and guess am => P(r) values
@@ -480,7 +494,7 @@ public class PrObject implements Runnable {
         double inv_t;
 
         SimpleMatrix am = new SimpleMatrix(coeffs_size,1);  // am is 0 column
-        am.set(0,0,0.000000001); // set background, initial guess could be Gaussian
+        am.set(0,0,0.000000001); // set background constant, initial guess could be Gaussian
 
         Gaussian guess = new Gaussian(dmax*0.5, 0.2*dmax);
 
@@ -492,24 +506,18 @@ public class PrObject implements Runnable {
         /*
          * create A matrix (design Matrix)
          */
-        SimpleMatrix a_matrix = new SimpleMatrix(m,coeffs_size);
+        SimpleMatrix a_matrix = new SimpleMatrix(rows, coeffs_size);
 
-        for(int row=0; row < m; row++){ //rows, length is size of data
+        for(int row=0; row < rows; row++){ //rows, length is size of data
             tempData = data.getDataItem(row);
 
             for(int col=0; col < coeffs_size; col++){
                 if (col == 0){ // constant background term
                     a_matrix.set(row, 0, tempData.getXValue());
                     //a_matrix.set(row, 0, 1);
-                } else {
-                    //pi_sq_n = n_pi_squared[c];
-                    //if ( col == 1 ){
-                    //    a_matrix.set(row, col, 1); // for r = 0 => sin(0)/0 is 1
-                    //} else {
-                        double r_value = r_vector[col-1];
-                    //System.out.println(col + " " + coeffs_size);
-                        a_matrix.set(row, col, FastMath.sin(r_value*tempData.getXValue()) / r_value);
-                    //}
+                } else { // for col >= 1
+                    double r_value = r_vector[col-1];
+                    a_matrix.set(row, col, FastMath.sin(r_value*tempData.getXValue()) / r_value);
                 }
             }
             y.set(row,0,tempData.getYValue()); //set data vector
@@ -582,12 +590,12 @@ public class PrObject implements Runnable {
             // dobj = Math.max(( (nu.transpose().mult(nu)).get(0,0)*(-0.25) - ((nu.transpose().mult(y))).get(0,0) ), dobj);
             gap   = pobj - dobj;
 
-            //System.out.println("GAP: " + gap + " : " + " | ratio " + gap/dobj + " reltol " + reltol);
             //------------------------------------------------------------
             //       Shall we Stop?
             //------------------------------------------------------------
             if (gap/dobj < reltol) {
                 status = "Solved";
+                System.out.println("GAP: " + gap + " : " + " | ratio " + gap/dobj + " reltol " + reltol);
                 break calculationLoop;
             }
 
@@ -698,21 +706,43 @@ public class PrObject implements Runnable {
         }
 
 
-        results.add(new double[coeffs_size]);
-        results.add(r_vector);
+        results.add(new double[coeffs_size]); // 0
+//        results.add(r_vector); // 1
+
+        double[] r_vector_complete = new double[r_limit+2];
+        r_vector_complete[0] = 0;
+        for(int j=0; j< r_limit; j++){
+            r_vector_complete[j+1] = r_vector[j];
+        }
+        r_vector_complete[r_vector_complete.length -1 ] = binnedDmax;
+        results.add(r_vector_complete); // 1
+
+
+        System.out.println("ENDPOINT");
 
         for (int j=0; j < coeffs_size; j++){
             results.get(0)[j] = am.get(j,0);
-            //if (j>0){
-            //    System.out.println(r_vector[j-1] + " " + am.get(j,0));
-            //}
+            if (j>0){
+                System.out.println(r_vector[j-1] + " " + am.get(j,0));
+            }
         }
 
-        SimpleMatrix modelIq = a_matrix.mult(am);
+        System.out.println("MIDPOINT");
+        for (int j=0; j < coeffs_size; j++){
+            if (j>0){ // all other values are coefficients of P(r)-distribution
+                System.out.println((del_r*0.5+(j-1)*del_r) + " " + am.get(j,0));
+            }
+        }
+        System.out.println(binnedDmax + " " + 0);
 
-        results.add(new double[m]);
-        for(int i=0; i<m; i++){
-            results.get(2)[i] = modelIq.get(i,0);
+
+        // I_calc based standardized data
+        SimpleMatrix modelqIq = a_matrix.mult(am);
+
+        // calculate residuals
+        results.add(new double[rows]);
+        for(int i=0; i<rows; i++){
+            results.get(2)[i] = modelqIq.get(i,0);
         }
 
         return results;
@@ -2740,7 +2770,7 @@ public class PrObject implements Runnable {
 
 
 
-    public static double normL1(SimpleMatrix vec){
+    public double normL1(SimpleMatrix vec){
         double sum = 0;
         int size = vec.getNumElements();
 

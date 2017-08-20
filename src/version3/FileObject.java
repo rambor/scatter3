@@ -150,7 +150,7 @@ public class FileObject {
         double[] coefs;
 
         if (dataset.getRealSpaceModel().getRg() > 0 && dataset.getRealSpaceModel().getIzero() > 0){
-            dataset.getRealSpaceModel().estimateErrors();
+            dataset.getRealSpaceModel().estimateErrors(); // this function sets the spline function in indirectFT object
         }
 
 
@@ -163,14 +163,19 @@ public class FileObject {
             coefs = new double[]{0};
 
         } else {
-            double incr = dmax/201.0;
-            coefs = realspaceModel.getMooreCoefficients();
+
+            double incr = Math.PI/realspaceModel.getfittedqIq().getMaxX()/3.0;
+            //double incr = dmax/201.0;
+            //coefs = realspaceModel.getMooreCoefficients();
+            coefs = realspaceModel.getCoefficients();
             coefsSize = coefs.length;
 
-            for (int r = 0; r*incr <= dmax; r++){
+            r_pr.add(0,0);
+            for (int r = 1; r*incr < dmax; r++){
                 double r_incr = r*incr;
                 r_pr.add(r_incr, realspaceModel.calculatePofRAtR(r_incr));
             }
+            r_pr.add(dmax, 0);
         }
 
 
@@ -262,7 +267,7 @@ public class FileObject {
                 for(int i =0; i < tempXYSeries.getItemCount(); i++){
                     tempXY = tempXYSeries.getDataItem(i);
                     tempIndex = dataset.getAllData().indexOf(tempXY.getX());  // gets unscale SAXS curve that originated the P(r)
-                    iCalc = realspaceModel.moore_Iq(tempXY.getXValue());
+                    iCalc = realspaceModel.getICalcAtQ(tempXY.getXValue());
 
                     if (tempIndex > 0) {
                         out.write(Constants.Scientific1dot5e2.format(tempXY.getXValue()) + "\t" +
@@ -278,7 +283,7 @@ public class FileObject {
                     tempXY = realspaceModel.getfittedqIq().getDataItem(i);
                     //tempXY = realspaceModel.getfittedIq().getDataItem(i);
                     tempIndex = dataset.getAllData().indexOf(tempXY.getX());  // gets unscale SAXS curve that originated the P(r)
-                    iCalc = realspaceModel.moore_Iq(tempXY.getXValue());
+                    iCalc = realspaceModel.getICalcAtQ(tempXY.getXValue());
 
                     if (tempIndex > 0) {
                         out.write(Constants.Scientific1dot5e2.format(tempXY.getXValue()) + "\t" +

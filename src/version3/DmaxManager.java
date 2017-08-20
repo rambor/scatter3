@@ -228,30 +228,30 @@ public class DmaxManager extends SwingWorker<Void, Void> {
                         double tempLambda = 0.00001;
                         while (tempLambda < 0.0001){
 
-                            PrObject tempPr = new PrObject(fittedSeries, tempSeries.getMaxX(), tempDmax, tempLambda);
-                            ArrayList<double[]> results;
-
-                            if (useL1){
-                                // fixed q range
-                                results = tempPr.moore_pr_L1();
-                            } else {
-                                results = tempPr.moore_coeffs_L1();
-                            }
-
-                            // calculate chi
-                            try {
-
-                                chi2 = this.chi_estimate(results.get(0), tempDmax, fittedSeries, fittedErrorSeries);
-                                //System.out.println("CHI2 : " + chi2 + "  => " + tempDmax + " qmax : " + tempSeries.getMaxX() + " lambda " + tempLambda);
-                                if (results.get(0).length > 3 && chi2 > 0.9 && chi2 < 1.5 && !calculatePofR(tempDmax, results.get(0))){
-                                    // if true add prDistribution to collection
-                                    // update plots in thread safe way so use process?
-                                    System.out.println("CHI2 : " + chi2 + "  => " + tempDmax + " qmax : " + tempSeries.getMaxX() + " lambda : " + tempLambda);
-                                    addPrDistributions(prDistribution, (int)tempDmax, tempSeries.getMaxX());
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+//                            PrObject tempPr = new PrObject(fittedSeries, tempSeries.getMaxX(), tempDmax, tempLambda);
+//                            ArrayList<double[]> results;
+//
+//                            if (useL1){
+//                                // fixed q range
+//                                results = tempPr.moore_pr_L1();
+//                            } else {
+//                                results = tempPr.moore_coeffs_L1();
+//                            }
+//
+//                            // calculate chi
+//                            try {
+//
+//                                chi2 = this.chi_estimate(results.get(0), tempDmax, fittedSeries, fittedErrorSeries);
+//                                //System.out.println("CHI2 : " + chi2 + "  => " + tempDmax + " qmax : " + tempSeries.getMaxX() + " lambda " + tempLambda);
+//                                if (results.get(0).length > 3 && chi2 > 0.9 && chi2 < 1.5 && !calculatePofR(tempDmax, results.get(0))){
+//                                    // if true add prDistribution to collection
+//                                    // update plots in thread safe way so use process?
+//                                    System.out.println("CHI2 : " + chi2 + "  => " + tempDmax + " qmax : " + tempSeries.getMaxX() + " lambda : " + tempLambda);
+//                                    addPrDistributions(prDistribution, (int)tempDmax, tempSeries.getMaxX());
+//                                }
+//                            } catch (Exception e) {
+//                                e.printStackTrace();
+//                            }
                             tempLambda *= 1.4;
                         }
 

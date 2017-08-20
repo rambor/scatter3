@@ -1,17 +1,16 @@
 package version3;
 
+import version3.InverseTransform.IFTObject;
+
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.AbstractTableModel;
-import java.awt.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.lang.reflect.Array;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.Objects;
 
 /**
  * Created by robertrambo on 24/01/2016.
@@ -38,7 +37,16 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     private String[] columnNames = new String[]{"","", "", "", "start", "end", "<html>I(0)<font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html>", "<html>R<sub>g</sub><font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html> ", "<html>r<sub>ave</sub></html>", "<html>d<sub>max</sub></html>", "<html>Chi<sup>2</sup>(S<sub>k2</sub>)</html>", "<html>scale</html>", "", "", "",""};
     private JLabel mainStatus, prStatus;
 
-    public PrModel(JLabel status, WorkingDirectory cwd, JComboBox lambdaBox, DoubleValue dmaxlow, DoubleValue dmaxhigh, JSlider dmaxSlider, JCheckBox fitModel, JComboBox cBox, JCheckBox useDirectFT, JCheckBox excludeBackground){
+    public PrModel(JLabel status,
+                   WorkingDirectory cwd,
+                   JComboBox lambdaBox,
+                   DoubleValue dmaxlow,
+                   DoubleValue dmaxhigh,
+                   JSlider dmaxSlider,
+                   JCheckBox fitModel,
+                   JComboBox cBox,
+                   JCheckBox useDirectFT,
+                   JCheckBox excludeBackground){
         this.status = status;
         this.currentWorkingDirectory = cwd;
         currentWorkingDirectory.addPropertyChangeListener(this);
@@ -172,7 +180,9 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
             case 9:
                 return twoOneFormat.format(dataset.getDmax());
             case 10:
-                return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
+               // return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
+                 return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.max_kurtosis_shannon_sampled(13))+")";
+                //return twoDecPlac.format(dataset.getChi2()) ;
             case 11:
                 return scientific.format(dataset.getScale());
             case 12: //norm  Button
@@ -229,7 +239,16 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                             temp.setDmax((int) dmaxStart.getValue());
                             //create a new PrObject and run in thrad
                             // fit model is L1-norm of coefficients or second derivative
-                            PrObject tempPr = new PrObject(temp, Double.parseDouble(lambdaBox.getSelectedItem().toString()), fitModel.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()), useDirectFT.isSelected(), excludeBackground.isSelected());
+
+                    IFTObject tempPr = new IFTObject (
+                            temp,
+                            Double.parseDouble(lambdaBox.getSelectedItem().toString()),
+                            fitModel.isSelected(),
+                            Integer.parseInt(cBox.getSelectedItem().toString()),
+                            useDirectFT.isSelected(),
+                            excludeBackground.isSelected()
+                    );
+
                             Thread tempThread = new Thread(tempPr);
                             tempThread.run();
                             // update series in plots

@@ -1,6 +1,7 @@
 package version3;
 
 import org.jfree.data.xy.XYDataItem;
+import version3.InverseTransform.IFTObject;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -30,7 +31,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     private JComboBox lambdaBox;
     private JCheckBox l1NormCheckBox;
     private JComboBox cBox;
-    //private JCheckBox useDirectFT;
+    private JCheckBox useDirectFT;
     private JCheckBox backgroundCheckBox;
 
     // Initializes the spinner.
@@ -41,7 +42,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         this.lambdaBox = lambdaBox;
         this.l1NormCheckBox = l1NormCheckBox;
         this.cBox = cBox;
-        //this.useDirectFT = useDirectFT;
+        this.useDirectFT = useDirectFT;
         this.backgroundCheckBox = excludeBackground;
 
         this.prModel = prModel;
@@ -52,21 +53,22 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         editor = ((JSpinner.DefaultEditor)spinner.getEditor());
         textField = editor.getTextField();
 
-        textField.addFocusListener( new FocusListener() {
-            public void focusGained( FocusEvent fe ) {
-
-            }
-
-            public void focusLost( FocusEvent fe ) {
-                //System.out.println("FocusLost " + collectionSelected.getDataset(rowID).getData().getX(0) + " | value " + spinner.getValue());
-            }
-        });
+//        textField.addFocusListener( new FocusListener() {
+//            public void focusGained( FocusEvent fe ) {
+//
+//            }
+//
+//            public void focusLost( FocusEvent fe ) {
+//                //System.out.println("FocusLost " + collectionSelected.getDataset(rowID).getData().getX(0) + " | value " + spinner.getValue());
+//            }
+//        });
 
         textField.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent ae ) {
                 stopCellEditing();
             }
         });
+
         spinner.addChangeListener((ChangeListener) this);
     }
 
@@ -79,7 +81,6 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         int oldStop = prDataset.getStop();
 
         int limit;
-
 
         if (this.colID == 4){ // lower(start) spinner
 
@@ -101,7 +102,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
             }
 
             prDataset.setStart(valueOfSpinner);
-
+            updateModel(prDataset);
         } else if (colID == 5) {
             int temp = (Integer)this.spinner.getValue();
             limit = prDataset.getMaxCount();
@@ -121,21 +122,34 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
                 this.priorValue = temp;
             }
 
+            updateModel(prDataset);
         } else if (colID==9){
+
             double temp = (Double)this.spinner.getValue();
             prDataset.setDmax((float)temp);
             status.setText("Finished: d_max set to " + prDataset.getDmax());
+            updateModel(prDataset);
         }
+
         //recalculate P(r) distributions
         status.setText("Analyzing, please wait");
-
-        // calculte new Fit
-        //PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()), useDirectFT.isSelected());
-        PrObject tempPr = new PrObject(prDataset, Double.parseDouble(lambdaBox.getSelectedItem().toString()), l1NormCheckBox.isSelected(), Integer.parseInt(cBox.getSelectedItem().toString()), false, backgroundCheckBox.isSelected());
-        tempPr.run();
-
-        prDataset.calculateIntensityFromModel(qIqFit.isSelected());
+        // calculate new Fit
         prModel.fireTableDataChanged();
+    }
+
+    private void updateModel(RealSpace prDataset){
+        IFTObject tempPr = new IFTObject (
+                prDataset,
+                Double.parseDouble(lambdaBox.getSelectedItem().toString()),
+                l1NormCheckBox.isSelected(),
+                Integer.parseInt(cBox.getSelectedItem().toString()),
+                useDirectFT.isSelected(),
+                backgroundCheckBox.isSelected()
+        );
+
+        tempPr.run();
+        prDataset.calculateIntensityFromModel(qIqFit.isSelected());
+        System.out.println("Updating from spnner");
     }
 
     // Prepares the spinner component and returns it.
@@ -154,7 +168,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
             spinner.setModel(new SpinnerNumberModel(priorValue, 1, lastValue, 10));
         } else if (colID == 9) {
             dPriorValue = prModel.getDataset(rowID).getDmax();
-            spinner.setModel(new SpinnerNumberModel(dPriorValue, 10, 1000, 0.25));
+            spinner.setModel(new SpinnerNumberModel(dPriorValue, 10, 1000, 0.5));
             //spinner.setValue(dPriorValue);
         }
 
@@ -167,13 +181,20 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         return spinner;
     }
 
+    /**
+     *
+     * @param eo
+     * @return
+     */
     public boolean isCellEditable( EventObject eo ) {
 
         if ( eo instanceof KeyEvent) {
+
             KeyEvent ke = (KeyEvent)eo;
             System.err.println("key event: "+ke.getKeyChar());
             textField.setText(String.valueOf(ke.getKeyChar()));
             valueSet = true;
+
         } else {
             valueSet = false;
         }
@@ -186,8 +207,10 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     }
 
     public boolean stopCellEditing() {
+
         System.err.println("Stopping edit");
         try {
+
             editor.commitEdit();
             spinner.commitEdit();
 
