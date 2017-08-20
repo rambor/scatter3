@@ -234,11 +234,11 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 temp.setColor(collection.getDataset(i).getColor());
 
                 if (temp.getDmax() == 0 || (temp.getRg() == 0 && temp.getIzero() == 0)) {
-                            temp.resetStartStop();
-                            fireTableDataChanged();
-                            temp.setDmax((int) dmaxStart.getValue());
-                            //create a new PrObject and run in thrad
-                            // fit model is L1-norm of coefficients or second derivative
+                    temp.resetStartStop();
+                    fireTableDataChanged();
+                    temp.setDmax((int) dmaxStart.getValue());
+                    //create a new IFTObject and run in thread
+                    // fit model is L1-norm of coefficients or second derivative
 
                     IFTObject tempPr = new IFTObject (
                             temp,
@@ -249,9 +249,9 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                             excludeBackground.isSelected()
                     );
 
-                            Thread tempThread = new Thread(tempPr);
-                            tempThread.run();
-                            // update series in plots
+                    Thread tempThread = new Thread(tempPr);
+                    tempThread.run();
+                    // update series in plots
                 }
 
                 // don't want to use kept series here

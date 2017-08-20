@@ -1081,7 +1081,6 @@ public class MooreTransform extends IndirectFT {
             }
 
             // calculate PofR
-            // PrObject prObject = new PrObject(this, randomSeries, upperq, dmax, 0.001, false);
             this.createDesignMatrix(randomSeries);
 
             if (useL1){
