@@ -33,7 +33,7 @@ public class StructureFactorTest extends JDialog {
                 JComboBox cb = (JComboBox)e.getSource();
                 Dataset tempDataset = (Dataset) cb.getSelectedItem();
 
-                if (tempDataset.getRealSpaceModel().getTotalMooreCoefficients() < 2){
+                if (tempDataset.getRealSpaceModel().getTotalFittedCoefficients() < 2){
                     statusLabel.setText("Must select dataset with P(r)-distribution");
                     statusLabel.setForeground(Color.red);
                 } else {

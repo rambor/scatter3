@@ -600,7 +600,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
         // print parameters
         int total = list.size();
         int monteCarloSize = 10000;
-        int totalShannonBins = dataset.getRealSpaceModel().getTotalMooreCoefficients() - 1;
+        int totalShannonBins = dataset.getRealSpaceModel().getTotalFittedCoefficients() - 1;
         double binWidth = (double)dataset.getRealSpaceModel().getDmax()/(double)totalShannonBins;
 
         double squared=0;

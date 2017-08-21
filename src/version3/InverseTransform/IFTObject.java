@@ -35,6 +35,7 @@ public class IFTObject implements Runnable {
         // XYSeries data, double dmax, double lambda, double qmax
         this.dataset = dataset;
         this.qmax = dataset.getLogData().getMaxX();
+        dataset.setQmax(this.qmax); // need to specify qmax used in IFT determination
         this.dmax = dataset.getDmax();
         this.lambda = lambda;
         this.useL1 = useL1;

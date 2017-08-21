@@ -4324,23 +4324,6 @@ signalPlotThread.execute();
 
                 status.setText("Switched to collection " + (j+1));
 
-                /*
-                if (iofQPofRWindow instanceof IofQPofRPlot){
-                    iofQPofRWindow.getContentPane().removeAll();
-                    iofQPofRWindow.removeAll();
-                    iofQPofRWindow.clear();
-                    iofQPofRWindow.dispose();
-                }
-
-                if (pofRWindow instanceof PofRPlot){
-                    pofRWindow.getContentPane().removeAll();
-                    pofRWindow.removeAll();
-                    pofRWindow.clear();
-                    pofRWindow.dispose();
-                }
-
-                prModel.clear();
-                */
                 resultsModel.clear();
 //                analysisModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
 //                resultsModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
@@ -5434,7 +5417,7 @@ signalPlotThread.execute();
                         );
 
                         prStatusLabel.setText("Files written to " + WORKING_DIRECTORY.getWorkingDirectory() + ", ready to run DAMMIN/F");
-//                        runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
+                        runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
                         // run gnom
                         prModel.fireTableDataChanged();
                     }

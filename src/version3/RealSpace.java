@@ -22,7 +22,7 @@ public class RealSpace {
     private int id;
     private int startAt;
     private int stopAt;
-    private int totalMooreCoefficients;
+
     private XYSeries allData;       // use for actual fit and setting spinners
     private XYSeries errorAllData;  // use for actual fit and setting spinners
 
@@ -43,10 +43,6 @@ public class RealSpace {
     private double analysisToPrScaleFactor;
     private double izero;
     private double rg;
-    private double[] mooreCoefficients;
-
-    private ArrayList<Double> rValuesDirectFT;
-    private ArrayList<Double> directFT;
 
     private double dmax;
     private double qmax;
@@ -59,12 +55,10 @@ public class RealSpace {
     private BasicStroke stroke;
     private double kurtosis = 0;
     private double l1_norm = 0;
-    private double inv2PI2 = 1.0/(2*Math.PI*Math.PI);
     private double kurt_l1_sum;
     private Dataset dataset;
     private int lowerQIndexLimit=0;
     private final int maxCount;
-    private final static double invPi = 1.0/Math.PI;
     private boolean negativeValuesInModel=false;
     private double standardizationMean;
     private double standardizationStDev;
@@ -413,161 +407,22 @@ public class RealSpace {
         return indirectFTModel.getCoefficients();
     }
 
-    public void setPrDistributionDirectFT(double[] rvalues, double[] fittedValues, double[] modelqIq){
-        directFT = new ArrayList<>();
-        rValuesDirectFT = new ArrayList<>();
 
-        int totalR = rvalues.length;
-        int totalFitted = fittedValues.length;
-
-        for(int i=0; i< totalR; i++){ //
-            rValuesDirectFT.add(rvalues[i]);
-        }
-
-        for(int i=0; i< totalFitted; i++){
-            directFT.add(scale*fittedValues[i]);
-        }
-
-        prDistribution.clear();
-        prDistribution.add(rValuesDirectFT.get(0).doubleValue(),0);
-        for (int j=1; j < totalFitted; j++){
-            System.out.println(j + " rvalue => " +  rValuesDirectFT.get(j));
-            prDistribution.add( rValuesDirectFT.get(j), directFT.get(j) );
-        }
-
-        prDistribution.add(rValuesDirectFT.get(totalR-1).doubleValue(),0);
-
-
-        calcqIq.clear();
-        //iterate over each q value and calculate I(q)
-        int startHere = startAt - 1;
-        int count=0;
-        for (int j=startHere; j < stopAt; j++){
-            calcqIq.add(allData.getX(j), modelqIq[count]);
-            count++;
-        }
-    }
-
-    public void setMooreCoefficients(double[] values){
-        totalMooreCoefficients = values.length;
-        this.mooreCoefficients = new double[totalMooreCoefficients];
-        System.arraycopy(values, 0, this.mooreCoefficients, 0, totalMooreCoefficients);
-        negativeValuesInModel = false;
-
-        saxs_invariants();
-        System.out.println("SETTING MOORE");
-        // calculate P(r) distribution
-        this.calculatePofR();
-        this.qmax = this.fittedqIq.getMaxX();
-
-        try {
-            // calculate chi over all the data bounded by Spinners
-            this.chi_estimate();
-            //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
-            this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(13));
-            //this.l1_norm = this.l1_norm_pddr(1);
-            //this.l1_norm = this.l1_norm_pddr(3);
-            //this.l1_norm = this.l1_norm_pddr(7);
-            this.l1_norm = this.l1_norm_pddr(11);
-
-            System.out.println("SETTING MOORE COEFFICIENTS " + totalMooreCoefficients + " L1 : " + this.l1_norm + " K :" + this.kurtosis);
-            this.kurt_l1_sum = (0.1000*this.kurtosis + 100*this.l1_norm);
-            //this.kurt_l1_sum = 0.9*this.l1_norm;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     /**
      *
-     * Returns qmax used in fitting of Moore equation
+     * Returns qmax used in IFT
      * @return
      */
     public double getQmax(){
         return qmax;
     }
 
-
-    public void calculatePofRDirect(){
-        /*
-         * create P(r) plot
-         */
-        prDistribution.clear();
-        double totalPrPoints = (Math.ceil(fittedqIq.getMaxX()*dmax*invPi)*3);
-        int r_limit = (int)totalPrPoints -1;
-        double deltar = dmax/totalPrPoints;
-
-        double resultM;
-        double inv_d = 1.0/dmax;
-        double pi_dmax = Math.PI*inv_d;
-        double inv_2d = 0.5*inv_d;
-        double pi_dmax_r;
-        double r_value;
-        prDistribution.add(0.0d, 0.0d);
-        negativeValuesInModel = false;
-
-        for (int j=1; j < r_limit; j++){
-
-            r_value = j*deltar;
-            pi_dmax_r = pi_dmax*r_value;
-            resultM = 0;
-
-            for(int i=1; i < totalMooreCoefficients; i++){
-                resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
-            }
-
-            prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
-
-            if (resultM < 0){
-                negativeValuesInModel = true;
-            }
-        }
-
-        prDistribution.add(dmax,0);
+    public void setQmax(double value ){
+        this.qmax = value;
     }
 
 
-    /**
-     * Calculate P(r) distribution
-     */
-    public void calculatePofR(){
-        /*
-         * create P(r) plot
-         */
-        prDistribution.clear();
-        double totalPrPoints = (Math.ceil(fittedqIq.getMaxX()*dmax*invPi)*3);
-        int r_limit = (int)totalPrPoints;
-        double deltar = dmax/totalPrPoints;
-
-        double resultM;
-        double pi_dmax = Math.PI/dmax;
-
-        double invtwopi2 = inv2PI2*standardizationStDev;
-        double pi_dmax_r;
-        double r_value;
-        prDistribution.add(0.0d, 0.0d);
-        negativeValuesInModel = false;
-
-        for (int j=1; j < r_limit; j++){
-
-            r_value = j*deltar;
-            pi_dmax_r = pi_dmax*r_value;
-            resultM = 0;
-
-            for(int i=1; i < totalMooreCoefficients; i++){
-                resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
-            }
-
-            //prDistribution.add(r_value, inv_2d * r_value * resultM*scale);
-            prDistribution.add(r_value, invtwopi2 * r_value * resultM*scale);
-            if (resultM < 0){
-                negativeValuesInModel = true;
-            }
-        }
-
-        prDistribution.add(dmax,0);
-    }
 
     /**
      * Calculate P(r) at specified r value
@@ -576,17 +431,6 @@ public class RealSpace {
      * @return scaled value
      */
     public double calculatePofRAtR(double r_value){
-        //double inv_d = 1.0/dmax;
-        //double pi_dmax = Math.PI*inv_d;
-//        double pi_dmax_r = Math.PI*r_value/dmax;
-//        double resultM = 0;
-//
-//        for(int i=1; i < totalMooreCoefficients; i++){
-//            resultM += mooreCoefficients[i]*FastMath.sin(pi_dmax_r*i);
-//        }
-//
-//        return (inv2PI2*standardizationStDev) * r_value * resultM*scale;
-
         return indirectFTModel.calculatePofRAtR(r_value, scale);
     }
 
@@ -663,26 +507,6 @@ public class RealSpace {
         return this.indirectFTModel.calculateIQ(q);
     }
 
-    /**
-     * Calculates intensities from moore coefficients
-     * @param q single scattering vector point
-     * @return Intensity q*I(q)
-     */
-    public double moore_qIq(double q){
-
-        double dmaxPi = dmax*Math.PI*Constants.TWO_DIV_PI;
-        double dmaxq = dmax*q;
-
-        double resultM = mooreCoefficients[0];
-
-        for(int i=1; i < totalMooreCoefficients; i++){
-
-            resultM = resultM + mooreCoefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
-        }
-
-        return resultM*standardizationStDev + standardizationMean;
-    }
-
 
     /**
      * calculate 2nd derivative at r-values determined by ShannonNumber + 1
@@ -698,7 +522,7 @@ public class RealSpace {
         double a_i;
 
         //int r_limit = r_vector.length;
-        int coeffs_size = this.mooreCoefficients.length;
+        int coeffs_size = this.getTotalFittedCoefficients();
 
         double a_i_sum, product, l1_norm = 0.0;
 
@@ -716,34 +540,27 @@ public class RealSpace {
         int r_limit = (int)shannon + 1;
 
         double costerm, sinterm;
-
-        for (int r=0; r < r_limit; r++){
-            r_value = r_vector[r];
-            pi_r_inv_d = pi_inv_d*r_value;
-
-            a_i_sum = 0;
-            costerm = 0;
-            sinterm = 0;
-
-            for(int n=1; n < coeffs_size; n++){
-                //a_i = am.get(n,0);
-                a_i = this.mooreCoefficients[n];
-                n_pi_inv_d = pi_inv_d*n;
-
-                pi_r_n_inv_d = pi_r_inv_d*n;
-//                cos_pi_r_n_inv_d = inv_d*n*Math.cos(pi_r_n_inv_d);
-//                sin_pi_r_n_inv_d = Math.sin(pi_r_n_inv_d);
+// generic function to return 2nd derivative from IndirectFT class
+//        for (int r=0; r < r_limit; r++){
+//            r_value = r_vector[r];
+//            pi_r_inv_d = pi_inv_d*r_value;
 //
-//                product = pi_r_inv_d*inv_2d*n*n*sin_pi_r_n_inv_d;
-//                a_i_sum += a_i*cos_pi_r_n_inv_d + a_i*product;
-
-                costerm += a_i*n_pi_inv_d*Math.cos(pi_r_n_inv_d);
-                sinterm += a_i*n_pi_inv_d*n_pi_inv_d*Math.sin(pi_r_n_inv_d);
-            }
-
-            l1_norm += Math.abs(2*costerm - r_value*sinterm);
-            //l1_norm += Math.abs(a_i_sum);
-        }
+//            costerm = 0;
+//            sinterm = 0;
+//
+//            for(int n=1; n < coeffs_size; n++){
+//
+//                a_i = this.mooreCoefficients[n];
+//                n_pi_inv_d = pi_inv_d*n;
+//
+//                pi_r_n_inv_d = pi_r_inv_d*n;
+//
+//                costerm += a_i*n_pi_inv_d*Math.cos(pi_r_n_inv_d);
+//                sinterm += a_i*n_pi_inv_d*n_pi_inv_d*Math.sin(pi_r_n_inv_d);
+//            }
+//
+//            l1_norm += Math.abs(2*costerm - r_value*sinterm);
+//        }
 
         //System.out.println("l1_norm pddr " + (l1_norm/shannon));
         return l1_norm/shannon;
@@ -753,18 +570,6 @@ public class RealSpace {
         return kurtosis;
     }
 
-
-    /**
-     * calculate SAXS invariants from moore coefficients
-     */
-    private void saxs_invariants(){
-
-        izero = indirectFTModel.getIZero();
-        rg = indirectFTModel.getRg();
-        raverage = indirectFTModel.getRAverage();
-
-        this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);
-    }
 
 
     public void decrementLow(int spinnerValue){
@@ -955,10 +760,6 @@ public class RealSpace {
         chi2=this.indirectFTModel.getChiEstimate();
     }
 
-    public int getTotalMooreCoefficients(){
-        return totalMooreCoefficients;
-    }
-
     /**
      * Total fitted coefficients that excludes the background term (based on Information Theory)
      * @return
@@ -978,9 +779,6 @@ public class RealSpace {
     public double getReciprocalSpaceScaleFactor(){ return dataset.getScaleFactor();}
 
     public void estimateErrors(){
-        // given set of Moore coefficients
-        // bin the data
-        // subsample fit
         indirectFTModel.estimateErrors(this.getfittedqIq());
         this.dataset.updateRealSpaceErrors(indirectFTModel.getRgError(), indirectFTModel.getIZeroError());
         //System.out.println("ERRORS Rg: " + this.dataset.getRealRgSigma() + " IZERO: " + this.dataset.getRealIzeroSigma());
@@ -1171,19 +969,6 @@ public class RealSpace {
         this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);
     }
 
-    public void updateIndirectFTModel(IndirectFT model){
-
-
-        if (this.getClass().getName().contains("MooreTransform")){
-
-        } else {
-            this.indirectFTModel = new SineIntegralTransform((SineIntegralTransform)model);
-        }
-
-        this.rg = model.getRg();
-        this.izero = model.getIZero();
-        this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);
-    }
 
     public IndirectFT getIndirectFTModel(){
         return this.indirectFTModel;

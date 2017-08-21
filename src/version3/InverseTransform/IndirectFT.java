@@ -900,9 +900,6 @@ double topB = 1000;
         // Number of Shannon bins, excludes the a_o
         int bins = ns, count=0, total = data.getItemCount();
 
-        am_vector.printDimensions();
-        a_matrix.printDimensions();
-        y_vector.printDimensions();
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         // calculate residuals
         residuals = new XYSeries("residuals");

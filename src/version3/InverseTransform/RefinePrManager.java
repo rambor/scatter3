@@ -411,7 +411,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         XYDataItem tempData;
 
         double invStd = 1.0/standardizedScale;
-        dataset.getCalcIq().clear();
+
 
         int size = standardizedSeries.getItemCount();
         s_o = 1.4826*(1.0 + 5.0/(size - keptIFTModel.getTotalFittedCoefficients() - 1))*Math.sqrt(getMedian());
@@ -456,7 +456,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         if (keptqIq.getItemCount() > 2*bins){ // do final fitting against kepSeries
 
             dataset.updatedRefinedSets(keptSeries, keptErrorSeries);
-
+            dataset.getCalcIq().clear();
             IndirectFT tempIFT;
             if (useDirectFT){ // unstandardized datasets
                 tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);

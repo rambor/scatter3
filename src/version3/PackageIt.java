@@ -174,7 +174,7 @@ public class PackageIt extends JDialog {
 
                 ScatterImagesOfData tempImages = new ScatterImagesOfData(temp);
                 // write out real space file
-                if (temp.getRealSpaceModel().getRg() > 0 && temp.getRealSpaceModel().getTotalMooreCoefficients() > 1){
+                if (temp.getRealSpaceModel().getRg() > 0 && temp.getRealSpaceModel().getTotalFittedCoefficients() > 1){
                     temp.getRealSpaceModel().estimateErrors();
                     outputObject.writePRFile(temp, new JLabel(""), temp.getFileName(), outputDir, false);
                     // make pr image
