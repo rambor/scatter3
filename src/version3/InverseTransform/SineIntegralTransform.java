@@ -81,7 +81,7 @@ public class SineIntegralTransform extends IndirectFT {
 
 
     public void createDesignMatrix(XYSeries datasetInuse){
-        ns = (int) Math.ceil(qmax*dmax*INV_PI)  ;  //
+        ns = (int) Math.ceil(qmax*dmax*INV_PI)  + 1;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
         rows = datasetInuse.getItemCount();    // rows
 
@@ -94,8 +94,8 @@ public class SineIntegralTransform extends IndirectFT {
         r_vector = new double[r_vector_size];
 
         for(int i=0; i < r_vector_size; i++){ // last bin should be dmax
-            r_vector[i] = (i+1)*del_r;
-            //r_vector[i] = (0.5 + i)*del_r;
+            //r_vector[i] = (i+1)*del_r;
+            r_vector[i] = (0.5 + i)*del_r;
         }
 
         /*
@@ -138,21 +138,17 @@ public class SineIntegralTransform extends IndirectFT {
 
 
     /**
+     * initialize Coefficient vector am for A*am_vector = y_vector
      *
-     * @return ArrayList<double[]> [coeffs] [r-values]
      */
-    private void rambo_coeffs_L1(){
-
-        /*
-         * am_vector contains the unknown parameters
-         */
+    private void initializeCoefficientVector(){
         am_vector = new SimpleMatrix(coeffs_size,1);  // am is 0 column
         //Gaussian guess = new Gaussian(dmax*0.5, 0.2*dmax);
 
         if (!includeBackground) { // no constant background
             for (int i=0; i < coeffs_size; i++){
                 //am_vector.set(i, 0, guess.value(r_vector[i]));
-                am_vector.set(i, 0, 0.01); // initialize coefficient vector a_m to zero
+                am_vector.set(i, 0, 0.00001); // initialize coefficient vector a_m to zero
             }
         } else {
             //am_vector.set(0,0,0.000000001); // set background constant, initial guess could be Gaussian
@@ -162,7 +158,35 @@ public class SineIntegralTransform extends IndirectFT {
                 am_vector.set(i, 0, 1);
             }
         }
+    }
 
+    /**
+     *
+     * @return ArrayList<double[]> [coeffs] [r-values]
+     */
+    private void rambo_coeffs_L1(){
+
+        /*
+         * am_vector contains the unknown parameters
+         */
+//        am_vector = new SimpleMatrix(coeffs_size,1);  // am is 0 column
+//        //Gaussian guess = new Gaussian(dmax*0.5, 0.2*dmax);
+//
+//        if (!includeBackground) { // no constant background
+//            for (int i=0; i < coeffs_size; i++){
+//                //am_vector.set(i, 0, guess.value(r_vector[i]));
+//                am_vector.set(i, 0, 0.00001); // initialize coefficient vector a_m to zero
+//            }
+//        } else {
+//            //am_vector.set(0,0,0.000000001); // set background constant, initial guess could be Gaussian
+//            am_vector.set(0,0,1); // set background constant, initial guess could be Gaussian
+//            for (int i=1; i < coeffs_size; i++){
+//                //am_vector.set(i, 0, guess.value(r_vector[i-1]));
+//                am_vector.set(i, 0, 1);
+//            }
+//        }
+
+        initializeCoefficientVector();
 
 
         double t0 = Math.min(Math.max(1, 1.0/lambda), coeffs_size/0.001);
@@ -432,6 +456,7 @@ public class SineIntegralTransform extends IndirectFT {
 
         izero = (sum + standardizedMin)*standardizedScale;
         rAverage = xaverage/tempRgSum;
+        area = tempRgSum;
     }
 
 
@@ -450,6 +475,8 @@ public class SineIntegralTransform extends IndirectFT {
 //            System.out.println(prDistribution.getX(i) + " " +  prDistribution.getY(i));
 //        }
         totalInDistribution = prDistribution.getItemCount();
+
+        setSplineFunction();
     }
 
 

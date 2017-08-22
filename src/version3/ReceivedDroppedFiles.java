@@ -252,7 +252,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 tempFile = Bruker.makeTempDataFile(file, workingDirectoryName);
                 temp = new LoadedFile(tempFile, status, size, convertToAng);
 
-            } else if (ext.equals("dat") || ext.equals("fit") || ext.equals("Adat")) {
+            } else if (ext.equals("dat") || ext.equals("fit") || ext.equals("Adat") || ext.equals("csv")) {
 
                 temp = new LoadedFile(file, status, size, convertToAng);
             } else {

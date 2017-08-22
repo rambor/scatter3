@@ -1,5 +1,6 @@
 package version3.InverseTransform;
 
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
@@ -80,6 +81,8 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             statusLabel.setText("Starting median residual " + median);
         }
 
+        //bar.setMaximum(100);
+
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
         for (int i=0; i < numberOfCPUs; i++){
             Runnable bounder = new RefinePrManager.Refiner(
@@ -137,6 +140,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         this.bar = bar;
         this.bar.setValue(0);
         this.bar.setStringPainted(true);
+        this.bar.setMaximum(refinementRounds);
         this.statusLabel = prStatusLabel;
         useLabels = true;
     }
@@ -147,7 +151,6 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
     void updateText(final String text){
         statusLabel.setText(text);
-        System.out.println(text);
     };
 
     private synchronized void notifyUser(final String text){
@@ -172,8 +175,6 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         XYSeries fitteddqIqRegion = dataset.getfittedqIq();
 
         int totalItems = fitteddqIqRegion.getItemCount();
-//        standardizedMin = fitteddqIqRegion.getMinY();
-//        standardizedScale = fitteddqIqRegion.getMaxY() - standardizedMin;
         standardizedMin = dataset.getStandardizationMean();
         standardizedScale = dataset.getStandardizationStDev();
         double invstdev = 1.0/standardizedScale;
@@ -307,6 +308,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                     notifyUser(String.format("New median residual %1.5E < %1.4E at round %d", tempMedian, median, i));
                     setIFTObject(tempIFT, tempMedian);
                 }
+
                 this.increment();
             }
         }

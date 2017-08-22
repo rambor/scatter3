@@ -2610,71 +2610,81 @@ signalPlotThread.execute();
         runSphereModelButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                runSphereModelButton.setEnabled(false);
-                status.setText("Calculating Modelings please wait");
-                float qmin = Float.parseFloat(qminCEText.getText());
-                float qmax = Float.parseFloat(qmaxCEText.getText());
-                float solventContrast = Float.parseFloat(solventContrastText.getText());
 
-                Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
-                double[] lowerParams = new double[1];
-                lowerParams[0] = Double.parseDouble(lowerSphereRadius.getText());
-                double[] upperParams = new double[1];
-                upperParams[0] = Double.parseDouble(upperSphereRadius.getText());
-                double[] delta = new double[1];
-                // delta can be calculated from delta-q and dmax
-                //delta[0] = Math.PI/qmax/4.0;
-                delta[0] = 2.79;
-                double[] contrasts = new double[1];
-                contrasts[0] = Float.parseFloat(particleContrastText.getText());
 
-                double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
-                double lambda = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
-                int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
+                try {
+                    runSphereModelButton.setEnabled(false);
+                    status.setText("Calculating Modelings please wait");
+                    float qmin = Float.parseFloat(qminCEText.getText());
+                    float qmax = Float.parseFloat(qmaxCEText.getText());
+                    float solventContrast = Float.parseFloat(solventContrastText.getText());
 
-                int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
+                    Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
+                    double[] lowerParams = new double[1];
+                    lowerParams[0] = Double.parseDouble(lowerSphereRadius.getText());
+                    double[] upperParams = new double[1];
+                    upperParams[0] = Double.parseDouble(upperSphereRadius.getText());
+                    double[] delta = new double[1];
+                    // delta can be calculated from delta-q and dmax
+                    delta[0] = 3.79;
+                    //delta[0] = 2.79;
+                    //delta[0] = (delta[0] <  3.79) ? 3.79 : delta[0];
+                    System.out.println("DELTA[0] " + delta[0]);
+                    double[] contrasts = new double[1];
+                    contrasts[0] = Float.parseFloat(particleContrastText.getText());
 
-                Thread findIt = new Thread(){
-                    public void run() {
+                    double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
+                    double lambda = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
+                    int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
 
-                        final FormFactorEngine sphere = new FormFactorEngine(tempData,
-                                ModelType.SPHERICAL,
-                                cpuCores,           // total cpu cores to use during search
-                                Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
-                                lowerParams, // lower radius starting value
-                                upperParams, // upper
-                                delta,       // incremement to go from lower -> upper limits of params
-                                qmin,        // qmin of fit
-                                qmax,        // qmax of fit
-                                0.0001,      // epsilon
-                                lambda, //
-                                topN,        // top N to select in out of M
-                                solventContrast,
-                                contrasts,
-                                trialsPerRound,  // trials per round
-                                Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()),
-                                !fitBackgroundCheckBox.isSelected(),
-                                maximumEntropyRadioButton.isSelected(),
-                                volumeScalingBox.isSelected(),
-                                version
-                        );   // randomModelsPerTrial
+                    int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
 
-                        sphere.setProgressBar(progressBarSphere);
-                        sphere.setPlotPanels(sphereResidualsPanel, sphereDistributionPanel, leftSpherePanel, rightSpherePanel, sphereDataPlotPanel);
-                        sphere.execute();
-                        try {
-                            sphere.get();
-                            runSphereModelButton.setEnabled(true);
-                            status.setText("Finished");
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        } catch (ExecutionException e1) {
-                            e1.printStackTrace();
+                    Thread findIt = new Thread(){
+                        public void run() {
+
+                            final FormFactorEngine sphere = new FormFactorEngine(tempData,
+                                    ModelType.SPHERICAL,
+                                    cpuCores,           // total cpu cores to use during search
+                                    Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
+                                    lowerParams, // lower radius starting value
+                                    upperParams, // upper
+                                    delta,       // incremement to go from lower -> upper limits of params
+                                    qmin,        // qmin of fit
+                                    qmax,        // qmax of fit
+                                    0.0001,      // epsilon
+                                    lambda, //
+                                    topN,        // top N to select in out of M
+                                    solventContrast,
+                                    contrasts,
+                                    trialsPerRound,  // trials per round
+                                    Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()),
+                                    !fitBackgroundCheckBox.isSelected(),
+                                    maximumEntropyRadioButton.isSelected(),
+                                    volumeScalingBox.isSelected(),
+                                    version
+                            );   // randomModelsPerTrial
+
+                            sphere.setProgressBar(progressBarSphere);
+                            sphere.setPlotPanels(sphereResidualsPanel, sphereDistributionPanel, leftSpherePanel, rightSpherePanel, sphereDataPlotPanel);
+                            sphere.execute();
+                            try {
+                                sphere.get();
+                                runSphereModelButton.setEnabled(true);
+                                status.setText("Finished");
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            } catch (ExecutionException e1) {
+                                e1.printStackTrace();
+                            }
                         }
-                    }
 
-                };
-                findIt.start();
+                    };
+                    findIt.start();
+                } catch (NumberFormatException e1) {
+                    e1.printStackTrace();
+                    status.setText("Check Inputs - missing number");
+                    runSphereModelButton.setEnabled(true);
+                }
             }
         });
 
@@ -2757,87 +2767,93 @@ signalPlotThread.execute();
             @Override
             public void actionPerformed(ActionEvent e) {
                 ellipsoidButton.setEnabled(false);
-                float qmin = Float.parseFloat(qminCEText.getText());
-                float qmax = Float.parseFloat(qmaxCEText.getText());
-                float solventContrast = Float.parseFloat(ellipsoidSolventText.getText());
 
-                double[] lowerParams = new double[1];
-                lowerParams[0] = Double.parseDouble(minorAxisLabel.getText());
-                double[] upperParams = new double[1];
-                upperParams[0] = Double.parseDouble(majorAxisLabel.getText());
-                double[] delta = new double[1];
-                // delta can be calculated from delta-q and dmax
-                delta[0] = 2.79;
+                try {
+                    float qmin = Float.parseFloat(qminCEText.getText());
+                    float qmax = Float.parseFloat(qmaxCEText.getText());
+                    float solventContrast = Float.parseFloat(ellipsoidSolventText.getText());
+                    double[] lowerParams = new double[1];
+                    lowerParams[0] = Double.parseDouble(minorAxisLabel.getText());
+                    double[] upperParams = new double[1];
+                    upperParams[0] = Double.parseDouble(majorAxisLabel.getText());
+                    double[] delta = new double[1];
+                    // delta can be calculated from delta-q and dmax
+                    delta[0] = 2.79;
 
-                double[] contrasts = new double[1];
-                contrasts[0] = Float.parseFloat(particleContrastText.getText());
+                    double[] contrasts = new double[1];
+                    contrasts[0] = Float.parseFloat(particleContrastText.getText());
 
-                double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
-                double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
-                int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
+                    double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
+                    double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
+                    int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
 
-                int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
+                    int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
 
-                Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
+                    Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
 
-                ModelType modelType;
-                int selectedModelIndex = ellipseComboBox1.getSelectedIndex();
-                if (selectedModelIndex==0){
-                    modelType = ModelType.PROLATE_ELLIPSOID;
-                } else if (selectedModelIndex==1){
-                    modelType = ModelType.OBLATE_ELLIPSOID;
-                } else {
-                    modelType = ModelType.ELLIPSOID;
-                }
-
-                Thread findIt = new Thread(){
-                    public void run() {
-
-                        final FormFactorEngine ellipsoid = new FormFactorEngine(tempData,
-                                modelType,
-                                cpuCores,           // total cpu cores to use during search
-                                Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
-                                lowerParams, // lower radius starting value
-                                upperParams, // upper
-                                delta,       // incremement to go from lower -> upper limits of params
-                                qmin,        // qmin of fit
-                                qmax,        // qmax of fit
-                                0.0001,      // epsilon
-                                percentData, //
-                                topN,        // top N to select in out of M
-                                solventContrast,
-                                contrasts,
-                                trialsPerRound,  // trials per round
-                                Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
-                                !fitBackgroundCheckBox.isSelected(), // background
-                                maximumEntropyRadioButton.isSelected(),
-                                volumeScalingBox.isSelected(),
-                                version
-                        );      // useNoBackground
-
-                        ellipsoid.setProgressBar(progressBarEllipsoid);
-
-                        ellipsoid.setEllipsoidPlotPanels(
-                                crossSection1Panel,
-                                ellipsoidResidualPanel,
-                                histogramRaPanel,
-                                histogramRbPanel,
-                                histogramRcPanel,
-                                scoreProgressEllipsePanel,
-                                ellipseDataPanel);
-                        ellipsoid.execute();
-                        try {
-                            ellipsoid.get();
-                            ellipsoidButton.setEnabled(true);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        } catch (ExecutionException e1) {
-                            e1.printStackTrace();
-                        }
+                    ModelType modelType;
+                    int selectedModelIndex = ellipseComboBox1.getSelectedIndex();
+                    if (selectedModelIndex==0){
+                        modelType = ModelType.PROLATE_ELLIPSOID;
+                    } else if (selectedModelIndex==1){
+                        modelType = ModelType.OBLATE_ELLIPSOID;
+                    } else {
+                        modelType = ModelType.ELLIPSOID;
                     }
-                };
 
-                findIt.start();
+                    Thread findIt = new Thread(){
+                        public void run() {
+
+                            final FormFactorEngine ellipsoid = new FormFactorEngine(tempData,
+                                    modelType,
+                                    cpuCores,           // total cpu cores to use during search
+                                    Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
+                                    lowerParams, // lower radius starting value
+                                    upperParams, // upper
+                                    delta,       // incremement to go from lower -> upper limits of params
+                                    qmin,        // qmin of fit
+                                    qmax,        // qmax of fit
+                                    0.0001,      // epsilon
+                                    percentData, //
+                                    topN,        // top N to select in out of M
+                                    solventContrast,
+                                    contrasts,
+                                    trialsPerRound,  // trials per round
+                                    Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
+                                    !fitBackgroundCheckBox.isSelected(), // background
+                                    maximumEntropyRadioButton.isSelected(),
+                                    volumeScalingBox.isSelected(),
+                                    version
+                            );      // useNoBackground
+
+                            ellipsoid.setProgressBar(progressBarEllipsoid);
+
+                            ellipsoid.setEllipsoidPlotPanels(
+                                    crossSection1Panel,
+                                    ellipsoidResidualPanel,
+                                    histogramRaPanel,
+                                    histogramRbPanel,
+                                    histogramRcPanel,
+                                    scoreProgressEllipsePanel,
+                                    ellipseDataPanel);
+                            ellipsoid.execute();
+                            try {
+                                ellipsoid.get();
+                                ellipsoidButton.setEnabled(true);
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            } catch (ExecutionException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    };
+
+                    findIt.start();
+                } catch (NumberFormatException e1) {
+                    e1.printStackTrace();
+                    status.setText("Check Inputs - missing number");
+                    ellipsoidButton.setEnabled(true);
+                }
 
             }
         });
@@ -3459,77 +3475,85 @@ signalPlotThread.execute();
         run3BodyButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                run3BodyButton.setEnabled(false);
-                float qmin = Float.parseFloat(qminCEText.getText());
-                float qmax = Float.parseFloat(qmaxCEText.getText());
-                float solventContrast = Float.parseFloat(solventContrast3Body.getText());
 
-                double[] lowerParams = new double[1];
-                lowerParams[0] = Double.parseDouble(min3BodyTextField.getText());
-                double[] upperParams = new double[1];
-                upperParams[0] = Double.parseDouble(max3BodyTextField.getText());
-                double[] delta = new double[1];
-                // delta can be calculated from delta-q and dmax
-                delta[0] = 2.39;
+                try {
+                    run3BodyButton.setEnabled(false);
+                    float qmin = Float.parseFloat(qminCEText.getText());
+                    float qmax = Float.parseFloat(qmaxCEText.getText());
+                    float solventContrast = Float.parseFloat(solventContrast3Body.getText());
 
-                double[] contrasts = new double[1];
-                contrasts[0] = Float.parseFloat(particleContrast3Body.getText());
+                    double[] lowerParams = new double[1];
+                    lowerParams[0] = Double.parseDouble(min3BodyTextField.getText());
+                    double[] upperParams = new double[1];
+                    upperParams[0] = Double.parseDouble(max3BodyTextField.getText());
+                    double[] delta = new double[1];
+                    // delta can be calculated from delta-q and dmax
+                    delta[0] = 2.39;
 
-                double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
-                double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
-                int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
+                    double[] contrasts = new double[1];
+                    contrasts[0] = Float.parseFloat(particleContrast3Body.getText());
 
-                int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
-                Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
+                    double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
+                    double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
+                    int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
 
-                Thread findIt = new Thread(){
-                    public void run() {
+                    int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
+                    Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
 
-                        final FormFactorEngine body3 = new FormFactorEngine(tempData,
-                                ModelType.THREE_BODY,
-                                cpuCores,           // total cpu cores to use during search
-                                Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
-                                lowerParams, // lower radius starting value
-                                upperParams, // upper
-                                delta,       // incremement to go from lower -> upper limits of params
-                                qmin,        // qmin of fit
-                                qmax,        // qmax of fit
-                                0.0001,      // epsilon
-                                percentData, //
-                                topN,        // top N to select in out of M
-                                solventContrast,
-                                contrasts,
-                                trialsPerRound,  // trials per round
-                                Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
-                                !fitBackgroundCheckBox.isSelected(),      // useNoBackground
-                                maximumEntropyRadioButton.isSelected(),
-                                volumeScalingBox.isSelected(),
-                                version);
+                    Thread findIt = new Thread(){
+                        public void run() {
 
-                        body3.setProgressBar(progressBar3Body);
+                            final FormFactorEngine body3 = new FormFactorEngine(tempData,
+                                    ModelType.THREE_BODY,
+                                    cpuCores,           // total cpu cores to use during search
+                                    Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
+                                    lowerParams, // lower radius starting value
+                                    upperParams, // upper
+                                    delta,       // incremement to go from lower -> upper limits of params
+                                    qmin,        // qmin of fit
+                                    qmax,        // qmax of fit
+                                    0.0001,      // epsilon
+                                    percentData, //
+                                    topN,        // top N to select in out of M
+                                    solventContrast,
+                                    contrasts,
+                                    trialsPerRound,  // trials per round
+                                    Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
+                                    !fitBackgroundCheckBox.isSelected(),      // useNoBackground
+                                    maximumEntropyRadioButton.isSelected(),
+                                    volumeScalingBox.isSelected(),
+                                    version);
 
-                        body3.setThreeBodyPlotPanels(
-                                threeBodyGeometryPanel,
-                                residuals3BodyPanel,
-                                scoreProgressThreeBodyPanel,
-                                dataFit3BodyPanel,
-                                smallest3BodyPanel,
-                                middle3BodyPanel,
-                                largest3BodyPanel);
+                            body3.setProgressBar(progressBar3Body);
 
-                        body3.execute();
-                        try {
-                            body3.get();
-                            run3BodyButton.setEnabled(true);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        } catch (ExecutionException e1) {
-                            e1.printStackTrace();
+                            body3.setThreeBodyPlotPanels(
+                                    threeBodyGeometryPanel,
+                                    residuals3BodyPanel,
+                                    scoreProgressThreeBodyPanel,
+                                    dataFit3BodyPanel,
+                                    smallest3BodyPanel,
+                                    middle3BodyPanel,
+                                    largest3BodyPanel);
+
+                            body3.execute();
+                            try {
+                                body3.get();
+                                run3BodyButton.setEnabled(true);
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            } catch (ExecutionException e1) {
+                                e1.printStackTrace();
+                            }
                         }
-                    }
-                };
+                    };
 
-                findIt.start();
+                    findIt.start();
+                } catch (NumberFormatException e1){
+                    e1.printStackTrace();
+                    status.setText("Check Inputs - missing number");
+                    run3BodyButton.setEnabled(true);
+                }
+
             }
         });
 
@@ -3538,86 +3562,94 @@ signalPlotThread.execute();
         buttonCoreShell.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buttonCoreShell.setEnabled(false);
-                float qmin = Float.parseFloat(qminCEText.getText());
-                float qmax = Float.parseFloat(qmaxCEText.getText());
-                float solventContrast = Float.parseFloat(coreShellSolventContrast.getText());
 
-                double[] lowerParams = new double[1];
-                lowerParams[0] = Double.parseDouble(radiiLowerCoreShell.getText());
-                double[] upperParams = new double[1];
-                upperParams[0] = Double.parseDouble(radiiUpperCoreShell.getText());
-                double[] delta = new double[1];
-                // delta can be calculated from delta-q and dmax
-                delta[0] = 2.79;
+                try {
+                    buttonCoreShell.setEnabled(false);
+                    float qmin = Float.parseFloat(qminCEText.getText());
+                    float qmax = Float.parseFloat(qmaxCEText.getText());
+                    float solventContrast = Float.parseFloat(coreShellSolventContrast.getText());
 
-                double[] contrasts = new double[2];
-                contrasts[0] = Float.parseFloat(coreShellShellContrast.getText());
-                contrasts[1] = Float.parseFloat(coreShellCoreContrast.getText());
+                    double[] lowerParams = new double[1];
+                    lowerParams[0] = Double.parseDouble(radiiLowerCoreShell.getText());
+                    double[] upperParams = new double[1];
+                    upperParams[0] = Double.parseDouble(radiiUpperCoreShell.getText());
+                    double[] delta = new double[1];
+                    // delta can be calculated from delta-q and dmax
+                    delta[0] = 2.79;
 
-                double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
-                double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
-                int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
+                    double[] contrasts = new double[2];
+                    contrasts[0] = Float.parseFloat(coreShellShellContrast.getText());
+                    contrasts[1] = Float.parseFloat(coreShellCoreContrast.getText());
 
-                int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
-                Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
+                    double percentNtoKeep = Double.parseDouble((String)topNComboBox.getSelectedItem())/100.0;
+                    double percentData = Double.parseDouble((String) lambdaCEcomboBox.getSelectedItem());
+                    int trialsPerRound = Integer.parseInt((String)trialsPerRoundComboBox.getSelectedItem());
 
-                ModelType modelType1 = ModelType.CORESHELL_PROLATE_ELLIPSOID;
-                if (coreShellEllipsoidModel.getSelectedIndex()==1){
-                    modelType1 = ModelType.CORESHELL_OBLATE_ELLIPSOID;
+                    int topN = (int)Math.ceil(percentNtoKeep*trialsPerRound);
+                    Dataset tempData = (Dataset)ffCEFileSelectionComboBox.getSelectedItem();
+
+                    ModelType modelType1 = ModelType.CORESHELL_PROLATE_ELLIPSOID;
+                    if (coreShellEllipsoidModel.getSelectedIndex()==1){
+                        modelType1 = ModelType.CORESHELL_OBLATE_ELLIPSOID;
+                    }
+
+                    final ModelType finalModelType = modelType1;
+
+                    Thread findIt = new Thread(){
+                        public void run() {
+
+                            final FormFactorEngine csModel = new FormFactorEngine(tempData,
+                                    finalModelType,
+                                    cpuCores,           // total cpu cores to use during search
+                                    Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
+                                    lowerParams, // lower radius starting value
+                                    upperParams, // upper
+                                    delta,       // incremement to go from lower -> upper limits of params
+                                    qmin,        // qmin of fit
+                                    qmax,        // qmax of fit
+                                    0.0001,      // epsilon
+                                    percentData, //
+                                    topN,        // top N to select in out of M
+                                    solventContrast,
+                                    contrasts,
+                                    trialsPerRound,  // trials per round
+                                    Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
+                                    !fitBackgroundCheckBox.isSelected(),     // useNoBackground
+                                    maximumEntropyRadioButton.isSelected(),
+                                    volumeScalingBox.isSelected(),
+                                    version);
+
+                            csModel.setProgressBar(coreShellProgressBar);
+                            csModel.setCompleteness(coreEmptyAndFullCheckBox.isSelected(), Double.parseDouble(shellThickness.getText()));
+
+                            csModel.setCSPlotPanels(
+                                    geometryCoreShellPanel,
+                                    residualsCoreShellPanel,
+                                    scorePanelCoreShell,
+                                    dataFitsCoreShell,
+                                    histogramRaCoreShellPanel,
+                                    histogramShellThicknessPanel,
+                                    histogramRcCoreShellPanel);
+
+                            csModel.execute();
+                            try {
+                                csModel.get();
+                                buttonCoreShell.setEnabled(true);
+                            } catch (InterruptedException e1) {
+                                e1.printStackTrace();
+                            } catch (ExecutionException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    };
+
+                    findIt.start();
+                }catch (NumberFormatException e1){
+                    e1.printStackTrace();
+                    status.setText("Check Inputs - missing number");
+                    buttonCoreShell.setEnabled(true);
                 }
 
-                final ModelType finalModelType = modelType1;
-
-                Thread findIt = new Thread(){
-                    public void run() {
-
-                        final FormFactorEngine csModel = new FormFactorEngine(tempData,
-                                finalModelType,
-                                cpuCores,           // total cpu cores to use during search
-                                Integer.valueOf((String)ceComboBoxRounds.getSelectedItem()),           // total rounds of selection (hard stop)
-                                lowerParams, // lower radius starting value
-                                upperParams, // upper
-                                delta,       // incremement to go from lower -> upper limits of params
-                                qmin,        // qmin of fit
-                                qmax,        // qmax of fit
-                                0.0001,      // epsilon
-                                percentData, //
-                                topN,        // top N to select in out of M
-                                solventContrast,
-                                contrasts,
-                                trialsPerRound,  // trials per round
-                                Integer.parseInt((String)modelsPerRoundComboBox.getSelectedItem()), // randomModelsPerTrial
-                                !fitBackgroundCheckBox.isSelected(),     // useNoBackground
-                                maximumEntropyRadioButton.isSelected(),
-                                volumeScalingBox.isSelected(),
-                                version);
-
-                        csModel.setProgressBar(coreShellProgressBar);
-                        csModel.setCompleteness(coreEmptyAndFullCheckBox.isSelected(), Double.parseDouble(shellThickness.getText()));
-
-                        csModel.setCSPlotPanels(
-                                geometryCoreShellPanel,
-                                residualsCoreShellPanel,
-                                scorePanelCoreShell,
-                                dataFitsCoreShell,
-                                histogramRaCoreShellPanel,
-                                histogramShellThicknessPanel,
-                                histogramRcCoreShellPanel);
-
-                        csModel.execute();
-                        try {
-                            csModel.get();
-                            buttonCoreShell.setEnabled(true);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        } catch (ExecutionException e1) {
-                            e1.printStackTrace();
-                        }
-                    }
-                };
-
-                findIt.start();
             }
         });
         maximumEntropyRadioButton.addActionListener(new ActionListener() {

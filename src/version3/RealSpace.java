@@ -422,6 +422,7 @@ public class RealSpace {
         this.qmax = value;
     }
 
+    public double getArea(){return indirectFTModel.getArea();}
 
 
     /**
@@ -964,6 +965,7 @@ public class RealSpace {
         this.indirectFTModel = model;
         this.rg = model.getRg();
         this.izero = model.getIZero();
+        this.raverage = model.rAverage;
         this.chi2 = this.indirectFTModel.getChiEstimate();
         this.kurtosis = this.indirectFTModel.getKurtosisEstimate(51);
         this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);

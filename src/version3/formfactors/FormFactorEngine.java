@@ -684,7 +684,7 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
             double contrast = (solventContrast - particleContrasts[0]);
 
 
-            double areaObs=0;
+            double areaObs = dataset.getRealSpaceModel().getArea();
             double dmaxOfExp = dataset.getRealSpaceModel().getDmax();
 
             for(int i=0; i<bins.length; i++){
@@ -695,13 +695,14 @@ public class FormFactorEngine extends SwingWorker<Void, Void> {
                 if (rvalue > dmaxOfExp){
                     prValues += String.format("%.2f %.5E %.5E%n", rvalue,0.0,prvalue);
                 } else {
-                    areaObs += dataset.getRealSpaceModel().calculatePofRAtR(rvalue)*binWidth;
+//                    areaObs += dataset.getRealSpaceModel().calculatePofRAtR(rvalue)*binWidth;
                     prValues += String.format("%.2f %.5E %.5E%n", rvalue,dataset.getRealSpaceModel().calculatePofRAtR(rvalue),prvalue);
                 }
 
                 area += prvalue*binWidth;
             }
             prValues += String.format("%.2f %.5E %.5E %n", bins.length*binWidth,0.0,0.0);
+
 
             // assume relationship between integrated area and volume is linear
             double scaledVolume = areaObs/area*volume;

@@ -314,6 +314,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public SimpleMatrix a_matrix;
     public SimpleMatrix y_vector;
     public SimpleMatrix am_vector;
+    public double area;
 
     public IndirectFT(XYSeries nonStandardizedData, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, int cBoxValue, boolean includeBackground){
         this.nonData = nonStandardizedData;
@@ -372,6 +373,15 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     abstract void calculateIzeroRg();
 
     abstract void setPrDistribution();
+
+    /**
+     * implementing classes should calculate and set area
+     * @return
+     */
+    @Override
+    public double getArea(){
+        return area;
+    }
 
     @Override
     public double[] getCoefficients(){

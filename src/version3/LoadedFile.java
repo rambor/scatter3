@@ -65,7 +65,7 @@ public class LoadedFile {
                 throw new Exception("File Empty");
             }
 
-            if (ext.equals("dat") || ext.equals("int") || ext.equals("txt") ) { //regular 3 column file space or tab delimited
+            if (ext.equals("dat") || ext.equals("int") || ext.equals("txt") || ext.equals("csv") ) { //regular 3 column file space or tab delimited
                 String strLine;
 
                 //Read file line-by-line
@@ -132,7 +132,7 @@ public class LoadedFile {
                 throw new Exception("File Empty");
             }
 
-            if (ext.equals("dat") || ext.equals("fit") || ext.equals("int") || ext.equals("txt")) { //regular 3 column file space or tab delimited
+            if (ext.equals("dat") || ext.equals("fit") || ext.equals("int") || ext.equals("txt") || ext.equals("csv")) { //regular 3 column file space or tab delimited
                 String strLine;
 
                 //Read file line-by-line
@@ -160,6 +160,7 @@ public class LoadedFile {
                         int count = 0;
                         //DataLine dataPoint;
                         while ((strLine = br.readLine()) != null) {
+
                             DataLine dataPoint = dataFromText(strLine);
                             if (dataPoint.getTest()){
                                 tempQValue = (convert) ? dataPoint.getq() / 10 : dataPoint.getq();
@@ -214,6 +215,7 @@ public class LoadedFile {
     }
 
 
+
     private DataLine dataFromText(String line){
 
         DataLine data;
@@ -222,8 +224,8 @@ public class LoadedFile {
         String[] row;
         newString = line.replaceAll( "[\\s\\t]+", " " );
         trimmed = newString.trim();
-        row = trimmed.split("\\s");
-
+        row = trimmed.split("\\s|;");
+        System.out.println(row[0] + " : " + line);
         // if row[0] and row[1] contain commas, then we are assuming comma is a decimal delimiter
         // Denmark, Sweden, Finland, Netherlands, Spain, Germany, France use comma
 

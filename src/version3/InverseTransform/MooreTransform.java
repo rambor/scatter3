@@ -65,14 +65,16 @@ public class MooreTransform extends IndirectFT {
 
         if (useL1){
             this.includeBackground = true;
-            System.out.println("L1 NORM MOORE 2nd DER " + includeBackground);
             this.moore_pr_L1();
         } else { // must always use background when doing second derivative L1
             this.moore_coeffs_L1();
-            System.out.println("L1 NORM MOORE " + includeBackground);
         }
     }
 
+    /**
+     *
+     * @param datasetInuse
+     */
     public void createDesignMatrix(XYSeries datasetInuse){
 
         ns = (int) Math.ceil(qmax*dmax*INV_PI) ;  //
@@ -884,8 +886,6 @@ public class MooreTransform extends IndirectFT {
             i_zero = i_zero + am/(i)*negativeOnePower;
             partial_rg = partial_rg + am_inv_pow_3*(n_pi_squared[i] - 6)*negativeOnePower;
             rsum = rsum + am_inv_pow_3*((n_pi_squared[i] - 2)*negativeOnePower - 2 );
-//            partial_rg = partial_rg + am/Math.pow(i,3)*(Math.pow(Math.PI*i, 2) - 6)*Math.pow(-1, (i+1));
-//            rsum = rsum + am/Math.pow(i,3)*((Math.pow(Math.PI*i, 2) - 2)*Math.pow(-1, (i+1)) - 2 );
         }
 
         double dmax2 = dmax*dmax;
