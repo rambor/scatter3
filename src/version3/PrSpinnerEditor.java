@@ -149,7 +149,6 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
 
         tempPr.run();
         prDataset.calculateIntensityFromModel(qIqFit.isSelected());
-        System.out.println("Updating from spnner");
     }
 
     // Prepares the spinner component and returns it.

@@ -140,14 +140,11 @@ public class FileObject {
      */
     public String writePRFile(Dataset dataset, JLabel status, String filename, String workingDirectoryName, boolean isRefined){
         RealSpace realspaceModel = dataset.getRealSpaceModel();
-        double dmax = realspaceModel.getDmax();
         XYSeries r_pr = new XYSeries("r_pr");
         XYDataItem tempXY;
 
         status.setText("Writing P(r) and plotted I(q) to file: " + filename);
 
-        int coefsSize = 0;
-        double[] coefs;
 
         if (dataset.getRealSpaceModel().getRg() > 0 && dataset.getRealSpaceModel().getIzero() > 0){
             dataset.getRealSpaceModel().estimateErrors(); // this function sets the spline function in indirectFT object
@@ -160,22 +157,9 @@ public class FileObject {
             for(int r=0; r<totalr; r++){
                 r_pr.add(realspaceModel.getPrDistribution().getDataItem(r));
             }
-            coefs = new double[]{0};
 
         } else {
 
-            double incr = Math.PI/realspaceModel.getfittedqIq().getMaxX()/3.0;
-            //double incr = dmax/201.0;
-            //coefs = realspaceModel.getMooreCoefficients();
-            coefs = realspaceModel.getCoefficients();
-            coefsSize = coefs.length;
-
-            r_pr.add(0,0);
-            for (int r = 1; r*incr < dmax; r++){
-                double r_incr = r*incr;
-                r_pr.add(r_incr, realspaceModel.calculatePofRAtR(r_incr));
-            }
-            r_pr.add(dmax, 0);
         }
 
 
@@ -197,28 +181,9 @@ public class FileObject {
             out.write(this.createNotesRemark(dataset));
             out.write(String.format("REMARK 265 EXPERIMENTAL DETAILS%n"));
             out.write(this.createBufferRemark(dataset));
-
-            out.write("REMARK 265 EXPERIMENTAL REAL SPACE FILE \n");
-            out.write("REMARK 265    P(r)-DISTRIBUTION BASED ON : " + dataset.getFileName() + "\n");
-            out.write("REMARK 265 \n");
             out.write(prIqheader(dataset));
-            out.write("REMARK 265 \n");
-            out.write("REMARK 265  MOORE COEFFICIENTS (UNSCALED)\n");
-            String newLine=String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.3E %n", coefs[0]);
-            for (int i=1; i<coefsSize;i++){
-                newLine += String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefs[i]);
-            }
-
-            out.write(newLine);
-
-            out.write("REMARK 265 \n");
-            out.write("REMARK 265  SCALED P(r) DISTRIBUTION \n");
-            out.write(String.format("REMARK 265      SCALE : %.3E %n", realspaceModel.getScale()));
-            out.write("REMARK 265    COLUMNS : r, P(r), error\n");
-            out.write(String.format("REMARK 265          r : defined in Angstroms%n"));
-            for(int i =0; i < r_pr.getItemCount(); i++){
-                out.write( Constants.Scientific1dot4e2.format(r_pr.getX(i).doubleValue()) + "\t" + Constants.Scientific1dot2e1.format(r_pr.getY(i).doubleValue()*realspaceModel.getScale()) + "\t 0.00 "+ "\n");
-            }
+            String modelText = dataset.getRealSpaceModel().getIndirectFTModel().getHeader(dataset.getRealSpaceModel().getScale());
+            out.write(modelText);
             //Close the output stream
             out.close();
         }catch (Exception e){//Catch exception if any

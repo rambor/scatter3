@@ -15,7 +15,7 @@ import java.util.List;
  * Created by robertrambo on 08/02/2016.
  */
 public class PDBFile {
-    private int dmax, totalAtomsRead;
+    private int dmax, totalAtomsRead, totalAtoms;
     private double qmax;
     private int pr_bins;
     private double delta_r;
@@ -23,7 +23,7 @@ public class PDBFile {
     private boolean useWaters = false;
     private XYSeries pdbdata;
     private XYSeries high_res_pr_data;
-    private XYSeries icalc;
+    private XYSeries icalc, debye;
     private XYSeries error;
     private ArrayList<PDBAtom> atoms;
     private ArrayList<PDBAtom> centeredAtoms;
@@ -40,6 +40,8 @@ public class PDBFile {
         this.qmax = qmax;
         this.useWaters = !exclude;
         icalc = new XYSeries(filename);
+        debye = new XYSeries("debye");
+
         this.currentWorkingDirectory = workingDirectoryName;
 
         atoms = new ArrayList<>();
@@ -104,17 +106,25 @@ public class PDBFile {
             }
 
             // determine dmax of pdb file
-            int totalAtoms = workingCoords.size();
+            totalAtoms = workingCoords.size();
             dmax = dmaxFromPDB(workingCoords, totalAtoms);
             // calculate PofR from workingAtoms
             // use resolution to determine number of Shannon bins
+
             delta_r = Math.PI/qmax;
-            pr_bins = (int)Math.ceil((dmax / delta_r));
+
+            //pr_bins = (int)Math.ceil((dmax / delta_r));
+            pr_bins = (int)Math.ceil(qmax*dmax/Math.PI) + 1;
+            delta_r = dmax/(double)pr_bins;
+
             double ns_dmax = pr_bins*delta_r; // dmax corresponding to number of Shannon Bins
+            System.out.println("DMAX : " + dmax + " " + ns_dmax);
+
             distances = new ArrayList<>();
             // should bin based on ns_dmax
             int high_res_pr_bins = (int)Math.ceil((double)dmax/highresWidth);
-            double inv_delta = qmax/Math.PI;
+
+            double inv_delta = 1.0/delta_r;
 
             // high res bin width =>
             // implies dmax/high_res_bin_width
@@ -143,6 +153,7 @@ public class PDBFile {
                     difz = refz - atom2[2];
 
                     distance = FastMath.sqrt(difx * difx + dify * dify + difz * difz);
+                    distances.add(distance);
                     // which bin low res?
                     // lower < value <= upper
                     bin = (int) Math.floor(distance * inv_delta); // casting to int is equivalent to floor
@@ -160,12 +171,14 @@ public class PDBFile {
             pdbdata = new XYSeries(filename);
             high_res_pr_data = new XYSeries(filename);
             pdbdata.add(0,0);
+            double temparea = 0;
             for (int i = 0; i < pr_bins; i++) {
                 pdbdata.add((i + 0.5) * delta_r, histo[i]);  // middle position of the histogram bin
                 //pdbdata.add((i+1) * delta_r, histo[i]);    // far edge position of the histogram bin
                 //pdbdata.add(i * delta_r, histo[i]);        // near edge position of the histogram bin
-                XYDataItem tempItem = pdbdata.getDataItem(i);
-                System.out.println(tempItem.getXValue() + " " + tempItem.getYValue() + " 0 ");
+                //XYDataItem tempItem = pdbdata.getDataItem(i);
+                //System.out.println(tempItem.getXValue() + " " + tempItem.getYValue() + " 0 ");
+                temparea += delta_r*histo[i];
             }
             // pdbdata.add(delta_r*(pr_bins), 0); // dmax is contained in the last bin
             pdbdata.add(ns_dmax, 0);
@@ -188,6 +201,9 @@ public class PDBFile {
 
             // r, P(r)
             izero = Functions.trapezoid_integrate(pdbdata);
+
+            izero = temparea; // should equal number of electrons squared
+
             double invarea = 1.0 / izero, rvalue;
             XYSeries secondMoment = new XYSeries("second");
             for (int i = 0; i < all; i++) {
@@ -198,18 +214,18 @@ public class PDBFile {
 
             rg = Math.sqrt(0.5*Functions.trapezoid_integrate(secondMoment)*invarea);
 
-            // normalize Pr distribution
-            System.out.println("P(R) InvArea " + invarea + " Rg => " + rg);
+            // normalize Pr distribution so area is equal to one
+            //System.out.println("P(R) InvArea " + invarea + " Rg => " + rg);
             for (int i = 0; i < pdbdata.getItemCount(); i++) {
                 pdbdata.updateByIndex(i, pdbdata.getY(i).doubleValue() * invarea);
             }
 
-            System.out.println("POFR POINTS FROM PDB MODEL (UNSCALED) : " + all + " > " + pr_bins);
-            for (int i = 0; i < all; i++) {
-                System.out.println(String.format("%5.2f %.5E", pdbdata.getX(i).doubleValue(), pdbdata.getY(i).doubleValue()));
-            }
-            System.out.println("END OF POFR POINTS");
-            calculateMooreCoefficients(pr_bins, ns_dmax);
+//            System.out.println("POFR POINTS FROM PDB MODEL (UNSCALED) : " + all + " > " + pr_bins);
+//            for (int i = 0; i < all; i++) {
+//                System.out.println(String.format("%5.2f %.5E", pdbdata.getX(i).doubleValue(), pdbdata.getY(i).doubleValue()));
+//            }
+//            System.out.println("END OF POFR POINTS");
+            //calculateMooreCoefficients(pr_bins, ns_dmax);
             // calcualte p(r) distribution to the specified resolution
         }
     }
@@ -230,24 +246,35 @@ public class PDBFile {
 
         double constant = 0.5*dmax/(totalr-1); // first bin is just 0,0
 
+        int totalDistances = distances.size();
         XYDataItem tempItem;
-        System.out.println("ICALC");
+        //System.out.println("ICALC");
         while (q_at < qmax){  // integrate using trapezoid rule
 
             q_at += delta_q;
-
             sum = 0;
             // for a given q, integrate Debye function from r=0 to r=dmax
+            // first element of pdbdata is r=0 and last is r=dmax;
+            // r is defined as integer multiples of Math.PI/qmax;
             for(int i=1; i<totalr-1; i++){
                 tempItem = pdbdata.getDataItem(i);
                 qr = (tempItem.getXValue())*q_at;
-                //sum += 2*( (tempItem.getYValue())* FastMath.sin(qr)/qr); // trapezoid rule
+                //qr = (delta_r*i)*q_at;
                 sum += ( (tempItem.getYValue())* FastMath.sin(qr)/qr);
             }
             //System.out.println(q_at + " " + sum);
+
             icalc.add(q_at, constant*sum);
+
+//            sum = totalAtoms;
+//            for(int i=0; i<totalDistances; i++){
+//                qr = distances.get(i)*q_at;
+//                sum += 2*FastMath.sin(qr)/qr;
+//            }
+//            System.out.println(q_at + " " + sum);
+//            debye.add(q_at, sum);
         }
-        System.out.println("END");
+        //System.out.println("END");
 
         double max = icalc.getMaxY();
         int totalcalc = icalc.getItemCount();
@@ -258,7 +285,7 @@ public class PDBFile {
             icalc.update(icalc.getX(i), icalc.getY(i).doubleValue()*rescale);
             error.add(icalc.getX(i), icalc.getY(i).doubleValue()*rescale*0.05);
         }
-        System.out.println("Intensities Calculated from PDB");
+        //System.out.println("Intensities Calculated from PDB");
     }
 
     /**

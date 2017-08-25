@@ -11,6 +11,7 @@ import org.ejml.simple.SimpleMatrix;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
+import version3.Constants;
 import version3.Functions;
 import version3.Interpolator;
 
@@ -31,6 +32,7 @@ public class SineIntegralTransform extends IndirectFT {
         this.createDesignMatrix(this.data);
 
         this.rambo_coeffs_L1();
+        this.setModelUsed("DIRECT IFT L1-NORM BINS");
        // System.out.println("L1 NORM RAMBO " + includeBackground);
     }
 
@@ -81,12 +83,13 @@ public class SineIntegralTransform extends IndirectFT {
 
 
     public void createDesignMatrix(XYSeries datasetInuse){
-        ns = (int) Math.ceil(qmax*dmax*INV_PI)  + 1;  //
+        ns = (int) Math.ceil(qmax*dmax*INV_PI)  ;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
         rows = datasetInuse.getItemCount();    // rows
 
         r_vector_size = ns; // no background implies coeffs_size == ns
-        // del_r = Math.PI/qmax; // dmax is based del_r*ns
+
+        //del_r = Math.PI/qmax; // dmax is based del_r*ns
         del_r = dmax/ns;
         // if I think I can squeeze out one more Shannon Number, then I need to define del_r by dmax/ns+1
         //double del_r = dmax/(double)ns;
@@ -95,7 +98,7 @@ public class SineIntegralTransform extends IndirectFT {
 
         for(int i=0; i < r_vector_size; i++){ // last bin should be dmax
             //r_vector[i] = (i+1)*del_r;
-            r_vector[i] = (0.5 + i)*del_r;
+            r_vector[i] = (0.5 + i)*del_r; // dmax is not represented in this set
         }
 
         /*
@@ -403,12 +406,16 @@ public class SineIntegralTransform extends IndirectFT {
         // first value is 0, last value is dmax
         r_values[0] = 0;
         for(int j=0; j< r_vector_size; j++){
-            r_values[j+1] = r_vector[j];
+            r_values[j+1] = r_vector[j]; //
         }
+
         double secondToLastRvalue = r_vector[r_vector_size-2]; // last value of r-vector
         double redo = 0.5*(dmax - secondToLastRvalue);
+       // r_values[ r_values.length - 3] = secondToLastRvalue + 0.5*redo;
         r_values[ r_values.length - 2] = secondToLastRvalue + redo;
         r_values[ r_values.length - 1 ] = dmax;
+
+
 
         // P(dmax) should be zero.  So, we introduce a mid point between second to Last value and dmax to hold value of the last bin
 
@@ -460,22 +467,78 @@ public class SineIntegralTransform extends IndirectFT {
     }
 
 
+
     @Override
     void setPrDistribution(){
         prDistribution = new XYSeries("PRDistribution");
-        totalInDistribution = r_values.length;
-        prDistribution.add(0,0);
 
-        // coefficients start at r_1 > 0 and ends at midpoint of last bin which is less dmax
-        for(int i=1; i < coeffs_size; i++){
-            prDistribution.add(r_values[i], coefficients[i]); // first value is background for coeffs
+        totalInDistribution = r_vector_size+2;
+
+        for(int i=0; i<totalInDistribution; i++){
+
+            if ( i == 0 ) { // interleaved r-value (even)
+                prDistribution.add(0, 0);
+            } else if (i == (totalInDistribution-1)) {
+                prDistribution.add(dmax, 0);
+
+            } else { // odd
+                int index = i-1;
+                prDistribution.add(r_vector[index], coefficients[index+1]);
+            }
+            //System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
         }
-        prDistribution.add(r_values[totalInDistribution-1], 0);
+
+        XYDataItem secondToLastItem = prDistribution.getDataItem(totalInDistribution-2);
+        double delta = dmax - secondToLastItem.getXValue();
+
+        prDistribution.add(secondToLastItem.getXValue() + 0.5*delta, secondToLastItem.getYValue()*0.5);
+
+
+//        prDistribution.add(0,0);
+//        //System.out.println("Distribution set :");
+//        // coefficients start at r_1 > 0 and ends at midpoint of last bin which is less dmax
+//        for(int i=1; i < totalCoefficients; i++){
+//            //prDistribution.add(del_r*(0.5+i-1), coefficients[i]);
+//            prDistribution.add(r_values[i], coefficients[i]); // first value is background for coeffs
+//            System.out.println(i + " " + r_values[i] + " " + coefficients[i]);
+//        }
+//        //double lastvalue = prDistribution.getY((prDistribution.getItemCount()-1)).doubleValue();
+//        //prDistribution.add(r_values[totalInDistribution-3], 0.75*lastvalue); // should be dmax
+//        //prDistribution.add(r_values[totalInDistribution-2], 0.5*lastvalue); // should be dmax
+//        prDistribution.add(r_values[totalInDistribution-1], 0); // should be dmax
+
 //        for(int i=0; i < totalInDistribution; i++){
 //            System.out.println(prDistribution.getX(i) + " " +  prDistribution.getY(i));
 //        }
-        totalInDistribution = prDistribution.getItemCount();
 
+
+        // create a list of r-values with interleaved values
+
+//        totalInDistribution = 2*r_vector_size + 1 ;
+//
+//        for(int i=0; i<totalInDistribution; i++){
+//
+//            if ( (i & 1) == 0 ) { // interleaved r-value (even)
+//
+//                if (i==0) {
+//                    prDistribution.add(0, 0);
+//                } else if (i == (totalInDistribution-1)) {
+//                    prDistribution.add(dmax, 0);
+//                } else {
+//                    int priorIndex = i/2; // divide by two to map to r_vector
+//                    // need the coefficients that neighbor the boundary point
+//                    double interpolatedValue = 0.5*(coefficients[priorIndex] + coefficients[priorIndex+1]);
+//                    prDistribution.add(priorIndex*del_r, interpolatedValue);
+//                }
+//
+//            } else { // odd
+//                int index = (i-1)/2;
+//                prDistribution.add(r_vector[index], coefficients[index+1]);
+//            }
+//            System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
+//        }
+
+        totalInDistribution = prDistribution.getItemCount();
         setSplineFunction();
     }
 
@@ -662,6 +725,4 @@ public class SineIntegralTransform extends IndirectFT {
         totalInDistribution = prDistribution.getItemCount();
         setSplineFunction();
     }
-
-
 }

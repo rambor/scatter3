@@ -26,6 +26,7 @@ interface RealSpacePrObjectInterface {
     void createNonStandardizedData();
     double calculateMedianResidual(XYSeries series);
 
+    String getHeader(double scale);
     double getArea();
     int getTotalFittedCoefficients();
 }

@@ -225,7 +225,6 @@ public class LoadedFile {
         newString = line.replaceAll( "[\\s\\t]+", " " );
         trimmed = newString.trim();
         row = trimmed.split("\\s|;");
-        System.out.println(row[0] + " : " + line);
         // if row[0] and row[1] contain commas, then we are assuming comma is a decimal delimiter
         // Denmark, Sweden, Finland, Netherlands, Spain, Germany, France use comma
 
@@ -235,7 +234,7 @@ public class LoadedFile {
         // df.format() returns a string
         // System.out.println("LOCALE " + loc); // en_GB, en_US
 
-        if ( (!trimmed.contains("#") && (row.length >= 2 && row.length <= 4) &&
+        if ( (!trimmed.contains("#") && (row.length >= 2 && row.length <= 5) &&
                 !row[0].matches("^[A-Za-z#:_\\/$%*!\\'-].+") &&  // checks for header or footer stuff
                 !isZero(row[0]) &&                               // no zero q values
                 !isZero(row[1]) &&                               // no zero I(q) values

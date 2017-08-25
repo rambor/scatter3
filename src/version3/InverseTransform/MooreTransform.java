@@ -7,6 +7,7 @@ import org.ejml.ops.CommonOps;
 import org.ejml.simple.SimpleMatrix;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
+import version3.Constants;
 import version3.Functions;
 
 import java.util.ArrayList;
@@ -29,8 +30,10 @@ public class MooreTransform extends IndirectFT {
         if (useL1){
             this.includeBackground = true;
             this.moore_pr_L1();
+            this.setModelUsed("MOORE L1-NORM SMOOTH");
         } else { // must always use background when doing second derivative L1
             this.moore_coeffs_L1();
+            this.setModelUsed("MOORE L1-NORM COEFFICIENTS");
         }
     }
 
@@ -903,6 +906,7 @@ public class MooreTransform extends IndirectFT {
         rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero_temp*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
         rAverage = 2*dmax3*inv_pi_fourth/izero_temp*rsum;
     }
+
 
 
     @Override

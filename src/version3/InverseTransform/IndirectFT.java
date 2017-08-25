@@ -6,6 +6,7 @@ import org.ejml.simple.SimpleMatrix;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
+import version3.Constants;
 import version3.Functions;
 import version3.Interpolator;
 import version3.StatMethods;
@@ -314,6 +315,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public SimpleMatrix a_matrix;
     public SimpleMatrix y_vector;
     public SimpleMatrix am_vector;
+    private String modelUsed;
     public double area;
 
     public IndirectFT(XYSeries nonStandardizedData, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, int cBoxValue, boolean includeBackground){
@@ -371,7 +373,6 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     }
 
     abstract void calculateIzeroRg();
-
     abstract void setPrDistribution();
 
     /**
@@ -1127,6 +1128,54 @@ double topB = 1000;
             XYDataItem item = this.data.getDataItem(i);
             nonData.add(item.getX(), item.getYValue()*standardizedScale+standardizedMin);
         }
+    }
+
+    @Override
+    public String getHeader(double scale){
+
+        String output = String.format("REMARK 265 EXPERIMENTAL REAL SPACE FILE %n");
+        output += String.format("REMARK 265    P(r)-DISTRIBUTION BASED ON : %s %n", modelUsed);
+
+        output += String.format("REMARK 265 %n");
+
+        output += String.format("REMARK 265 %n");
+        output += String.format("REMARK 265  BIN COEFFICIENTS (UNSCALED)%n");
+
+        if (!includeBackground){
+            output += String.format("REMARK 265      CONSTANT BACKGROUND EXCLUDED FROM FIT %n");
+        }
+        output += String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.3E %n", coefficients[0]);
+
+        for (int i=1; i<totalCoefficients;i++){
+            output +=  String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefficients[i]);
+        }
+
+        output += String.format("REMARK 265 %n");
+        output += String.format("REMARK 265  SCALED P(r) DISTRIBUTION %n");
+        output += String.format("REMARK 265      SCALE : %.3E %n", scale);
+        output += String.format("REMARK 265    COLUMNS : r, P(r), error%n");
+        output += String.format("REMARK 265          r : defined in Angstroms%n");
+
+        double incr = Math.PI/qmax/3.0;
+        incr = (incr < 3.1 ) ? 3.1 : incr;
+
+        output += String.format( Constants.Scientific1dot4e2.format(0) + "\t" + Constants.Scientific1dot2e1.format(0) + "\t 0.00 "+ "\n");
+        for (int r = 1; r*incr < dmax; r++){
+            double r_incr = r*incr;
+            output += String.format( Constants.Scientific1dot4e2.format(r_incr) + "\t" + Constants.Scientific1dot2e1.format(this.calculatePofRAtR(r_incr, scale)) + "\t 0.00 "+ "\n");
+        }
+        output += String.format( Constants.Scientific1dot4e2.format(dmax) + "\t" + Constants.Scientific1dot2e1.format(0) + "\t 0.00 "+ "\n");
+
+//        for(int i =0; i < totalInDistribution; i++){
+//            XYDataItem item = prDistribution.getDataItem(i);
+//            output += String.format( Constants.Scientific1dot4e2.format(item.getXValue()) + "\t" + Constants.Scientific1dot2e1.format(item.getYValue()*scale) + "\t 0.00 "+ "\n");
+//        }
+        output += String.format("REMARK 265 %n");
+        return output;
+    }
+
+    public void setModelUsed(String text){
+        this.modelUsed = text;
     }
 
 }
