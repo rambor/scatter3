@@ -92,6 +92,9 @@ public class LoadedFile {
                 } catch (IOException ex) {
                     System.err.println("File Index out of bounds");
                 }
+            } else {
+                String message = "Incorrect file extension : " + filename;
+                throw new IllegalArgumentException(message);
             }
             // might have a cansas format, open file and read contents
             br.close();
@@ -191,6 +194,9 @@ public class LoadedFile {
                 }
             } else if (ext.equals("pdb")) { // read in PDB file, make intensity from P(r)?
 
+            } else {
+                String message = "Incorrect file extension : " + filename;
+                throw new IllegalArgumentException(message);
             }
             // might have a cansas format, open file and read contents
 

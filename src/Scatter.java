@@ -3127,6 +3127,7 @@ signalPlotThread.execute();
                 if (checkBoxDirect.isSelected()){
                     useDirectFourierTransformCheckBox.setSelected(true);
                     l1NormCheckBox.setSelected(false);
+                    lambdaBox.setSelectedIndex(2);
                     if (excludeBackgroundInFitCheckBox.isSelected()){
                         methodInUseLabel.setText("Direct Inverse FT Method with constant background");
                     } else {
@@ -3144,6 +3145,7 @@ signalPlotThread.execute();
                             methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
                         }
                     }
+                    lambdaBox.setSelectedIndex(6);
                 }
             }
         });
@@ -3158,14 +3160,17 @@ signalPlotThread.execute();
                     useDirectFourierTransformCheckBox.setSelected(false);
                     excludeBackgroundInFitCheckBox.setSelected(true);
                     methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
+                    lambdaBox.setSelectedIndex(6);
                 } else {
                    // checkBoxDirect.setSelected(false);
                    // useDirectFourierTransformCheckBox.setSelected(true);
                    // excludeBackgroundInFitCheckBox.setSelected(true);
                     if (excludeBackgroundInFitCheckBox.isSelected()){
                         methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
+                        lambdaBox.setSelectedIndex(6);
                     } else {
                         methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
+                        lambdaBox.setSelectedIndex(6);
                     }
                 }
             }
@@ -3683,6 +3688,7 @@ signalPlotThread.execute();
                 if (useDirectFourierTransformCheckBox.isSelected()){
                     l1NormCheckBox.setSelected(false);
                     checkBoxDirect.setSelected(true);
+                    lambdaBox.setSelectedIndex(2);
                     if(excludeBackgroundInFitCheckBox.isSelected()){
                         methodInUseLabel.setText("Direct Inverse FT with constant background");
                     } else {
@@ -3695,6 +3701,7 @@ signalPlotThread.execute();
                     } else {
                         methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
                     }
+                    lambdaBox.setSelectedIndex(6);
                 }
             }
         });

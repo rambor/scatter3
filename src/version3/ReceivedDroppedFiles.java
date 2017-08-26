@@ -86,7 +86,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         bar.setStringPainted(true);
         bar.setValue(0);
 
-        System.out.println("TOTAL FILES " + totalFiles);
+       //System.out.println("TOTAL FILES " + totalFiles);
 
         if (sortFiles && totalFiles > 1){ // sort the name of directories first and then proceed to loading files
             Arrays.sort(files, fileComparator);
@@ -253,11 +253,10 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 temp = new LoadedFile(tempFile, status, size, convertToAng);
 
             } else if (ext.equals("int") || ext.equals("dat") || ext.equals("fit") || ext.equals("Adat") || ext.equals("csv")) {
-
                 temp = new LoadedFile(file, status, size, convertToAng);
             } else {
                 // throw exception - incorrect file format
-                throw new Exception("Incorrect file format: Use either brml, dat, fit, Adat, or Bdat file formats: " + currentFile);
+                throw new Exception("Incorrect file format: Use either brml, dat, csv, Adat, or Bdat file formats: " + currentFile);
             }
 
         } catch (Exception ex) {
