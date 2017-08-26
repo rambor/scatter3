@@ -30,8 +30,8 @@ public class SineIntegralTransform extends IndirectFT {
         super(dataset, errors, dmax, qmax, lambda, useL1, cBoxValue, includeBackground);
 
         this.createDesignMatrix(this.data);
-
         this.rambo_coeffs_L1();
+
         this.setModelUsed("DIRECT IFT L1-NORM BINS");
        // System.out.println("L1 NORM RAMBO " + includeBackground);
     }
@@ -65,6 +65,7 @@ public class SineIntegralTransform extends IndirectFT {
 
         this.createDesignMatrix(dataset);
         this.rambo_coeffs_L1();
+        this.setModelUsed("DIRECT IFT L1-NORM BINS");
     }
 
     /**
@@ -91,6 +92,7 @@ public class SineIntegralTransform extends IndirectFT {
 
         //del_r = Math.PI/qmax; // dmax is based del_r*ns
         del_r = dmax/ns;
+
         // if I think I can squeeze out one more Shannon Number, then I need to define del_r by dmax/ns+1
         //double del_r = dmax/(double)ns;
 
@@ -391,8 +393,9 @@ public class SineIntegralTransform extends IndirectFT {
         coefficients = new double[totalCoefficients];
         if (!includeBackground){
             coefficients[0] = 0; // set background to 0
-            for (int j=1; j < coeffs_size; j++){
+            for (int j=1; j < totalCoefficients; j++){
                 coefficients[j] = am_vector.get(j-1,0);
+                //System.out.println(j + " COEFFS " + coefficients[j]);
             }
         } else {
             for (int j=0; j < coeffs_size; j++){
@@ -414,7 +417,6 @@ public class SineIntegralTransform extends IndirectFT {
        // r_values[ r_values.length - 3] = secondToLastRvalue + 0.5*redo;
         r_values[ r_values.length - 2] = secondToLastRvalue + redo;
         r_values[ r_values.length - 1 ] = dmax;
-
 
 
         // P(dmax) should be zero.  So, we introduce a mid point between second to Last value and dmax to hold value of the last bin
@@ -439,14 +441,13 @@ public class SineIntegralTransform extends IndirectFT {
         return (inv2PI2*standardizedScale)*splineFunction.value(r_value)*scale;
     }
 
-
     @Override
     void calculateIzeroRg() {
         double tempRgSum = 0, tempRg2Sum=0, xaverage=0;
         //del_r = prDistribution.getX(2).doubleValue() - prDistribution.getX(1).doubleValue() ;
 
         XYDataItem item;
-        for(int i=0; i<totalInDistribution; i++){
+        for(int i=0; i<totalInDistribution-2; i++){ // exclude last two points?
             item = prDistribution.getDataItem(i);
             double rvalue = item.getXValue();
             tempRg2Sum += rvalue*rvalue*item.getYValue()*del_r;
@@ -461,7 +462,8 @@ public class SineIntegralTransform extends IndirectFT {
             sum +=  coefficients[j+1];
         }
 
-        izero = (sum + standardizedMin)*standardizedScale;
+        //izero = (sum + standardizedMin)*standardizedScale;
+        izero = sum*standardizedScale+standardizedMin;
         rAverage = xaverage/tempRgSum;
         area = tempRgSum;
     }
@@ -480,14 +482,13 @@ public class SineIntegralTransform extends IndirectFT {
                 prDistribution.add(0, 0);
             } else if (i == (totalInDistribution-1)) {
                 prDistribution.add(dmax, 0);
-
             } else { // odd
                 int index = i-1;
                 prDistribution.add(r_vector[index], coefficients[index+1]);
             }
             //System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
         }
-
+        // add an extra point for the spline interpolation at end, purely for rendering reasons
         XYDataItem secondToLastItem = prDistribution.getDataItem(totalInDistribution-2);
         double delta = dmax - secondToLastItem.getXValue();
 
@@ -539,6 +540,10 @@ public class SineIntegralTransform extends IndirectFT {
 //        }
 
         totalInDistribution = prDistribution.getItemCount();
+
+        this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS DIRECT INVERSE FOURIER TRANSFORM OF I(q) %n");
+        this.description += String.format("REMARK 265  COEFFICIENTS ARE THE HISTOGRAM HEIGHTS WITH EQUAL BIN WIDTHS %n");
+        this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.5E %n", coefficients[0]);
         setSplineFunction();
     }
 

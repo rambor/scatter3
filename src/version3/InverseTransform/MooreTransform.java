@@ -69,8 +69,10 @@ public class MooreTransform extends IndirectFT {
         if (useL1){
             this.includeBackground = true;
             this.moore_pr_L1();
+            this.setModelUsed("MOORE L1-NORM SMOOTH");
         } else { // must always use background when doing second derivative L1
             this.moore_coeffs_L1();
+            this.setModelUsed("MOORE L1-NORM COEFFICIENTS");
         }
     }
 

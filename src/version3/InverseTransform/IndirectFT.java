@@ -290,6 +290,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public XYSeries prDistribution;
     public boolean negativeValuesInModel;
     public PolynomialSplineFunction splineFunction;
+    public String description="";
 
     /*
      * LINE SEARCH PARAMETERS
@@ -360,6 +361,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
         standardizedScale = standardizationStDev;
         this.createNonStandardizedData();
     }
+
 
 
     @Override
@@ -1135,8 +1137,7 @@ double topB = 1000;
 
         String output = String.format("REMARK 265 EXPERIMENTAL REAL SPACE FILE %n");
         output += String.format("REMARK 265    P(r)-DISTRIBUTION BASED ON : %s %n", modelUsed);
-
-        output += String.format("REMARK 265 %n");
+        output += description;
 
         output += String.format("REMARK 265 %n");
         output += String.format("REMARK 265  BIN COEFFICIENTS (UNSCALED)%n");
@@ -1170,7 +1171,7 @@ double topB = 1000;
 //            XYDataItem item = prDistribution.getDataItem(i);
 //            output += String.format( Constants.Scientific1dot4e2.format(item.getXValue()) + "\t" + Constants.Scientific1dot2e1.format(item.getYValue()*scale) + "\t 0.00 "+ "\n");
 //        }
-        output += String.format("REMARK 265 %n");
+
         return output;
     }
 
