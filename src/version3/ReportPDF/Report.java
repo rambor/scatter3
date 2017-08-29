@@ -5,12 +5,14 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.jfree.chart.ChartFactory;
 
+import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.XYSplineRenderer;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -104,6 +106,16 @@ public class Report {
 
         // Add Pr plot and Guinier with residuals if available
         // provide completed table
+
+        document.add(new VerticalSpacer(20));
+        try {
+            Paragraph notes = new Paragraph();
+            notes.addMarkup(dataset.getExperimentalNotes(), 10, BaseFont.Times);
+            document.add(notes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         document.add(new VerticalSpacer(40));
         ImageElement residualsGuinier = new ImageElement(createGuinierResidualsPlotFromDataset(dataset));
         residualsGuinier.setWidth(imageWidth);
@@ -234,6 +246,13 @@ public class Report {
             izerorg.setHeight(imageHeight);
             document.add(izerorg, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
         } // add Pr distribution plot if single
+
+        if (inUseCollection.getDatasetCount() == 1 && !addIzeroRgPlot && inUseCollection.getDataset(0).getRealRg() > 0){
+            ImageElement izerorg = new ImageElement(createPrPlotFromDataset(inUseCollection.getDataset(0)));
+            izerorg.setWidth(imageWidth);
+            izerorg.setHeight(imageHeight);
+            document.add(izerorg, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
+        }
 
 
         // add table of results (color text by data color)
@@ -443,6 +462,52 @@ public class Report {
 
 
         return residualsChart.createBufferedImage((int)imageWidth*3,(int)imageHeight*3);
+    }
+
+
+    private BufferedImage createPrPlotFromDataset(Dataset dataset){
+
+        XYSeriesCollection splineCollection = new XYSeriesCollection();
+        splineCollection.addSeries(dataset.getRealSpaceModel().getPrDistribution());
+        double ilower = 0;
+        double iupper = dataset.getRealSpaceModel().getPrDistribution().getMaxY();
+        double upper = dataset.getDmax();
+
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "",                     // chart title
+                "r",                        // domain axis label
+                "P(r)",                // range axis label
+                splineCollection,                 // data
+                PlotOrientation.VERTICAL,
+                false,                       // include legend
+                false,
+                false
+        );
+
+        final XYPlot plot = chart.getXYPlot();
+        plot.setDomainAxis(getDomainAxis("r, \u212B"));
+        plot.setRangeAxis(getRangeAxis("P(r)", ilower, iupper));
+
+        plot.configureDomainAxes();
+        plot.configureRangeAxes();
+        plot.setBackgroundAlpha(0.0f);
+
+        plot.setDomainCrosshairLockedOnData(true);
+        plot.setRangeZeroBaselineVisible(true);
+
+        //make crosshair visible
+        plot.setDomainCrosshairVisible(false);
+        plot.setRangeCrosshairVisible(false);
+
+        XYSplineRenderer splineRend = new XYSplineRenderer();
+        splineRend.setBaseShapesVisible(false);
+        splineRend.setSeriesStroke(0, new BasicStroke(2.6f));
+        splineRend.setSeriesPaint(0, dataset.getColor().darker()); // make color slight darker
+
+        plot.setDataset(0, splineCollection);  //Moore Function
+        plot.setRenderer(0, splineRend);       //render as a line
+
+        return chart.createBufferedImage((int)imageWidth*3,(int)imageHeight*3);
     }
 
 
