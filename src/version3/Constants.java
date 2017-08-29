@@ -40,11 +40,14 @@ public final class Constants {
 
     public static final Font BOLD_12 = new Font("Dialog", Font.BOLD, 12);
     public static final Font FONT_12 = new Font("Dialog", Font.PLAIN, 12);
+    public static final Font FONT_10 = new Font("Dialog", Font.PLAIN, 10);
+    public static final Font FONT_8 = new Font("Dialog", Font.PLAIN, 8);
     public static final Font BOLD_16 = new Font("Dialog", Font.BOLD, 16);
     public static final Font FONT_16 = new Font("Dialog", Font.PLAIN, 16);
     public static final Font FONT_BOLD_18 = new Font("Dialog", Font.BOLD, 18);
     public static final Font BOLD_18 = new Font("Dialog", Font.PLAIN, 18);
     public static final Font FONT_BOLD_20 = new Font("Dialog", Font.BOLD, 20);
+    public static final Font FONT_BOLD_28 = new Font("Dialog", Font.BOLD, 28);
     public static final Font BOLD_20 = new Font("Dialog", Font.PLAIN, 20);
 
     public static final DecimalFormat OneDecPlace = new DecimalFormat("0.0", otherSymbols); // = new DecimalFormat("0.0");

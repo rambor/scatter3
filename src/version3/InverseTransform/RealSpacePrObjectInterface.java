@@ -29,4 +29,6 @@ interface RealSpacePrObjectInterface {
     String getHeader(double scale);
     double getArea();
     int getTotalFittedCoefficients();
+
+    String getModelUsed();
 }

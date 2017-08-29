@@ -5,6 +5,7 @@ import version3.*;
 import version3.Collection;
 import version3.InverseTransform.RefinePrManager;
 import version3.PowerLawFit.PowerLaw;
+import version3.ReportPDF.Report;
 import version3.formfactors.FormFactorEngine;
 import version3.formfactors.ModelType;
 import version3.powerlawfits.PowerLawFitGui;
@@ -889,12 +890,18 @@ public class Scatter {
         }));
 
         // add mouse functions, remove, select all, select none
-        popupMenu.add(new JMenuItem(new AbstractAction("Mass Estimator") {
+        popupMenu.add(new JMenuItem(new AbstractAction("Create Report from Single Dataset") {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //To change body of implemented methods use File | Settings | File Templates.
                 // get highlighted/moused over
                 // open new object/window for estimating mass using several methods
+                int index = analysisTable.getSelectedRow();
+                if (index > -1){
+
+                    Report tempreport = new Report(collectionSelected.getDataset(index), WORKING_DIRECTORY);
+
+                }
             }
         }));
 
@@ -2901,6 +2908,8 @@ signalPlotThread.execute();
         pdfButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
+                Report report = new Report(collectionSelected, WORKING_DIRECTORY, "Summary of Selected Datasets");
 
 //                AutoMerge temp = new AutoMerge(collectionSelected, 3);
 //                temp.run();

@@ -319,6 +319,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     private String modelUsed;
     public double area;
 
+
     public IndirectFT(XYSeries nonStandardizedData, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, int cBoxValue, boolean includeBackground){
         this.nonData = nonStandardizedData;
         this.errors = errors;
@@ -907,11 +908,14 @@ double topB = 1000;
         double chi=0;
         double diffTolerance = 0.0001;
         double inv_card;
-        final double pi_inv_dmax = Math.PI/dmax;
+        final double pi_inv_dmax = Math.PI/dmax; // cardinal points are at increments of PI/dmax
         final double dmax_inv_pi = 1.0/pi_inv_dmax;
         double error_value;
         // Number of Shannon bins, excludes the a_o
         int bins = ns, count=0, total = data.getItemCount();
+        // ns is over-estimated as it includes a q-value that is not actually measured
+        // so, how to calculate chi?
+
 
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         // calculate residuals
@@ -929,7 +933,7 @@ double topB = 1000;
         // see if q-value exists but to what significant figure?
         // if low-q is truncated and is missing must exclude from calculation
 
-        for (int i=1; i <= bins; i++){
+        for (int i=1; i <= bins && i*pi_inv_dmax <= qmax; i++){
 
             cardinal = i*pi_inv_dmax; // <= q-value
             inv_card = 1.0/cardinal;
@@ -999,8 +1003,9 @@ double topB = 1000;
 //        for(int i=0; i<coeffs_size+2; i++){
 //            System.out.println(i + " SVD " + sing[i]);
 //        }
-
-        return chi*1.0/(totalCoefficients - 1 - delta);
+        double denominator = (includeBackground) ? (totalCoefficients - delta - 1) : (totalCoefficients - 2.0 - delta);
+       // System.out.println("chi sum : " + chi + " del " + delta + " den : " + denominator);
+        return chi*1.0/delta;
     }
 
 
@@ -1119,6 +1124,9 @@ double topB = 1000;
     }
 
     @Override
+    public String getModelUsed(){ return this.modelUsed; }
+
+    @Override
     public void setNonStandardizedData(XYSeries nonStandardizedData){
         this.nonData = nonStandardizedData;
     }
@@ -1178,5 +1186,7 @@ double topB = 1000;
     public void setModelUsed(String text){
         this.modelUsed = text;
     }
+
+
 
 }

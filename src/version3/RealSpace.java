@@ -400,7 +400,8 @@ public class RealSpace {
     }
 
     public double getKurt_l1_sum() {
-        return kurt_l1_sum;
+        return kurtosis;
+        //return kurt_l1_sum;
     }
 
     public double[] getCoefficients() {

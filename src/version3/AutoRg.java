@@ -30,6 +30,8 @@ public class AutoRg {
     private double i_zero_error;  //Izero Error
     private double rg_error;  //Rg Error
     private double correlation_coefficient;
+    private Number qminFinal;
+    private Number qmaxFinal;
 
 
     // data Intensities should be positive only
@@ -261,6 +263,21 @@ public class AutoRg {
             rg_error=1.5*errorSlope*Math.sqrt(1/3.0*1/rg);  //Rg Error
             correlation_coefficient = Math.abs(count*sumXY - sumX*sumY)/(Math.sqrt((count*sumXX-sumX*sumX)*(count*sumYY-sumY*sumY)));
 
+            double startLowq = Math.sqrt(final_x[0]);
+            for(int i=0; i<inputData.getItemCount(); i++){
+                if (inputData.getX(i).doubleValue() >= startLowq){
+                    qminFinal = inputData.getX(i);
+                    break;
+                }
+            }
+
+            startLowq = Math.sqrt(final_x[final_x.length-1]);
+            for(int i=0; i<inputData.getItemCount(); i++){
+                if (inputData.getX(i).doubleValue() >= startLowq){
+                    qmaxFinal = inputData.getX(i);
+                    break;
+                }
+            }
 
         } else {  // not enough points, so just fit a line to what we have
             // ignore first three points, take the next 5 and fit
@@ -313,6 +330,23 @@ public class AutoRg {
                 rg_error = 100;
                 correlation_coefficient = 0;
             }
+
+
+            double startLowq = Math.sqrt(x_range[0]);
+            for(int i=0; i<inputData.getItemCount(); i++){
+                if (inputData.getX(i).doubleValue() >= startLowq){
+                    qminFinal = inputData.getX(i);
+                    break;
+                }
+            }
+
+            startLowq = Math.sqrt(x_range[x_range.length-1]);
+            for(int i=0; i<inputData.getItemCount(); i++){
+                if (inputData.getX(i).doubleValue() >= startLowq){
+                    qmaxFinal = inputData.getX(i);
+                    break;
+                }
+            }
         }
     }
 
@@ -338,5 +372,13 @@ public class AutoRg {
 
     public double getCorrelation_coefficient(){
         return correlation_coefficient;
+    }
+
+    public Number getQminFinal() {
+        return qminFinal;
+    }
+
+    public Number getQmaxFinal(){
+        return qmaxFinal;
     }
 }

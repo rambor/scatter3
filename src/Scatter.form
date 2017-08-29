@@ -833,7 +833,7 @@
                       <forms/>
                     </constraints>
                     <properties>
-                      <enabled value="false"/>
+                      <enabled value="true"/>
                       <font size="12" style="1"/>
                       <foreground color="-1118482"/>
                       <iconTextGap value="0"/>

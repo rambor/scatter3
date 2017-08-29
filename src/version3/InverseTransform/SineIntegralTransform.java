@@ -32,7 +32,7 @@ public class SineIntegralTransform extends IndirectFT {
         this.createDesignMatrix(this.data);
         this.rambo_coeffs_L1();
 
-        this.setModelUsed("DIRECT IFT L1-NORM BINS");
+        this.setModelUsed("DIRECT L1-NORM BINS");
        // System.out.println("L1 NORM RAMBO " + includeBackground);
     }
 
@@ -84,7 +84,7 @@ public class SineIntegralTransform extends IndirectFT {
 
 
     public void createDesignMatrix(XYSeries datasetInuse){
-        ns = (int) Math.ceil(qmax*dmax*INV_PI)  + 1;  //
+        ns = (int) Math.ceil(qmax*dmax*INV_PI)  ;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
         rows = datasetInuse.getItemCount();    // rows
 

@@ -56,12 +56,14 @@ public class Dataset {
     private int startAt;  // start of the nonNegativeData
     private int endAt;    // end of the nonNegativeData
     private int indexOfUpperGuinierFit; //belongs to positiveOnlyData
+    private int indexOfLowerGuinierFit; // belongs to positiveOnlyData
 
     // below are properties of a subtracted dataset
     private double guinierIZero = 0;
     private double guinierIZero_sigma = 0;
     private double guinierRg = 0;
     private double guinierRG_sigma = 0;
+    private double guinierCorrelationCoefficient=0;
 
     private double rC = 0;
     private double rC_sigma = 0;
@@ -98,8 +100,6 @@ public class Dataset {
     private double invariantQ;
     private double porodVolumeQmax;
 
-    private double[] aM; //Moore Coefficients
-    private double[] aMSigma; //Moore Coefficients errors
     private double realIZero;
     private double realIZero_sigma;
     private double realRg;
@@ -109,6 +109,8 @@ public class Dataset {
     private double minI;
     private double maxq;
     private double minq;
+
+    // GUI stuff
     private boolean inUse;
     private boolean fitFile;
     private Color color;
@@ -116,8 +118,9 @@ public class Dataset {
     private int pointSize;
     private BasicStroke stroke;
     private int id;
-    private double prScaleFactor;
 
+
+    private double prScaleFactor;
     private RealSpace realSpace;
 
     private String experimentalNotes;
@@ -128,6 +131,7 @@ public class Dataset {
 
     /**
      * use this constructor for samples and buffer in subtraction
+     * no autoRg is used here
      * @param dat
      * @param err
      * @param fileName
@@ -313,14 +317,11 @@ public class Dataset {
                 guinierIZero_sigma = tempRg.getI_zero_error();
                 guinierRg = tempRg.getRg();
                 guinierRG_sigma = tempRg.getRg_error();
-            }
+                guinierCorrelationCoefficient = tempRg.getCorrelation_coefficient();
 
-//            if (izeroRg[0] > 0){
-//                guinierIZero=izeroRg[0];
-//                guinierIZero_sigma = izeroRg[2];
-//                guinierRg=izeroRg[1];
-//                guinierRG_sigma = izeroRg[3];
-//            }
+                indexOfLowerGuinierFit = this.originalPositiveOnlyData.indexOf(tempRg.getQminFinal());
+                indexOfUpperGuinierFit = this.originalPositiveOnlyData.indexOf(tempRg.getQmaxFinal());
+            }
 
         } else {
             guinierIZero=0;
@@ -666,23 +667,6 @@ public class Dataset {
         return scaleFactor;
     }
 
-    /**
-     *
-     * @return Moore Coefficients ArrayList
-     */
-    public double[] getAM(){
-        return aM;
-    }
-
-    /**
-     *
-     * @return Moore Coefficients Errors as ArrayList
-     */
-    public double[] getAMSigma(){
-        return aMSigma;
-    }
-
-
     public int getMassRnaSigmaReal() {
         return massRnaSigmaReal;
     }
@@ -807,11 +791,16 @@ public class Dataset {
         this.updateMass();
     }
 
-    public void setGuinierParameters(double izero, double izeroError, double rg, double rgError){
+    public double getGuinierCorrelationCoefficient(){
+        return guinierCorrelationCoefficient;
+    }
+
+    public void setGuinierParameters(double izero, double izeroError, double rg, double rgError, double cc){
         this.guinierIZero = izero;
         this.guinierIZero_sigma = izeroError;
         this.guinierRg = rg;
         this.guinierRG_sigma = rgError;
+        this.guinierCorrelationCoefficient = cc;
 
         // update normalized Kratky and Guinier plot
 
@@ -1164,21 +1153,6 @@ public void lowBoundPlottedLog10IntensityData(int newStart){
         this.endAt = newEnd;
     }
 
-    /**
-     * Sets more Coefficients
-     * @param aM
-     */
-    public void setAM(double[] aM){
-        this.aM = aM;
-    }
-
-    /**
-     * Returns Moore Coefficients ArrayList
-     *
-     */
-    public void setAMSigma(double[] aMSigma){
-        this.aMSigma = aMSigma;
-    }
 
     public void setMassRnaSigmaReal(int massRna){
         massRnaSigmaReal=massRna;
@@ -1416,9 +1390,16 @@ public void lowBoundPlottedLog10IntensityData(int newStart){
     public void setIndexOfUpperGuinierFit(int index){
         this.indexOfUpperGuinierFit = index;
     }
-
     public int getIndexOfUpperGuinierFit(){
         return this.indexOfUpperGuinierFit;
+    }
+
+    public int getIndexOfLowerGuinierFit() {
+        return indexOfLowerGuinierFit;
+    }
+
+    public void setIndexOfLowerGuinierFit(int indexOfLowerGuinierFit) {
+        this.indexOfLowerGuinierFit = indexOfLowerGuinierFit;
     }
 
     public void updateRealSpaceErrors(double percentRgError, double percentIzeroError){

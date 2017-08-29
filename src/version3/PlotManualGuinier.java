@@ -81,9 +81,11 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         izero = datasetInUse.getGuinierIzero();
 
         if (datasetInUse.getGuinierRg() <= 0 && datasetInUse.getGuinierIzero() <= 0){
-            double guinierParameters[] = Functions.autoRg(datasetData, datasetError, datasetInUse.getStart());
-            //double guinierParameters[] = Functions.calculateIzeroRg(datasetData, datasetError);
-            datasetInUse.setGuinierParameters(guinierParameters[0], guinierParameters[2], guinierParameters[1], guinierParameters[3]);
+
+            AutoRg tempArg = new AutoRg(datasetData, datasetError, datasetInUse.getStart());
+            //double guinierParameters[] = Functions.autoRg(datasetData, datasetError, datasetInUse.getStart());
+            //datasetInUse.setGuinierParameters(guinierParameters[0], guinierParameters[2], guinierParameters[1], guinierParameters[3]);
+            datasetInUse.setGuinierParameters(tempArg.getI_zero(), tempArg.getI_zero_error(), tempArg.getRg(), tempArg.getRg_error(), tempArg.getCorrelation_coefficient());
             rg = datasetInUse.getGuinierRg();
             izero = datasetInUse.getGuinierIzero();
         }
@@ -239,6 +241,9 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         spinnerGuinierH.setPreferredSize(new Dimension(50,30));
         spinnerGuinierH.setValue(length + datasetInUse.getStart()); //last value of original
 
+        datasetInUse.setIndexOfLowerGuinierFit(datasetInUse.getStart()-1);
+        datasetInUse.setIndexOfUpperGuinierFit(datasetInUse.getStart()-1 + length);
+
         JPanel manualGuinierPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         manualGuinierPanel.setBackground(Color.WHITE);
 
@@ -344,7 +349,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
 
         this.updateLimits(rg);
 
-        datasetInUse.setGuinierParameters(i_zero, izeroError, rg, rgError);
+        datasetInUse.setGuinierParameters(i_zero, izeroError, rg, rgError, param3[4]);
         analysisModel.fireTableDataChanged();
         //resultsModel.fireTableDataChanged();
     }
@@ -353,6 +358,7 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
     public void guinierSpinnerLChanged(ScatterSpinner tempSpinner){
         int rowID = tempSpinner.getID();
         int current = (Integer) tempSpinner.getValue() - 1;
+        datasetInUse.setIndexOfLowerGuinierFit((Integer) tempSpinner.getValue());
 
         if (current < 0){
             tempSpinner.setValue(1);
@@ -485,7 +491,5 @@ public class PlotManualGuinier extends ApplicationFrame implements ChartMouseLis
         return this.workingDirectoryName;
     }
     // create GPA plot ?
-
-
 
 }

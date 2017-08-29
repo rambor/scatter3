@@ -1105,7 +1105,7 @@ int cols, rows;
      * @return
      */
     public static double[] leastSquares(double[] x_data, double[] y_data){
-        double[] parameters = new double[4];
+        double[] parameters = new double[5];
         double sumX = 0.0;
         double sumY = 0.0;
         double sumXxY = 0.0;
@@ -1120,6 +1120,7 @@ int cols, rows;
             sumY = sumY + y_data[i];
             sumYsq = sumYsq + Math.pow(y_data[i],2);
         }
+
         double sumX2 = Math.pow(sumX, 2);
         double m = ((n*sumXxY)-(sumX*sumY))/((n*sumXsq)- sumX2);
         double b = ((sumY*invN)-((m*sumX)*invN));
@@ -1131,6 +1132,7 @@ int cols, rows;
         parameters[1]=b;
         parameters[2]=Math.sqrt(s_m_2); //standard deviation m (slope)
         parameters[3]=Math.sqrt(s_b_2); //standard deviation b (intercept)
+        parameters[4] = Math.abs(n*sumXxY - sumX*sumY)/(Math.sqrt((n*sumXsq-sumX*sumX)*(n*sumYsq-sumY*sumY)));
         return parameters;
     }
     /**
