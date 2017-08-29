@@ -153,8 +153,7 @@ public class PofRPlot {
         plot.configureDomainAxes();
         plot.configureRangeAxes();
         plot.setBackgroundAlpha(0.0f);
-        plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
+
         plot.setDomainCrosshairLockedOnData(true);
         //plot.setBackgroundAlpha(0.0f);
         plot.setRangeZeroBaselineVisible(true);
