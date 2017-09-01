@@ -21,6 +21,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     private JCheckBox fitModel;
     private JCheckBox useDirectFT;
     private JCheckBox excludeBackground;
+    private JCheckBox postiveOnly;
     private ArrayList<ArrayList<Boolean>> editable_cells;
     private WorkingDirectory currentWorkingDirectory;
     private JLabel status;
@@ -46,7 +47,8 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                    JCheckBox fitModel,
                    JComboBox cBox,
                    JCheckBox useDirectFT,
-                   JCheckBox excludeBackground){
+                   JCheckBox excludeBackground,
+                   JCheckBox positiveOnly){
         this.status = status;
         this.currentWorkingDirectory = cwd;
         currentWorkingDirectory.addPropertyChangeListener(this);
@@ -63,6 +65,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         this.cBox = cBox;
         this.useDirectFT = useDirectFT;
         this.excludeBackground = excludeBackground;
+        this.postiveOnly = positiveOnly;
     }
 
     public int getRowCount() {
@@ -246,7 +249,8 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                             fitModel.isSelected(),
                             Integer.parseInt(cBox.getSelectedItem().toString()),
                             useDirectFT.isSelected(),
-                            excludeBackground.isSelected()
+                            excludeBackground.isSelected(),
+                            postiveOnly.isSelected()
                     );
 
                     Thread tempThread = new Thread(tempPr);

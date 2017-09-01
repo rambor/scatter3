@@ -2,7 +2,6 @@ package version3.InverseTransform;
 
 import version3.RealSpace;
 
-import java.util.concurrent.Callable;
 
 public class IFTObject implements Runnable {
 
@@ -13,6 +12,7 @@ public class IFTObject implements Runnable {
     private RealSpace dataset;
     private int cBoxValue=2;
     private boolean includeBackground = false;
+    private boolean positiveOnly;
 
     /**
      * Make instance of an IndirectFT object and run within IFTObject class
@@ -29,7 +29,8 @@ public class IFTObject implements Runnable {
             boolean useL1,
             int cBoxValue,
             boolean useDirectFt,
-            boolean includeBackground){
+            boolean includeBackground,
+            boolean positiveOnly){
 
         // create real space object for each dataset in use
         // XYSeries data, double dmax, double lambda, double qmax
@@ -45,6 +46,7 @@ public class IFTObject implements Runnable {
         this.cBoxValue = cBoxValue;
         this.useDirectFT = useDirectFt;      // default is true for Scatter => rambo method
         this.includeBackground = includeBackground; //
+        this.positiveOnly = positiveOnly;
     }
 
 
@@ -54,7 +56,7 @@ public class IFTObject implements Runnable {
 
         if (useDirectFT){
 
-            tempIFT = new SineIntegralTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, cBoxValue, includeBackground);
+            tempIFT = new SineIntegralTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, cBoxValue, includeBackground, positiveOnly);
 
         } else {  // use Moore Method
 

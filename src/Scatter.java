@@ -321,6 +321,7 @@ public class Scatter {
     private JCheckBox buildListFromFileCheckBox;
     private JCheckBox useDirectFourierTransformCheckBox;
     private JLabel methodInUseLabel;
+    private JCheckBox positiveOnlyCheckBox;
     //private JCheckBox volumeScalingCheckBox;
     private JButton diffButton;
     private JPanel plotPanel3Body;
@@ -413,7 +414,7 @@ public class Scatter {
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
         simBinsComboBox.setSelectedIndex(0);
-        lambdaBox.setSelectedIndex(3);
+        lambdaBox.setSelectedIndex(2);
         cBox.setSelectedIndex(1);
         lambdaCEcomboBox.setSelectedIndex(3);
         ceComboBoxRounds.setSelectedIndex(1);
@@ -607,7 +608,7 @@ public class Scatter {
 
                 if (isCtrlC){
                     int row = analysisTable.rowAtPoint(e.getPoint());
-                    Notes temp = new Notes(collectionSelected.getDataset(row));
+                    Notes temp = new Notes(collectionSelected.getDataset(row), WORKING_DIRECTORY);
                     temp.pack();
                     temp.setVisible(true);
                     isCtrlC = false;
@@ -899,8 +900,12 @@ public class Scatter {
                 int index = analysisTable.getSelectedRow();
                 if (index > -1){
 
+                    Notes temp = new Notes(collectionSelected.getDataset(index), WORKING_DIRECTORY);
+                    temp.pack();
+                    temp.setVisible(true);
                     Report tempreport = new Report(collectionSelected.getDataset(index), WORKING_DIRECTORY);
-
+                } else {
+                    status.setText("Highlight only a single file");
                 }
             }
         }));
@@ -1052,7 +1057,7 @@ public class Scatter {
         dmaxStart = new DoubleValue(97);
 
         //Pr Table JLabel status, WorkingDirectory cwd, Double lambda
-        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox));
+        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
 
         prModel = (PrModel) prTable.getModel();
 
@@ -1060,11 +1065,11 @@ public class Scatter {
         TableColumnModel pcm = prTable.getColumnModel();
 
         TableColumn pc = pcm.getColumn(4);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
         pc = pcm.getColumn(5);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
         pc = pcm.getColumn(9);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
 
         pc = pcm.getColumn(2);
         pc.setCellEditor(new CheckBoxCellEditorRenderer());
@@ -2909,23 +2914,11 @@ signalPlotThread.execute();
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                Report report = new Report(collectionSelected, WORKING_DIRECTORY, "Summary of Selected Datasets");
+                Notes temp = new Notes(collectionSelected, WORKING_DIRECTORY);
+                temp.pack();
+                temp.setVisible(true);
 
-//                AutoMerge temp = new AutoMerge(collectionSelected, 3);
-//                temp.run();
-
-//                Thread makeIt = new Thread(){
-//                    public void run() {
-
-                        //final PDFBuilder pdfBuilder = new PDFBuilder(collectionSelected, WORKING_DIRECTORY, mainProgressBar);
-                        //pdfBuilder.setName("this is a name");
-                        //pdfBuilder.execute();
-
-//                    }
-
-//                };
-
-  //              makeIt.start();
+                Report report = new Report(collectionSelected, WORKING_DIRECTORY, temp.getFilename(),"Summary of Selected Datasets", temp.getText());
 
             }
         });
@@ -3124,7 +3117,6 @@ signalPlotThread.execute();
                     damminRadioButton.setSelected(true);
                 }
             }
-
         });
 
 
@@ -3132,6 +3124,7 @@ signalPlotThread.execute();
             @Override
             public void actionPerformed(ActionEvent e) {
 
+                positiveOnlyCheckBox.setSelected(false);
                 //l1NormCheckBox.setSelected(true);
                 if (checkBoxDirect.isSelected()){
                     useDirectFourierTransformCheckBox.setSelected(true);
@@ -3143,6 +3136,7 @@ signalPlotThread.execute();
                         methodInUseLabel.setText("Direct Inverse FT Method no background ");
                     }
                 } else {
+
                     useDirectFourierTransformCheckBox.setSelected(false);
 
                     if (l1NormCheckBox.isSelected()){
@@ -3156,6 +3150,7 @@ signalPlotThread.execute();
                     }
                     lambdaBox.setSelectedIndex(6);
                 }
+                prStatusLabel.setText(methodInUseLabel.getText());
             }
         });
 
@@ -3163,11 +3158,15 @@ signalPlotThread.execute();
         l1NormCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                positiveOnlyCheckBox.setSelected(false);
+                useDirectFourierTransformCheckBox.setSelected(false);
+                checkBoxDirect.setSelected(false);
 
                 if (l1NormCheckBox.isSelected()){
-                    checkBoxDirect.setSelected(false);
+
                     useDirectFourierTransformCheckBox.setSelected(false);
                     excludeBackgroundInFitCheckBox.setSelected(true);
+
                     methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
                     lambdaBox.setSelectedIndex(6);
                 } else {
@@ -3182,6 +3181,7 @@ signalPlotThread.execute();
                         lambdaBox.setSelectedIndex(6);
                     }
                 }
+                prStatusLabel.setText(methodInUseLabel.getText());
             }
         });
 
@@ -3296,14 +3296,16 @@ signalPlotThread.execute();
                     if (excludeBackgroundInFitCheckBox.isSelected()){
 
                         if (useDirectFourierTransformCheckBox.isSelected()){
+
                             methodInUseLabel.setText("Direct Inverse FT with constant background");
+
                         } else if (l1NormCheckBox.isSelected()) {
                             methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
                         } else {
                             methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
                         }
 
-                    } else { // no background
+                    } else { // no background only available on DirectFT and moore coefficient L1
                         if (useDirectFourierTransformCheckBox.isSelected()){
                             methodInUseLabel.setText("Direct Inverse FT no background");
                         } else if (!l1NormCheckBox.isSelected()) {
@@ -3313,6 +3315,7 @@ signalPlotThread.execute();
                             l1NormCheckBox.setSelected(false);
                         }
                     }
+                prStatusLabel.setText(methodInUseLabel.getText());
             }
         });
 
@@ -3698,11 +3701,23 @@ signalPlotThread.execute();
                     l1NormCheckBox.setSelected(false);
                     checkBoxDirect.setSelected(true);
                     lambdaBox.setSelectedIndex(2);
-                    if(excludeBackgroundInFitCheckBox.isSelected()){
-                        methodInUseLabel.setText("Direct Inverse FT with constant background");
+
+                    if (positiveOnlyCheckBox.isSelected()){
+
+                        if(excludeBackgroundInFitCheckBox.isSelected()){
+                            methodInUseLabel.setText("Direct Inverse FT Positive Only with constant background");
+                        } else {
+                            methodInUseLabel.setText("Direct Inverse FT Positive Only no background");
+                        }
                     } else {
-                        methodInUseLabel.setText("Direct Inverse FT no background");
+
+                        if(excludeBackgroundInFitCheckBox.isSelected()){
+                            methodInUseLabel.setText("Direct Inverse FT with constant background");
+                        } else {
+                            methodInUseLabel.setText("Direct Inverse FT no background");
+                        }
                     }
+
                 } else {
                     checkBoxDirect.setSelected(false);
                     if (excludeBackgroundInFitCheckBox.isSelected()){
@@ -3712,6 +3727,35 @@ signalPlotThread.execute();
                     }
                     lambdaBox.setSelectedIndex(6);
                 }
+
+                prStatusLabel.setText(methodInUseLabel.getText());
+            }
+        });
+
+        positiveOnlyCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                l1NormCheckBox.setSelected(false);
+                useDirectFourierTransformCheckBox.setSelected(true);
+                checkBoxDirect.setSelected(true);
+                if (positiveOnlyCheckBox.isSelected()){
+
+                    if(excludeBackgroundInFitCheckBox.isSelected()){
+                        methodInUseLabel.setText("Direct Inverse FT Positive Only with constant background");
+                    } else {
+                        methodInUseLabel.setText("Direct Inverse FT Positive Only no background");
+                    }
+                } else {
+
+                    if(excludeBackgroundInFitCheckBox.isSelected()){
+                        methodInUseLabel.setText("Direct Inverse FT with constant background");
+                    } else {
+                        methodInUseLabel.setText("Direct Inverse FT no background");
+                    }
+                }
+                prStatusLabel.setText(methodInUseLabel.getText());
+
             }
         });
     }
@@ -5438,7 +5482,8 @@ signalPlotThread.execute();
                                 Integer.parseInt(cBox.getSelectedItem().toString()),
                                 l1NormCheckBox.isSelected(),
                                 excludeBackgroundInFitCheckBox.isSelected(),
-                                useDirectFourierTransformCheckBox.isSelected());
+                                useDirectFourierTransformCheckBox.isSelected(),
+                                positiveOnlyCheckBox.isSelected());
 
                         prStatusLabel.setText("");
                         refinePrMe.setBar(progressBar1, prStatusLabel);

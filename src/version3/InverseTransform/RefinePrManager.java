@@ -1,6 +1,5 @@
 package version3.InverseTransform;
 
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
@@ -25,13 +24,14 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     private double lambda;
     private double s_o;
     private double dmax;
-    private double dmax_pi;
+
     private double pi_invDmax;
     private double upperq;
     private final boolean useL1;
     private final boolean useDirectFT;
     private JProgressBar bar;
     private final boolean useBackgroundInFit;
+    private final boolean positiveOnly;
     private JLabel statusLabel;
     private boolean useLabels = false;
 
@@ -47,7 +47,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     private AtomicInteger counter = new AtomicInteger(0);
     private double median;
 
-    public RefinePrManager(RealSpace dataset, int numberOfCPUs, int refinementRounds, double rejectionCutOff, double lambda, int cBoxValue, boolean useL1, boolean includeBackground, boolean useDirect){
+    public RefinePrManager(RealSpace dataset, int numberOfCPUs, int refinementRounds, double rejectionCutOff, double lambda, int cBoxValue, boolean useL1, boolean includeBackground, boolean useDirect, boolean positiveOnly){
 
         this.numberOfCPUs = numberOfCPUs;
         this.dataset = dataset;
@@ -57,13 +57,14 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         this.lambda = lambda;
         this.useL1 = useL1;
         this.useBackgroundInFit = includeBackground;
+        this.positiveOnly = positiveOnly;
         this.useDirectFT = useDirect;
         this.cBoxValue = cBoxValue;
 
         this.upperq = dataset.getfittedqIq().getMaxX();
         this.bins = dataset.getTotalFittedCoefficients();
         this.dmax = dataset.getDmax();
-        this.dmax_pi = Math.PI*dmax;
+
         this.pi_invDmax = Math.PI/dmax;
 
         this.standardizedSeries = new XYSeries("Standard set");
@@ -294,7 +295,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                 // calculate PofR using standardized dataset
                 IndirectFT tempIFT;
                 if (useDirectFT){
-                    tempIFT = new SineIntegralTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
+                    tempIFT = new SineIntegralTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
                 } else {  // use Moore Method
                     tempIFT = new MooreTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
                 }
@@ -461,7 +462,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             dataset.getCalcIq().clear();
             IndirectFT tempIFT;
             if (useDirectFT){ // unstandardized datasets
-                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
+                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
             } else {  // use Moore Method
                 tempIFT = new MooreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
             }

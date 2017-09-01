@@ -5,7 +5,7 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.jfree.chart.ChartFactory;
 
-import org.jfree.chart.ChartPanel;
+
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.plot.PlotOrientation;
@@ -13,6 +13,7 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -32,7 +33,6 @@ import rst.pdfbox.layout.text.*;
 import version3.*;
 import version3.Constants;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
@@ -48,40 +48,36 @@ public class Report {
     private final float imageWidth = 270;
     private final float imageHeight = 240;
     private PDFont pdfont = PDType1Font.COURIER;
+    private String legendB;
     /**
      * create report using selected files in Collection
      * @param collection
      * @param workingDirectory
      */
-    public Report(Collection collection, WorkingDirectory workingDirectory, String titleOf){
+    public Report(Collection collection, WorkingDirectory workingDirectory, String filename, String titleOf, String info){
         inUseCollection = collection;
         totalInCollection = inUseCollection.getDatasetCount();
 
-        // make scaled log10 plot
-
-        // make dimensionless kratky plot
-
-        // make q*I(q) plot
-
-        // make P(r)-plot
         Document document = buildBasePlotsFromCollection(titleOf, true);
         //Document document = new Document(30, 30, 40, 60);
 
-        // Add more details to Document
+        document.add(new VerticalSpacer(20));
+        try {
+            Paragraph paragraph = new Paragraph();
+            paragraph.addText("Notes", 10, PDType1Font.TIMES_BOLD);
+            document.add(paragraph);
 
-        //document.
-        document.add(new VerticalSpacer(40));
-//        ImageElement izerorg = new ImageElement(createIZeroRgPlotFromCollection());
-//        izerorg.setWidth(imageWidth);
-//        izerorg.setHeight(imageHeight);
-//        document.add(izerorg, new VerticalLayoutHint(Alignment.Left, 0, 0 , 0, 0, true));
-
-        // add note
+            Paragraph notes = new Paragraph();
+            notes.addMarkup(info, 10, BaseFont.Times);
+            document.add(notes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         final OutputStream outputStream;
 
         try {
-            outputStream = new FileOutputStream("letter.pdf");
+            outputStream = new FileOutputStream(workingDirectory.getWorkingDirectory()+"/"+filename+".pdf");
             document.save(outputStream);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -109,6 +105,9 @@ public class Report {
 
         document.add(new VerticalSpacer(20));
         try {
+            Paragraph paragraph = new Paragraph();
+            paragraph.addText("Note", 10, PDType1Font.TIMES_BOLD);
+            document.add(paragraph);
             Paragraph notes = new Paragraph();
             notes.addMarkup(dataset.getExperimentalNotes(), 10, BaseFont.Times);
             document.add(notes);
@@ -160,7 +159,7 @@ public class Report {
             }
 
             document.add(lineFrame, VerticalLayoutHint.CENTER);
-            String legend = "All values are reported in non-SI units of Angstroms or inverse Angstroms.";
+            String legend = "All values are reported in non-SI units of Angstroms, A.";
             Paragraph legendP = new Paragraph();
             legendP.addMarkup(legend,12, BaseFont.Times);
             document.add(legendP, VerticalLayoutHint.CENTER);
@@ -170,11 +169,10 @@ public class Report {
         }
 
 
-
         final OutputStream outputStream;
 
         try {
-            outputStream = new FileOutputStream(dataset.getFileName()+".pdf");
+            outputStream = new FileOutputStream(workingDirectory.getWorkingDirectory()+"/"+dataset.getFileName()+".pdf");
             document.save(outputStream);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -254,10 +252,19 @@ public class Report {
             document.add(izerorg, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
         }
 
-
         // add table of results (color text by data color)
         document.add(new VerticalSpacer(240));
 
+        if (inUseCollection.getDatasetCount() == 1 && !addIzeroRgPlot && inUseCollection.getDataset(0).getRealRg() > 0){
+            try {
+                Paragraph tempparagraph = new Paragraph();
+                tempparagraph.addMarkup(getLegendDataset(true), 9, BaseFont.Times);
+                document.add(tempparagraph, VerticalLayoutHint.CENTER);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        document.add(new VerticalSpacer(20));
 
         ArrayList<String> header = getHeader();
         document.add(new ColumnLayout(1, 5));
@@ -471,7 +478,6 @@ public class Report {
         splineCollection.addSeries(dataset.getRealSpaceModel().getPrDistribution());
         double ilower = 0;
         double iupper = dataset.getRealSpaceModel().getPrDistribution().getMaxY();
-        double upper = dataset.getDmax();
 
         JFreeChart chart = ChartFactory.createXYLineChart(
                 "",                     // chart title
@@ -487,6 +493,8 @@ public class Report {
         final XYPlot plot = chart.getXYPlot();
         plot.setDomainAxis(getDomainAxis("r, \u212B"));
         plot.setRangeAxis(getRangeAxis("P(r)", ilower, iupper));
+
+        chart.setTitle(getTitle("D"));
 
         plot.configureDomainAxes();
         plot.configureRangeAxes();
@@ -573,12 +581,7 @@ public class Report {
                 false
         );
 
-        chart.setTitle("I(zero) Rg Plot");
-        chart.getTitle().setFont(new java.awt.Font("Times", 1, 24));
-        chart.getTitle().setPaint(Constants.SteelBlue);
-        chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setMargin(10, 10, 4, 0);
+        chart.setTitle(getTitle("D"));
         chart.setBorderVisible(false);
 
         XYPlot plot = chart.getXYPlot();
@@ -695,12 +698,7 @@ public class Report {
         String xaxisLabel = "q (\u212B\u207B\u00B9)";
         String yaxisLabel = "q\u00D7 I(q)";
 
-        chart.getTitle().setVisible(false);
-        chart.getTitle().setFont(new java.awt.Font("Times", 1, 10));
-        chart.getTitle().setPaint(Constants.SteelBlue);
-        chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setMargin(10, 10, 4, 0);
+        chart.setTitle(getTitle("C"));
         chart.setBorderVisible(false);
 
 
@@ -802,6 +800,7 @@ public class Report {
 
                 }
             }
+            legendB = "B. Dimensionless Kratky plot. Cross-hair marks the Guinier-Kratky point (1.732, 1.1), the main peak position for globular particles. ";
         } else {
             for (int i=0; i < totalSets; i++){
                 Dataset tempData = inUseCollection.getDataset(i);
@@ -810,15 +809,16 @@ public class Report {
                     plottedDatasets.addSeries(tempData.getPlottedKratkyDataSeries()); // positive only data
                 }
             }
+            legendB = "B. Kratky plot. Convergence at high scattering vectors suggests compactness whereas divergence or hyperbolic features away from baseline suggest flexibility in the thermodynamic state.  ";
         }
 
         ilower = plottedDatasets.getRangeLowerBound(true);
         iupper = plottedDatasets.getRangeUpperBound(true);
 
         JFreeChart chart = ChartFactory.createXYLineChart(
-                "Main Plot",                     // chart title
+                "",                     // chart title
                 "q",                             // domain axis label
-                "log[I(q)]",                     // range axis label
+                "",                     // range axis label
                 plottedDatasets,                 // data
                 PlotOrientation.VERTICAL,
                 false,                           // include legend
@@ -831,21 +831,16 @@ public class Report {
 
         String xaxisLabel, yaxisLabel;
         if (useNormalized){
-            chart.setTitle("Dimensionless Kratky Plot");
+
             xaxisLabel = "q\u2217Rg";
             yaxisLabel = "I(q)/I(0)\u2217(q\u2217Rg)\u00B2";
         } else {
-            chart.setTitle("Kratky Plot");
+
             xaxisLabel = "q, \u212B \u207B\u00B9";
             yaxisLabel = "q\u00B2 \u00D7 I(q)";
         }
 
-        chart.getTitle().setVisible(false);
-        chart.getTitle().setFont(new java.awt.Font("Times", 1, 10));
-        chart.getTitle().setPaint(Constants.SteelBlue);
-        chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setMargin(10, 10, 4, 0);
+        chart.setTitle(getTitle("B"));
         chart.setBorderVisible(false);
 
 
@@ -951,7 +946,7 @@ public class Report {
 
 
         JFreeChart chart = ChartFactory.createXYLineChart(
-                "Main Plot",                     // chart title
+                "A",                     // chart title
                 "q",                             // domain axis label
                 "log[I(q)]",                     // range axis label
                 plottedDatasets,                 // data
@@ -963,15 +958,9 @@ public class Report {
 
         chart.getXYPlot().setDomainCrosshairVisible(false);
         chart.getXYPlot().setRangeCrosshairVisible(false);
-        chart.setTitle("Intensity Plot");
-        chart.getTitle().setVisible(false);
-        chart.getTitle().setFont(new java.awt.Font("Times", 1, 12));
-        chart.getTitle().setPaint(Constants.SteelBlue);
-        chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setMargin(10, 10, 4, 0);
-        chart.setBorderVisible(false);
 
+        chart.setBorderVisible(false);
+        chart.setTitle(getTitle("A"));
 
         XYPlot plot = chart.getXYPlot();
         plot.setBackgroundAlpha(0.0f);
@@ -1016,94 +1005,7 @@ public class Report {
 
 
 
-    private JFreeChart createLog10ChartFromDataset(Dataset dataset) {
 
-        XYSeriesCollection plottedDatasets = new XYSeriesCollection();
-        JFreeChart chart = ChartFactory.createXYLineChart(
-                "Main Plot",                     // chart title
-                "q",                             // domain axis label
-                "log[I(q)]",                     // range axis label
-                plottedDatasets,                 // data
-                PlotOrientation.VERTICAL,
-                false,                           // include legend
-                true,
-                false
-        );
-
-        chart.getXYPlot().setDomainCrosshairVisible(false);
-        chart.getXYPlot().setRangeCrosshairVisible(false);
-        chart.setTitle("Intensity Plot");
-        chart.getTitle().setFont(new java.awt.Font("Times", 1, 20));
-        chart.getTitle().setPaint(Constants.SteelBlue);
-        chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
-        chart.getTitle().setMargin(10, 10, 4, 0);
-        chart.setBorderVisible(false);
-
-
-        XYPlot plot = chart.getXYPlot();
-        final NumberAxis domainAxis = new NumberAxis("q");
-        final NumberAxis rangeAxis = new NumberAxis("Log Intensity");
-        String quote = "q (\u212B\u207B\u00B9)";
-        domainAxis.setLabelFont(Constants.FONT_BOLD_20);
-        domainAxis.setTickLabelFont(Constants.FONT_BOLD_20);
-        domainAxis.setLabel(quote);
-        domainAxis.setAxisLineStroke(new BasicStroke(3.0f));
-        quote = "log[I(q)]";
-
-        rangeAxis.setLabel(quote);
-        rangeAxis.setAutoRange(false);
-        rangeAxis.setLabelFont(Constants.FONT_BOLD_28);
-        rangeAxis.setTickLabelFont(Constants.FONT_BOLD_28);
-        rangeAxis.setTickLabelsVisible(false);
-        rangeAxis.setAxisLineStroke(new BasicStroke(3.0f));
-        rangeAxis.setTickLabelPaint(Color.BLACK);
-
-        plot.setBackgroundAlpha(0.0f);
-        plot.setDomainCrosshairLockedOnData(true);
-        plot.setOutlineVisible(false);
-
-        //make crosshair visible
-        plot.setDomainCrosshairVisible(false);
-        plot.setRangeCrosshairVisible(false);
-
-        XYLineAndShapeRenderer renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
-        renderer1.setBaseShapesVisible(true);
-
-        plot.setDataset(0,plottedDatasets);
-        plot.setRenderer(0,renderer1);
-
-        //set dot size for all series
-        plottedDatasets.addSeries(dataset.getData()); // positive only data
-
-        double lower = dataset.getAllData().getMinX();
-        double upper = dataset.getAllData().getMaxX();
-        double dlower = dataset.getData().getMinY();
-        double dupper = dataset.getData().getMaxY();
-
-        double offset = -0.5*dataset.getPointSize();
-        renderer1.setSeriesShape(0, new Ellipse2D.Double(offset, offset, dataset.getPointSize(), dataset.getPointSize()));
-        renderer1.setSeriesLinesVisible(0, false);
-        renderer1.setSeriesPaint(0, dataset.getColor());
-        renderer1.setSeriesShapesFilled(0, dataset.getBaseShapeFilled());
-        renderer1.setSeriesVisible(0, dataset.getInUse());
-        renderer1.setSeriesOutlineStroke(0, dataset.getStroke());
-
-
-        rangeAxis.setRange(lower-lower*0.03, upper+0.1*upper);
-        rangeAxis.setAutoRangeStickyZero(false);
-
-        domainAxis.setRange(dlower, dupper);
-        domainAxis.setAutoRangeStickyZero(false);
-
-        plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
-        plot.configureDomainAxes();
-        plot.configureRangeAxes();
-        plot.setDomainZeroBaselineVisible(false);
-
-        return chart;
-    }
 
     private static NumberAxis getRangeAxis(String quote, double ilower, double iupper){
         final NumberAxis rangeAxis = new NumberAxis(quote);
@@ -1220,7 +1122,7 @@ public class Report {
         int lengthOfFilename = dataset.getFileName().length();
         String escaped = escape(dataset.getFileName());
         if (lengthOfFilename > 20){
-            escaped = escape(dataset.getFileName().substring(0,19));
+            escaped = escape(dataset.getFileName().substring(0,20));
         }
 
 
@@ -1293,7 +1195,7 @@ public class Report {
         int lengthOfFilename = dataset.getFileName().length();
         String escaped = escape(dataset.getFileName());
         if (lengthOfFilename > 20){
-            escaped = escape(dataset.getFileName().substring(0,19));
+            escaped = escape(dataset.getFileName().substring(0,20));
         }
         Paragraph tempparagraph = new Paragraph();
 
@@ -1424,17 +1326,17 @@ public class Report {
             background=String.format("%s", (dataset.getRealSpaceModel().getIndirectFTModel().includeBackground) ? "Yes" : "No");
         }
 
-        rows.add(String.format("%s %s %s", rightJustifyText("q-min", columnWidthLabels, ' '), centerText(qminGuinier,columnWidthData, ' '), centerText(qminReal,columnWidthData, ' '))); // qmin
-        rows.add(String.format("%s %s %s", rightJustifyText("q-max", columnWidthLabels, ' '), centerText(qmaxGuinier,columnWidthData, ' '), centerText(qmaxReal,columnWidthData, ' '))); // qmax
+        rows.add(String.format("%s %s %s %s", rightJustifyText("q-min", columnWidthLabels, ' '), centerText(qminGuinier,columnWidthData, ' '), centerText(qminReal,columnWidthData, ' '), "A{^}-1{^}")); // qmin
+        rows.add(String.format("%s %s %s %s", rightJustifyText("q-max", columnWidthLabels, ' '), centerText(qmaxGuinier,columnWidthData, ' '), centerText(qmaxReal,columnWidthData, ' '), "A{^}-1{^}")); // qmax
         rows.add(String.format("%s %s %s", rightJustifyText("points(min:max)", columnWidthLabels, ' '), centerText(guinierPoints,columnWidthData, ' '), centerText(realPoints,columnWidthData, ' '))); // npoints
 
         // 1234567890123456 78910
         //          ( 1.11)
-        rows.add(String.format("%s %s %s", rightJustifyText("Rg", columnWidthLabels, ' '), centerText(reciRg,columnWidthData, ' '), centerText(realRg,columnWidthData, ' '))); // rg
+        rows.add(String.format("%s %s %s %s", rightJustifyText("Rg", columnWidthLabels, ' '), centerText(reciRg,columnWidthData, ' '), centerText(realRg,columnWidthData, ' '), "A")); // rg
         rows.add(String.format("%s %s %s", rightJustifyText("I[zero]", columnWidthLabels, ' '), centerText(reciIzero,columnWidthData, ' '), centerText(realIzero,columnWidthData, ' '))); // izero
 
-        rows.add(String.format("%s %s %s", rightJustifyText("Volume", columnWidthLabels, ' '), centerText(reciVolume,columnWidthData, ' '), centerText(realVolume,columnWidthData, ' '))); // volume
-        rows.add(String.format("%s %s %s", rightJustifyText("Vc", columnWidthLabels, ' '), centerText(reciVc,columnWidthData, ' '), centerText(realVc,columnWidthData, ' '))); // Vc
+        rows.add(String.format("%s %s %s %s", rightJustifyText("Volume", columnWidthLabels, ' '), centerText(reciVolume,columnWidthData, ' '), centerText(realVolume,columnWidthData, ' '), "A{^}3{^}")); // volume
+        rows.add(String.format("%s %s %s %s", rightJustifyText("Vc", columnWidthLabels, ' '), centerText(reciVc,columnWidthData, ' '), centerText(realVc,columnWidthData, ' '), "A{^}2{^}")); // Vc
 
 
         // score
@@ -1444,8 +1346,8 @@ public class Report {
         rows.add(String.format("%s %s %s", rightJustifyText("Background",16,' '), centerText(" ",columnWidthData, ' '), centerText(background, columnWidthData, ' '))); // background fitted?
 
         rows.add(String.format("%s %s ", rightJustifyText("Porod Exponent", columnWidthLabels, ' '), centerText(porodExponent,columnWidthData, ' '))); // porod exponent
-        rows.add(String.format("%s %s ", rightJustifyText("d-max", columnWidthLabels, ' '), centerText(dmax,columnWidthData, ' '))); // dmax
-        rows.add(String.format("%s %s ", rightJustifyText("bin-width", columnWidthLabels, ' '), centerText(binwidth,columnWidthData, ' '))); // binwidth
+        rows.add(String.format("%s %s", rightJustifyText("d-max", columnWidthLabels, ' '), centerText(dmax,columnWidthData, ' '))); // dmax
+        rows.add(String.format("%s %s", rightJustifyText("bin-width", columnWidthLabels, ' '), centerText(binwidth,columnWidthData, ' '))); // binwidth
         rows.add(String.format("%s %s ", rightJustifyText("Ns", columnWidthLabels, ' '), centerText(shannon,columnWidthData, ' '))); // shannon
         rows.add(String.format("%s %s ", rightJustifyText("redundancy", columnWidthLabels, ' '), centerText(redundancy,columnWidthData, ' '))); // redundancy
 
@@ -1495,5 +1397,28 @@ public class Report {
 
         sb.append(s);
         return sb.toString();
+    }
+
+    private TextTitle getTitle(String text){
+        TextTitle temp = new TextTitle();
+        temp.setText(text);
+        temp.setFont(new java.awt.Font("Times",  Font.BOLD, 42));
+        temp.setPaint(Color.BLACK);
+        temp.setTextAlignment(HorizontalAlignment.LEFT);
+        temp.setHorizontalAlignment(HorizontalAlignment.LEFT);
+        //temp.setMargin(10, 10, 4, 0);
+        return temp;
+    }
+
+    private String getLegendDataset(Boolean includePr){
+
+        String legendA = "A. Log{_}10{_} SAXS intensity versus scattering vector, _q_, plot. Plotted range represents the positive only data within the visible _q_-range.";
+        String legendC = "C. Total scattered intensity plot. Plot readily demonstrates negative intensities at high-_q_. Over-subtraction of background leads to significant negative intensities. Likewise, under-subtraction can be observed as signficant positive intensites at high-_q_ leading to an elevated baseline. Horizontal line is drawn at y=0. ";
+        String legend = legendA + " " + legendB + " " + legendC;
+        if (includePr){
+            legend += " " + "D. Pair-distance distribution, P(r), function. Maximum dimension, _d{_}max{_}_, is the largest non-negative value that supports a smooth distribution function.";
+        }
+
+return legend;
     }
 }

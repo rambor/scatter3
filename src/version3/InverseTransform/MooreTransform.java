@@ -7,7 +7,7 @@ import org.ejml.ops.CommonOps;
 import org.ejml.simple.SimpleMatrix;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
-import version3.Constants;
+
 import version3.Functions;
 
 import java.util.ArrayList;

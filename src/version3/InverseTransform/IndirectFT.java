@@ -473,6 +473,11 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     }
 
 
+    /**
+     * Return maximum absolute value in vector set
+     * @param vec
+     * @return
+     */
     public double inf_norm(SimpleMatrix vec){
         int sizeof = vec.getNumElements();
         double maxi = Math.abs(vec.get(0));
@@ -652,7 +657,17 @@ double topB = 1000;
         return hessian;
     }
 
-
+    /**
+     *
+     * @param designMatrix  Hessian
+     * @param bMatrix  -gradient
+     * @param initial dxu
+     * @param d1
+     * @param pcgtol
+     * @param pcgmaxi
+     * @param tauT
+     * @return
+     */
     public ArrayList<SimpleMatrix> linearPCG(SimpleMatrix designMatrix, SimpleMatrix bMatrix, SimpleMatrix initial, SimpleMatrix d1, double pcgtol, int pcgmaxi, double tauT){
 
         ArrayList<SimpleMatrix> returnElements = new ArrayList<SimpleMatrix>();
@@ -683,6 +698,7 @@ double topB = 1000;
                 }
             }
         }
+
 
         /*
         // Boyd Inversion Start

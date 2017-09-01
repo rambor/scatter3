@@ -33,9 +33,10 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     private JComboBox cBox;
     private JCheckBox useDirectFT;
     private JCheckBox backgroundCheckBox;
+    private JCheckBox positiveOnly;
 
     // Initializes the spinner.
-    public PrSpinnerEditor(PrModel prModel, JLabel status,  JCheckBox qIqCheckBox, JComboBox lambdaBox, JCheckBox l1NormCheckBox, JComboBox cBox, JCheckBox useDirectFT, JCheckBox excludeBackground) {
+    public PrSpinnerEditor(PrModel prModel, JLabel status,  JCheckBox qIqCheckBox, JComboBox lambdaBox, JCheckBox l1NormCheckBox, JComboBox cBox, JCheckBox useDirectFT, JCheckBox excludeBackground, JCheckBox positiveOnly) {
         super(new JTextField());
         spinner = new JSpinner();
 
@@ -44,6 +45,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         this.cBox = cBox;
         this.useDirectFT = useDirectFT;
         this.backgroundCheckBox = excludeBackground;
+        this.positiveOnly = positiveOnly;
 
         this.prModel = prModel;
 
@@ -144,7 +146,9 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
                 l1NormCheckBox.isSelected(),
                 Integer.parseInt(cBox.getSelectedItem().toString()),
                 useDirectFT.isSelected(),
-                backgroundCheckBox.isSelected()
+                backgroundCheckBox.isSelected(),
+                positiveOnly.isSelected()
+
         );
 
         tempPr.run();
