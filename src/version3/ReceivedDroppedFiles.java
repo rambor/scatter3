@@ -226,7 +226,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
     public File[] finder(String dirName){
         File dir = new File(dirName);
 
-        System.out.println("DIRECTORY NAME IN FINDER : " + dirName + " " + dir.listFiles().length);
+        //System.out.println("DIRECTORY NAME IN FINDER : " + dirName + " " + dir.listFiles().length);
 
         return dir.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String filename)

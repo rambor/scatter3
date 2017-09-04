@@ -67,5 +67,4 @@ public class WorkingDirectory  {
             client.propertyChange(evt);
         }
     }
-
 }

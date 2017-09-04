@@ -49,6 +49,8 @@ public class Report {
     private final float imageHeight = 240;
     private PDFont pdfont = PDType1Font.COURIER;
     private String legendB;
+    private String legendNote;
+    private boolean includeIzeroRgPlot;
     /**
      * create report using selected files in Collection
      * @param collection
@@ -57,27 +59,38 @@ public class Report {
     public Report(Collection collection, WorkingDirectory workingDirectory, String filename, String titleOf, String info){
         inUseCollection = collection;
         totalInCollection = inUseCollection.getDatasetCount();
+        this.setLegendNote(info);
 
-        Document document = buildBasePlotsFromCollection(titleOf, true);
-        //Document document = new Document(30, 30, 40, 60);
-
-        document.add(new VerticalSpacer(20));
-        try {
-            Paragraph paragraph = new Paragraph();
-            paragraph.addText("Notes", 10, PDType1Font.TIMES_BOLD);
-            document.add(paragraph);
-
-            Paragraph notes = new Paragraph();
-            notes.addMarkup(info, 10, BaseFont.Times);
-            document.add(notes);
-        } catch (IOException e) {
-            e.printStackTrace();
+        boolean addIzeroRgPlot = true;
+        if (collection.getDatasetCount() == 1){
+            addIzeroRgPlot = false;
         }
+        Document document = buildBasePlotsFromCollection(titleOf, addIzeroRgPlot);
+
+        //Document document = new Document(30, 30, 40, 60);
+//        document.add(ControlElement.NEWPAGE);
+//        document.add(new VerticalSpacer(20));
+
+//        try {
+//            Paragraph paragraph = new Paragraph();
+//            paragraph.addText("Notes", 10, PDType1Font.TIMES_BOLD);
+//            document.add(paragraph);
+//
+//            Paragraph notes = new Paragraph();
+//            notes.addMarkup(info, 10, BaseFont.Times);
+//            document.add(notes);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+
+        document.add(ControlElement.NEWPAGE);
+        addDetails(document);
 
         final OutputStream outputStream;
 
         try {
-            outputStream = new FileOutputStream(workingDirectory.getWorkingDirectory()+"/"+filename+".pdf");
+            outputStream = new FileOutputStream(workingDirectory.getWorkingDirectory()+"/"+Functions.sanitizeForFilename(filename)+".pdf");
             document.save(outputStream);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -98,24 +111,13 @@ public class Report {
         inUseCollection.getDataset(0).setInUse(true);
         totalInCollection = 1;
 
+        this.setLegendNote(dataset.getExperimentalNotes());
+
         Document document = buildBasePlotsFromCollection(dataset.getFileName(), false);
 
-        // Add Pr plot and Guinier with residuals if available
-        // provide completed table
-
-        document.add(new VerticalSpacer(20));
-        try {
-            Paragraph paragraph = new Paragraph();
-            paragraph.addText("Note", 10, PDType1Font.TIMES_BOLD);
-            document.add(paragraph);
-            Paragraph notes = new Paragraph();
-            notes.addMarkup(dataset.getExperimentalNotes(), 10, BaseFont.Times);
-            document.add(notes);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        document.add(ControlElement.NEWPAGE);
         document.add(new VerticalSpacer(40));
+
         ImageElement residualsGuinier = new ImageElement(createGuinierResidualsPlotFromDataset(dataset));
         residualsGuinier.setWidth(imageWidth);
         residualsGuinier.setHeight(imageHeight);
@@ -159,20 +161,25 @@ public class Report {
             }
 
             document.add(lineFrame, VerticalLayoutHint.CENTER);
-            String legend = "All values are reported in non-SI units of Angstroms, A.";
+            String legend = "All values are reported in non-SI units of Angstroms (A). For biological particles, Porod exponent can only be within 2 and 4 inclusive. Bin-width is the effective, real-space resolution of the P(r)-distribution calculated as d{_}max{_} divided by Shannon number, N_s_.";
             Paragraph legendP = new Paragraph();
-            legendP.addMarkup(legend,12, BaseFont.Times);
+            legendP.setMaxWidth((float)(document.getPageWidth()/1.2));
+            legendP.addMarkup(legend,10, BaseFont.Times);
+            legendP.setAlignment(Alignment.Justify);
             document.add(legendP, VerticalLayoutHint.CENTER);
+
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        document.add(ControlElement.NEWPAGE);
+        addDetails(document);
 
         final OutputStream outputStream;
 
         try {
-            outputStream = new FileOutputStream(workingDirectory.getWorkingDirectory()+"/"+dataset.getFileName()+".pdf");
+            outputStream = new FileOutputStream(workingDirectory.getWorkingDirectory()+"/"+Functions.sanitizeForFilename(dataset.getFileName())+".pdf");
             document.save(outputStream);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -221,54 +228,73 @@ public class Report {
         BufferedImage kratky = createKratklyPlotFromCollection();
         BufferedImage qIq = createqIqPlotFromCollection();
 
+        // Make Log10 Plot
         ImageElement imageLog10 = new ImageElement(log10);
         imageLog10.setWidth(imageWidth);
         imageLog10.setHeight(imageHeight);
         document.add(imageLog10, new VerticalLayoutHint(Alignment.Left, 0, 0 , 0, 0, true));
 
+        // Make Kratky Plot
         ImageElement imageKratky = new ImageElement(kratky);
         imageKratky.setWidth(imageWidth);
         imageKratky.setHeight(imageHeight);
         document.add(imageKratky, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
 
-
+        // Make qIq Plot
         document.add(new VerticalSpacer(240));
         ImageElement imageqIqPlot = new ImageElement(qIq);
         imageqIqPlot.setWidth(imageWidth);
         imageqIqPlot.setHeight(imageHeight);
         document.add(imageqIqPlot, new VerticalLayoutHint(Alignment.Left, 0, 0 , 0, 0, true));
 
+
+        includeIzeroRgPlot = false;
         if (addIzeroRgPlot){
+            includeIzeroRgPlot = true;
             ImageElement izerorg = new ImageElement(createIZeroRgPlotFromCollection());
             izerorg.setWidth(imageWidth);
             izerorg.setHeight(imageHeight);
             document.add(izerorg, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
-        } // add Pr distribution plot if single
+        }
 
+        // add Pr distribution plot if single
         if (inUseCollection.getDatasetCount() == 1 && !addIzeroRgPlot && inUseCollection.getDataset(0).getRealRg() > 0){
-            ImageElement izerorg = new ImageElement(createPrPlotFromDataset(inUseCollection.getDataset(0)));
-            izerorg.setWidth(imageWidth);
-            izerorg.setHeight(imageHeight);
-            document.add(izerorg, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
+            ImageElement prplot = new ImageElement(createPrPlotFromDataset(inUseCollection.getDataset(0)));
+            prplot.setWidth(imageWidth);
+            prplot.setHeight(imageHeight);
+            document.add(prplot, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
         }
 
         // add table of results (color text by data color)
         document.add(new VerticalSpacer(240));
 
-        if (inUseCollection.getDatasetCount() == 1 && !addIzeroRgPlot && inUseCollection.getDataset(0).getRealRg() > 0){
-            try {
+
+        // make figure legend
+
+            boolean usePr = false;
+            if (inUseCollection.getDataset(0).getRealRg() > 0){
+                usePr = true;
+            }
+            try { // make figure legend
                 Paragraph tempparagraph = new Paragraph();
-                tempparagraph.addMarkup(getLegendDataset(true), 9, BaseFont.Times);
+                tempparagraph.addMarkup(getLegendDataset(usePr), 9, BaseFont.Times);
+                tempparagraph.setMaxWidth((float)(document.getPageWidth()/1.2));
+                tempparagraph.setAlignment(Alignment.Justify);
                 document.add(tempparagraph, VerticalLayoutHint.CENTER);
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-        document.add(new VerticalSpacer(20));
+
+
+        return document;
+    }
+
+    private void addDetails(Document document){
 
         ArrayList<String> header = getHeader();
         document.add(new ColumnLayout(1, 5));
 
+        // details table
         try {
             Paragraph tempparagraph = new Paragraph();
             tempparagraph.addMarkup(getHeaderString(), 8, BaseFont.Courier);
@@ -294,7 +320,6 @@ public class Report {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
 
 
         try {
@@ -326,8 +351,6 @@ public class Report {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return document;
     }
 
     private BufferedImage createGuinierPlotFromDataset(Dataset dataset){
@@ -492,7 +515,7 @@ public class Report {
 
         final XYPlot plot = chart.getXYPlot();
         plot.setDomainAxis(getDomainAxis("r, \u212B"));
-        plot.setRangeAxis(getRangeAxis("P(r)", ilower, iupper));
+        plot.setRangeAxis(getRangeAxis("P(r)-distribution", ilower, iupper));
 
         chart.setTitle(getTitle("D"));
 
@@ -516,6 +539,11 @@ public class Report {
         plot.setRenderer(0, splineRend);       //render as a line
 
         return chart.createBufferedImage((int)imageWidth*3,(int)imageHeight*3);
+    }
+
+
+    private void setLegendNote(String text){
+        this.legendNote = text;
     }
 
 
@@ -716,9 +744,9 @@ public class Report {
         marker.setLabelBackgroundColor(Color.white);
         marker.setLabelOffset(new RectangleInsets(0,0,0,-40));
 
-        marker.setLabel("0");
-        marker.setLabelFont(Constants.BOLD_18);
-        marker.setStroke(new BasicStroke(1.8f));
+//        marker.setLabel("0");
+//        marker.setLabelFont(Constants.BOLD_18);
+        marker.setStroke(new BasicStroke(2.0f));
         plot.addRangeMarker(marker);
 
 
@@ -797,10 +825,9 @@ public class Report {
                 if (tempData.getGuinierRg() > 0 && tempData.getInUse()){
                     tempData.createNormalizedKratkyReciRgData();
                     plottedDatasets.addSeries(tempData.getNormalizedKratkyReciRgData()); // positive only data
-
                 }
             }
-            legendB = "B. Dimensionless Kratky plot. Cross-hair marks the Guinier-Kratky point (1.732, 1.1), the main peak position for globular particles. ";
+            legendB = "*B.* Dimensionless Kratky plot. Cross-hair marks the Guinier-Kratky point (1.732, 1.1), the main peak position for globular particles.";
         } else {
             for (int i=0; i < totalSets; i++){
                 Dataset tempData = inUseCollection.getDataset(i);
@@ -809,7 +836,7 @@ public class Report {
                     plottedDatasets.addSeries(tempData.getPlottedKratkyDataSeries()); // positive only data
                 }
             }
-            legendB = "B. Kratky plot. Convergence at high scattering vectors suggests compactness whereas divergence or hyperbolic features away from baseline suggest flexibility in the thermodynamic state.  ";
+            legendB = "*B.* Kratky plot. Convergence at high scattering vectors suggests compactness whereas divergence or hyperbolic features away from baseline suggest flexibility in the thermodynamic state.";
         }
 
         ilower = plottedDatasets.getRangeLowerBound(true);
@@ -831,7 +858,6 @@ public class Report {
 
         String xaxisLabel, yaxisLabel;
         if (useNormalized){
-
             xaxisLabel = "q\u2217Rg";
             yaxisLabel = "I(q)/I(0)\u2217(q\u2217Rg)\u00B2";
         } else {
@@ -900,9 +926,9 @@ public class Report {
         marker.setLabelAnchor(RectangleAnchor.RIGHT);
         marker.setLabelBackgroundColor(Color.white);
         marker.setLabelOffset(new RectangleInsets(0,0,0,0));
-        marker.setLabel("0");
-        marker.setLabelFont(Constants.BOLD_18);
-        marker.setStroke(new BasicStroke(1.8f));
+//        marker.setLabel("0");
+//        marker.setLabelFont(Constants.BOLD_18);
+        marker.setStroke(new BasicStroke(2.0f));
         plot.addRangeMarker(marker);
 
         plot.configureDomainAxes();
@@ -1057,7 +1083,7 @@ public class Report {
     private String getHeaderString(){
        // String temp = " Rg-Reci error  Rg-Real error  I[zero]-Reci error  I[zero]-Real error    Vp      dmax     filename ";
 
-        String formatted = String.format(" %s   %s %s   %s %s   %s %s   %s %s %s %s",
+        String formatted = String.format(" %s  %s %s   %s %s  %s %s   %s %s %s %s",
                 centerText("Rg-G", 7, ' '),      // xxxx.xx
                 centerText("error", 5, ' '), // 12.22
                 centerText("Rg-Real", 7, ' '),         // xxxx.xx
@@ -1129,16 +1155,16 @@ public class Report {
 
         String formatted = String.format("{color:%s} %s +-%s  %s %s  %s  %s  %s %s  %s %s %s",
                 hex,
-                centerText(pe, 7, ' '),      // x.xx
-                centerText(peerror, 5, ' '), // 1.22
-                centerText(vc, 9, ' '),         // 1.XXXE-04
+                centerText(pe, 7, ' '),        // x.xx
+                centerText(peerror, 5, ' '),   // 1.22
+                centerText(vc, 9, ' '),        // 1.XXXE-04
                 centerText(vcreal, 9, ' '),    // 12.22
-                centerText(dmax, 7, ' '),   // 1000.5
-                centerText(raverage, 6, ' '), // 101.1
-                centerText(qmin, 9, ' '), // 12.22
-                centerText(qmax, 9, ' '), // 12.22
-                centerText(chi, 6, ' '), // 12.22
-                centerText(sk2, 5, ' '), // 12.22
+                centerText(dmax, 7, ' '),      // 1000.5
+                centerText(raverage, 6, ' '),  // 101.1
+                centerText(qmin, 9, ' '),      // 12.22
+                centerText(qmax, 9, ' '),      // 12.22
+                centerText(chi, 6, ' '),       // 12.22
+                centerText(sk2, 5, ' '),       // 12.22
                 escaped
         );
 
@@ -1163,6 +1189,8 @@ public class Report {
        if (dataset.getRealIzero() > 0 ){
            dataset.getRealSpaceModel().estimateErrors();
        }
+
+        String index = String.format("%d", dataset.getId());
 
         String guinierRg = (dataset.getGuinierRg() > 0) ? String.format("%.2f", dataset.getGuinierRg()) : "nd";
         String guinierRgerror = (dataset.getGuinierRg() > 0) ? String.format("%.2f", dataset.getGuinierRG_sigma()): "nd";
@@ -1199,12 +1227,12 @@ public class Report {
         }
         Paragraph tempparagraph = new Paragraph();
 
-        String formatted = String.format("{color:%s} %s +-%s %s +-%s %s +-%s %s +-%s %s %s %s",
+        String formatted = String.format("{color:%s}%s+-%s %s+-%s %s+-%s %s+-%s %s %s %s",
                 hex,
                 centerText(guinierRg, 7, ' '),      // xxxx.xx
-                centerText(guinierRgerror, 5, ' '), // 12.22
+                centerText(guinierRgerror, 6, ' '), // 12.22
                 centerText(realRg, 7, ' '),         // xxxx.xx
-                centerText(realRgerror, 5, ' '),    // 12.22
+                centerText(realRgerror, 6, ' '),    // 12.22
                 centerText(guinierIzero, 9, ' '),   // 1.XXXE-04
                 centerText(guinierIzeroSigma, 7, ' '), // 1.XE-04
                 centerText(realIzero, 9, ' '), // 12.22
@@ -1226,12 +1254,14 @@ public class Report {
     }
 
     private String escape(String text){
-        return text.replace("_", "\\_");
+        String temp = text.replaceAll("\\n", "");
+        temp = temp.replaceAll("\\r", "");
+        return temp.replace("_", "\\_");
     }
 
 
     private String getDataSummaryTopHeader(){
-        return String.format("%s %s %s", rightJustifyText(" ",16,' '), centerText("Reciprocal",20, ' '), centerText("Real Space",20, ' '));
+        return String.format("%s %s %s %s", rightJustifyText(" ",16,' '), centerText("Reciprocal",20, ' '), centerText("Real Space",20, ' '), centerText("units",10, ' ') );
     }
     /**
      * Create Arraylist of elements to add to table
@@ -1305,7 +1335,7 @@ public class Report {
             realPoints = Integer.toString(dataset.getRealSpaceModel().getfittedqIq().getItemCount());
 
             realRg = String.format("%.2f +- %.2f",dataset.getRealRg(), dataset.getRealRgSigma());
-            realIzero = String.format("%1.2E %1.1E",dataset.getRealIzero(), dataset.getRealIzeroSigma());
+            realIzero = String.format("%1.2E +- %1.1E",dataset.getRealIzero(), dataset.getRealIzeroSigma());
 
             chi2_free = String.format("%.2f", dataset.getRealSpaceModel().getChi2());
             if (dataset.getPorodVolumeReal() > 0){
@@ -1346,8 +1376,8 @@ public class Report {
         rows.add(String.format("%s %s %s", rightJustifyText("Background",16,' '), centerText(" ",columnWidthData, ' '), centerText(background, columnWidthData, ' '))); // background fitted?
 
         rows.add(String.format("%s %s ", rightJustifyText("Porod Exponent", columnWidthLabels, ' '), centerText(porodExponent,columnWidthData, ' '))); // porod exponent
-        rows.add(String.format("%s %s", rightJustifyText("d-max", columnWidthLabels, ' '), centerText(dmax,columnWidthData, ' '))); // dmax
-        rows.add(String.format("%s %s", rightJustifyText("bin-width", columnWidthLabels, ' '), centerText(binwidth,columnWidthData, ' '))); // binwidth
+        rows.add(String.format("%s %s %s %s", rightJustifyText("d-max", columnWidthLabels, ' '), centerText(dmax,columnWidthData, ' '), rightJustifyText(" ",20,' '), "A")); // dmax
+        rows.add(String.format("%s %s %s %s", rightJustifyText("bin-width", columnWidthLabels, ' '), centerText(binwidth,columnWidthData, ' '), rightJustifyText(" ",20,' '), "A")); // binwidth
         rows.add(String.format("%s %s ", rightJustifyText("Ns", columnWidthLabels, ' '), centerText(shannon,columnWidthData, ' '))); // shannon
         rows.add(String.format("%s %s ", rightJustifyText("redundancy", columnWidthLabels, ' '), centerText(redundancy,columnWidthData, ' '))); // redundancy
 
@@ -1412,13 +1442,16 @@ public class Report {
 
     private String getLegendDataset(Boolean includePr){
 
-        String legendA = "A. Log{_}10{_} SAXS intensity versus scattering vector, _q_, plot. Plotted range represents the positive only data within the visible _q_-range.";
-        String legendC = "C. Total scattered intensity plot. Plot readily demonstrates negative intensities at high-_q_. Over-subtraction of background leads to significant negative intensities. Likewise, under-subtraction can be observed as signficant positive intensites at high-_q_ leading to an elevated baseline. Horizontal line is drawn at y=0. ";
-        String legend = legendA + " " + legendB + " " + legendC;
+        String startLegend = "*Figure | *" + escape(legendNote);
+        String legendA = "*A.* Log{_}10{_} SAXS intensity versus scattering vector, _q_. Plotted range represents the positive only data within the specified _q_-range.";
+        String legendC = "*C.* Total scattered intensity plot. Plot readily demonstrates negative intensities at high-_q_. Over-subtraction of background leads to significant negative intensities. Likewise, under-subtraction can be observed as an elevated baseline at high-_q_. Horizontal line is drawn at y=0. ";
+        String legend = startLegend + " " + legendA + " " + legendB + " " + legendC;
         if (includePr){
-            legend += " " + "D. Pair-distance distribution, P(r), function. Maximum dimension, _d{_}max{_}_, is the largest non-negative value that supports a smooth distribution function.";
+            legend += " " + "*D.* Pair-distance, P(r), distribution function. Maximum dimension, _d{_}max{_}_, is the largest non-negative value that supports a smooth distribution function.";
+        } else if (includeIzeroRgPlot){
+            legend += " " + "*D.* Double-Y plot of Guinier I(0) and R{_}g{_} versus sample. Sample order and datasets are colored are indicated by the following table. ";
         }
 
-return legend;
+        return legend;
     }
 }

@@ -906,6 +906,9 @@ public class Dataset {
     }
 
     public void createNormalizedKratkyReciRgData(){
+
+        this.clearNormalizedKratkyReciRgData();
+
         XYDataItem temp;
         double rg2 = guinierRg*guinierRg/guinierIZero;
         int startHere = startAt - 1;
@@ -932,6 +935,7 @@ public class Dataset {
     }
 
     public void createNormalizedKratkyRealRgData(){
+        this.clearNormalizedKratkyRealRgData();
         XYDataItem temp;
         double rg2 = realRg*realRg/realIZero;
         int startHere = startAt - 1;

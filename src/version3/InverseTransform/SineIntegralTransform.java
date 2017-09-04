@@ -446,7 +446,7 @@ public class SineIntegralTransform extends IndirectFT {
 
         r_values = new double[r_vector_size+2];
 
-        // populate r-values
+        // populate r-values, add 0 and dmax
         r_values[0] = 0;
         for(int j=0; j< r_vector_size; j++){
             r_values[j+1] = r_vector[j];
@@ -1037,7 +1037,7 @@ public class SineIntegralTransform extends IndirectFT {
         //del_r = prDistribution.getX(2).doubleValue() - prDistribution.getX(1).doubleValue() ;
 
         XYDataItem item;
-        for(int i=0; i<totalInDistribution-2; i++){ // exclude last two points?
+        for(int i=1; i<totalInDistribution-2; i++){ // exclude last two points?
             item = prDistribution.getDataItem(i);
             double rvalue = item.getXValue();
             tempRg2Sum += rvalue*rvalue*item.getYValue()*del_r;
@@ -1066,7 +1066,7 @@ public class SineIntegralTransform extends IndirectFT {
 
         totalInDistribution = r_vector_size+2;
 
-        for(int i=0; i<totalInDistribution; i++){
+        for(int i=0; i<totalInDistribution; i++){ // values in r_vector represent the midpoint or increments of (i+0.5)*del_r
 
             if ( i == 0 ) { // interleaved r-value (even)
                 prDistribution.add(0, 0);
@@ -1076,64 +1076,26 @@ public class SineIntegralTransform extends IndirectFT {
                 int index = i-1;
                 prDistribution.add(r_vector[index], coefficients[index+1]);
             }
-            //System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
+//            System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
         }
+
         // add an extra point for the spline interpolation at end, purely for rendering reasons
         XYDataItem secondToLastItem = prDistribution.getDataItem(totalInDistribution-2);
         double delta = dmax - secondToLastItem.getXValue();
 
+        // adding new dataItem sorts the XYSeries
         prDistribution.add(secondToLastItem.getXValue() + 0.5*delta, secondToLastItem.getYValue()*0.5);
-
-
-//        prDistribution.add(0,0);
-//        //System.out.println("Distribution set :");
-//        // coefficients start at r_1 > 0 and ends at midpoint of last bin which is less dmax
-//        for(int i=1; i < totalCoefficients; i++){
-//            //prDistribution.add(del_r*(0.5+i-1), coefficients[i]);
-//            prDistribution.add(r_values[i], coefficients[i]); // first value is background for coeffs
-//            System.out.println(i + " " + r_values[i] + " " + coefficients[i]);
-//        }
-//        //double lastvalue = prDistribution.getY((prDistribution.getItemCount()-1)).doubleValue();
-//        //prDistribution.add(r_values[totalInDistribution-3], 0.75*lastvalue); // should be dmax
-//        //prDistribution.add(r_values[totalInDistribution-2], 0.5*lastvalue); // should be dmax
-//        prDistribution.add(r_values[totalInDistribution-1], 0); // should be dmax
 
 //        for(int i=0; i < totalInDistribution; i++){
 //            System.out.println(prDistribution.getX(i) + " " +  prDistribution.getY(i));
 //        }
 
 
-        // create a list of r-values with interleaved values
-
-//        totalInDistribution = 2*r_vector_size + 1 ;
-//
-//        for(int i=0; i<totalInDistribution; i++){
-//
-//            if ( (i & 1) == 0 ) { // interleaved r-value (even)
-//
-//                if (i==0) {
-//                    prDistribution.add(0, 0);
-//                } else if (i == (totalInDistribution-1)) {
-//                    prDistribution.add(dmax, 0);
-//                } else {
-//                    int priorIndex = i/2; // divide by two to map to r_vector
-//                    // need the coefficients that neighbor the boundary point
-//                    double interpolatedValue = 0.5*(coefficients[priorIndex] + coefficients[priorIndex+1]);
-//                    prDistribution.add(priorIndex*del_r, interpolatedValue);
-//                }
-//
-//            } else { // odd
-//                int index = (i-1)/2;
-//                prDistribution.add(r_vector[index], coefficients[index+1]);
-//            }
-//            System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
-//        }
-
         totalInDistribution = prDistribution.getItemCount();
 
         this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS DIRECT INVERSE FOURIER TRANSFORM OF I(q) %n");
         this.description += String.format("REMARK 265  COEFFICIENTS ARE THE HISTOGRAM HEIGHTS WITH EQUAL BIN WIDTHS %n");
-        this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.5E %n", coefficients[0]);
+        this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.5E %n", del_r);
         setSplineFunction();
     }
 
@@ -1198,9 +1160,10 @@ public class SineIntegralTransform extends IndirectFT {
         //del_r = prDistribution.getX(2).doubleValue()  - prDistribution.getX(1).doubleValue() ;
 
         XYDataItem tempData;
-        int totalRuns = 31;
-        double[] rgValues = new double[totalRuns];
-        double[] izeroValues = new double[totalRuns];
+        int totalRuns = 71;
+        ArrayList<Double> rgValuesList = new ArrayList<>();
+        ArrayList<Double> izeroValuesList = new ArrayList<>();
+
 
         ArrayList<Integer> countsPerBin = new ArrayList<>();
         int startbb = 0;
@@ -1249,7 +1212,7 @@ public class SineIntegralTransform extends IndirectFT {
                 // what if countPerBin = 0?
                 if (countsPerBin.get(b-1) > 0){
 
-                    samplingLimit = (1.0 + randomGenerator.nextInt(17))/100.0;  // return a random percent up to ...
+                    samplingLimit = (1.0 + randomGenerator.nextInt(46))/100.0;  // return a random percent up to ...
                     binloop:
                     for (int bb=startbb; bb < size; bb++){
                         if (fittedqIq.getX(bb).doubleValue() >= (delta_q*b) ){ // what happens on the last bin?
@@ -1267,7 +1230,6 @@ public class SineIntegralTransform extends IndirectFT {
                         locale = randomNumbers[h];
                         tempData = fittedqIq.getDataItem(locale);
                         randomSeries.add(tempData.getXValue(), (tempData.getYValue()-standardizedMin)*invStdev);
-                        //randomSeries.add(tempData.getXValue(), (tempData.getYValue()/tempData.getXValue()-standardizedMin)*invStdev*tempData.getXValue());
                     }
                 } // end of checking if bin is empty
             }
@@ -1275,18 +1237,19 @@ public class SineIntegralTransform extends IndirectFT {
             // calculate PofR
             this.createDesignMatrix(randomSeries);
 
-//            if (useL1){
+            if (positiveOnly){
+                rambo_coeffs_L1_positive_only();
+            } else {
                 this.rambo_coeffs_L1();
-//            } else { // must always use background when doing second derivative L1
-//                this.excludeBackground = false;
-//                this.rambo_coeffs_smoothed();
-//            }
+            }
 
             // calculate Rg
             double tempRgSum = 0, tempRg2Sum=0, xaverage=0;
             XYDataItem item;
-            for(int pr=0; pr < totalInDistribution; pr++){
+            for(int pr=1; pr < (totalInDistribution-2); pr++){
+
                 item = prDistribution.getDataItem(pr);
+
                 double rvalue = item.getXValue();
                 tempRg2Sum += rvalue*rvalue*item.getYValue()*del_r;
                 tempRgSum += item.getYValue()*del_r; // width x height => area
@@ -1298,8 +1261,19 @@ public class SineIntegralTransform extends IndirectFT {
                 sum +=  coefficients[j+1];
             }
 
-            rgValues[i] = Math.sqrt(0.5*tempRg2Sum/tempRgSum);
-            izeroValues[i] = (sum + standardizedMin)*standardizedScale;
+            //rgValues[i] = Math.sqrt(0.5*tempRg2Sum/tempRgSum);
+            if (tempRg2Sum > 0){
+                rgValuesList.add(Math.sqrt(0.5*tempRg2Sum/tempRgSum));
+                izeroValuesList.add((sum + standardizedMin)*standardizedScale);
+            }
+        }
+        //double[] rgValues = new double[totalRuns];
+        int totalDoubles = rgValuesList.size();
+        double[] izeroValues = new double[totalDoubles];
+        double[] rgValues = new double[totalDoubles];
+        for(int d=0; d<totalDoubles; d++){
+            rgValues[d] = rgValuesList.get(d);
+            izeroValues[d] = izeroValuesList.get(d);
         }
 
         DescriptiveStatistics rgStat = new DescriptiveStatistics(rgValues);

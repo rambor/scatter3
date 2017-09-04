@@ -13,6 +13,7 @@ import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.HorizontalAlignment;
 import org.jfree.ui.Layer;
 
 import javax.swing.*;
@@ -653,7 +654,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
     @Override
     protected void done() {
-//frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+
     }
 
     /**
@@ -704,18 +705,18 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             }
         }
 
-        System.out.println("Preliminary baseline set size : " + keepers.size());
+        //System.out.println("Preliminary baseline set size : " + keepers.size());
 
         Iterator<Integer> iterator = keepers.iterator();
         Collection keptCollection = new Collection();
-        int totalInKept = keepers.size();
-        int count=1;
+//        int totalInKept = keepers.size();
+//        int count=1;
         // Displaying the Tree set data
         while (iterator.hasNext()) {
             Dataset tempDataset = samplesCollection.getDataset(iterator.next());
             keptCollection.addDataset(tempDataset);
-            System.out.println(count + "(" + totalInKept + ")" + " => Kept as buffer : " + tempDataset.getFileName());
-            count++;
+//            System.out.println(count + "(" + totalInKept + ")" + " => Kept as buffer : " + tempDataset.getFileName());
+//            count++;
         }
 
         System.out.println(" => Calculating average for baseline ");
@@ -963,23 +964,24 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             // if key pressed
         }
 
+    }
 
+    public JFreeChart getChart(String title){
+        chart.setTitle(title);
+        chart.getTitle().setFont(new java.awt.Font("Times",  Font.BOLD, 42));
+        chart.getTitle().setPaint(Color.BLACK);
+        chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
+        chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
+
+        // reset colors for datasets in chart
+//        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) chart.getXYPlot().getRenderer(0);
+//        int totalSeries = chart.getXYPlot().getSeriesCount();
+
+        return chart;
     }
 
 
 
-    public class Estimator implements Runnable {
-
-        public Estimator(){
-
-        }
-
-
-        @Override
-        public void run() {
-
-        }
-    }
 
     public void terminateFrame(){
         frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));

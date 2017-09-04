@@ -5,6 +5,7 @@ import version3.*;
 import version3.Collection;
 import version3.InverseTransform.RefinePrManager;
 import version3.PowerLawFit.PowerLaw;
+import version3.ReportPDF.MergeReport;
 import version3.ReportPDF.Report;
 import version3.formfactors.FormFactorEngine;
 import version3.formfactors.ModelType;
@@ -326,7 +327,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.0m";
+    private String version = "3.0q";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -383,6 +384,7 @@ public class Scatter {
     public ErrorPlot errorPlot;
     public PowerLawPlot powerLawPlot;
     public MiniPlots analysisMiniPlots;
+    public MergeReport mergeReport;
 
     private static Similarity similarityObject;
 
@@ -1131,11 +1133,13 @@ public class Scatter {
         // define Singleton plots
         kratky = KratkyPlot.getInstance();
         log10IntensityPlot = PlotDataSingleton.getInstance();
+        mergeReport = MergeReport.getInstance();
         analysisMiniPlots = MiniPlots.getInstance();
         qIqPlot = QIQPlot.getInstance();
         errorPlot = ErrorPlot.getInstance();
         powerLawPlot = PowerLawPlot.getInstance();
 
+        mergeReport.setWorkingDirectory(WORKING_DIRECTORY.getWorkingDirectory());
         similarityObject = new Similarity(status, mainProgressBar);
 
         //normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
@@ -2001,6 +2005,7 @@ signalPlotThread.execute();
                 ((Collection)collections.get(96)).removeAllDatasets();
                 status.setText("Cleared");
                 sampleFilesModel.clear();
+                mergeReport.clear();
                 //samplesList.removeAll();
 
                 if (clearALL){
@@ -2149,7 +2154,8 @@ signalPlotThread.execute();
                     singles = true;
                 }
 
-                if (subtractionFileNameField.getText().length() < 3 && !singles){
+                //if (subtractionFileNameField.getText().length() < 3 && !singles){
+                if (subtractionFileNameField.getText().length() < 3){
                     Toolkit.getDefaultToolkit().beep();
                     JOptionPane optionPane = new JOptionPane("Provide a meaningful name",JOptionPane.WARNING_MESSAGE);
                     JDialog dialog = optionPane.createDialog("Warning!");
@@ -2176,6 +2182,7 @@ signalPlotThread.execute();
                     }
                 }
 
+                boolean finalSingles1 = singles;
                 new Thread() {
                     public void run() {
 
@@ -2192,7 +2199,21 @@ signalPlotThread.execute();
                             e.printStackTrace();
                         }
                         // add dataset to collectionSelected
+                        mergeReport.setWorkingDirectory(OUTPUT_DIR_SUBTRACTION_NAME);
+                        mergeReport.setSubtractedPlot(subTemp.getReturnCollection());
+                        mergeReport.setComparisonPlot(subTemp.getReturnCollection(), Integer.valueOf((String)excludeComboBox.getSelectedItem()), true);
 
+                        if (finalSingles1){
+                            // add
+                            mergeReport.setMerged(false);
+                            mergeReport.writeReport(subtractionFileNameField.getText());
+                        } else {
+                            mergeReport.setMerged(true);
+                            mergeReport.createMergedChart(subTemp.getSubtractedMergedCollection());
+                            mergeReport.writeReport(subtractionFileNameField.getText());
+                        }
+
+                        status.setText("File Written to : " + OUTPUT_DIR_SUBTRACTION_NAME);
                         updateActiveModels();
                         int id = collectionSelected.getPanelID();
                         miniPlots.get(id).chart.setNotify(false);
@@ -2203,6 +2224,8 @@ signalPlotThread.execute();
                         miniPlots.get(id).chart.setNotify(true);
                     }
                 }.start();
+
+                //mergeReport.set
             }
         });
         radioButtonLoad1.addActionListener(new ActionListener() {
@@ -2948,6 +2971,9 @@ signalPlotThread.execute();
                 sampleCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
                 bufferCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
 
+                mergeReport.clear();
+                mergeReport.setHPLCLayout(true);
+
                 int total = sampleFilesModel.getSize();
 
 
@@ -2978,7 +3004,15 @@ signalPlotThread.execute();
                 signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
                 signalPlotThread.setSampleJList(samplesList);
                 signalPlotThread.execute();
+                try {
+                    signalPlotThread.get();
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                } catch (ExecutionException e1) {
+                    e1.printStackTrace();
+                }
 
+                mergeReport.setSignalPlot(signalPlotThread.getChart("A"));
 //                Thread temp1 = new Thread(tempSignalPlot);
 //                temp1.start();
 //
@@ -3003,7 +3037,7 @@ signalPlotThread.execute();
 
                     if (sampleFilesModel.get(i).isSelected()){ // if selected, make copy and put in bufferFilesModel
 
-                        System.out.println("SELECTED AS BUFFER " + sampleFilesModel.get(i).getFilename());
+                        // System.out.println("SELECTED AS BUFFER " + sampleFilesModel.get(i).getFilename());
                         // add buffers to collection.get(69)
                         tempDataset = sampleFilesModel.get(i).dataset;
                         bufferCollections.addDataset(new Dataset(tempDataset));
@@ -3011,6 +3045,9 @@ signalPlotThread.execute();
                         newIndex++;
                     }
                 }
+
+
+                // this means to create a SEC report
 
                 buffersList.removeAll();
                 buffersList.setModel(bufferFilesModel);
@@ -5374,8 +5411,8 @@ signalPlotThread.execute();
                 this.button.setText("2File");
                 this.button.setToolTipText("Write to File");
             } else if (name == "SEARCH"){
-                this.button.setText("? d-max");
-                this.button.setToolTipText("Auto-dmax search");
+                this.button.setText("S(q)");
+                this.button.setToolTipText("Structure Factor test");
                 //Icon warnIcon = new ImageIcon("src/dmax_logo.png");
                 //this.button = new JButton(warnIcon);
             }
