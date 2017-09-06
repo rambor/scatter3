@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RefinePrManager extends SwingWorker<Void, Void> {
@@ -17,6 +18,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     private int numberOfCPUs;
     private RealSpace dataset;
     private int refinementRounds;
+    private double invRefineMentRounds;
     private int roundsPerCPU;
     private int bins;
     private IndirectFT keptIFTModel;
@@ -45,6 +47,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     private double standardizedMin;
     private double standardizedScale;
     private AtomicInteger counter = new AtomicInteger(0);
+    private AtomicBoolean isNewModel;
     private double median;
 
     public RefinePrManager(RealSpace dataset, int numberOfCPUs, int refinementRounds, double rejectionCutOff, double lambda, int cBoxValue, boolean useL1, boolean includeBackground, boolean useDirect, boolean positiveOnly){
@@ -52,6 +55,10 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         this.numberOfCPUs = numberOfCPUs;
         this.dataset = dataset;
         this.refinementRounds = refinementRounds;
+        this.invRefineMentRounds = 1.0/(double)refinementRounds;
+
+        this.isNewModel = new AtomicBoolean(false);
+
         this.roundsPerCPU = (int)(this.refinementRounds/(double)this.numberOfCPUs);
         this.rejectionCutOff = rejectionCutOff;
         this.lambda = lambda;
@@ -78,6 +85,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
     @Override
     protected Void doInBackground() throws Exception {
+
         if (useLabels){
             statusLabel.setText("Starting median residual " + median);
         }
@@ -109,14 +117,32 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         //dataset.setIndirectFTModel(keptIFTModel);
 
         notifyUser("Finished Refining");
-        createKeptSeries();
+
+        if (isNewModel.get()){
+
+            createKeptSeries();
+
+        } else { // update refined sets with same datasets if no new model found;
+
+            int size = dataset.getfittedqIq().getItemCount();
+            keptErrorSeries = new XYSeries("same model");
+            XYDataItem item;
+
+            for (int i=0; i < size; i++){
+                item = dataset.getfittedqIq().getDataItem(i);
+                keptErrorSeries.add(item.getX(), dataset.getErrorAllData().getY(dataset.getErrorAllData().indexOf(item.getX())));
+            }
+            dataset.updatedRefinedSets(dataset.getfittedIq(), fittedErrors);
+            updateText(String.format("Refinement failed, no improvement try increase number of rounds"));
+        }
+
 
         synchronized (this) {
             isFinished = true;
             notifyAll();
         }
         notifyUser("Final Kept Series Created");
-        //this.dataset.chi_estimate();
+
         return null;
     }
 
@@ -133,6 +159,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     }
 
     private synchronized void setIFTObject(IndirectFT iftObject, double value) {
+        isNewModel.set(true);
         keptIFTModel = iftObject;
         setMedian(value);
     }
@@ -141,7 +168,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         this.bar = bar;
         this.bar.setValue(0);
         this.bar.setStringPainted(true);
-        this.bar.setMaximum(refinementRounds);
+        this.bar.setMaximum(100);
         this.statusLabel = prStatusLabel;
         useLabels = true;
     }
@@ -357,11 +384,11 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         }
 
 
-        private void increment() {
+        private synchronized void increment() {
             int currentCount = counter.incrementAndGet();
 
             if (currentCount%100==0){
-                bar.setValue((int)(currentCount/refinementRounds*100));
+                bar.setValue((int)(currentCount*invRefineMentRounds*100));
             }
         }
 
@@ -414,7 +441,6 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         XYDataItem tempData;
 
         double invStd = 1.0/standardizedScale;
-
 
         int size = standardizedSeries.getItemCount();
         s_o = 1.4826*(1.0 + 5.0/(size - keptIFTModel.getTotalFittedCoefficients() - 1))*Math.sqrt(getMedian());
@@ -501,19 +527,6 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
             RefinedPlot refinedPlot = new RefinedPlot(dataset);
             refinedPlot.makePlot(String.format("Rejected %d points (%.1f %%) using cutoff: %.4f => files written to working directory", totalrejected, percentRejected, rejectionCutOff));
-
-        } else { // do nothing if unacceptable, so clear and reload a original
-
-            for (int i=0; i<size; i++){
-                tempData = standardizedSeries.getDataItem(i);
-                xObsValue = tempData.getXValue();
-                yObsValue = tempData.getYValue();
-
-                //dataset.getfittedIq().add(tempData);
-            }
-
-            dataset.calculateIntensityFromModel(useL1);
-            updateText(String.format("Refinement failed check data for unusual numbers"));
         }
     }
 

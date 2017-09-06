@@ -5464,7 +5464,6 @@ signalPlotThread.execute();
                 this.button.setBackground(Color.WHITE);
                 this.button.setForeground(Color.GREEN);
                 status.setText("");
-                prStatusLabel.setText("Starting dmax search of " + prModel.getDataset(rowID).getFilename());
 
                 Thread refineIt = new Thread(){
                     public void run() {
@@ -5472,27 +5471,6 @@ signalPlotThread.execute();
                         StructureFactor SF = new StructureFactor(collectionSelected.getDataset(prModel.getDataset(rowID).getId()), WORKING_DIRECTORY.getWorkingDirectory());
                         SF.createPlot();
 
-
-//                        final DmaxManager refineMe = new DmaxManager(prModel.getDataset(rowID), (cpuCores-1),
-//                                Double.parseDouble(lambdaBox.getSelectedItem().toString()),
-//                                l1NormCheckBox.isSelected());
-//
-//                        prStatusLabel.setText("");
-//
-//                        //refineMe.setBar(progressBar1, prStatusLabel);
-//                        refineMe.execute();
-/*
-                        synchronized (refineMe) {
-                            if (!refineMe.getIsFinished()) {
-                                try {
-                                    refineMe.wait();
-                                } catch (InterruptedException ee) {
-                                    // handle it somehow
-                                    System.out.println("Catch " + ee.getMessage());
-                                }
-                            }
-                        }
-                        */
                     }
 
                 };
@@ -5547,6 +5525,7 @@ signalPlotThread.execute();
                         );
 
                         prStatusLabel.setText("Files written to " + WORKING_DIRECTORY.getWorkingDirectory() + ", ready to run DAMMIN/F");
+
                         runDatGnom(newname, collectionSelected.getDataset(prModel.getDataset(rowID).getId()).getRealRg());
                         // run gnom
                         prModel.fireTableDataChanged();

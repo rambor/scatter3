@@ -31,11 +31,11 @@ public class SineIntegralTransform extends IndirectFT {
         if (positiveOnly){
             rambo_coeffs_L1_positive_only();
             this.setModelUsed("DIRECT L1-NORM POSITIVE ONLY");
-            System.out.println(this.getModelUsed() + " BKG " + includeBackground);
+           // System.out.println(this.getModelUsed() + " BKG " + includeBackground);
         } else {
             this.rambo_coeffs_L1();
             this.setModelUsed("DIRECT L1-NORM");
-            System.out.println(this.getModelUsed() + " BKG " + includeBackground);
+           // System.out.println(this.getModelUsed() + " BKG " + includeBackground);
         }
 
     }
@@ -76,7 +76,7 @@ public class SineIntegralTransform extends IndirectFT {
         } else {
             this.rambo_coeffs_L1();
             this.setModelUsed("DIRECT L1-NORM");
-            System.out.println(this.getModelUsed() + " " + includeBackground);
+           // System.out.println(this.getModelUsed() + " " + includeBackground);
         }
     }
 
@@ -295,7 +295,7 @@ public class SineIntegralTransform extends IndirectFT {
             //------------------------------------------------------------
             if (gap/dobj < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
-                System.out.println(status);
+               // System.out.println(status);
                 break calculationLoop;
             }
 
@@ -415,7 +415,7 @@ public class SineIntegralTransform extends IndirectFT {
             } // end backtrack loop
 
             if (lsiter == max_ls_iter){
-                System.out.println("Max LS iteration: Failed");
+               // System.out.println("Max LS iteration: Failed");
                 break calculationLoop;
             }
 
@@ -577,13 +577,12 @@ public class SineIntegralTransform extends IndirectFT {
             // dobj = Math.max(( (nu.transpose().mult(nu)).get(0,0)*(-0.25) - ((nu.transpose().mult(y))).get(0,0) ), dobj);
             gap   = pobj - dobj;
 
-            System.out.println("GAP: " + gap + " : " + " | ratio " + gap/dobj + " reltol " + reltol);
             //------------------------------------------------------------
             //       Shall we Stop?
             //------------------------------------------------------------
             if (gap/Math.abs(dobj) < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
-                System.out.println(status);
+          //      System.out.println(status);
                 break calculationLoop;
             }
 
@@ -707,7 +706,7 @@ public class SineIntegralTransform extends IndirectFT {
             } // end backtrack loop
 
             if (lsiter == max_ls_iter){
-                System.out.println("Max LS iteration: Failed");
+           //     System.out.println("Max LS iteration: Failed");
                 break calculationLoop;
             }
 

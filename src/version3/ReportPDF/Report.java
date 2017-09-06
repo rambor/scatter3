@@ -1324,7 +1324,7 @@ public class Report {
             }
 
             if (dataset.getVC() > 0){
-                reciVc = String.format("%.2f",(int)dataset.getVC());
+                reciVc = String.format("%.2f",dataset.getVC());
             }
         }
 
@@ -1343,7 +1343,7 @@ public class Report {
             }
 
             if (dataset.getVCReal() > 0){
-                realVc = String.format("%.2f",(int)dataset.getVCReal());
+                realVc = String.format("%.2f", dataset.getVCReal());
             }
 
             dmax = String.format("%.1f", dataset.getDmax());

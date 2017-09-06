@@ -278,7 +278,7 @@ public class MooreTransform extends IndirectFT {
             if (gap/dobj < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
                 //status = "SOLVED : " + " | ratio " + gap/dobj + " < reltol " + reltol + " at " + ntiter;
-                System.out.println(status);
+                //System.out.println(status);
                 break calculationLoop;
             }
 
@@ -398,7 +398,7 @@ public class MooreTransform extends IndirectFT {
             } // end backtrack loop
 
             if (lsiter == max_ls_iter){
-                System.out.println("Max LS iteration: Failed");
+                //System.out.println("Max LS iteration: Failed");
                 break calculationLoop;
             }
 
@@ -582,7 +582,7 @@ public class MooreTransform extends IndirectFT {
             //System.out.println(ntiter + " : " + gap +" GAP  ratio " + (gap/dobj ) + " " + pobj + " dobj " + dobj);
             if (gap/dobj < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
-                System.out.println(status);
+                //System.out.println(status);
                 break calculationLoop;
             }
 
@@ -832,7 +832,7 @@ public class MooreTransform extends IndirectFT {
             } // end backtrack loop
 
             if (lsiter == max_ls_iter){
-                System.out.println("Max LS iteration ");
+               // System.out.println("Max LS iteration ");
                 break calculationLoop;
             }
 
