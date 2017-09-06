@@ -67,10 +67,10 @@ public class ResultsModel extends AbstractTableModel {
                 return vol;
             //return (int)dataset.getPorodVolume();
             case 8:
-                String mass11 = "<html><p><b>" + (dataset.getPorodVolumeMass1p1()/1000) + "</b></p><p>" + (dataset.getPorodVolumeRealMass1p1()/1000) + "</p></html>";
+                String mass11 = "<html><p><b>" +  Constants.Scientific1.format(dataset.getPorodVolumeMass1p1()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getPorodVolumeRealMass1p1()) + "</p></html>";
                 return mass11;
             case 9:
-                String mass137 = "<html><p><b>" + (dataset.getPorodVolumeMass1p37()/1000) + "</b></p><p>" + (dataset.getPorodVolumeRealMass1p37()/1000) + "</p></html>";
+                String mass137 = "<html><p><b>" + Constants.Scientific1.format(dataset.getPorodVolumeMass1p37()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getPorodVolumeRealMass1p37()) + "</p></html>";
                 return mass137;
             case 10:
                 String massP = "<html><p><b>" + Constants.Scientific1.format(dataset.getMassProtein()) + "</b></p><p>" + Constants.Scientific1.format(dataset.getMassProteinReal()) + "</p></html>";
