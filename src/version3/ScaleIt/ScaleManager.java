@@ -57,24 +57,38 @@ public class ScaleManager extends SwingWorker<Void, Void> {
         progressBar.setValue(0);
         progressBar.setMaximum(totalDatasetsInCollection);
         label.setText("Determining reference frame");
-        for(int i=0; i<totalDatasetsInCollection; i++){
+
+
+
+        for(int i=0; i<totalDatasetsInCollection; i++){  // find frame with largest Intensity within range
             Dataset tempDatset = collectionInUse.getDataset(i);
             XYDataItem xyItem;
             if (tempDatset.getInUse()){
                 totalToCalculate++;
-                int totalInData = tempDatset.getAllData().getItemCount();
+                int totalInData = tempDatset.getAllData().getItemCount();  // in case lower is larger than user specified by spinners
+                double templowest = tempDatset.getOriginalPositiveOnlyDataItem(tempDatset.getStart()).getXValue();
+                if (templowest < lower){
+                    lower = templowest;
+                }
+
                 IntensityLoop:
                 for(int j=0; j< totalInData; j++){
                     xyItem = tempDatset.getAllData().getDataItem(j);
+                    // need to check if
+
                     if (xyItem.getXValue() > 0.017 && xyItem.getXValue() < 0.15 && xyItem.getYValue() > maxInt){
                         maxInt = xyItem.getYValue();
                         refIndex = i;
+                        break IntensityLoop;
+                    } else if (xyItem.getXValue() > 0.15) {
                         break IntensityLoop;
                     }
                 }
             }
             progressBar.setValue(i);
         }
+
+
 
         progressBar.setValue(0);
         progressBar.setMaximum(totalDatasetsInCollection);

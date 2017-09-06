@@ -25,6 +25,16 @@ public class Averager {
         
     }
 
+
+    public Averager(Collection collection, boolean useQminQmax){
+
+        this.collectionInUse = collection;
+        ArrayList<XYSeries> results = StatMethods.weightedAverageDatasetsWithinLimits(this.collectionInUse);
+
+        averaged = results.get(0);
+        averagedError = results.get(1);
+    }
+
     public XYSeries getAveraged(){
         return averaged;
     }

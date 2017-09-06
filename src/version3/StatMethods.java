@@ -235,20 +235,16 @@ public class StatMethods {
 
         System.out.println("REFERENCE SET TO : " + selected.getDataset(ref).getFileName());
 
-
-
         ArrayList<XYSeries> returnMe = new ArrayList<XYSeries>();
 
         Dataset reference = selected.getDataset(ref); // reference is the last frame
-        XYSeries tempRefData;
-
-        tempRefData = reference.getData(); // log10 data used for plotting
+        //XYSeries tempRefData;
+        //tempRefData = reference.getData(); // log10 data used for plotting
         //double referenceQmin = tempRefData.getMinX();
         //double referenceQmax = tempRefData.getMaxX();
 
         Number referenceQmin = findLeastCommonQvalue(selected);
         Number referenceQmax = findMaximumCommonQvalue(selected);
-
 
 
 
@@ -387,10 +383,15 @@ public class StatMethods {
     }
 
 
-    public static ArrayList<XYSeries> weightedAverageDatasets(Collection selected, Number qminLimit, Number qmaxlimit){
+    /**
+     *
+     * @param selected
+     * @return
+     */
+    public static ArrayList<XYSeries> weightedAverageDatasetsWithinLimits(Collection selected){
 
         int ref = 0;
-        int limit = selected.getDatasets().size();
+        int limit = selected.getDatasetCount();
 
         // use last as reference
         for(int i=0; i< limit; i++){
@@ -402,121 +403,187 @@ public class StatMethods {
         ArrayList<XYSeries> returnMe = new ArrayList<XYSeries>();
 
         Dataset reference = selected.getDataset(ref);
-        XYSeries tempRefData;
 
-        tempRefData = reference.getData(); // log10 data used for plotting
-        double referenceQmin = qminLimit.doubleValue();
-        double referenceQmax = qmaxlimit.doubleValue();
+        // set low q and max q to the ones that are plotted
+        double commonQmin = reference.getData().getMinX();
+        double commonQmax  = reference.getData().getMaxX();
 
-        double scale, lower, upper, referenceQ;
-        int refIndex, count;
+        // find the smallest q and largest q in the selected datasets
+        for (int i=0; i < limit; i++) {
+            if (selected.getDataset(i).getInUse() && i != ref){
+                double tempqmin = selected.getDataset(i).getData().getMinX();
+                double tempqmax = selected.getDataset(i).getData().getMaxX();
+
+                if (tempqmin > commonQmin){
+                    commonQmin = tempqmin;
+                }
+
+                if (tempqmax < commonQmax){
+                    commonQmax = tempqmax;
+                }
+            }
+        }
+
+        // build the initial dataset for merging
+
+        double scale;
+        int refIndex;
 
         XYSeries summedSet = new XYSeries("Summed");
         XYSeries summedSetError = new XYSeries("SummedError");
 
-        double sigma, var, targetMax;
-        Number targetMin;
+        double sigma, var;
         scale = reference.getScaleFactor();
 
-        int lowerQI = reference.getAllData().indexOf(referenceQmin);
-        int upperQI = reference.getAllData().indexOf(referenceQmax);
-        int lowerT, upperT;
+        int lowerQI = reference.getAllData().indexOf(commonQmin);
+        int upperQI = reference.getAllData().indexOf(commonQmax);
+        int lowerT;
+
+        if (lowerQI > -1 && upperQI > -1 && upperQI > lowerQI){
         /*
          * within limits of plotted data
+         * Create initial reference dataset using all the data within the specified q-range
+         *
          */
-        for (int i=lowerQI; i < upperQI; i++){
-            XYDataItem tempRefItem = reference.getAllData().getDataItem(i);
-            sigma = 1.0/(scale*reference.getAllDataError().getY(i).doubleValue());
-            var = sigma*sigma;
+            for (int i=lowerQI; i <= upperQI; i++){
+                XYDataItem tempRefItem = reference.getAllData().getDataItem(i);
+                sigma = 1.0/(scale*reference.getAllDataError().getY(i).doubleValue());
+                var = sigma*sigma;
 
-            summedSet.add(tempRefItem.getXValue(), scale * tempRefItem.getYValue()*var);
-            summedSetError.add(tempRefItem.getXValue(), var);
+                summedSet.add(tempRefItem.getXValue(), scale * tempRefItem.getYValue()*var);
+                summedSetError.add(tempRefItem.getXValue(), var);
+            }
+        } else {
+
+            lowerQI = reference.getAllData().indexOf(reference.getData().getX(0));
+            upperQI = reference.getAllData().indexOf(reference.getData().getMaxX());
+
+            // first value will be greater than or equal to commonQmin
+
+            if (lowerQI > -1){
+                XYDataItem tempRefItem = reference.getAllData().getDataItem(lowerQI);
+                sigma = 1.0/(scale*reference.getAllDataError().getY(lowerQI).doubleValue());
+                var = sigma*sigma;
+                summedSet.add(tempRefItem.getXValue(), scale * tempRefItem.getYValue()*var);
+                summedSetError.add(tempRefItem.getXValue(), var);
+            } else { // interpolate first value
+
+                // find first value larger than commonQmin
+                int stopAt = reference.getAllData().getItemCount();
+                int index=0;
+                for (; index < stopAt; index++){
+                    if (reference.getAllData().getX(index).doubleValue() > commonQmin){
+                        break;
+                    }
+                }
+
+                // interpolate
+                Double[] results = Functions.interpolate(reference.getAllData(), commonQmin, 1);
+                Double[] sigmaResults = Functions.interpolateSigma(reference.getAllDataError(), commonQmin);
+
+                sigma = 1.0/(sigmaResults[1]*scale);
+                var = sigma*sigma; // weighted average
+
+                summedSet.add(commonQmin, scale * results[1] *var);
+                summedSetError.add(commonQmin, var);
+
+                lowerQI = index-1;
+            }
+
+            lowerQI+=1;
+
+            // does upperQI have a problem
+            if (upperQI > 0){
+                // add remaining values to complete initial dataset
+                for (int i=lowerQI; i < upperQI; i++){
+
+                    XYDataItem tempRefItem = reference.getAllData().getDataItem(i);
+                    sigma = 1.0/(scale*reference.getAllDataError().getY(i).doubleValue());
+                    var = sigma*sigma;
+
+                    summedSet.add(tempRefItem.getXValue(), scale * tempRefItem.getYValue()*var);
+                    summedSetError.add(tempRefItem.getXValue(), var);
+                }
+            } else {
+                int index = reference.getAllData().getItemCount()-1;
+                for (int i=index; i > 1; i--){
+                    if (reference.getAllData().getX(index).doubleValue() < commonQmax){
+                        index++;
+                        break;
+                    }
+                }
+
+                for (int i=lowerQI; i < index; i++){
+
+                    XYDataItem tempRefItem = reference.getAllData().getDataItem(i);
+                    sigma = 1.0/(scale*reference.getAllDataError().getY(i).doubleValue());
+                    var = sigma*sigma;
+
+                    summedSet.add(tempRefItem.getXValue(), scale * tempRefItem.getYValue()*var);
+                    summedSetError.add(tempRefItem.getXValue(), var);
+                }
+
+                // interpolate last value
+                Double[] results = Functions.interpolate(reference.getAllData(), commonQmax, 1);
+                Double[] sigmaResults = Functions.interpolateSigma(reference.getAllDataError(), commonQmax);
+
+                sigma = 1.0/(sigmaResults[1]*scale);
+                var = sigma*sigma; // weighted average
+
+                summedSet.add(commonQmax, scale * results[1] *var);
+                summedSetError.add(commonQmax, var);
+            }
+
         }
 
+
+        int totalInSummedSet = summedSet.getItemCount();
+        // add remaining datasets
+        // add additional datasets for averaging
         XYDataItem tempDataItem, tempSummedItem;
 
         for (int i=0; i < limit; i++) {
+
             if (selected.getDataset(i).getInUse() && i != ref){
 
                 Dataset tempDataset = selected.getDataset(i);
 
                 XYSeries targetData  = tempDataset.getAllData();
-                //XYSeries targetData  = tempDataset.getData();
                 XYSeries targetError = tempDataset.getAllDataError();
 
-                // get plotted domain of the target dataset
-                targetMin = tempDataset.getData().getX(0);
-                targetMax = tempDataset.getData().getMaxX();
-
-                lowerT = targetData.indexOf(targetMin);
-                upperT = targetData.indexOf(targetMax);
-
-                lower = Math.max(referenceQmin, (Double)targetMin);
-                upper = Math.min(referenceQmax, targetMax);
-
                 scale = tempDataset.getScaleFactor();
-                // iterate of the plotted range but within AllData (includes negative intensities)
-                for(int j = lowerT; j <= upperT; j++){
-                    //double target_q = targetData.getX(j).doubleValue();
-                    tempDataItem = targetData.getDataItem(j);
-                    double target_q = tempDataItem.getXValue();
 
-                    if (((target_q < lower) || (target_q > upper)) && (summedSet.indexOf(target_q) < 0)) {
-                        /*
-                         *  if q value is outside range of reference
-                         *  .indexOf() < 0 means value is not found in XYSeries
-                         */
-                        sigma = 1.0/(scale*targetError.getY(j).doubleValue());
+                for(int s=0; s<totalInSummedSet; s++){
+
+                    lowerT = targetData.indexOf(summedSet.getX(s));
+
+                    if (lowerT>-1){
+                        tempDataItem = targetData.getDataItem(lowerT);
+                        sigma = 1.0/(scale*targetError.getY(lowerT).doubleValue());
                         var = sigma*sigma;
 
-                        summedSet.add(target_q, scale * tempDataItem.getYValue()*var);
-                        summedSetError.add(target_q, var );
+                        tempSummedItem = summedSet.getDataItem(s);
+                        summedSet.updateByIndex(s, (tempSummedItem.getYValue() + scale * tempDataItem.getYValue()*var));
+                        summedSetError.updateByIndex(s, (summedSetError.getY(s).doubleValue() + var ));
+                    } else { // interpolate
+                        double atQ = summedSet.getX(s).doubleValue();
+                        Double[] results = Functions.interpolate(targetData, atQ, 1);
+                        Double[] sigmaResults = Functions.interpolateSigma(targetError, atQ);
+                        sigma = 1.0/(sigmaResults[1]*scale);
+                        var = sigma*sigma;
 
-                    } else {
-                        refIndex = summedSet.indexOf(tempDataItem.getX());
-                        if (refIndex >= 0) {
-                         /*
-                          * average the signal - first sum
-                          */
-                            tempSummedItem = summedSet.getDataItem(refIndex);
-
-                            sigma = 1.0/(scale*targetError.getY(j).doubleValue());
-                            var = sigma*sigma;
-
-                            summedSet.updateByIndex(refIndex, (tempSummedItem.getYValue() + scale * targetData.getY(j).doubleValue() * var));
-                            summedSetError.updateByIndex(refIndex, (summedSetError.getY(refIndex).doubleValue() + var));
-
-                        } else if (lower < target_q && (target_q < upper)) {
-                         /*
-                          * interpolate
-                          */
-                            System.out.println("StatMethods: Interpolating Dataset " + i + " target_q => " + target_q);
-                            count = 0;
-                            referenceQ = 0.0;
-                            // find first value in reference greater than targetData.getX
-                            while (summedSet.getX(count).doubleValue() < target_q && (count < 3000)) {
-                                referenceQ = summedSet.getX(count).doubleValue();
-                                count++;
-                            }
-                            System.out.println("StatMethods: Interpolating count " + count + " ref_q => " + referenceQ);
-
-                            Double[] results = Functions.interpolate(targetData, referenceQ, 1);
-                            Double[] sigmaResults = Functions.interpolateSigma(targetError, referenceQ);
-                            sigma = 1.0/(sigmaResults[1]*scale);
-                            var = sigma*sigma;
-
-                            //returns unlogged data
-                            refIndex = summedSet.indexOf(referenceQ);
-
-                            tempSummedItem = summedSet.getDataItem(refIndex);
-
-                            summedSet.updateByIndex(refIndex, (tempSummedItem.getYValue() + scale * results[1] * var));
-                            summedSetError.updateByIndex(refIndex, (summedSetError.getY(refIndex).doubleValue() + var ));
-                        }
+                        //returns unlogged data
+                        tempSummedItem = summedSet.getDataItem(s);
+                        summedSet.updateByIndex(s, (tempSummedItem.getYValue() + scale * results[1] * var));
+                        summedSetError.updateByIndex(s, (summedSetError.getY(s).doubleValue() + var ));
                     }
+
                 }
             }
         }
+
+
+
 
         //double inv_total_n; // = 1.0/(double)total_n;
         for(int i=0; i<summedSet.getItemCount(); i++){
@@ -590,6 +657,7 @@ public class StatMethods {
 
 
     /**
+     *  Find least common q-value based on q-min of plotted data?
      *
      */
     public static Number findLeastCommonQvalue(Collection dataCollection){

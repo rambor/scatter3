@@ -327,7 +327,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.0q";
+    private String version = "3.1q";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -1724,7 +1724,7 @@ public class Scatter {
                                 mainProgressBar,
                                 status);
 
-                        scalings.setUpperLowerQLimits(0.017, 0.17);
+                        scalings.setUpperLowerQLimits(Double.parseDouble(qminLimitField.getText()), Double.parseDouble(qmaxLimitField.getText()));
 
                         scalings.execute();
 
@@ -1743,7 +1743,7 @@ public class Scatter {
                         mainProgressBar.setValue(0);
                         mainProgressBar.setStringPainted(false);
 
-                        Averager tempAverage = new Averager(collectionSelected);
+                        Averager tempAverage = new Averager(collectionSelected, true);
 
                         JFileChooser fc = new JFileChooser(WORKING_DIRECTORY.getWorkingDirectory());
                         int option = fc.showSaveDialog(panel1);
