@@ -496,6 +496,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             }
         };
 
+        chart.setTitle("");
 
         final XYPlot plot = chart.getXYPlot();
     /*
@@ -553,7 +554,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
         plot.setBackgroundAlpha(0.0f);
         plot.setOutlineVisible(false);
-
 
 
         renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();

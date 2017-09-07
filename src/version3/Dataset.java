@@ -332,7 +332,7 @@ public class Dataset {
 
         scaleFactor=1.000;
         log10ScaleFactor = 0;
-        invariantQ=0.0;
+        invariantQ = 0.0;
         fitFile = false;
         inUse = true;
         maxI = this.plottedData.getMaxY();  //log10 data
@@ -346,7 +346,7 @@ public class Dataset {
         this.setStroke(1.0f);
         this.id = id;
 
-        Random r=new Random();
+        Random r = new Random();
         color = new Color(r.nextInt(256),r.nextInt(256),r.nextInt(256));
 
         this.realSpace = new RealSpace(this);

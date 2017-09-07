@@ -288,6 +288,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public double rgError, iZeroError, rAverageError;
     public int totalInDistribution, totalCoefficients, rows;
     public XYSeries prDistribution;
+    public XYSeries prDistributionForFitting;
     public boolean negativeValuesInModel;
     public PolynomialSplineFunction splineFunction;
     public String description="";
@@ -1159,7 +1160,8 @@ double topB = 1000;
     @Override
     public String getHeader(double scale){
 
-        String output = String.format("REMARK 265 EXPERIMENTAL REAL SPACE FILE %n");
+        String output = String.format("REMARK 265 %n");
+        output += String.format("REMARK 265 EXPERIMENTAL REAL SPACE FILE %n");
         output += String.format("REMARK 265    P(r)-DISTRIBUTION BASED ON : %s %n", modelUsed);
         output += description;
 
@@ -1171,8 +1173,15 @@ double topB = 1000;
         }
         output += String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.3E %n", coefficients[0]);
 
-        for (int i=1; i<totalCoefficients;i++){
-            output +=  String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefficients[i]);
+        output += getPrDistributionForFitting();
+
+        output += String.format("REMARK 265 %n");
+        if (this.getClass().getName().contains("MooreTransform")){
+            output += String.format("REMARK 265 %n");
+            output += String.format("REMARK 265  MOORE COEFFICIENTS (UNSCALED)%n");
+            for (int i=1; i<totalCoefficients;i++){
+                output +=  String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefficients[i]);
+            }
         }
 
         output += String.format("REMARK 265 %n");
@@ -1191,10 +1200,6 @@ double topB = 1000;
         }
         output += String.format( Constants.Scientific1dot4e2.format(dmax) + "\t" + Constants.Scientific1dot2e1.format(0) + "\t 0.00 "+ "\n");
 
-//        for(int i =0; i < totalInDistribution; i++){
-//            XYDataItem item = prDistribution.getDataItem(i);
-//            output += String.format( Constants.Scientific1dot4e2.format(item.getXValue()) + "\t" + Constants.Scientific1dot2e1.format(item.getYValue()*scale) + "\t 0.00 "+ "\n");
-//        }
 
         return output;
     }
@@ -1204,5 +1209,24 @@ double topB = 1000;
     }
 
 
+    private String getPrDistributionForFitting(){
+
+        String temp = String.format("REMARK 265 P(R) DISTRIBUTION BINNED USING SHANNON NUMBER %n");
+              temp += String.format("REMARK 265 R-values REPRESENT THE MID-POINT OF EACH BIN %n");
+              temp += String.format("REMARK 265 BIN HEIGHT REPRESENTS THE VALUE OF P(R-value) %n");
+              temp += String.format("REMARK 265         BIN           R-value : BIN HEIGHT %n");
+              temp += String.format("REMARK 265 %n");
+
+        int total = prDistributionForFitting.getItemCount();
+
+        for(int i=0; i<total; i++){
+            XYDataItem item = prDistributionForFitting.getDataItem(i);
+            int index = i+1;
+            temp +=  String.format("REMARK 265       BIN_%-2d          %8.2f : %.5E %n", index, item.getXValue(), item.getYValue());
+        }
+        temp += String.format("REMARK 265 %n");
+        temp += String.format("REMARK 265                   TOTAL BINS : %d %n", total);
+        return temp;
+    }
 
 }

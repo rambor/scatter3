@@ -3004,6 +3004,7 @@ signalPlotThread.execute();
                 signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
                 signalPlotThread.setSampleJList(samplesList);
                 signalPlotThread.execute();
+
                 try {
                     signalPlotThread.get();
                 } catch (InterruptedException e1) {
@@ -4419,7 +4420,7 @@ signalPlotThread.execute();
         analysisModel.clear();
         //resultsModel.getDatalist().clear();
         resultsModel.clear();
-        int totalModels = analysisModel.getRowCount();
+        //int totalModels = analysisModel.getRowCount();
         //System.out.println("Updating Models : " + totalModels + " < " + collectionSelected.getDatasetCount());
 
         for (int i = 0; i < collectionSelected.getDatasetCount(); i++) {
@@ -5267,13 +5268,8 @@ signalPlotThread.execute();
                 this.button.setBackground(Color.WHITE);
                 this.button.setForeground(Color.GREEN);
 
-                //if (manualGuinierFrame instanceof JFrame){
-                //    manualGuinierPlot.dispose();
-                //    manualGuinierFrame.dispose();
-                //}
-
                 PlotManualGuinier manualGuinierPlot = new PlotManualGuinier("Guinier Plot", collectionSelected.getDataset(rowID), WORKING_DIRECTORY.getWorkingDirectory());
-                System.out.println("PLOTTING GUINIER");
+
                 manualGuinierPlot.plot(analysisModel);
                 //plotGuinierRg(collectionSelected.getDataset(rowID));
             }
@@ -5589,27 +5585,8 @@ signalPlotThread.execute();
                 dir.setText("");
             }
         }
-        /*
-        public void actionPerformed(ActionEvent e) {
-            JFileChooser c = new JFileChooser();
-            JTextField filename = new JTextField(), dir = new JTextField();
-            // "Save" dialog:
 
-            int rVal = c.showSaveDialog(Scatter.this);
 
-            if (rVal == JFileChooser.APPROVE_OPTION) {
-                filename.setText(c.getSelectedFile().getName());
-                this.setFileName(filename.getText());
-                dir.setText(c.getCurrentDirectory().toString());
-                this.setCurrentDir(dir.getText());
-            }
-            if (rVal == JFileChooser.CANCEL_OPTION) {
-                status.setText("Save Cancelled");
-                filename.setText("You pressed cancel");
-                dir.setText("");
-            }
-        }
-        */
         private void setFileName(String text){
             this.name = text;
             System.out.println("Setting name to " + text);

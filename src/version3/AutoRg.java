@@ -34,7 +34,12 @@ public class AutoRg {
     private Number qmaxFinal;
 
 
-    // data Intensities should be positive only
+    /**
+     * Data must not be previously transformed
+     * @param data
+     * @param error
+     * @param startAt
+     */
     public AutoRg(XYSeries data, XYSeries error, int startAt){
         inputData = data;
         inputErrors = error;
@@ -52,6 +57,7 @@ public class AutoRg {
         error = new XYSeries("error");
 
         int total = inputData.getItemCount();
+
         int starthere = startAt-1;
         XYDataItem tempItem;
         for (int i=starthere; i<total; i++){
@@ -84,6 +90,8 @@ public class AutoRg {
         double qRgUp = 1.31*1.31;
 
         // find the index of the upper q-value that is less than lowerqlimit
+        //int totalsquared = qSquaredData.getItemCount();
+
         while(qSquaredData.getX(lastAtLimit).doubleValue() < lowerqlimitSquared){
             lastAtLimit++;
         }

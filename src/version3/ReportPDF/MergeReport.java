@@ -341,6 +341,8 @@ public class MergeReport {
             signalPlotImage.setHeight(240);
             document.add(signalPlotImage, new VerticalLayoutHint(Alignment.Center, 0, 0 , 0, 0, true));
             document.add(new VerticalSpacer(240));
+
+            signalPlot.flush();
         }
 
 
@@ -348,11 +350,13 @@ public class MergeReport {
         leftUpperImage.setWidth(imageWidth);
         leftUpperImage.setHeight(imageHeight);
         document.add(leftUpperImage, new VerticalLayoutHint(Alignment.Left, 0, 0 , 0, 0, true));
+        iofqPlot.flush();
 
         ImageElement rightUpperImage = new ImageElement(differencePlot);
         rightUpperImage.setWidth(imageWidth);
         rightUpperImage.setHeight(imageHeight);
         document.add(rightUpperImage, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
+        differencePlot.flush();
 
         document.add(new VerticalSpacer(240)); // add Rg Izero Double plot
 
@@ -360,6 +364,7 @@ public class MergeReport {
         lowerLeftImage.setWidth(imageWidth);
         lowerLeftImage.setHeight(imageHeight);
         document.add(lowerLeftImage, new VerticalLayoutHint(Alignment.Left, 0, 0 , 0, 0, true));
+        rgIzeroDoublePlot.flush();
 
         String legendE ="";
         if (isMerged){
@@ -368,6 +373,7 @@ public class MergeReport {
             lowerRightImage.setHeight(imageHeight);
             document.add(lowerRightImage, new VerticalLayoutHint(Alignment.Right, 0, 0 , 0, 0, true));
             legendE = "*E.* Log_10_ intensity plot of subtracted and merged SAXS frames. Black represents averaged buffer frames subtracted from averaged sampled frames. Cyan represents median of the buffer frames subtracted from the averaged sample frames. Poor buffer subtraction leads to a displacement between the two curves at high-_q_";
+            mergedIofqPlot.flush();
         }
 
 
@@ -572,4 +578,6 @@ public class MergeReport {
 
         return chart;
     }
+
+
 }

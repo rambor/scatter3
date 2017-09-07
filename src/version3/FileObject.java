@@ -42,6 +42,7 @@ public class FileObject {
     }
 
     public void writeSAXSFile(String name, Dataset data){
+
         int total = data.getAllData().getItemCount();
         XYSeries refData = data.getAllData();
         XYSeries errorValues =data.getAllDataError();
@@ -190,7 +191,6 @@ public class FileObject {
             System.err.println("Error: " + e.getMessage());
         }
 
-
         String sx_filename="";
 
         try{
@@ -297,7 +297,7 @@ public class FileObject {
         newLines += String.format("REMARK 265                          DMAX : %d (Angstroms) %n", (int)dataset.getDmax());
         newLines += String.format("REMARK 265   RESOLUTION LIMIT       QMAX : %.6E (Angstroms^-1) %n", dataset.getRealSpaceModel().getfittedqIq().getMaxX());
         newLines += String.format("REMARK 265   RESOLUTION LIMIT (d-SPACING): %.1f (Angstroms) %n", (2*Math.PI/dataset.getRealSpaceModel().getfittedqIq().getMaxX()));
-        newLines += String.format("REMARK 265                     BIN WIDTH : %.1f (Angstroms) %n", (Math.PI/dataset.getRealSpaceModel().getfittedqIq().getMaxX()));
+        newLines += String.format("REMARK 265   RESOLUTION LIMIT  BIN WIDTH : %.1f (Angstroms) %n", (Math.PI/dataset.getRealSpaceModel().getfittedqIq().getMaxX()));
         return newLines;
     }
 

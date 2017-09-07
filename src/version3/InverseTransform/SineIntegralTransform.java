@@ -1062,6 +1062,7 @@ public class SineIntegralTransform extends IndirectFT {
     @Override
     void setPrDistribution(){
         prDistribution = new XYSeries("PRDistribution");
+        prDistributionForFitting = new XYSeries("OutputPrDistribution");
 
         totalInDistribution = r_vector_size+2;
 
@@ -1069,13 +1070,16 @@ public class SineIntegralTransform extends IndirectFT {
 
             if ( i == 0 ) { // interleaved r-value (even)
                 prDistribution.add(0, 0);
+                //prDistributionForFitting.add(0,0);
             } else if (i == (totalInDistribution-1)) {
                 prDistribution.add(dmax, 0);
+                //prDistributionForFitting.add(dmax,0);
             } else { // odd
                 int index = i-1;
                 prDistribution.add(r_vector[index], coefficients[index+1]);
+                prDistributionForFitting.add(r_vector[index], coefficients[index+1]);
             }
-//            System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
+            //System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
         }
 
         // add an extra point for the spline interpolation at end, purely for rendering reasons
@@ -1094,7 +1098,7 @@ public class SineIntegralTransform extends IndirectFT {
 
         this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS DIRECT INVERSE FOURIER TRANSFORM OF I(q) %n");
         this.description += String.format("REMARK 265  COEFFICIENTS ARE THE HISTOGRAM HEIGHTS WITH EQUAL BIN WIDTHS %n");
-        this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.5E %n", del_r);
+        this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.4f %n", del_r);
         setSplineFunction();
     }
 
@@ -1146,9 +1150,18 @@ public class SineIntegralTransform extends IndirectFT {
         }
 
         XYSeries tempPr = new XYSeries("tempPr");
+        XYSeries tempPrFit = new XYSeries("for fit");
+
+        try {
+            tempPrFit = prDistributionForFitting.createCopy(0, prDistributionForFitting.getItemCount()-1);
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
         for(int i=0; i<prDistribution.getItemCount(); i++){
             tempPr.add(prDistribution.getDataItem(i));
         }
+
+
 
         int size = fittedqIq.getItemCount();
         double upperq = fittedqIq.getMaxX();
@@ -1290,6 +1303,12 @@ public class SineIntegralTransform extends IndirectFT {
         for(int i=0; i<tempPr.getItemCount(); i++){
             prDistribution.add(tempPr.getDataItem(i));
         }
+
+        prDistributionForFitting.clear();
+        for(int i=0; i<tempPrFit.getItemCount(); i++){
+            prDistributionForFitting.add(tempPrFit.getDataItem(i));
+        }
+
         totalInDistribution = prDistribution.getItemCount();
         setSplineFunction();
     }

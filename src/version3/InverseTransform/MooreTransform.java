@@ -19,6 +19,7 @@ public class MooreTransform extends IndirectFT {
     private int cols;
     private double del_r;
     double[] r_vector;
+    double[] r_vector_size_for_fitting;
     int r_vector_size;
 
     // Dataset should be standardized and in form of [q, q*I(q)]
@@ -84,6 +85,8 @@ public class MooreTransform extends IndirectFT {
 
         ns = (int) Math.ceil(qmax*dmax*INV_PI) ;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
+        r_vector_size_for_fitting = new double[ns];
+
         rows = datasetInuse.getItemCount();    // rows
         cols = coeffs_size;                    // columns
 
@@ -96,6 +99,10 @@ public class MooreTransform extends IndirectFT {
 
         for(int i=0; i < r_vector_size; i++){ // last bin should be dmax
             r_vector[i] = (i+1)*del_r;
+        }
+
+        for(int i=0; i < ns; i++){ // last bin should be dmax
+            r_vector_size_for_fitting[i] = (i+0.5)*del_r;
         }
 
         /*
@@ -944,6 +951,23 @@ public class MooreTransform extends IndirectFT {
         }
 
         prDistribution.add(dmax,0);
+
+        // set distribution for fitting
+        int size = r_vector_size_for_fitting.length;
+        prDistributionForFitting = new XYSeries("output");
+
+        for(int i=0; i < size; i++){ // last bin should be dmax
+
+            r_value = r_vector_size_for_fitting[i];
+            pi_dmax_r = PI_INV_DMAX*r_value;
+            resultM = 0;
+
+            for(int k=1; k < totalCoefficients; k++){
+                resultM += coefficients[k]*FastMath.sin(pi_dmax_r*k);
+            }
+
+            prDistributionForFitting.add(r_value, invtwopi2 * r_value * resultM);
+        }
     }
 
 
@@ -987,6 +1011,14 @@ public class MooreTransform extends IndirectFT {
 
     @Override
     public void estimateErrors(XYSeries fittedqIq){
+
+        XYSeries tempPrFit = new XYSeries("for fit");
+
+        try {
+            tempPrFit = prDistributionForFitting.createCopy(0, prDistributionForFitting.getItemCount()-1);
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
 
         double[] oldCoefficients = new double[totalCoefficients];
         for(int i=0; i<totalCoefficients; i++){ // copy old coefficients temporarily
@@ -1129,72 +1161,13 @@ public class MooreTransform extends IndirectFT {
         for(int i=0; i<totalCoefficients; i++){ // copy back the coefficients
             coefficients[i] = oldCoefficients[i];
         }
+
+        prDistributionForFitting.clear();
+        for(int i=0; i<tempPrFit.getItemCount(); i++){
+            prDistributionForFitting.add(tempPrFit.getDataItem(i));
+        }
+
     }
 
-//    @Override
-//    public double chiEstimate(){
-//        // how well does the fit estimate the cardinal series (shannon points)
-//        double chi=0;
-//        double inv_card;
-//        final double inv_dmax = 1.0/dmax;
-//        final double dmax_inv_pi = dmax/Math.PI;
-//        // n*PI/qmax
-//        final double pi_dmax = inv_dmax*Math.PI;
-//        double error_value;
-//        // Number of Shannon bins, excludes the a_o
-//        int bins = totalMooreCoefficients - 1, count=0, total = data.getItemCount();
-//
-//        double df = 0; //1.0/(double)(bins-1);
-//        double cardinal, test_q = 0, diff;
-//        XYDataItem priorValue, postValue;
-//        Double[] values;
-//        // see if q-value exists but to what significant figure?
-//        // if low-q is truncated and is missing must exclude from calculation
-//        for (int i=1; i <= bins; i++){
-//
-//            cardinal = i*pi_dmax;
-//            inv_card = 1.0/cardinal;
-//
-//            // what happens if a bin is empty?
-//            searchLoop:
-//            while ( (test_q < cardinal) && (count < total) ){
-//                test_q = data.getX(count).doubleValue();
-//                // find first value >= shannon cardinal value
-//                if (test_q >= cardinal){
-//                    break searchLoop;
-//                }
-//                count++;
-//            }
-//
-//            // if either differences is less than 0.1% use the measured value
-//            if (count > 0 && count < total){
-//                priorValue = data.getDataItem(count-1);
-//                postValue = data.getDataItem(count);
-//                if ((cardinal - priorValue.getXValue())*inv_card < 0.0001) {// check if difference is smaller pre-cardinal
-//                    error_value = 1.0/error.getY(count - 1).doubleValue();
-//                    diff = priorValue.getYValue() - moore_Iq(priorValue.getXValue());
-//                    chi += (diff*diff)*(error_value*error_value);
-//                    df += 1.0;
-//                } else if ( Math.abs(postValue.getXValue() - cardinal)*inv_card < 0.0001) {// check if difference is smaller post-cardinal
-//                    error_value = 1.0/error.getY(count).doubleValue();
-//                    diff = postValue.getYValue() - moore_Iq(postValue.getXValue());  // residual
-//                    chi += (diff*diff)*(error_value*error_value);
-//                    df += 1.0;
-//                } else { // if difference is greater than 0.1% interpolate and also the cardinal is bounded
-//                    values = Functions.interpolateOriginal(data, error, cardinal);
-//                    diff = values[1] - (standardizationStDev*(mooreCoefficients[0] + mooreCoefficients[i]*dmax_inv_pi) + standardizationMean)*inv_card;
-//                    //System.out.println(i + " " + cardinal + " " + values[1] + " " + (((mooreCoefficients[0] + mooreCoefficients[i]*dmax_inv_pi)*standardizationStDev + standardizationMean)*inv_card) );
-//                    chi += (diff*diff)/(values[2]*values[2]);
-//                    df += 1.0;
-//                }
-//            }
-//        }
-//
-//        double delta = totalMooreCoefficients - df;
-//
-//        System.out.println("dmax => " + dmax + " SUM " + chi + " " + (totalMooreCoefficients - df) + " (a_m).size : " + totalMooreCoefficients + " df : " + df);
-//        //return chi*1.0/(df-1);
-//        chi2 = chi*1.0/(df - 1 - delta);
-//        return 0;
-//    }
+
 }
