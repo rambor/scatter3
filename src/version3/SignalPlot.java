@@ -207,12 +207,12 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                         plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
                         if (area > threshold){
                             AutoRg tempRg = new AutoRg(tempData, tempDataset.getAllDataError(), startAtPoint+1);
-                            //izeroRg = Functions.autoRgTransformIt(tempData, tempDataset.getAllDataError(), startAtPoint+1);
-                            //plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
+
                             plotRg.getSeries(seriesCount).add(i, tempRg.getRg());
                         } else {
                             plotRg.getSeries(seriesCount).add(i,0);
                         }
+
 
                     }
                     seriesCount++;
@@ -251,9 +251,9 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             lastFrame = total;
         }
 
-        for(int i=0; i < total; i++){
+        for(int i=0; i < total; i++){ // iterate over all frames
 
-            if (i >= firstFrame && i < lastFrame){
+            if (i >= firstFrame && i < lastFrame){ // only use those within selected range
                 tempDataset = samplesCollection.getDataset(i);
                 ratio.clear();
                 tempData = tempDataset.getAllData();
@@ -291,8 +291,13 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                         }
 
                     }
+
                     seriesCount++;
+
+                } else {
+                    System.out.println("TOO FEW IN RATIO : Frame => " + i);
                 }
+
             }
             mainStatus.setValue((int) (i / (double) total * 100));
         }
@@ -529,11 +534,15 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             rangeAxisRight.setAutoRangeStickyZero(false);
 
             //double minRg = plotRg.getRangeLowerBound(true);
-            rangeAxisRight.setRange(0, plotRg.getRangeUpperBound(true) + 0.02*plotRg.getRangeUpperBound(true));
+            if (plotRg.getRangeUpperBound(true) > 0){
+                rangeAxisRight.setRange(0, plotRg.getRangeUpperBound(true) + 0.02*plotRg.getRangeUpperBound(true));
+            } else {
+                rangeAxisRight.setRange(-1, 10);
+            }
 
             rightRenderer = new XYLineAndShapeRenderer();
 
-            plot.setDataset(1,plotRg);
+            plot.setDataset(1, plotRg);
             plot.mapDatasetToRangeAxis(1, 1); //2nd dataset to 2nd y-axis
             plot.setRangeAxis(1, rangeAxisRight);
 
@@ -983,7 +992,12 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
 
     public void terminateFrame(){
-        frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+        try {
+            frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+        } catch (Exception ex) {
+            System.out.println("Exception: " + ex.getMessage());
+        }
+
     }
 
 }

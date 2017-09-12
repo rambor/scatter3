@@ -433,15 +433,6 @@ public class MooreTransform extends IndirectFT {
 
        // totalCoefficients = coefficients.length;
        // this.setPrDistribution();
-
-        r_values = new double[r_vector_size+2];
-
-        // populate r-values
-        r_values[0] = 0;
-        for(int j=0; j< r_vector_size; j++){
-            r_values[j+1] = r_vector[j];
-        }
-        r_values[ r_values.length - 1 ] = dmax;
         // I_calc based standardized data
 
 //        SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
@@ -849,14 +840,7 @@ public class MooreTransform extends IndirectFT {
         }
 
         coefficients = new double[coeffs_size];
-        r_values = new double[r_vector_size+2];
 
-        // populate r-values
-        r_values[0] = 0;
-        for(int j=0; j< r_vector_size; j++){
-            r_values[j+1] = r_vector[j];
-        }
-        r_values[ r_values.length - 1 ] = dmax;
 
         for (int j=0; j < coeffs_size; j++){
             coefficients[j] = am_vector.get(j,0);

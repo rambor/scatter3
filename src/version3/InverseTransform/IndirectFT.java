@@ -272,7 +272,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
             616850.2750680848
     };
 
-    public double[] coefficients, r_values;
+    public double[] coefficients;
 
     public final double qmax, dmax, lambda;
     public final double inv2PI2 = 1.0/(2*Math.PI*Math.PI);
@@ -1167,12 +1167,12 @@ double topB = 1000;
 
         output += String.format("REMARK 265 %n");
         output += String.format("REMARK 265  BIN COEFFICIENTS (UNSCALED)%n");
-
+        output += String.format("REMARK 265 %n");
         if (!includeBackground){
             output += String.format("REMARK 265      CONSTANT BACKGROUND EXCLUDED FROM FIT %n");
         }
         output += String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.3E %n", coefficients[0]);
-
+        output += String.format("REMARK 265 %n");
         output += getPrDistributionForFitting();
 
         output += String.format("REMARK 265 %n");
@@ -1214,7 +1214,7 @@ double topB = 1000;
         String temp = String.format("REMARK 265 P(R) DISTRIBUTION BINNED USING SHANNON NUMBER %n");
               temp += String.format("REMARK 265 R-values REPRESENT THE MID-POINT OF EACH BIN %n");
               temp += String.format("REMARK 265 BIN HEIGHT REPRESENTS THE VALUE OF P(R-value) %n");
-              temp += String.format("REMARK 265         BIN           R-value : BIN HEIGHT %n");
+              temp += String.format("REMARK 265        BIN            R-value : BIN HEIGHT %n");
               temp += String.format("REMARK 265 %n");
 
         int total = prDistributionForFitting.getItemCount();
@@ -1222,10 +1222,10 @@ double topB = 1000;
         for(int i=0; i<total; i++){
             XYDataItem item = prDistributionForFitting.getDataItem(i);
             int index = i+1;
-            temp +=  String.format("REMARK 265       BIN_%-2d          %8.2f : %.5E %n", index, item.getXValue(), item.getYValue());
+            temp +=  String.format("REMARK 265       BIN_%-2d          %9.3f : %.5E %n", index, item.getXValue(), item.getYValue());
         }
         temp += String.format("REMARK 265 %n");
-        temp += String.format("REMARK 265                   TOTAL BINS : %d %n", total);
+        temp += String.format("REMARK 265            TOTAL SHANNON BINS : %d %n", total);
         return temp;
     }
 

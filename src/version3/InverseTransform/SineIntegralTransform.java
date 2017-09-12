@@ -115,6 +115,7 @@ public class SineIntegralTransform extends IndirectFT {
             //r_vector[i] = (i+1)*del_r;
             r_vector[i] = (0.5 + i)*del_r; // dmax is not represented in this set
         }
+        // what happens if the last bin is midpoint is less than dmax?
 
         /*
          * create A matrix (design Matrix)
@@ -180,8 +181,6 @@ public class SineIntegralTransform extends IndirectFT {
                 am_vector.set(i, 0, initialValue);
             }
         }
-
-
 
     }
 
@@ -443,15 +442,6 @@ public class SineIntegralTransform extends IndirectFT {
 
         // totalCoefficients = coefficients.length;
         // this.setPrDistribution();
-
-        r_values = new double[r_vector_size+2];
-
-        // populate r-values, add 0 and dmax
-        r_values[0] = 0;
-        for(int j=0; j< r_vector_size; j++){
-            r_values[j+1] = r_vector[j];
-        }
-        r_values[ r_values.length - 1 ] = dmax;
         // I_calc based standardized data
 
 //        SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
@@ -723,20 +713,6 @@ public class SineIntegralTransform extends IndirectFT {
                 coefficients[j] = am_vector.get(j,0);
             }
 
-        r_values = new double[r_vector_size+2];
-
-        // populate r-values
-        // first value is 0, last value is dmax
-        r_values[0] = 0;
-        for(int j=0; j< r_vector_size; j++){
-            r_values[j+1] = r_vector[j]; //
-        }
-
-        double secondToLastRvalue = r_vector[r_vector_size-2]; // last value of r-vector
-        double redo = 0.5*(dmax - secondToLastRvalue);
-        // r_values[ r_values.length - 3] = secondToLastRvalue + 0.5*redo;
-        r_values[ r_values.length - 2] = secondToLastRvalue + redo;
-        r_values[ r_values.length - 1 ] = dmax;
 
         // P(dmax) should be zero.  So, we introduce a mid point between second to Last value and dmax to hold value of the last bin
 
@@ -992,20 +968,6 @@ public class SineIntegralTransform extends IndirectFT {
             }
         }
 
-        r_values = new double[r_vector_size+2];
-
-        // populate r-values
-        // first value is 0, last value is dmax
-        r_values[0] = 0;
-        for(int j=0; j< r_vector_size; j++){
-            r_values[j+1] = r_vector[j]; //
-        }
-
-        double secondToLastRvalue = r_vector[r_vector_size-2]; // last value of r-vector
-        double redo = 0.5*(dmax - secondToLastRvalue);
-       // r_values[ r_values.length - 3] = secondToLastRvalue + 0.5*redo;
-        r_values[ r_values.length - 2] = secondToLastRvalue + redo;
-        r_values[ r_values.length - 1 ] = dmax;
 
 
         // P(dmax) should be zero.  So, we introduce a mid point between second to Last value and dmax to hold value of the last bin
@@ -1082,12 +1044,22 @@ public class SineIntegralTransform extends IndirectFT {
             //System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
         }
 
-        // add an extra point for the spline interpolation at end, purely for rendering reasons
-        XYDataItem secondToLastItem = prDistribution.getDataItem(totalInDistribution-2);
-        double delta = dmax - secondToLastItem.getXValue();
+//        prDistribution.add(0, 0);
+//        for(int i=0; i<r_vector_size; i++){ // values in r_vector represent the midpoint or increments of (i+0.5)*del_r
+//                prDistribution.add(r_vector[i], coefficients[i+1]);
+//                prDistributionForFitting.add(r_vector[i], coefficients[i+1]);
+//        }
+//
+//        if (r_vector[r_vector_size-1] >= dmax){
+//            double value = dmax+r_vector[r_vector_size-1]
+//            prDistributionForFitting.updateByIndex(prDistributionForFitting.getItemCount()-1, );
+//        }
 
-        // adding new dataItem sorts the XYSeries
-        prDistribution.add(secondToLastItem.getXValue() + 0.5*delta, secondToLastItem.getYValue()*0.5);
+        // add an extra point for the spline interpolation at end, purely for rendering reasons
+//        XYDataItem secondToLastItem = prDistribution.getDataItem(totalInDistribution-2);
+//        double delta = dmax - secondToLastItem.getXValue();
+//        // adding new dataItem sorts the XYSeries
+//        prDistribution.add(secondToLastItem.getXValue() + 0.5*delta, secondToLastItem.getYValue()*0.5);
 
 //        for(int i=0; i < totalInDistribution; i++){
 //            System.out.println(prDistribution.getX(i) + " " +  prDistribution.getY(i));
