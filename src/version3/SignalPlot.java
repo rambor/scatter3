@@ -23,16 +23,20 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Created by robertrambo on 18/01/2016.
  */
-public class SignalPlot extends SwingWorker<Void, Void> {
+public class SignalPlot extends SwingWorker<Void, Integer> {
 
     private JFreeChart chart;
     private ChartFrame frame;
     private ChartPanel chartPanel;
+    private RatioSimilarityTest similarityPlotObject;
+
     private XYLineAndShapeRenderer renderer1;
     private XYLineAndShapeRenderer rightRenderer;
     public JList samplesList;
@@ -53,12 +57,13 @@ public class SignalPlot extends SwingWorker<Void, Void> {
     private XYSeries bufferError = new XYSeries("buffer error");
     private boolean useRg = false;
     private double threshold;
-    private int startAtPoint;
+    private int startAtPoint, totalInSamples;
 
     private boolean useqIq = false;
 
     public SignalPlot(Collection sampleCollection, Collection bufferCollection, JLabel status, boolean useRg, JProgressBar bar, double threshold){
         this.samplesCollection = sampleCollection;
+        totalInSamples = samplesCollection.getDatasetCount();
         this.buffersCollection = bufferCollection;
         plotMe = new XYSeriesCollection();
         plotRg = new XYSeriesCollection();
@@ -99,7 +104,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         this.useRg = false;
         mainStatus = bar;
         this.status = status;
-        this.threshold = 0.42;
+        this.threshold = 0.39;
     }
 
 
@@ -118,6 +123,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         startAtPoint = value;
         System.out.println("Number of points to exclude : " + value);
     }
+
 
     private void writeData(){
         try {
@@ -158,28 +164,26 @@ public class SignalPlot extends SwingWorker<Void, Void> {
      * use if samplesCollection contains subtracted data
      */
     private void makeSamplesFromSubtractedData(){
+
         Dataset tempDataset;
         XYDataItem tempXY;
 
         XYSeries qIqData = new XYSeries("ratio"), tempData;
         XYSeries errorOfUse = new XYSeries("errorset");
 
-        int total = samplesCollection.getDatasetCount();
+        totalInSamples = samplesCollection.getDatasetCount();
         int totalXY;
         int seriesCount=0;
         double area;
-        double[] izeroRg;
+        //double[] izeroRg;
 
-        mainStatus.setValue(0);
-        mainStatus.setStringPainted(true);
-        mainStatus.setString("Processing");
         //System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
 
         if (lastFrame <= 0 || lastFrame <= firstFrame){
-            lastFrame = total;
+            lastFrame = totalInSamples;
         }
 
-        for(int i=0; i < total; i++){
+        for(int i=0; i < totalInSamples; i++){
 
             if (i >= firstFrame && i < lastFrame){
                 tempDataset = samplesCollection.getDataset(i);
@@ -212,20 +216,25 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                         } else {
                             plotRg.getSeries(seriesCount).add(i,0);
                         }
-
-
                     }
                     seriesCount++;
                 }
             }
-            mainStatus.setValue((int) (i / (double) total * 100));
-        }
 
-        Toolkit.getDefaultToolkit().beep();
-        mainStatus.setMinimum(0);
-        mainStatus.setStringPainted(false);
-        mainStatus.setValue(0);
+            publish(i);
+            //mainStatus.setValue((int) (i / (double) total * 100));
+        }
     }
+
+
+    @Override
+    protected void process(List<Integer> chunks) {
+        int i = chunks.get(chunks.size()-1);
+        //mainStatus.setValue((int) (i / (double) totalInSamples * 100));
+        mainStatus.setValue(i);
+        super.process(chunks);
+    }
+
 
     /**
      * creates XYSeries collections used for plotting
@@ -237,14 +246,11 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         XYSeries ratio = new XYSeries("ratio"), tempData;
 
         int total = samplesCollection.getDatasetCount();
+
         int totalXY, bufferIndex;
         int seriesCount=0;
         double area;
-        double[] izeroRg;
 
-        mainStatus.setValue(0);
-        mainStatus.setStringPainted(true);
-        mainStatus.setString("Processing");
         //System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
 
         if (lastFrame <= 0 || lastFrame <= firstFrame){
@@ -299,20 +305,14 @@ public class SignalPlot extends SwingWorker<Void, Void> {
                 }
 
             }
-            mainStatus.setValue((int) (i / (double) total * 100));
+            publish(i);
         }
-
-        Toolkit.getDefaultToolkit().beep();
-        mainStatus.setMinimum(0);
-        mainStatus.setStringPainted(false);
-        mainStatus.setValue(0);
     }
 
 
     private void makeBuffer(){
-        mainStatus.setIndeterminate(true);
-        mainStatus.setStringPainted(true);
-        mainStatus.setString("Reducing Buffer");
+
+
         try {
             //total = buffersCollection.getDatasetCount();
             int select = buffersCollection.getTotalSelected();
@@ -330,8 +330,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         } catch (Exception ex) {
             status.setText("Must have at least one buffer" + ex.getMessage().toString());
         }
-        mainStatus.setIndeterminate(false);
-        mainStatus.setStringPainted(false);
     }
 
     /**
@@ -451,6 +449,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
     public ChartFrame getChartFrame(){ return frame;}
 
+
     public void makePlot(){
 
         chart = ChartFactory.createXYLineChart(
@@ -564,7 +563,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         plot.setBackgroundAlpha(0.0f);
         plot.setOutlineVisible(false);
 
-
         renderer1 = (XYLineAndShapeRenderer) plot.getRenderer();
         renderer1.setBaseShapesVisible(true);
         renderer1.setBaseShape(new Ellipse2D.Double(-0.5*6, -0.5*6.0, 6, 6));
@@ -602,7 +600,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
         frame.getChartPanel().setHorizontalAxisTrace(true);
 
         // add mouse listener for getting values
-        //frame.getChartPanel().addKeyListener();
+        // frame.getChartPanel().addKeyListener();
         frame.getChartPanel().addMouseListener(new MouseMarker(frame.getChartPanel(), samplesList));
         frame.getChartPanel().addChartMouseListener(new ChartMouseListener() {
             private Double markerStart = Double.NaN;
@@ -640,21 +638,32 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             // make a Runnable class that operates on windows of the data and updates treeset
         }
 
-
         status.setText("compiling samples");
+
+        mainStatus.setValue(0);
+        mainStatus.setMaximum(totalInSamples);
+        mainStatus.setStringPainted(true);
+        mainStatus.setString("Processing");
+
         if (useqIq){
             this.makeSamplesFromSubtractedData();
         } else {
             this.makeSamples();
         }
 
+        Toolkit.getDefaultToolkit().beep();
+        mainStatus.setMinimum(0);
+        mainStatus.setStringPainted(false);
+        mainStatus.setValue(0);
+
         status.setText("Writing Signal Plot");
         this.writeData();
 
-
         status.setText("Making Plot");
         this.makePlot();
+        mainStatus.setValue(0);
         mainStatus.setIndeterminate(false);
+        status.setText("");
 
         return null;
     }
@@ -662,7 +671,13 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
     @Override
     protected void done() {
-
+        // make similarity plot
+        try {
+            get();
+            status.setText("FINISHED");
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -727,7 +742,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 //            count++;
         }
 
-        System.out.println(" => Calculating average for baseline ");
+//        System.out.println(" => Calculating average for baseline ");
         Averager averagedEstimatedBackground = new Averager(keptCollection);
 
         averagedEstimatedBackground.getAveraged();
@@ -835,7 +850,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             }
         }
 
-        System.out.println("Minimum Common q-value : " + minQvalueInCommon);
+        //System.out.println("Minimum Common q-value : " + minQvalueInCommon);
     }
 
 
@@ -884,7 +899,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
             }
         }
 
-        System.out.println("Maximum Common q-value : " + maxQvalueInCommon);
+       // System.out.println("Maximum Common q-value : " + maxQvalueInCommon);
     }
 
     public void setMinQvalueInCommon(double value){
@@ -990,7 +1005,6 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
 
 
-
     public void terminateFrame(){
         try {
             frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
@@ -1000,4 +1014,7 @@ public class SignalPlot extends SwingWorker<Void, Void> {
 
     }
 
+    public XYSeriesCollection getPlotMe() {
+        return plotMe;
+    }
 }

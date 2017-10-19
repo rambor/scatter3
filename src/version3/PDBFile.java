@@ -117,6 +117,8 @@ public class PDBFile {
             pr_bins = (int)Math.ceil(qmax*dmax/Math.PI) + 1;
             delta_r = dmax/(double)pr_bins;
 
+            System.out.println("QMAX : " + qmax + " del_r => " + delta_r);
+
             double ns_dmax = pr_bins*delta_r; // dmax corresponding to number of Shannon Bins
             System.out.println("DMAX : " + dmax + " " + ns_dmax);
 
@@ -193,6 +195,7 @@ public class PDBFile {
                 XYDataItem tempItem = high_res_pr_data.getDataItem(i+1);
                 System.out.println(String.format("%5.2f %.5E 0", tempItem.getXValue(), tempItem.getYValue()));
             }
+
             high_res_pr_data.add(highresWidth*high_res_pr_bins, 0);
             System.out.println(String.format("%5.2f 0 0", highresWidth*high_res_pr_bins));
             System.out.println("END");

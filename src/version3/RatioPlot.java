@@ -197,7 +197,6 @@ public class RatioPlot {
         plotLogRatio.setBackgroundAlpha(0.0f);
         final NumberAxis rangeAxisLog = new NumberAxis(" [I\u2081(q) - c\u00D7I\u2082(q)]");
 
-
         average = differences.getLocation();
         stdev = Math.sqrt(differences.getScale());
         yMarkerLog = new ValueMarker(0);
@@ -238,7 +237,6 @@ public class RatioPlot {
         f.pack();
 
         f.setVisible(true);
-
     }
 
     private DescriptiveStatistics averageByMAD(ArrayList<Double> values){

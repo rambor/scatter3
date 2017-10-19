@@ -191,6 +191,76 @@ public class FileObject {
             System.err.println("Error: " + e.getMessage());
         }
 
+        /*
+         * write denss file format
+         */
+
+        try {
+
+            String denss_name =  base[0]+"_denns.dat";
+            FileWriter fstreamd = new FileWriter(workingDirectoryName+ "/" +denss_name);
+            BufferedWriter out = new BufferedWriter(fstreamd);
+
+            if (isRefined){
+
+                XYSeries tempXYSeries = realspaceModel.getRefinedqIData();
+                // estimate delta_q
+                double delta_q=0;
+                double counter = 0;
+                for(int i =1; i < tempXYSeries.getItemCount(); i++){
+                    tempXY = tempXYSeries.getDataItem(i-1);
+                    XYDataItem tempXY2 =tempXYSeries.getDataItem(i);
+                    delta_q += tempXY2.getXValue() - tempXY.getXValue();
+                    counter += 1.0;
+                }
+                delta_q *= 1.0/counter;
+                double startq = 0.0d;
+                double stopq = tempXYSeries.getMinX();
+
+                // estimate errors from first 51 points
+                double errorEstimate=0;
+                for(int i=0; i<51; i++){
+                    errorEstimate += Math.abs(dataset.getAllDataError().getY(i).doubleValue()/dataset.getAllData().getY(i).doubleValue());
+                }
+                errorEstimate *= 1.0/(double)51;
+
+                // I(zero)
+                out.write(Constants.Scientific1dot5e2.format(0.00) + "\t" +
+                        Constants.Scientific1dot5e2.format(realspaceModel.getIzero()) +"\t" +
+                        Constants.Scientific1dot5e2.format(realspaceModel.getIzero()*errorEstimate) + "\n");
+
+                // extrapolate low-q
+                while( startq < stopq){
+                    startq += delta_q;
+                    double iCalc = realspaceModel.extrapolateToLowQ(startq);
+                    out.write(Constants.Scientific1dot5e2.format(startq) + "\t" +
+                            Constants.Scientific1dot5e2.format(iCalc) +"\t" +
+                            Constants.Scientific1dot5e2.format(iCalc*errorEstimate) + "\n");
+                }
+
+                // add remaining data
+                for(int i =0; i < tempXYSeries.getItemCount(); i++){
+                    tempXY = tempXYSeries.getDataItem(i);
+                    int tempIndex = dataset.getAllData().indexOf(tempXY.getX());   // gets unscale SAXS curve that originated the P(r)
+                    double iCalc = realspaceModel.getICalcAtQ(tempXY.getXValue());
+
+                    if (tempIndex > 0) {
+                        out.write(Constants.Scientific1dot5e2.format(tempXY.getXValue()) + "\t" +
+                                Constants.Scientific1dot5e2.format(iCalc)  + "\t" +
+                                Constants.Scientific1dot5e2.format(dataset.getAllDataError().getY(tempIndex)) + "\n");
+                    }
+                }
+                //Close the output stream
+                out.close();
+            }
+
+        } catch (Exception e){//Catch exception if any
+
+            System.err.println("Error: " + e.getMessage());
+
+        }
+
+
         String sx_filename="";
 
         try{

@@ -4,9 +4,12 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.PaintScale;
 import org.jfree.chart.renderer.xy.XYBlockRenderer;
@@ -47,8 +50,10 @@ public class RatioSimilarityTest {
     public ChartFrame frame;
     public ChartPanel chartPanel;
     private JFreeChart chart;
-    public ArrayList<Ratio> ratioModels;
+    //public ArrayList<Ratio> ratioModels;
     public ArrayList<ResidualDifferences> residualDifferencesModel;
+    public ArrayList<XYTextAnnotation> residualsLabels;
+    public ArrayList<Integer> frameIndices;
     private int totalDatasets, totalDatasetsInUse, totalToCalculate;
     private DefaultXYZDataset residualDataset, ratioDataset;
     private int lags = 12;
@@ -65,9 +70,11 @@ public class RatioSimilarityTest {
 
         totalDatasets = inUse.getDatasetCount();
         totalDatasetsInUse = 0;
+        frameIndices = new ArrayList<>();
 
         for(int i=0; i<totalDatasets; i++){
             if (inUse.getDataset(i).getInUse()){
+                frameIndices.add(inUse.getDataset(i).getId());
                 totalDatasetsInUse += 1;
             }
         }
@@ -199,8 +206,8 @@ public class RatioSimilarityTest {
 
     // perform ratio calculation
     private void calculateRatios(){
-
-        ratioModels = new ArrayList<>();
+this.startButton.setEnabled(false);
+        //ratioModels = new ArrayList<>();
         residualDifferencesModel = new ArrayList<>();
         lowerQLimit = Double.parseDouble(qminField.getText());
         upperQLimit = Double.parseDouble(qmaxField2.getText());
@@ -210,61 +217,60 @@ public class RatioSimilarityTest {
             @Override
             protected Boolean doInBackground() throws Exception {
 
-                ScheduledExecutorService ratioExecutor = Executors.newScheduledThreadPool(4);
-
-                List<Future<Ratio>> ratioFutures = new ArrayList<>();
-
-                int order=0;
-                for(int i=0; i<totalDatasets; i++){
-
-                    if (inUse.getDataset(i).getInUse()){
-                        XYSeries ref = inUse.getDataset(i).getAllData();
-                        int refIndex = inUse.getDataset(i).getId();
-
-                        int next = i+1;
-                        for(int j=next; j<totalDatasets; j++){
-
-                            Dataset tar = inUse.getDataset(j);
-                            if (tar.getInUse()){
-                                Future<Ratio> future = ratioExecutor.submit(new CallableRatio(
-                                        ref,
-                                        tar.getAllData(),
-                                        tar.getAllDataError(),
-                                        lowerQLimit,
-                                        upperQLimit,
-                                        refIndex,
-                                        tar.getId(),
-                                        order
-                                ));
-
-                                ratioFutures.add(future);
-                                order++;
-                            }
-                        }
-                    }
-                }
-
-
-                int completed=0;
-                for(Future<Ratio> fut : ratioFutures){
-                    try {
-                        // because Future.get() waits for task to get completed
-                        ratioModels.add(fut.get());
-                        //update progress bar
-                        completed++;
-                        publish(completed);
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                ratioExecutor.shutdown();
-
-                try {
-                    ratioExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+//                ScheduledExecutorService ratioExecutor = Executors.newScheduledThreadPool(4);
+//                List<Future<Ratio>> ratioFutures = new ArrayList<>();
+//
+//                int order=0;
+//                for(int i=0; i<totalDatasets; i++){
+//
+//                    if (inUse.getDataset(i).getInUse()){
+//                        XYSeries ref = inUse.getDataset(i).getAllData();
+//                        int refIndex = inUse.getDataset(i).getId();
+//
+//                        int next = i+1;
+//                        for(int j=next; j<totalDatasets; j++){
+//
+//                            Dataset tar = inUse.getDataset(j);
+//                            if (tar.getInUse()){
+//                                Future<Ratio> future = ratioExecutor.submit(new CallableRatio(
+//                                        ref,
+//                                        tar.getAllData(),
+//                                        tar.getAllDataError(),
+//                                        lowerQLimit,
+//                                        upperQLimit,
+//                                        refIndex,
+//                                        tar.getId(),
+//                                        order
+//                                ));
+//
+//                                ratioFutures.add(future);
+//                                order++;
+//                            }
+//                        }
+//                    }
+//                }
+//
+//
+//                int completed=0;
+//                for(Future<Ratio> fut : ratioFutures){
+//                    try {
+//                        // because Future.get() waits for task to get completed
+//                        ratioModels.add(fut.get());
+//                        //update progress bar
+//                        completed++;
+//                        publish(completed);
+//                    } catch (InterruptedException | ExecutionException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//
+//                ratioExecutor.shutdown();
+//
+//                try {
+//                    ratioExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
 
                 ScheduledExecutorService diffExecutor = Executors.newScheduledThreadPool(4);
                 statusLabel.setText("Status : Calculating Residual Differences");
@@ -272,7 +278,7 @@ public class RatioSimilarityTest {
                 List<Future<ResidualDifferences>> residualFutures = new ArrayList<>();
 
                 // Residual Differences
-                order=0;
+                int order=0;
                 for(int i=0; i<totalDatasets; i++){
 
                     if (inUse.getDataset(i).getInUse()){
@@ -311,7 +317,7 @@ public class RatioSimilarityTest {
                 }
 
 
-                completed=0;
+                int completed=0;
                 for(Future<ResidualDifferences> fut : residualFutures){
                     try {
                         // because Future.get() waits for task to get completed
@@ -339,16 +345,14 @@ public class RatioSimilarityTest {
                     }
                 });
 
-                Collections.sort(ratioModels, new Comparator<Ratio>() {
-                    @Override public int compare(Ratio p1, Ratio p2) {
-                        return p1.order - p2.order; // Ascending
-                    }
-                });
+//                Collections.sort(ratioModels, new Comparator<Ratio>() {
+//                    @Override public int compare(Ratio p1, Ratio p2) {
+//                        return p1.order - p2.order; // Ascending
+//                    }
+//                });
 
                 makeCharts();
-                makeBottomChart();
-
-
+                //makeBottomChart();
                 return true;
             }
 
@@ -380,15 +384,14 @@ public class RatioSimilarityTest {
                 //statusLabel.setText(Integer.toString(mostRecentValue));
                 progressBar1.setValue(mostRecentValue);
             }
-
         };
 
         worker.execute();
 
-        for(int i=0;i<ratioModels.size(); i++){
-            ratioModels.get(i).printTests(Integer.toString(i));
-        }
-
+       // for(int i=0;i<ratioModels.size(); i++){
+       //     ratioModels.get(i).printTests(Integer.toString(i));
+       // }
+        this.startButton.setEnabled(true);
 
 //        plotPanel.removeAll();
 //        plotPanel.add(chartPanel);
@@ -417,6 +420,7 @@ public class RatioSimilarityTest {
         );
     }
 
+
     private void createBottomDataset(){
         ratioDataset = new DefaultXYZDataset();
         maxBottomDataset = -10;
@@ -437,8 +441,9 @@ public class RatioSimilarityTest {
             int nonZeroCol = i + 1;
             for(int j=nonZeroCol; j<N; j++){
 
-                Ratio temp = ratioModels.get(index);
-                double tempStat = temp.getStatistic();
+                ResidualDifferences temp = residualDifferencesModel.get(index);
+                //Ratio temp = ratioModels.get(index);
+                double tempStat = temp.getShapiroWilkStatistic();
 
 //                if (tempStat >= 2.35 || tempStat < 1.65) {
 //                    tempStat = 1.5;
@@ -463,6 +468,8 @@ public class RatioSimilarityTest {
 
     private void createResidualsDataset() {
         residualDataset = new DefaultXYZDataset();
+        residualsLabels = new ArrayList<>();
+
         //int N = residualDifferencesModel.size();
         maxResidualDataset = 0;
         minResidualDataset = 100;
@@ -473,11 +480,13 @@ public class RatioSimilarityTest {
             double[][] data = new double[3][N];
 
             for (int j = 0; j < N; j++) { // column
-                data[0][j] = i*10;
-                data[1][j] = j*10;
+//                data[0][j] = i*1;
+//                data[1][j] = j*1;
+                data[0][j] = frameIndices.get(i)*1;
+                data[1][j] = frameIndices.get(j)*1;
+
                 //data[2][j] = 1.5;
                 data[2][j] = 0;
-
 //                if (i==j){
 //                    data[2][j] = 2.0;
 //                }
@@ -496,16 +505,26 @@ public class RatioSimilarityTest {
 //                    tempStat = 1.5;
 //                }
 
-                if (tempStat == 1){
-                    tempStat = 0.5;
-                }
+//                if (tempStat == 1){
+//                    tempStat = 0.5;
+//                } else {
+//                    tempStat = 0.05;
+//                }
 
 //                if (tempStat < 0.77){
 //                    tempStat = 0.7;
 //                }
 
                 data[2][j] = tempStat;
+                residualsLabels.add(new XYTextAnnotation(String.format("%.2f", temp.getDurbinWatsonStatistic()), frameIndices.get(i), frameIndices.get(j)));
+                if (tempStat > 1.5){
+                    residualsLabels.get(index).setPaint(Color.white);
+                    residualsLabels.get(i).setFont(new Font("SansSerif", Font.BOLD, 9));
 
+                } else {
+                    residualsLabels.get(index).setPaint(Color.gray);
+                    residualsLabels.get(index).setFont(new Font("SansSerif", Font.PLAIN, 9));
+                }
 
                 if (tempStat > maxResidualDataset){
                     maxResidualDataset = temp.getStatistic();
@@ -520,6 +539,8 @@ public class RatioSimilarityTest {
             residualDataset.addSeries("Series" + i, data);
         }
     }
+
+
 
     private void makeBottomChart(){
 
@@ -571,31 +592,55 @@ public class RatioSimilarityTest {
         mainFrame.revalidate();
     }
 
+    /**
+     * residuals chart
+     */
     private void makeCharts(){
         this.createResidualsDataset();
 
-        NumberAxis xAxis = new NumberAxis("x Axis");
-        NumberAxis yAxis = new NumberAxis("y Axis");
+        NumberAxis xAxis = new NumberAxis("frame");
+        xAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+        NumberAxis yAxis = new NumberAxis("frame");
+        yAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
         XYPlot plot = new XYPlot(residualDataset, xAxis, yAxis, null);
         XYBlockRenderer r = new XYBlockRenderer();
 
+
+        for(int i=0; i<residualsLabels.size(); i++){
+            //residualsLabels.get(i).setPaint(Color.gray);
+            //residualsLabels.get(i).setFont(new Font("SansSerif", Font.PLAIN, 9));
+            plot.addAnnotation(residualsLabels.get(i));
+        }
+
         // max for DurbinWatson is 4
         //SpectrumPaintScale ps = new SpectrumPaintScale(1.5, 2.3);
-        //SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset, maxResidualDataset);
-        SpectrumPaintScale ps = new SpectrumPaintScale(0, 1);
+        //SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), maxResidualDataset+0.03*maxResidualDataset);
+        SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), 4);
+
         r.setPaintScale(ps);
-        r.setBlockHeight(10.0f);
-        r.setBlockWidth(10.0f);
+        r.setBlockHeight(1.0f);
+        r.setBlockWidth(1.0f);
         plot.setRenderer(r);
+        plot.setOutlineVisible(false);
+        plot.setDomainGridlinesVisible(false);
+        plot.setRangeGridlinesVisible(false);
+
+//        final Marker start = new ValueMarker(2,2);
+//        start.setPaint(Color.green);
+//        start.setLabel("Bid Start Price");
+//        start.setLabelAnchor(RectangleAnchor.BOTTOM_RIGHT);
+//        start.setLabelTextAnchor(TextAnchor.TOP_RIGHT);
+//        plot.addRangeMarker(start);
+
 
         JFreeChart chart = new JFreeChart(
-                "Title",
+                "Residuals Similarity Plot",
                 JFreeChart.DEFAULT_TITLE_FONT,
                 plot,
                 false
         );
 
-        NumberAxis scaleAxis = new NumberAxis("Scale");
+        NumberAxis scaleAxis = new NumberAxis("Durbin-Watson Scale");
         scaleAxis.setAxisLinePaint(Color.white);
         scaleAxis.setTickMarkPaint(Color.white);
 
@@ -607,7 +652,6 @@ public class RatioSimilarityTest {
         legend.setPosition(RectangleEdge.RIGHT);
         legend.setBackgroundPaint(Color.WHITE);
         chart.addSubtitle(legend);
-
         chart.setBackgroundPaint(Color.white);
 
         // ChartFrame topChartFrame  = new ChartFrame("Ratio", chart);
@@ -663,9 +707,14 @@ public class RatioSimilarityTest {
             // HSB white is s: 0, b: 1
             if (value == getLowerBound() || value == getUpperBound()){
                 saturation = 0;
-                scaledH = H1 + (float) (getLowerBound() / (getUpperBound() - getLowerBound())) * (H2 - H1);
+                //scaledH = H1 + (float) (getLowerBound() / (getUpperBound() - getLowerBound())) * (H2 - H1);
+                scaledH = 0;
+            } else if (value < getLowerBound() || value > getUpperBound()){
+                saturation = 0;
+                scaledH = 0;
             }
 
+            //Color tempColor = Color.getHSBColor(scaledH, saturation, 1f);
             return Color.getHSBColor(scaledH, saturation, 1f);
         }
     }

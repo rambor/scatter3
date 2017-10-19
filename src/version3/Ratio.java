@@ -600,9 +600,9 @@ public class Ratio extends BinaryComparisonModel {
     void calculateComparisonStatistics() {
         // is the ratio of the distribution Cauchy?
         // do both a auto-correlaton test and distribution test
-        this.calculateDurbinWatson(); // auto-correlation test
+        //this.calculateDurbinWatson(); // auto-correlation test
         this.calculateLjungBoxTest();
-        this.calculateGurtlerHenzeTest(5.0);
+       // this.calculateGurtlerHenzeTest(5.0);
     }
 
     @Override

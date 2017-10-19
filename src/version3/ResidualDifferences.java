@@ -83,18 +83,30 @@ public class ResidualDifferences extends BinaryComparisonModel {
     }
 
 
+    /**
+     * Treat statistic as a vote that both tests must pass to suggest an acceptance?
+     *
+     * @return
+     */
     @Override
     double getStatistic(){
         //return ljungBoxStatistic;
         // return durbinWatsonStatistic;
         // shapiroWilkStatistic => 0.7 seems to suggest a good cutoff
 
-        if ((shapiroWilkStatistic > 0.75) && (durbinWatsonStatistic > 1.5 && durbinWatsonStatistic < 2.5)){
-            this.printTests("ORDER " + this.order);
-            return 1;
+//        if ((shapiroWilkStatistic > 0.75) && (durbinWatsonStatistic > 1.5 && durbinWatsonStatistic < 2.5)){
+//            this.printTests("ORDER " + this.order);
+//            return 1;
+//        }
+
+        if ((durbinWatsonStatistic > 1.5 && durbinWatsonStatistic < 2.5)){
+            //this.printTests("ORDER " + this.order);
+            return 1.8;
+        } else {
+            return durbinWatsonStatistic;
         }
 
-        return 0;
+        //return 0;
         //return shapiroWilkStatistic;
     }
 
@@ -155,8 +167,8 @@ public class ResidualDifferences extends BinaryComparisonModel {
         Collections.sort(estimates); // take median
 
         shapiroWilkStatistic = estimates.get((rounds-1)/2);
-        // calculate probability
-
+        // calculate probabilit y
+       // System.out.println("SH " + shapiroWilkStatistic);
     }
 
 
@@ -202,6 +214,9 @@ public class ResidualDifferences extends BinaryComparisonModel {
         int totalInKept = keptResiduals.size();
         Collections.sort(keptResiduals);
 
+        /*
+         * Sum-of-Squares statistic
+         */
         double ss=0, temp;
         for(int s=0; s<totalInKept; s++){
             temp = keptResiduals.get(s) - location;

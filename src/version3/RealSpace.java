@@ -509,6 +509,11 @@ public class RealSpace {
         return this.indirectFTModel.calculateIQ(q);
     }
 
+    public double extrapolateToLowQ(double q){
+
+        double intensity = Math.log(this.izero) - (this.rg*this.rg)/3.0*q*q;
+        return Math.exp(intensity);
+    }
 
     /**
      * calculate 2nd derivative at r-values determined by ShannonNumber + 1

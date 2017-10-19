@@ -323,6 +323,7 @@ public class Scatter {
     private JCheckBox useDirectFourierTransformCheckBox;
     private JLabel methodInUseLabel;
     private JCheckBox positiveOnlyCheckBox;
+    private JButton similarityButton;
     //private JCheckBox volumeScalingCheckBox;
     private JButton diffButton;
     private JPanel plotPanel3Body;
@@ -879,7 +880,7 @@ public class Scatter {
                 if (total >2){
                     // select dataset with form factor
                     try {
-                        RatioSimilarityTest temp = new RatioSimilarityTest(collectionSelected, 0.01, 0.22);
+                        RatioSimilarityTest temp = new RatioSimilarityTest(collectionSelected, 0.011, 0.178);
                         temp.makePlot();
                     } catch (Exception e1) {
                         e1.printStackTrace();
@@ -1006,6 +1007,23 @@ public class Scatter {
                     createVolumePlot(collectionSelected.getDataset(index).getId());
                 } else {
                     status.setText("Must select the row");
+                }
+            }
+        }));
+
+        // add mouse functions, remove, select all, select none
+        popupMenu.add(new JMenuItem(new AbstractAction("Subtract Two") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                // get highlighted/moused over
+                // open new object/window for estimating mass using several methods
+                if (collectionSelected.getDatasetCount() > 1){
+
+                    // select dataset with form factor
+                    SubtractTwo temp = new SubtractTwo(collectionSelected, WORKING_DIRECTORY);
+                    temp.pack();
+                    temp.setVisible(true);
                 }
             }
         }));
@@ -1931,12 +1949,12 @@ public class Scatter {
                     }
                 }
 
-                System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
-                System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
+//                System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
+//                System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
 
                 if (lastIndexInSignalPlot <= 0){
-                    System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
-                    System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
+//                    System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
+//                    System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
                     lastIndexInSignalPlot = total;
                 } else {
                     if (firstIndexInSignalPlot < lastIndexInSignalPlot && lastIndexInSignalPlot < total){
@@ -1976,7 +1994,6 @@ public class Scatter {
                 }
 
                 signalPlotThread.setFirstLastFrame(firstIndexInSignalPlot, lastIndexInSignalPlot);
-
                 signalPlotThread.setSampleJList(samplesList);
                 signalPlotThread.setPointsToExclude(Integer.valueOf((String)excludeComboBox.getSelectedItem()));
 
@@ -1990,7 +2007,9 @@ public class Scatter {
 //                if (tempqmin < 0.2 && ((tempqmax > tempqmin) || (tempqmax==0))){
 //                    tempSignalPlot.setMinQvalueInCommon(tempqmin);
 //                }
-signalPlotThread.execute();
+                signalPlotThread.execute();
+                //signalPlotThread.getPlotMe();
+
                 //Thread temp1 = new Thread(tempSignalPlot);
                 //temp1.start();
             }
@@ -2963,6 +2982,7 @@ signalPlotThread.execute();
             }
         });
 
+
         TRACEButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -2976,16 +2996,14 @@ signalPlotThread.execute();
 
                 int total = sampleFilesModel.getSize();
 
-
-                    Frame[] temp = Frame.getFrames();
-                    for (int i=0; i<temp.length; i++){
-                        //System.out.println(i + " " + temp[i].getTitle());
-                        if (temp[i].getTitle().matches("(.*)SIGNAL PLOT(.*)")){
-                            signalPlotThread.terminateFrame();
-                            signalPlotThread.cancel(true);
-                        }
+                Frame[] temp = Frame.getFrames();
+                for (int i=0; i<temp.length; i++){
+                    //System.out.println(i + " " + temp[i].getTitle());
+                    if (temp[i].getTitle().matches("(.*)SIGNAL PLOT(.*)")){
+                        signalPlotThread.terminateFrame();
+                        signalPlotThread.cancel(true);
                     }
-
+                }
 
                 int selectS=0;
                 for(int i=0;i<total; i++){
@@ -3001,22 +3019,31 @@ signalPlotThread.execute();
                     return;
                 }
 
-                signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
-                signalPlotThread.setSampleJList(samplesList);
-                signalPlotThread.execute();
+//                signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+//                signalPlotThread.setSampleJList(samplesList);
+//                signalPlotThread.execute();
 
-                try {
-                    signalPlotThread.get();
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                } catch (ExecutionException e1) {
-                    e1.printStackTrace();
-                }
+                new Thread() {
+                    public void run() {
+                        signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+                        signalPlotThread.setSampleJList(samplesList);
+                        signalPlotThread.execute();
 
-                mergeReport.setSignalPlot(signalPlotThread.getChart("A"));
+                        try {
+                            signalPlotThread.get();
+                            mergeReport.setSignalPlot(signalPlotThread.getChart("A"));
+                            RESETRANGEButton.doClick();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+
+                    }
+                }.start();
+
 //                Thread temp1 = new Thread(tempSignalPlot);
 //                temp1.start();
-//
 //                temp1.interrupt();
             }
         });
@@ -3089,8 +3116,8 @@ signalPlotThread.execute();
                         break;
                     }
                 }
-                System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
-                System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
+                //System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
+                //System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
                 rangeSetLabel.setText(firstIndexInSignalPlot + " : " + lastIndexInSignalPlot);
             }
         });
@@ -3796,6 +3823,79 @@ signalPlotThread.execute();
 
             }
         });
+
+
+
+        similarityButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                Collection sampleCollection = (Collection) collections.get(96);
+                Collection bufferCollection = (Collection) collections.get(69);
+                sampleCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
+                bufferCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
+
+                int total = sampleFilesModel.getSize();
+                int selectS=0;
+
+                if (lastIndexInSignalPlot > total || lastIndexInSignalPlot <= 0){
+                    Toolkit.getDefaultToolkit().beep();
+                    RESETRANGEButton.doClick();
+                    status.setText("Reselect range");
+                    return;
+                }
+
+
+                for(int i=0;i<total; i++){
+                    if (i >= firstIndexInSignalPlot && i <= lastIndexInSignalPlot){
+                        sampleCollection.getDataset(i).setInUse(true);
+                        selectS++;
+                    } else {
+                        sampleCollection.getDataset(i).setInUse(false);
+                    }
+                }
+
+
+                int totalBuffers = bufferFilesModel.getSize();
+                int selectB=0;
+                for(int i=0;i<totalBuffers; i++){
+                    if (bufferFilesModel.get(i).isSelected()){
+                        bufferCollection.getDataset(i).setInUse(true);
+                        selectB++;
+                    } else {
+                        bufferCollection.getDataset(i).setInUse(false);
+                    }
+                }
+
+                //SignalPlot tempSignalPlot;
+                if (selectB < 1 || selectS < 3){
+                    //if no buffers, assuming subtracted and do q*Iq plot
+                    Toolkit.getDefaultToolkit().beep();
+                    RESETRANGEButton.doClick();
+                    status.setText("Buffers ( "+selectB+" ) can not be empty or too few samples select ( "+selectS+" )");
+                    return;
+                }
+
+
+                new Thread() {
+                    public void run() {
+                        SimilarityPlot simPlotThread = new SimilarityPlot(sampleCollection, bufferCollection, status, mainProgressBar);
+                        simPlotThread.execute();
+
+                        try {
+                            simPlotThread.get();
+                            simPlotThread.createFrame();
+                            System.out.println("FINISHED simPlotThread");
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                }.start();
+
+            }
+        });
     }
 
     private void updateSamplesListSelection(boolean boo) {
@@ -4245,9 +4345,22 @@ signalPlotThread.execute();
             public void filesDropped(final File[] files) {
 
                 final int panel = 96;
+
+                SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>(){
+
+                    @Override
+                    protected Void doInBackground() throws Exception {
+                        return null;
+                    }
+
+                    @Override
+                    protected void done() {
+                        programInstance.samplesList.repaint();;
+                    }
+                };
+
                 new Thread() {
                     public void run() {
-
 
                         ReceivedDroppedFiles rec1 = null;
 
@@ -4300,10 +4413,19 @@ signalPlotThread.execute();
                             programInstance.setReferenceBox.addItem(new ReferenceItem(name, i));
                         }
                         programInstance.setReferenceBox.setSelectedIndex(programInstance.setReferenceBox.getItemCount()-1);
-                        programInstance.samplesList.validate();
+                        //programInstance.samplesList.validate();
+                        // programInstance.samplesList.repaint();
+                        //programInstance.samples.validate();
+
+//                        programInstance.samples.getViewport().invalidate();
+//                        programInstance.samples.getViewport().repaint();
+//                        programInstance.samplesList.invalidate();
+//                        programInstance.samplesList.repaint();
                         programInstance.samplesList.updateUI();
                     }
                 }.start();
+
+
             }
         });
 
@@ -5442,7 +5564,8 @@ signalPlotThread.execute();
                 //normalize - divide P(r) by I-Zero
                 double invIzero = 1.0/prModel.getDataset(rowID).getIzero();
                 //
-                // normalize to volume
+                // normalize to volume?
+                // integrated area should be volume of particle
                 //
                 if (prModel.getDataset(rowID).getVolume() > 1){
                     invIzero *= prModel.getDataset(rowID).getVolume();
@@ -5451,7 +5574,7 @@ signalPlotThread.execute();
                     invIzero = 1;
                     prStatusLabel.setText("Please determine Volume first to normalize");
                 }
-                System.out.println(rowID + " => InvIzero " + invIzero);
+                //System.out.println(rowID + " => InvIzero " + invIzero);
                 prModel.getDataset(rowID).setScale((float) invIzero);
 
 
