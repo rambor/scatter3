@@ -328,7 +328,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.1r";
+    private String version = "3.1s";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
