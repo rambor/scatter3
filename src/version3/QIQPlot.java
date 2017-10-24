@@ -31,7 +31,7 @@ public class QIQPlot {
     private Collection inUseCollection;
 
     public static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 q \u00D7 I(q) vs q PLOT", chart);
-    static JFrame jframe = new JFrame("SC\u212BTTER \u2263 q × I(q) vs q PLOT");
+    //static JFrame jframe = new JFrame("SC\u212BTTER \u2263 q × I(q) vs q PLOT");
 
     XYLineAndShapeRenderer renderer1;
     public boolean crosshair = true;
@@ -42,24 +42,7 @@ public class QIQPlot {
      * class from instantiating.
      */
     private QIQPlot(){
-
         locationOfWindow = new Point(200,250);
-        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
-        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-                if (crosshair) {
-                    chart.getXYPlot().setDomainCrosshairVisible(false);
-                    chart.getXYPlot().setRangeCrosshairVisible(false);
-                    crosshair = false;
-                } else {
-                    chart.getXYPlot().setDomainCrosshairVisible(true);
-                    chart.getXYPlot().setRangeCrosshairVisible(true);
-                    crosshair = true;
-                }
-            }
-        }));
     }
 
     public static QIQPlot getInstance() {
@@ -194,6 +177,8 @@ public class QIQPlot {
             renderer1.setSeriesOutlineStroke(i, temp.getStroke());
         }
 
+        frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT", chart);
+
         JPopupMenu popup = frame.getChartPanel().getPopupMenu();
         popup.add(new JMenuItem(new AbstractAction("Export Plotted Data") {
             @Override
@@ -205,27 +190,42 @@ public class QIQPlot {
             }
         }));
 
+        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                if (crosshair) {
+                    chart.getXYPlot().setDomainCrosshairVisible(false);
+                    chart.getXYPlot().setRangeCrosshairVisible(false);
+                    crosshair = false;
+                } else {
+                    chart.getXYPlot().setDomainCrosshairVisible(true);
+                    chart.getXYPlot().setRangeCrosshairVisible(true);
+                    crosshair = true;
+                }
+            }
+        }));
+
 
         //frame.setLocation(350, 350);
-        frame.getChartPanel().setChart(chartPanel.getChart());
+        //frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDisplayToolTips(true);
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.pack();
 
-        jframe.addWindowListener(new WindowAdapter() {
+        frame.addWindowListener(new WindowAdapter() {
             public void WindowClosing(WindowEvent e) {
-                locationOfWindow = jframe.getLocation();
-                jframe.dispose();
+                locationOfWindow = frame.getLocation();
+                frame.dispose();
             }
         });
 
-        jframe.setMinimumSize(new Dimension(640,480));
-        Container content = jframe.getContentPane();
-        content.add(frame.getChartPanel());
-        jframe.setLocation(locationOfWindow);
-        jframe.setVisible(true);
-        jframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
+        frame.setMinimumSize(new Dimension(640,480));
+//        Container content = jframe.getContentPane();
+//        content.add(frame.getChartPanel());
+        frame.setLocation(locationOfWindow);
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
     public void setNotify(boolean state){
@@ -233,7 +233,11 @@ public class QIQPlot {
     }
 
     public boolean isVisible(){
-        return jframe.isVisible();
+
+        if (frame != null){
+            return frame.isVisible();
+        }
+        return false;
     }
 
     public void clearAll(){
@@ -256,8 +260,8 @@ public class QIQPlot {
     }
 
     public void closeWindow(){
-        locationOfWindow = jframe.getLocation();
-        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
+        locationOfWindow = frame.getLocation();
+        frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){
