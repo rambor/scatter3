@@ -260,7 +260,9 @@ public class KratkyPlot {
 
     public void clearAll(){
         collectionToPlot.removeAllSeries();
-        frame.removeAll();
+        if (frame != null){
+            frame.removeAll();
+        }
     }
 
 
