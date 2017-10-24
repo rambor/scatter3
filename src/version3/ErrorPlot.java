@@ -25,17 +25,16 @@ import java.io.File;
  */
 public class ErrorPlot {
 
-    static JFreeChart chart;
+    private static JFreeChart chart;
     private static XYPlot plot;
 
     private static YIntervalSeriesCollection plottedDatasets;
 
     private static Collection inUseCollection;
-    static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT WITH ERROR", chart);
-    static JFrame jframe = new JFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT WITH ERROR");
-
+    private static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT WITH ERROR", chart);
+   // static JFrame jframe = new JFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT WITH ERROR");
     private static XYErrorRenderer renderer;
-    boolean crosshair = true;
+    private static boolean crosshair = true;
 
     CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
     private static double upper;
@@ -50,25 +49,7 @@ public class ErrorPlot {
      * class from instantiating.
      */
     private ErrorPlot(){
-
         locationOfWindow = new Point(300,300);
-
-        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
-        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-                if (crosshair) {
-                    chart.getXYPlot().setDomainCrosshairVisible(false);
-                    chart.getXYPlot().setRangeCrosshairVisible(false);
-                    crosshair = false;
-                } else {
-                    chart.getXYPlot().setDomainCrosshairVisible(true);
-                    chart.getXYPlot().setRangeCrosshairVisible(true);
-                    crosshair = true;
-                }
-            }
-        }));
     }
 
     /* Static 'instance' method */
@@ -96,7 +77,8 @@ public class ErrorPlot {
             Dataset temp = inUseCollection.getDataset(i);
             temp.clearPlottedLog10ErrorData();
             if (temp.getInUse()){
-                temp.scalePlottedLogErrorData();
+                //temp.scalePlottedLogErrorData();
+                temp.scalePlottedQIQErrorData();
             }
             plottedDatasets.addSeries(temp.getPlottedLog10ErrorData());
         }
@@ -195,12 +177,12 @@ public class ErrorPlot {
 
         plot = chart.getXYPlot();
         final NumberAxis domainAxis = new NumberAxis("q");
-        final NumberAxis rangeAxis = new NumberAxis("Log Intensity");
+        final NumberAxis rangeAxis = new NumberAxis("q × I(q)");
         String quote = "q (\u212B\u207B\u00B9)";
         domainAxis.setLabelFont(Constants.BOLD_16);
         domainAxis.setTickLabelFont(Constants.FONT_12);
         domainAxis.setLabel(quote);
-        quote = "log[I(q)]";
+        quote = "q × I(q)";
 
         rangeAxis.setLabel(quote);
         rangeAxis.setAutoRange(false);
@@ -249,24 +231,42 @@ public class ErrorPlot {
 
         plot.setDomainZeroBaselineVisible(false);
 
-        frame.getChartPanel().setChart(chartPanel.getChart());
+        frame = new ChartFrame("SC\u212BTTER \u2263 q × I(q) ERROR PLOT", chart);
+        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
+        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                if (crosshair) {
+                    chart.getXYPlot().setDomainCrosshairVisible(false);
+                    chart.getXYPlot().setRangeCrosshairVisible(false);
+                    crosshair = false;
+                } else {
+                    chart.getXYPlot().setDomainCrosshairVisible(true);
+                    chart.getXYPlot().setRangeCrosshairVisible(true);
+                    crosshair = true;
+                }
+            }
+        }));
+
+        //frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.getChartPanel().setDisplayToolTips(false);
         frame.pack();
 
-        jframe.addWindowListener(new WindowAdapter() {
+        frame.addWindowListener(new WindowAdapter() {
             public void WindowClosing(WindowEvent e) {
-                locationOfWindow = jframe.getLocation();
-                jframe.dispose();
+                locationOfWindow = frame.getLocation();
+                frame.dispose();
             }
         });
 
 
-        jframe.setMinimumSize(new Dimension(640,480));
-        Container content = jframe.getContentPane();
-        content.add(frame.getChartPanel());
-        jframe.setLocation(locationOfWindow);
-        jframe.setVisible(true);
+        frame.setMinimumSize(new Dimension(640,480));
+        //Container content = jframe.getContentPane();
+        //content.add(frame.getChartPanel());
+        frame.setLocation(locationOfWindow);
+        frame.setVisible(true);
     }
 
     public void setNotify(boolean status){
@@ -274,7 +274,10 @@ public class ErrorPlot {
     }
 
     public boolean isVisible(){
-        return jframe.isVisible();
+        if (frame != null){
+            return frame.isVisible();
+        }
+        return false;
     }
 
     public static void changeVisibleSeries(int index, boolean flag){
@@ -291,8 +294,8 @@ public class ErrorPlot {
     }
 
     public void closeWindow(){
-        locationOfWindow = jframe.getLocation();
-        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
+        locationOfWindow = frame.getLocation();
+        frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){
