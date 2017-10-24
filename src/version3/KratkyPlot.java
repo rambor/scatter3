@@ -28,8 +28,8 @@ import java.io.File;
 public class KratkyPlot {
 
     private static WorkingDirectory workingDirectory;
-    static JFreeChart chart;
-    static boolean crosshair= true;
+    private static JFreeChart chart;
+    private static boolean crosshair= true;
 
     private static Color titlePaint = Constants.SteelBlue;
     private static Collection inUseCollection;
@@ -39,7 +39,7 @@ public class KratkyPlot {
     private static XYSeriesCollection collectionToPlot = new XYSeriesCollection();
 
     public static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 KRATKY PLOT", chart);
-    static JFrame jframe = new JFrame("SC\u212BTTER \u2263 KRATKY PLOT");
+    //static JFrame jframe = new JFrame("SC\u212BTTER \u2263 KRATKY PLOT");
 
     private static XYLineAndShapeRenderer renderer1;
     private static double upper;
@@ -52,44 +52,12 @@ public class KratkyPlot {
         locationOfWindow = new Point(225,300);
         chartTitle = "Kratky Plot";
 
-        jframe.addWindowListener(new WindowAdapter() {
+        frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e)
             {
                 System.out.println("Kratky Plot closed");
             }
         });
-
-
-        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
-
-        //frame.getChartPanel().getChart().getXYPlot().getRangeAxis().setAxisLineStroke();
-        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-                if (crosshair) {
-                    chart.getXYPlot().setDomainCrosshairVisible(false);
-                    chart.getXYPlot().setRangeCrosshairVisible(false);
-                    crosshair = false;
-                } else {
-                    chart.getXYPlot().setDomainCrosshairVisible(true);
-                    chart.getXYPlot().setRangeCrosshairVisible(true);
-                    crosshair = true;
-                }
-            }
-        }));
-
-
-        popup.add(new JMenuItem(new AbstractAction("Export Plotted Data") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-                ExportData temp = new ExportData(collectionToPlot, workingDirectory.getWorkingDirectory(), "Kratky");
-                temp.pack();
-                temp.setVisible(true);
-            }
-        }));
-
     }
 
 
@@ -136,6 +104,7 @@ public class KratkyPlot {
         chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
         chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
         chart.getTitle().setMargin(10, 10, 0, 0);
+        chart.getLegend().setVisible(false);
 
         upper = collectionToPlot.getRangeUpperBound(true);
 
@@ -210,7 +179,8 @@ public class KratkyPlot {
         rangeAxis.setTickLabelFont(Constants.FONT_12);
 
         rangeAxis.setRange(0, upper + 0.1*upper);
-        chart.getLegend().setVisible(false);
+
+
         domainAxis.setAutoRangeIncludesZero(true);
         plot.setDomainAxis(domainAxis);
         plot.setRangeAxis(rangeAxis);
@@ -236,9 +206,37 @@ public class KratkyPlot {
             renderer1.setSeriesOutlineStroke(i, temp.getStroke());
         }
 
+        frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT", chart);
+        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
+        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                if (crosshair) {
+                    chart.getXYPlot().setDomainCrosshairVisible(false);
+                    chart.getXYPlot().setRangeCrosshairVisible(false);
+                    crosshair = false;
+                } else {
+                    chart.getXYPlot().setDomainCrosshairVisible(true);
+                    chart.getXYPlot().setRangeCrosshairVisible(true);
+                    crosshair = true;
+                }
+            }
+        }));
 
+        popup.add(new JMenuItem(new AbstractAction("Export Plotted Data") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                ExportData temp = new ExportData(collectionToPlot, workingDirectory.getWorkingDirectory(), "Kratky");
+                temp.pack();
+                temp.setVisible(true);
+            }
+        }));
+
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setLocation(locationOfWindow);
-        frame.getChartPanel().setChart(chartPanel.getChart());
+//        frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryN.getWorkingDirectory()));
         frame.pack();
 
@@ -249,16 +247,15 @@ public class KratkyPlot {
             }
         });
 
-        jframe.setMinimumSize(new Dimension(640,480));
-        Container content = jframe.getContentPane();
-        content.add(frame.getChartPanel());
-
-        jframe.setVisible(true);
-        jframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setMinimumSize(new Dimension(640,480));
+        frame.setVisible(true);
     }
 
     public boolean isVisible(){
-        return jframe.isVisible();
+        if (frame != null){
+            return frame.isVisible();
+        }
+        return false;
     }
 
     public void clearAll(){
