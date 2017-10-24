@@ -27,20 +27,17 @@ public class PowerLawPlot {
 
     private static JFreeChart chart;
     private static XYPlot plot;
-    private static XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
-
+    //private static XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
     private static XYSeriesCollection plottedDatasets = new XYSeriesCollection();
 
     private static Collection inUseCollection;
     private static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 POWER-LAW INTENSITY PLOT", chart);
-    private static JFrame jframe = new JFrame("SC\u212BTTER \u2263 POWER-LAW INTENSITY PLOT");
 
     private static XYLineAndShapeRenderer renderer1;
     private static boolean crosshair = true;
 
-    private static Shape elipse6 = new Ellipse2D.Double(-3, -3, 6, 6);
-
-    CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
+    //private static Shape elipse6 = new Ellipse2D.Double(-3, -3, 6, 6);
+    //CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
     private static Point locationOfWindow;
 
     private static PowerLawPlot singleton = new PowerLawPlot( );
@@ -49,25 +46,7 @@ public class PowerLawPlot {
      * class from instantiating.
      */
     private PowerLawPlot(){
-
         locationOfWindow = new Point(200,200);
-
-        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
-        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-                if (crosshair) {
-                    chart.getXYPlot().setDomainCrosshairVisible(false);
-                    chart.getXYPlot().setRangeCrosshairVisible(false);
-                    crosshair = false;
-                } else {
-                    chart.getXYPlot().setDomainCrosshairVisible(true);
-                    chart.getXYPlot().setRangeCrosshairVisible(true);
-                    crosshair = true;
-                }
-            }
-        }));
     }
 
     /* Static 'instance' method */
@@ -230,24 +209,40 @@ public class PowerLawPlot {
         }
         plot.setDomainZeroBaselineVisible(false);
 
-        jframe.addWindowListener(new WindowAdapter() {
+        frame = new ChartFrame("SC\u212BTTER \u2263 POWER-LAW PLOT", chart);
+        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
+        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                if (crosshair) {
+                    chart.getXYPlot().setDomainCrosshairVisible(false);
+                    chart.getXYPlot().setRangeCrosshairVisible(false);
+                    crosshair = false;
+                } else {
+                    chart.getXYPlot().setDomainCrosshairVisible(true);
+                    chart.getXYPlot().setRangeCrosshairVisible(true);
+                    crosshair = true;
+                }
+            }
+        }));
+
+
+        frame.addWindowListener(new WindowAdapter() {
             public void WindowClosing(WindowEvent e) {
-                locationOfWindow = jframe.getLocation();
-                jframe.dispose();
+                locationOfWindow = frame.getLocation();
+                frame.dispose();
             }
         });
 
 
-        frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.getChartPanel().setDisplayToolTips(false);
         frame.pack();
 
-        jframe.setMinimumSize(new Dimension(640,480));
-        Container content = jframe.getContentPane();
-        content.add(frame.getChartPanel());
-        jframe.setLocation(locationOfWindow);
-        jframe.setVisible(true);
+        frame.setMinimumSize(new Dimension(640,480));
+        frame.setLocation(locationOfWindow);
+        frame.setVisible(true);
     }
 
     public void setNotify(boolean state){
@@ -255,7 +250,14 @@ public class PowerLawPlot {
     }
 
     public boolean isVisible(){
-        return jframe.isVisible();
+        return frame.isVisible();
+    }
+
+    public void clearAll(){
+        plottedDatasets.removeAllSeries();
+        if (frame != null){
+            frame.removeAll();
+        }
     }
 
     public void changeVisibleSeries(int index, boolean flag){
@@ -272,8 +274,9 @@ public class PowerLawPlot {
     }
 
     public void closeWindow(){
-        locationOfWindow = jframe.getLocation();
-        jframe.dispatchEvent(new WindowEvent(jframe, WindowEvent.WINDOW_CLOSING));
+        this.clearAll();
+        locationOfWindow = frame.getLocation();
+        frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){
