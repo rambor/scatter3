@@ -256,6 +256,7 @@ public class QIQPlot {
     }
 
     public void closeWindow(){
+        this.clearAll();
         locationOfWindow = frame.getLocation();
         frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
