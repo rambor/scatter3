@@ -11,32 +11,34 @@ import java.util.concurrent.*;
 /**
  * Created by robertrambo on 17/01/2016.
  */
-public class LowerUpperBoundManager {
+public class LowerUpperBoundManager extends SwingWorker<Void, Integer>  {
 
     private Collection collection;
     private int numberOfCPUs;
     private JProgressBar bar;
     private JLabel status;
+    private int column;
+    private double limit;
 
-    public LowerUpperBoundManager(int numberOfCPUs, Collection collection, JProgressBar bar, JLabel label){
+    public LowerUpperBoundManager(int numberOfCPUs, Collection collection, JProgressBar bar, JLabel label, int column, double limit){
         this.numberOfCPUs = numberOfCPUs;
         this.collection = collection;
         this.bar = bar;
+        this.bar.setMaximum(collection.getTotalSelected());
         status = label;
+        this.column = column;
+        this.limit = limit;
     }
 
-    public void boundNow(AnalysisModel analysisModel, int column, double limit){
+    public void boundNow(int column, double limit){
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
 
         List<Future<Bounder>> bounderFutures = new ArrayList<>();
-        //List<Runnable<Bounder>> bounderFutures = new ArrayList<>();
 
         for (int i=0; i < collection.getDatasetCount(); i++) {
             // create
             if (collection.getDataset(i).getInUse()){
-//                Runnable bounder = new Bounder(collection.getDataset(i), column, limit);
-//                executor.execute(bounder);
                 Future<Bounder> future = (Future<Bounder>) executor.submit(new Bounder(collection.getDataset(i), column, limit));
                 bounderFutures.add(future);
             }
@@ -50,7 +52,8 @@ public class LowerUpperBoundManager {
                 fut.get();
                 //update progress bar
                 completed++;
-                setStatus("Fitting Datasets " + completed );
+                setStatus("Finished truncating selected Datasets ");
+                bar.setValue(completed);
                 //publish(completed);
             } catch (InterruptedException | ExecutionException e) {
                 System.out.println(e.getMessage());
@@ -91,12 +94,75 @@ public class LowerUpperBoundManager {
             }
         }
 
+        bar.setValue(0);
+        bar.setStringPainted(false);
     }
 
 
 
     public void setStatus(String text){
         status.setText(text);
+    }
+
+    @Override
+    protected Void doInBackground() throws Exception {
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
+
+        List<Future<Bounder>> bounderFutures = new ArrayList<>();
+        for (int i=0; i < collection.getDatasetCount(); i++) {
+            // create
+            if (collection.getDataset(i).getInUse()){
+                Future<Bounder> future = (Future<Bounder>) executor.submit(new Bounder(collection.getDataset(i), column, limit));
+                bounderFutures.add(future);
+            }
+        }
+
+
+        int completed = 0;
+        for(Future<Bounder> fut : bounderFutures){
+            try {
+                // because Future.get() waits for task to get completed
+                fut.get();
+                //update progress bar
+                completed++;
+                publish(completed);
+            } catch (InterruptedException | ExecutionException e) {
+                System.out.println(e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        executor.shutdown();
+
+        for (int i=0; i < collection.getDatasetCount(); i++) {
+            if (collection.getDataset(i).getInUse()){
+                Dataset data = collection.getDataset(i);
+                data.setPlottedDataNotify(true);
+            }
+        }
+
+        bar.setValue(0);
+        bar.setStringPainted(false);
+        return null;
+    }
+
+    @Override
+    protected void process(List<Integer> chunks) {
+        int i = chunks.get(chunks.size()-1);
+        bar.setValue(i);
+        super.process(chunks);
+    }
+
+    @Override
+    protected void done() {
+        try {
+            get();
+            bar.setValue(0);
+            bar.setStringPainted(false);
+            status.setText("FINISHED TRUNCATING DATASETS");
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 }
