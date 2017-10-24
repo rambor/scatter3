@@ -294,6 +294,7 @@ public class KratkyPlot {
     }
 
     public void closeWindow(){
+        this.clearAll();
         locationOfWindow = frame.getLocation();
         frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
