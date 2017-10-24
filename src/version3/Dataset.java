@@ -309,20 +309,7 @@ public class Dataset {
 
         // if possible do preliminary analysis here
         if (doGuinier){
-            //double[] izeroRg = Functions.calculateIzeroRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError);
-            //double[] izeroRg = Functions.autoRgTransformIt(this.originalPositiveOnlyData, this.originalPositiveOnlyError, this.startAt);
-            AutoRg tempRg = new AutoRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError, startAt);
-            if (tempRg.getRg() > 0){
-                guinierIZero = tempRg.getI_zero();
-                guinierIZero_sigma = tempRg.getI_zero_error();
-                guinierRg = tempRg.getRg();
-                guinierRG_sigma = tempRg.getRg_error();
-                guinierCorrelationCoefficient = tempRg.getCorrelation_coefficient();
-
-                indexOfLowerGuinierFit = this.originalPositiveOnlyData.indexOf(tempRg.getQminFinal());
-                indexOfUpperGuinierFit = this.originalPositiveOnlyData.indexOf(tempRg.getQmaxFinal());
-            }
-
+            this.calculateRg();
         } else {
             guinierIZero=0;
             guinierIZero_sigma = 0;
@@ -425,6 +412,20 @@ public class Dataset {
         totalCountInPositiveData = aDataset.totalCountInPositiveData;
     }
 
+
+    private void calculateRg(){
+        AutoRg tempRg = new AutoRg(this.originalPositiveOnlyData, this.originalPositiveOnlyError, startAt);
+        if (tempRg.getRg() > 0){
+            guinierIZero = tempRg.getI_zero();
+            guinierIZero_sigma = tempRg.getI_zero_error();
+            guinierRg = tempRg.getRg();
+            guinierRG_sigma = tempRg.getRg_error();
+            guinierCorrelationCoefficient = tempRg.getCorrelation_coefficient();
+
+            indexOfLowerGuinierFit = this.originalPositiveOnlyData.indexOf(tempRg.getQminFinal());
+            indexOfUpperGuinierFit = this.originalPositiveOnlyData.indexOf(tempRg.getQmaxFinal());
+        }
+    }
 
     /*
      * Add Fit Object to the list of Fit that belong to
@@ -1066,6 +1067,36 @@ public class Dataset {
         } else {
             for (int i = startHere; i < endAt; i++){
                 plottedLogErrors.add((YIntervalDataItem) positiveOnlyIntensityError.getDataItem(i), false );
+            }
+        }
+    }
+
+    /**
+     * scales data
+     */
+    public void scalePlottedQIQErrorData(){
+        this.clearPlottedLog10ErrorData();
+        YIntervalDataItem temp;
+
+        int startHere = startAt - 1;
+
+        int startINdex = allData.indexOf(plottedData.getX(startHere));
+        int endIndex = allData.indexOf(plottedData.getMaxX());
+
+        double qvalue;
+
+        if (scaleFactor != 1){
+            for (int i = startINdex; i <= endIndex; i++){
+                temp = (YIntervalDataItem) allDataYError.getDataItem(i);
+                qvalue = temp.getX();
+                plottedLogErrors.add(temp.getX(), qvalue*temp.getYValue()*scaleFactor, qvalue*temp.getYLowValue()*scaleFactor, qvalue*temp.getYHighValue()*scaleFactor);
+            }
+        } else {
+            for (int i = startINdex; i < endIndex; i++){
+                temp = (YIntervalDataItem) allDataYError.getDataItem(i);
+                qvalue = temp.getX();
+                plottedLogErrors.add(temp.getX(), qvalue*temp.getYValue(), qvalue*temp.getYLowValue(), qvalue*temp.getYHighValue());
+                //plottedLogErrors.add((YIntervalDataItem) allDataYError.getDataItem(i), false );
             }
         }
     }
