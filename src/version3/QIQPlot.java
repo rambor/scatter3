@@ -26,12 +26,11 @@ import java.io.File;
  */
 public class QIQPlot {
 
-    static JFreeChart chart;
+    private static JFreeChart chart;
     private XYSeriesCollection plottedDatasets = new XYSeriesCollection();
     private Collection inUseCollection;
 
     public static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 q \u00D7 I(q) vs q PLOT", chart);
-    //static JFrame jframe = new JFrame("SC\u212BTTER \u2263 q × I(q) vs q PLOT");
 
     XYLineAndShapeRenderer renderer1;
     public boolean crosshair = true;
@@ -206,9 +205,6 @@ public class QIQPlot {
             }
         }));
 
-
-        //frame.setLocation(350, 350);
-        //frame.getChartPanel().setChart(chartPanel.getChart());
         frame.getChartPanel().setDisplayToolTips(true);
         frame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         frame.pack();
@@ -221,8 +217,6 @@ public class QIQPlot {
         });
 
         frame.setMinimumSize(new Dimension(640,480));
-//        Container content = jframe.getContentPane();
-//        content.add(frame.getChartPanel());
         frame.setLocation(locationOfWindow);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -242,7 +236,9 @@ public class QIQPlot {
 
     public void clearAll(){
         plottedDatasets.removeAllSeries();
-        frame.removeAll();
+        if (frame != null){
+            frame.removeAll();
+        }
     }
 
     public void changeVisibleSeries(int index, boolean flag){
