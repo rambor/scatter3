@@ -7,18 +7,18 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * Created by robertrambo on 18/01/2016.
  */
-public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
+public class ReceivedDroppedFiles extends SwingWorker<Void, Integer> {
 
     //private DefaultListModel<DataFileElement> fileListModel;
-    private JList fileList;
     private JLabel status;
-    private int dropLocaleIndex;
     private boolean convertToAng;
     private boolean sortFiles;
     private boolean doGuinier;
@@ -35,7 +35,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
     private int panelIndex;
     private double qmax;
     private boolean exclude, shortened = false;
-    private Comparator<File> fileComparator;
+    private JList list;
+
 
     public ReceivedDroppedFiles(File[] files, Collection targetCollection, JLabel status, int index, boolean convertNMtoAng, boolean doGuinier, boolean sort, final JProgressBar bar, String workingDirectoryName){
 
@@ -43,15 +44,26 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         this.targetCollection = targetCollection;
         this.panelIndex = index;
         this.status = status;
-        this.dropLocaleIndex = index;
         this.convertToAng = convertNMtoAng;
         this.doGuinier = doGuinier;
         this.bar = bar;
         this.sortFiles = sort;
         this.workingDirectoryName = workingDirectoryName;
 
+    }
 
-        fileComparator = new Comparator<File>() {
+
+    @Override
+    protected Void doInBackground() throws Exception {
+
+        int totalFiles = files.length;
+
+        bar.setMaximum(totalFiles);
+        bar.setStringPainted(true);
+        bar.setValue(0);
+
+       //System.out.println("TOTAL FILES " + totalFiles);
+        Comparator<File> fileComparator = new Comparator<File>() {
             @Override
             public int compare(File o1, File o2) {
                 int n1 = extractNumber(o1.getName());
@@ -74,19 +86,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 return i;
             }
         };
-    }
 
-
-    @Override
-    protected String doInBackground() throws Exception {
-
-        int totalFiles = files.length;
-
-        bar.setMaximum(100);
-        bar.setStringPainted(true);
-        bar.setValue(0);
-
-       //System.out.println("TOTAL FILES " + totalFiles);
 
         if (sortFiles && totalFiles > 1){ // sort the name of directories first and then proceed to loading files
             Arrays.sort(files, fileComparator);
@@ -105,8 +105,8 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                 }
 
                 for (int j=0; j < tempFiles.length; j++){
-                    LoadedFile temp = loadDroppedFile(tempFiles[j], targetCollection.getDatasetCount());
-                    addToCollection(temp);
+                    //temp = loadDroppedFile(tempFiles[j], targetCollection.getDatasetCount());
+                    addToCollection(loadDroppedFile(tempFiles[j], targetCollection.getDatasetCount()));
                 }
 
             } else {
@@ -133,18 +133,12 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                     targetCollection.getDataset(newIndex).setIsPDB(tempPDB.getPrDistribution(), (int)tempPDB.getDmax(), tempPDB.getRg(), tempPDB.getIzero());
                     bar.setIndeterminate(false);
                 } else {
-                    LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
-                    addToCollection(temp);
-                    //System.out.println(i + " : Loaded File => " + targetCollection.getLast().getFileName());
+                    //LoadedFile temp = loadDroppedFile(files[i], targetCollection.getDatasetCount());
+                    addToCollection(loadDroppedFile(files[i], targetCollection.getDatasetCount()));
                 }
             }
-
-            //status.setText(" Loaded File " + targetCollection.getLast().getFileName());
-            bar.setValue((int) (i / (double) totalFiles * 100));
+            publish(i);
         }
-
-        bar.setValue(0);
-        bar.setStringPainted(false);
 
         updateModels(panelIndex);
 
@@ -153,15 +147,52 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         for(int h=0; h<total; h++){
             targetCollection.getDataset(h).setId(h);
         }
-        
+
+        System.gc();
         return null;
     }
+
+    @Override
+    protected void process(List<Integer> chunks) {
+        int i = chunks.get(chunks.size()-1);
+        bar.setValue(i);
+        super.process(chunks);
+    }
+
+
+    @Override
+    protected void done() {
+        try {
+            //get();
+            bar.setValue(0);
+            bar.setStringPainted(false);
+            status.setText("FINISHED");
+
+            if (panelIndex == 96 ){
+//                list.revalidate();
+//                list.repaint();
+                list.validate();
+            }
+            get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void setJList(JList list){
+        this.list = list;
+    }
+
 
     private void updateModels(int collectionIndex) {
 
         if (collectionIndex <= 4) {
+            dataFilesModel.removeAllElements();
             dataFilesModel.clear();
+
             dataFilesList.removeAll();
+
             analysisModel.clear();
             resultsModel.getDatalist().clear();
             resultsModel.clear();
@@ -182,16 +213,13 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
             Color tempColor;
             for(int i=0; i< targetCollection.getDatasetCount(); i++){
 
-                String name = targetCollection.getDataset(i).getFileName();
-                name = name + "_" + i;
-                // System.out.println(i + " renaming after loading : " + name + " " + targetCollection.getDataset(i).getId());
-                // targetCollection.getDataset(i).setFileName(name);
+                String name = targetCollection.getDataset(i).getFileName() + "_" + i;
                 tempColor = targetCollection.getDataset(i).getColor();
                 sampleBufferFilesModel.addElement(new SampleBufferElement(name, i, tempColor, targetCollection.getDataset(i)));
             }
 
             //sampleBufferFilesList.setModel(sampleBufferFilesModel);
-            sampleBufferFilesModel.notifyAll();
+//            sampleBufferFilesModel.notifyAll();
         }
     }
 
@@ -213,11 +241,13 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
                     tempFile.filebase,
                     newIndex));
         } else {
-            targetCollection.addDataset(new Dataset(
-                    tempFile.allData,       //data
-                    tempFile.allDataError,  //original
-                    tempFile.filebase,
-                    newIndex, doGuinier ));
+            targetCollection.createDataset(tempFile, newIndex, doGuinier);
+
+//            targetCollection.addDataset(new Dataset(
+//                    tempFile.allData,       //data
+//                    tempFile.allDataError,  //original
+//                    tempFile.filebase,
+//                    newIndex, doGuinier ));
         }
     }
 
@@ -227,33 +257,30 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
         File dir = new File(dirName);
 
         //System.out.println("DIRECTORY NAME IN FINDER : " + dirName + " " + dir.listFiles().length);
-
         return dir.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String filename)
             { return filename.endsWith(".dat"); }
         } );
-
     }
 
     private LoadedFile loadDroppedFile(File file, int size){
-        LoadedFile temp = null;
-        String ext;
+
         // how to handle different file formats?
         // get file base and extension
         String[] currentFile;
         currentFile = file.getName().split("\\.(?=[^\\.]+$)");
 
-        ext = (currentFile.length > 2) ? currentFile[2] : currentFile[1];
+        String ext = (currentFile.length > 2) ? currentFile[2] : currentFile[1];
 
         try {
             if (ext.equals("brml")) {
                 status.setText("Bruker .brml  file detected ");
                 File tempFile;
                 tempFile = Bruker.makeTempDataFile(file, workingDirectoryName);
-                temp = new LoadedFile(tempFile, status, size, convertToAng);
+                return new LoadedFile(tempFile, status, size, convertToAng);
 
             } else if (ext.equals("int") || ext.equals("dat") || ext.equals("fit") || ext.equals("Adat") || ext.equals("csv")) {
-                temp = new LoadedFile(file, status, size, convertToAng);
+                return new LoadedFile(file, status, size, convertToAng);
             } else {
                 // throw exception - incorrect file format
                 throw new Exception("Incorrect file format: Use either brml, dat, csv, Adat, or Bdat file formats: " + currentFile);
@@ -264,7 +291,7 @@ public class ReceivedDroppedFiles extends SwingWorker<String, Object> {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
         }
         //add to collection
-        return temp;
+        return null;
     }
 
 
