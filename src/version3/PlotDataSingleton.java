@@ -35,8 +35,8 @@ public class PlotDataSingleton {
     private static XYSeriesCollection plottedDatasets = new XYSeriesCollection();
     private static XYSeriesCollection mergedDataset = new XYSeriesCollection();
     private static Collection inUseCollection;
-    private static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT", chart);
-    private static JFrame jframe = new JFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT");
+    private static ChartFrame frame;// = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT", chart);
+    //private static JFrame jframe = new JFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT");
 
     private static XYLineAndShapeRenderer renderer1;
     private static boolean crosshair = true;
@@ -57,24 +57,8 @@ public class PlotDataSingleton {
 
         locationOfWindow = new Point(100,100);
 
-        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
+        //frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT", chart);
 
-        //frame.getChartPanel().getChart().getXYPlot().getRangeAxis().setAxisLineStroke();
-        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-                if (crosshair) {
-                    chart.getXYPlot().setDomainCrosshairVisible(false);
-                    chart.getXYPlot().setRangeCrosshairVisible(false);
-                    crosshair = false;
-                } else {
-                    chart.getXYPlot().setDomainCrosshairVisible(true);
-                    chart.getXYPlot().setRangeCrosshairVisible(true);
-                    crosshair = true;
-                }
-            }
-        }));
     }
 
     /* Static 'instance' method */
@@ -95,10 +79,8 @@ public class PlotDataSingleton {
         // option would be to add datasets to plottedDatasets
         // datasets not checked will be addes as emptySeries
 
-
         inUseCollection = collection;
         int totalSets = collection.getDatasetCount();
-        //plottedDatasets = new XYSeriesCollection();  // spinners will always modify the plottedDataset series
         plottedDatasets.removeAllSeries();
         mergedDataset.removeAllSeries();
 
@@ -108,7 +90,7 @@ public class PlotDataSingleton {
 
 
         chart = ChartFactory.createXYLineChart(
-                "Main Plot",                     // chart title
+                "Main Plot",                          // chart title
                 "q",                             // domain axis label
                 "log[I(q)]",                     // range axis label
                 plottedDatasets,                 // data
@@ -202,6 +184,28 @@ public class PlotDataSingleton {
         };
 
         plot = chart.getXYPlot();
+
+        frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT", chart);
+        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
+
+        //frame.getChartPanel().getChart().getXYPlot().getRangeAxis().setAxisLineStroke();
+        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                if (crosshair) {
+                    chart.getXYPlot().setDomainCrosshairVisible(false);
+                    chart.getXYPlot().setRangeCrosshairVisible(false);
+                    crosshair = false;
+                } else {
+                    chart.getXYPlot().setDomainCrosshairVisible(true);
+                    chart.getXYPlot().setRangeCrosshairVisible(true);
+                    crosshair = true;
+                }
+            }
+        }));
+
+
         final NumberAxis domainAxis = new NumberAxis("q");
         final NumberAxis rangeAxis = new NumberAxis("Log Intensity");
         String quote = "q (\u212B\u207B\u00B9)";
@@ -256,6 +260,7 @@ public class PlotDataSingleton {
             renderer1.setSeriesVisible(i, tempData.getInUse());
             renderer1.setSeriesOutlineStroke(i, tempData.getStroke());
         }
+
         plot.setDomainZeroBaselineVisible(false);
 
         frame.setLocation(locationOfWindow);
@@ -272,11 +277,10 @@ public class PlotDataSingleton {
             }
         });
 
-
-        jframe.setMinimumSize(new Dimension(640,480));
-        Container content = jframe.getContentPane();
-        content.add(frame.getChartPanel());
-        jframe.setVisible(true);
+        frame.setMinimumSize(new Dimension(640,480));
+       // Container content = frame.getContentPane();
+       // content.add(frame.getChartPanel());
+        frame.setVisible(true);
     }
 
     /**
@@ -302,8 +306,6 @@ public class PlotDataSingleton {
     public void addToBase(Dataset tempData){
 
         int count = plottedDatasets.getSeriesCount();
-
-
         plottedDatasets.addSeries(tempData.getData());
 
         double offset = -0.5*tempData.getPointSize();
@@ -329,7 +331,10 @@ public class PlotDataSingleton {
     }
 
     public boolean isVisible(){
-        return jframe.isVisible();
+        if (frame != null){
+            return frame.isVisible();
+        }
+        return false;
     }
 
     public void changeVisibleSeries(int index, boolean flag){
@@ -339,6 +344,7 @@ public class PlotDataSingleton {
     public void closeWindow(){
         locationOfWindow = frame.getLocation();
         frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+        //frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
 
     public void changeColor(int id, Color newColor, float thickness, int pointsize){
@@ -348,6 +354,7 @@ public class PlotDataSingleton {
         renderer1.setSeriesShape(id, new Ellipse2D.Double(offset, offset, pointsize, pointsize));
         renderer1.setSeriesOutlineStroke(id, new BasicStroke(thickness));
     }
+
 
     public void updatePlot(){
 
@@ -367,7 +374,16 @@ public class PlotDataSingleton {
                 //plottedDatasets.addSeries(inUseCollection.getDataset(i).getData());
             }
         }
+    }
 
 
+    public void clearPlot(){
+
+        plottedDatasets.removeAllSeries();
+        mergedDataset.removeAllSeries();
+        //frame.removeAll();
+        if (frame != null){
+            frame.removeAll();
+        }
     }
 }
