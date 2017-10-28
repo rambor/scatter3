@@ -32,7 +32,6 @@ public class ErrorPlot {
 
     private static Collection inUseCollection;
     private static ChartFrame frame = new ChartFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT WITH ERROR", chart);
-   // static JFrame jframe = new JFrame("SC\u212BTTER \u2263 LOG10 INTENSITY PLOT WITH ERROR");
     private static XYErrorRenderer renderer;
     private static boolean crosshair = true;
 
@@ -185,10 +184,10 @@ public class ErrorPlot {
         quote = "q × I(q)";
 
         rangeAxis.setLabel(quote);
-        rangeAxis.setAutoRange(false);
+        rangeAxis.setAutoRange(true);
         rangeAxis.setLabelFont(Constants.BOLD_16);
         rangeAxis.setTickLabelFont(Constants.FONT_12);
-        rangeAxis.setRange(lower-lower*0.03, upper+0.1*upper);
+        //rangeAxis.setRange(lower-lower*0.03, upper+0.1*upper);
         rangeAxis.setAutoRangeStickyZero(false);
 
         domainAxis.setRange(dlower, dupper);
@@ -223,7 +222,7 @@ public class ErrorPlot {
             renderer.setSeriesShape(i, new Ellipse2D.Double(offset, offset, tempData.getPointSize(), tempData.getPointSize()));
             renderer.setSeriesLinesVisible(i, false);
             renderer.setSeriesPaint(i, tempData.getColor());
-            renderer.setSeriesShapesFilled(i, true);
+            renderer.setSeriesShapesFilled(i, false);
             renderer.setSeriesVisible(i, tempData.getInUse());
             renderer.setSeriesOutlineStroke(i, tempData.getStroke());
             renderer.setSeriesStroke(i, tempData.getStroke());

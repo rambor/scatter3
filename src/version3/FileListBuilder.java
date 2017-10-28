@@ -229,7 +229,6 @@ public class FileListBuilder {
             }
         });
 
-
         // sort on custom Comparator
         Arrays.sort(foundFiles, new Comparator<File>() {
 
@@ -255,6 +254,7 @@ public class FileListBuilder {
                 return i;
             }
         });
+
     }
 
     private int getFileIndex(File file){

@@ -73,10 +73,10 @@ public class ResidualDifferences extends BinaryComparisonModel {
         double denominator = testSeries.getY(0).doubleValue()*testSeries.getY(0).doubleValue();
 
         for(int i=1; i<totalResiduals; i++){
-          value = testSeries.getY(i).doubleValue();
-          diff = value - testSeries.getY(i-1).doubleValue();
+            value = testSeries.getY(i).doubleValue();
+            diff = value - testSeries.getY(i-1).doubleValue(); // x_(t) - x_(t-1)
             numerator += diff*diff;
-            denominator += value*value;
+            denominator += value*value; // sum of (x_t)^2
         }
 
         durbinWatsonStatistic = numerator/denominator;
@@ -93,23 +93,27 @@ public class ResidualDifferences extends BinaryComparisonModel {
         //return ljungBoxStatistic;
         // return durbinWatsonStatistic;
         // shapiroWilkStatistic => 0.7 seems to suggest a good cutoff
-
-//        if ((shapiroWilkStatistic > 0.75) && (durbinWatsonStatistic > 1.5 && durbinWatsonStatistic < 2.5)){
-//            this.printTests("ORDER " + this.order);
+//        if ((ljungBoxStatistic < 30) || (durbinWatsonStatistic > 1.8 && durbinWatsonStatistic < 2.2)){
+//            //this.printTests("ORDER " + this.order);
 //            return 1;
 //        }
 
-        if ((durbinWatsonStatistic > 1.5 && durbinWatsonStatistic < 2.5)){
-            //this.printTests("ORDER " + this.order);
-            return 1.8;
+        if ((durbinWatsonStatistic > 1.75 && durbinWatsonStatistic < 2.15)){
+            ////this.printTests("ORDER " + this.order);
+            //return 0;
+            return 1.95;
         } else {
             return durbinWatsonStatistic;
         }
 
         //return 0;
-        //return shapiroWilkStatistic;
     }
 
+    /**
+     * Ljung-Box uses sample auto-correlation function
+     * p_x(h) = gamma_x(h)/gamma_x(0)
+     *
+     */
     private void calculateLjungBoxTest(){
 
         double sum = 0, temp;
@@ -126,11 +130,18 @@ public class ResidualDifferences extends BinaryComparisonModel {
 
     /**
      * Sample autoCovariance, if lag is 0, this is variance
+     *
+     * defined as:
+     * E[(X_(t+h) - avgX_(t+h))*(X_(t) - avgX_(t)]
+     *
+     * In our case, avgX_(t+h) and avgX_(t) should be same if there is not correlation
+     * If the input data is the residual of two curves, then avgX => zero
+     *
      * @param lag
      * @return
      */
     private double calculateAutoCorrelation(int lag){
-        double gammaSum =0;
+        double gammaSum = 0;
         int limit = totalResiduals - lag;
         for(int t=0; t<limit; t++){
             gammaSum += (testSeries.getY(t+lag).doubleValue()-location)*(testSeries.getY(t).doubleValue() - location);
@@ -147,6 +158,7 @@ public class ResidualDifferences extends BinaryComparisonModel {
     public String getSH(){ return String.format("%.4f", shapiroWilkStatistic);}
     public String getDW(){ return String.format("%.4f", durbinWatsonStatistic);}
 
+    public double getLjungBoxStatistic(){ return ljungBoxStatistic;}
     public double getShapiroWilkStatistic(){ return shapiroWilkStatistic;}
     public double getDurbinWatsonStatistic(){ return durbinWatsonStatistic;}
 

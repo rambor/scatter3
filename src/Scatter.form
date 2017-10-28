@@ -1210,12 +1210,12 @@
                           </component>
                           <component id="aa832" class="javax.swing.JTextField" binding="qminSubtractionField">
                             <constraints>
-                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
-                                <preferred-size width="150" height="-1"/>
+                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                <preferred-size width="100" height="-1"/>
                               </grid>
                             </constraints>
                             <properties>
-                              <text value="0.03"/>
+                              <text value="0.01"/>
                             </properties>
                           </component>
                           <component id="79fec" class="javax.swing.JLabel">
@@ -1231,8 +1231,8 @@
                           </component>
                           <component id="a7419" class="javax.swing.JTextField" binding="qmaxSubtractionField">
                             <constraints>
-                              <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
-                                <preferred-size width="150" height="-1"/>
+                              <grid row="0" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="0" indent="0" use-parent-layout="false">
+                                <preferred-size width="100" height="-1"/>
                               </grid>
                             </constraints>
                             <properties>
@@ -1331,12 +1331,6 @@
                               <text value="Add Rg to Signal Plot"/>
                             </properties>
                           </component>
-                          <component id="c3ca1" class="javax.swing.JComboBox" binding="setReferenceBox">
-                            <constraints>
-                              <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                            </constraints>
-                            <properties/>
-                          </component>
                           <component id="8c7bf" class="javax.swing.JLabel">
                             <constraints>
                               <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
@@ -1372,14 +1366,6 @@
                               <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="2" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
                             </constraints>
                             <properties/>
-                          </component>
-                          <component id="9457c" class="javax.swing.JLabel">
-                            <constraints>
-                              <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="0" indent="0" use-parent-layout="false"/>
-                            </constraints>
-                            <properties>
-                              <text value="reference"/>
-                            </properties>
                           </component>
                           <component id="20b87" class="javax.swing.JTextField" binding="thresholdField">
                             <constraints>
@@ -1685,8 +1671,8 @@
                           <component id="bf4bf" class="javax.swing.JButton" binding="TRACEButton" default-binding="true">
                             <constraints>
                               <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="1" use-parent-layout="false">
-                                <minimum-size width="150" height="-1"/>
-                                <preferred-size width="150" height="-1"/>
+                                <minimum-size width="100" height="-1"/>
+                                <preferred-size width="100" height="-1"/>
                               </grid>
                             </constraints>
                             <properties>
@@ -1717,8 +1703,8 @@
                           <component id="641aa" class="javax.swing.JButton" binding="SETBUFFERButton" default-binding="true">
                             <constraints>
                               <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="1" use-parent-layout="false">
-                                <minimum-size width="150" height="-1"/>
-                                <preferred-size width="150" height="-1"/>
+                                <minimum-size width="100" height="-1"/>
+                                <preferred-size width="100" height="-1"/>
                               </grid>
                             </constraints>
                             <properties>

@@ -62,6 +62,7 @@ public class RatioSimilarityTest {
     private ChartPanel bottomChartPanel;
 
     public RatioSimilarityTest(Collection collectionInUse, double qmin, double qmax) throws Exception {
+        residualDifferencesModel = new ArrayList<>();
         inUse = collectionInUse;
         this.lowerQLimit = qmin;
         this.upperQLimit = qmax;
@@ -85,7 +86,6 @@ public class RatioSimilarityTest {
         progressBar1.setMaximum(totalToCalculate);
         progressBar1.setValue(0);
         progressBar1.setString("Calculating");
-
 
         startButton.addActionListener(new ActionListener() {
             @Override
@@ -206,8 +206,8 @@ public class RatioSimilarityTest {
 
     // perform ratio calculation
     private void calculateRatios(){
-this.startButton.setEnabled(false);
-        //ratioModels = new ArrayList<>();
+
+        this.startButton.setEnabled(false);
         residualDifferencesModel = new ArrayList<>();
         lowerQLimit = Double.parseDouble(qminField.getText());
         upperQLimit = Double.parseDouble(qmaxField2.getText());
@@ -352,7 +352,7 @@ this.startButton.setEnabled(false);
 //                });
 
                 makeCharts();
-                //makeBottomChart();
+                makeBottomChart();
                 return true;
             }
 
@@ -432,9 +432,8 @@ this.startButton.setEnabled(false);
             double[][] data = new double[3][N];
 
             for (int j = 0; j < N; j++) { // column
-                data[0][j] = i*10;
-                data[1][j] = j*10;
-               // data[2][j] = 1.5;
+                data[0][j] = frameIndices.get(i)*1;
+                data[1][j] = frameIndices.get(j)*1;
                 data[2][j] = 0;
             }
 
@@ -443,7 +442,10 @@ this.startButton.setEnabled(false);
 
                 ResidualDifferences temp = residualDifferencesModel.get(index);
                 //Ratio temp = ratioModels.get(index);
-                double tempStat = temp.getShapiroWilkStatistic();
+               //
+                //double tempStat = temp.getDurbinWatsonStatistic();
+                //double tempStat = temp.getShapiroWilkStatistic();
+                double tempStat = temp.getLjungBoxStatistic();
 
 //                if (tempStat >= 2.35 || tempStat < 1.65) {
 //                    tempStat = 1.5;
@@ -484,21 +486,13 @@ this.startButton.setEnabled(false);
 //                data[1][j] = j*1;
                 data[0][j] = frameIndices.get(i)*1;
                 data[1][j] = frameIndices.get(j)*1;
-
-                //data[2][j] = 1.5;
                 data[2][j] = 0;
-//                if (i==j){
-//                    data[2][j] = 2.0;
-//                }
             }
 
             int nonZeroCol = i + 1;
             for(int j=nonZeroCol; j<N; j++){
 
                 ResidualDifferences temp = residualDifferencesModel.get(index);
-//                data[0][j] = i*10;
-//                data[1][j] = j*10;
-
                 double tempStat = temp.getStatistic();
 
 //                if (tempStat >= 2.35 || tempStat < 1.65) {
@@ -517,14 +511,15 @@ this.startButton.setEnabled(false);
 
                 data[2][j] = tempStat;
                 residualsLabels.add(new XYTextAnnotation(String.format("%.2f", temp.getDurbinWatsonStatistic()), frameIndices.get(i), frameIndices.get(j)));
-                if (tempStat > 1.5){
-                    residualsLabels.get(index).setPaint(Color.white);
-                    residualsLabels.get(i).setFont(new Font("SansSerif", Font.BOLD, 9));
 
-                } else {
-                    residualsLabels.get(index).setPaint(Color.gray);
-                    residualsLabels.get(index).setFont(new Font("SansSerif", Font.PLAIN, 9));
-                }
+//                if (tempStat > 1.5){
+//                    residualsLabels.get(index).setPaint(Color.white);
+//                    residualsLabels.get(i).setFont(new Font("SansSerif", Font.BOLD, 9));
+//
+//                } else {
+//                    residualsLabels.get(index).setPaint(Color.gray);
+//                    residualsLabels.get(index).setFont(new Font("SansSerif", Font.PLAIN, 9));
+//                }
 
                 if (tempStat > maxResidualDataset){
                     maxResidualDataset = temp.getStatistic();
@@ -546,26 +541,30 @@ this.startButton.setEnabled(false);
 
         this.createBottomDataset();
 
-        NumberAxis xAxis = new NumberAxis("x Axis");
-        NumberAxis yAxis = new NumberAxis("y Axis");
+        NumberAxis xAxis = new NumberAxis("frame");
+        NumberAxis yAxis = new NumberAxis("frame");
         XYPlot plot = new XYPlot(ratioDataset, xAxis, yAxis, null);
         XYBlockRenderer r = new XYBlockRenderer();
+
 
         // max for DurbinWatson is 4
         SpectrumPaintScale ps = new SpectrumPaintScale(minBottomDataset, maxBottomDataset);
         r.setPaintScale(ps);
-        r.setBlockHeight(10.0f);
-        r.setBlockWidth(10.0f);
+        r.setBlockHeight(1.0f);
+        r.setBlockWidth(1.0f);
         plot.setRenderer(r);
+        plot.setOutlineVisible(false);
+        plot.setDomainGridlinesVisible(false);
+        plot.setRangeGridlinesVisible(false);
 
         JFreeChart chart = new JFreeChart(
-                "Title",
+                "",
                 JFreeChart.DEFAULT_TITLE_FONT,
                 plot,
                 false
         );
 
-        NumberAxis scaleAxis = new NumberAxis("Scale");
+        NumberAxis scaleAxis = new NumberAxis("Ljung-Box Scale");
         scaleAxis.setAxisLinePaint(Color.white);
         scaleAxis.setTickMarkPaint(Color.white);
 
@@ -587,9 +586,10 @@ this.startButton.setEnabled(false);
         bottomPlotPanel.removeAll();
         bottomPlotPanel.add(bottomChartPanel);
 
-        bottomPlotPanel.revalidate();
+//        bottomPlotPanel.revalidate();
         panel1.revalidate();
-        mainFrame.revalidate();
+//        mainFrame.revalidate();
+
     }
 
     /**
@@ -606,16 +606,16 @@ this.startButton.setEnabled(false);
         XYBlockRenderer r = new XYBlockRenderer();
 
 
-        for(int i=0; i<residualsLabels.size(); i++){
-            //residualsLabels.get(i).setPaint(Color.gray);
-            //residualsLabels.get(i).setFont(new Font("SansSerif", Font.PLAIN, 9));
-            plot.addAnnotation(residualsLabels.get(i));
-        }
+//        for(int i=0; i<residualsLabels.size(); i++){
+//            //residualsLabels.get(i).setPaint(Color.gray);
+//            //residualsLabels.get(i).setFont(new Font("SansSerif", Font.PLAIN, 9));
+//            plot.addAnnotation(residualsLabels.get(i));
+//        }
 
         // max for DurbinWatson is 4
         //SpectrumPaintScale ps = new SpectrumPaintScale(1.5, 2.3);
-        //SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), maxResidualDataset+0.03*maxResidualDataset);
-        SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), 4);
+        SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), maxResidualDataset+0.03*maxResidualDataset);
+        //SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), 4);
 
         r.setPaintScale(ps);
         r.setBlockHeight(1.0f);
@@ -661,18 +661,24 @@ this.startButton.setEnabled(false);
         topPlotPanel.removeAll();
         topPlotPanel.add(topChartPanel);
 
-        topPlotPanel.revalidate();
+//        topPlotPanel.revalidate();
         panel1.revalidate();
-        mainFrame.revalidate();
+//        mainFrame.revalidate();
+
+
     }
 
-    public void makePlot(){
 
+    public void makePlot(){
+        residualDifferencesModel.clear();
+
+        mainFrame.revalidate();
         mainFrame.setContentPane(this.panel1);
         mainFrame.setPreferredSize(new Dimension(800,600));
         mainFrame.pack();
         mainFrame.setVisible(true);
         mainFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
     }
 
 

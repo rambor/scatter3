@@ -1214,7 +1214,6 @@ public class Report {
         }
 
         //String vc = (dataset.getVC() > 0) ? String.format("%1.4E", dataset.getVC()) : " nd ";
-
         //String qmax = (dataset.getRealIzero() > 0) ? String.format("%.6f", dataset.getRealSpaceModel().getQmax()) : "  nd  ";
         String dmax = (dataset.getRealIzero() > 0) ? String.format("%6.1f", dataset.getRealSpaceModel().getDmax()) : "  nd  ";
 
@@ -1263,6 +1262,8 @@ public class Report {
     private String getDataSummaryTopHeader(){
         return String.format("%s %s %s %s", rightJustifyText(" ",16,' '), centerText("Reciprocal",20, ' '), centerText("Real Space",20, ' '), centerText("units",10, ' ') );
     }
+
+
     /**
      * Create Arraylist of elements to add to table
      * each element of list is a row

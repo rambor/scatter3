@@ -13,16 +13,13 @@ import org.jfree.data.xy.XYSeriesCollection;
 import javax.swing.*;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 /**
  * Created by robertrambo on 18/01/2016.
  */
-public class Subtraction extends SwingWorker<String, Object> {
+public class Subtraction extends SwingWorker<String, Integer> {
 
     private final XYSeries medianBuffer;
     private final XYSeries medianBufferError;
@@ -110,9 +107,12 @@ private int refId;//, scaleToID;
         bar.setStringPainted(true);
         bar.setIndeterminate(true);
         bar.setValue(0);
+
         // create subtracted set of files from average buffer
         subtractedCollection = new Collection();
         int total = samples.getDatasetCount();
+        bar.setMaximum(total);
+
         status.setText("Subtracting " + total + " files");
 
         for (int i = 0; i < total; i++) { // make the subtracted datasets using a fixed, averaged buffer
@@ -120,27 +120,27 @@ private int refId;//, scaleToID;
             if (samples.getDataset(i).getInUse()) {
 
                 ArrayList<XYSeries> subtraction = subtract(samples.getDataset(i).getAllData(), samples.getDataset(i).getAllDataError(), averageBuffer, averageBufferError);
-
                 //int newIndex = subtractedCollection.getDatasetCount();
                 subtractedCollection.addDataset( new Dataset(
                         subtraction.get(0),  //data
                         subtraction.get(1),  //error
                         samples.getDataset(i).getFileName()+"_sub",
-                        subtractedCollection.getDatasetCount(), false ));
+                        subtractedCollection.getDatasetCount(),
+                        false ));
 
                 subtractedCollection.getLast().setMinq(subtraction.get(0).getMinX());
                 subtractedCollection.getLast().setMaxq(subtraction.get(0).getMaxX());
-
                 subtractedCollection.getLast().setId(samples.getDataset(i).getId());
-
 //                if (i == refId){
 //                    scaleToID = subtractedCollection.getDatasetCount() - 1; //sets refID relative to the new subtracted collection dataset that will get scaled
 //                }
             }
-            bar.setValue((int) (i / (double) total * 100));
+            publish(i);
+            //bar.setValue((int) (i / (double) total * 100));
         }
 
-        bar.setIndeterminate(true);
+        publish(0);
+        //bar.setIndeterminate(true);
 
         if (mergebyMedian){
             status.setText("MERGING BY MEDIAN");
@@ -153,8 +153,8 @@ private int refId;//, scaleToID;
             if (buffers.getDatasetCount() > 2){ // do subtraction against median buffer
 
                 status.setText("Creating median buffer set");
-                bar.setIndeterminate(false);
-                bar.setValue(0);
+//                bar.setIndeterminate(false);
+//                bar.setValue(0);
 
                 subtractedCollection.removeAllDatasets();
 
@@ -180,7 +180,8 @@ private int refId;//, scaleToID;
 //                            scaleToID = subtractedCollection.getDatasetCount()-1; //sets refID relative to the new subtracted collection dataset that will get scaled
 //                        }
                     }
-                    bar.setValue((int) (i / (double) total * 100));
+                    publish(i);
+                    //bar.setValue((int) (i / (double) total * 100));
                 }
 
                 // create median subtracted median
@@ -200,15 +201,13 @@ private int refId;//, scaleToID;
             returnSubtractedMergedCollection.addDataset(averagedSetFromAveragedbuffer);
             // subtract from average and (median buffer if count > 2)
             if (buffers.getDatasetCount() > 2){ // do median buffer
-
-                bar.setIndeterminate(false);
-                bar.setValue(0);
+//                bar.setIndeterminate(false);
+//                bar.setValue(0);
                 subtractedCollection.removeAllDatasets();
 
                 for (int i = 0; i < total; i++) {
 
                     if (samples.getDataset(i).getInUse()) {
-
                         ArrayList<XYSeries> subtraction = subtract(samples.getDataset(i).getAllData(), samples.getDataset(i).getAllDataError(), medianBuffer, medianBufferError);
                         int newIndex = subtractedCollection.getDatasetCount();
 
@@ -220,16 +219,21 @@ private int refId;//, scaleToID;
 
                         subtractedCollection.getLast().setMinq(subtraction.get(0).getMinX());
                         subtractedCollection.getLast().setMaxq(subtraction.get(0).getMaxX());
-
                         subtractedCollection.getLast().setId(samples.getDataset(i).getId());
 //                        if (i == refId){
 //                            scaleToID = subtractedCollection.getDatasetCount()-1; //sets refID relative to the new subtracted collection dataset that will get scaled
 //                        }
                     }
-                    bar.setValue((int) (i / (double) total * 100));
+                    publish(i);
+                    //bar.setValue((int) (i / (double) total * 100));
                 }
                 // do average - mean set
                 Dataset averagedSetFromMedianbuffer = averagedSubtractedSets(subtractedCollection, "average_median");
+
+                // calculate the merge parameters
+                // min and max and average
+
+
                 averagedSetFromMedianbuffer.setExperimentalNotes("Subtracted : ave(Sample) - med(buffer)");
                 averagedSetFromMedianbuffer.setId(returnCollection.getDatasetCount());
                 returnCollection.addDataset(averagedSetFromMedianbuffer);
@@ -243,8 +247,6 @@ private int refId;//, scaleToID;
 
             int totalSubtracted = subtractedCollection.getDatasetCount();
 
-            System.out.println("No Merging " + totalSubtracted);
-
             for (int i=0; i<totalSubtracted; i++){
                 subtractedCollection.getDataset(i).setExperimentalNotes("");
             }
@@ -254,11 +256,6 @@ private int refId;//, scaleToID;
         }
 
         this.updateCollection();
-
-        status.setText("Finished");
-        bar.setValue(0);
-        bar.setStringPainted(false);
-        bar.setIndeterminate(false);
         return null;
     }
 
@@ -879,12 +876,21 @@ private int refId;//, scaleToID;
     protected void done() {
         try {
             super.get();
-
-            System.out.println("done");
+            bar.setValue(0);
+            bar.setStringPainted(false);
+            bar.setIndeterminate(false);
+            status.setText("FINISHED SUBTRACTION");
             //can call other gui update code here
         } catch (Throwable t) {
             //do something with the exception
         }
     }
 
+
+    @Override
+    protected void process(List<Integer> chunks) {
+        int i = chunks.get(chunks.size()-1);
+        bar.setValue(i);
+        super.process(chunks);
+    }
 }

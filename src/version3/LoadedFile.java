@@ -199,7 +199,9 @@ public class LoadedFile {
                 throw new IllegalArgumentException(message);
             }
             // might have a cansas format, open file and read contents
-
+            br.close();
+            in.close();
+            fstream.close();
         } catch (FileNotFoundException ex) {
             jLabel.setText("File is empty");
             System.err.println("Error: " + ex.getMessage());

@@ -21,7 +21,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -93,7 +93,6 @@ public class Scatter {
     private JCheckBox subtractFromMedianCheckBox;
     private JCheckBox scaleThenMergeCheckBox;
     private JCheckBox addRgToSignalCheckBox;
-    private JComboBox setReferenceBox;
     private JPanel rightSubtractionPanel;
     private JPanel centerPanel;
     private JComboBox subtractionCutOff;
@@ -328,7 +327,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.1s";
+    private String version = "3.1q";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -402,6 +401,7 @@ public class Scatter {
 
     private static int cpuCores;
     private SignalPlot signalPlotThread;
+    private SimilarityPlot similarityPlotObject;
 
     public Scatter() { // constructor
 
@@ -452,7 +452,9 @@ public class Scatter {
         buffersList = new JList();
         samplesList = new JList();
         similarityList = new JList();
+
         MouseAdaptorForDragging mouseAdaptorForDragging = new MouseAdaptorForDragging();
+
         similarityList.addMouseListener(mouseAdaptorForDragging);
         similarityList.addMouseMotionListener(mouseAdaptorForDragging);
 
@@ -529,7 +531,7 @@ public class Scatter {
         // Mini Collections for Drag-N-Drop on Files Tab
         for (int i = 0; i < totalPanels; i++){
             minis.get(i).setBorder(BorderFactory.createEmptyBorder(1, 1, 1, 1));
-            minis.get(i).add(miniPlots.get(i).frame.getChartPanel());
+            minis.get(i).add(miniPlots.get(i).getPanel());
         }
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -655,64 +657,67 @@ public class Scatter {
             public void mouseClicked(MouseEvent mouseEvent){
                 int index = analysisTable.columnAtPoint(mouseEvent.getPoint());
                 if (index == 2 ){ // invert selection
+
                     int total = collectionSelected.getDatasets().size();
                     for(int i=0; i<total; i++){
                         collectionSelected.getDataset(i).setInUse(!collectionSelected.getDataset(i).getInUse());
                     }
                     analysisModel.fireTableDataChanged();
+
                 } else if (index == 4) {
                     // add function to replot data given qmin or qmax when user selects columns 4 or 5
                     final String inputValue = JOptionPane.showInputDialog("Please input a minimum q value");
 
                     if (inputValue != null && isQValue(inputValue)){
 
-//                        TableColumnModel tcm = analysisTable.getColumnModel();
-//                        TableColumn tc = tcm.getColumn(4);
-//                        tc.setCellEditor(new SpinnerEditor());
-                                    if (log10IntensityPlot.isVisible()){
-                                        log10IntensityPlot.setNotify(false);
-                                    }
+                        if (log10IntensityPlot.isVisible()){
+                            log10IntensityPlot.setNotify(false);
+                        }
 
-                                    final LowerUpperBoundManager boundLower = new LowerUpperBoundManager(
-                                            cpuCores,
-                                            collectionSelected,
-                                            mainProgressBar,
-                                            status);
+                        final LowerUpperBoundManager boundLower = new LowerUpperBoundManager(
+                                cpuCores,
+                                collectionSelected,
+                                mainProgressBar,
+                                status, 4, Double.parseDouble(inputValue));
 
-                                    boundLower.boundNow(analysisModel, 4, Double.parseDouble(inputValue));
+                        boundLower.setJList(analysisTable);
+                        // boundLower.boundNow(4, Double.parseDouble(inputValue));
+                        Thread tempT = new Thread(boundLower);
+                        tempT.start();
 
-
-                                    if (log10IntensityPlot.isVisible()){
-                                        //update plot
-                                        //log10IntensityPlot.updatePlot();
-                                        log10IntensityPlot.setNotify(true);
-                                    }
-                                    //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
-                                   // analysisModel.fireTableDataChanged();
+                        if (log10IntensityPlot.isVisible()){
+                            //update plot
+                            //log10IntensityPlot.updatePlot();
+                            log10IntensityPlot.setNotify(true);
+                        }
                     }
 
                 } else if (index == 5) {
+
                     final String inputValue = JOptionPane.showInputDialog("Please input a maximum q value");
 
                     if (inputValue != null && isQValue(inputValue)){
 
-                                if (log10IntensityPlot.isVisible()){
-                                    log10IntensityPlot.setNotify(false);
-                                }
-                                final LowerUpperBoundManager boundLower = new LowerUpperBoundManager(
-                                        cpuCores,
-                                        collectionSelected,
-                                        mainProgressBar,
-                                        status);
+                        if (log10IntensityPlot.isVisible()){
+                            log10IntensityPlot.setNotify(false);
+                        }
 
-                                boundLower.boundNow(analysisModel, 5, Double.parseDouble(inputValue));
-                                if (log10IntensityPlot.isVisible()){
-                                    log10IntensityPlot.setNotify(true);
-                                }
-                                //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
-                               // analysisModel.fireTableDataChanged();
+                        final LowerUpperBoundManager boundLower = new LowerUpperBoundManager(
+                                cpuCores,
+                                collectionSelected,
+                                mainProgressBar,
+                                status, 5, Double.parseDouble(inputValue));
+
+                        // boundLower.boundNow(5, Double.parseDouble(inputValue));
+                        Thread tempT = new Thread(boundLower);
+                        tempT.start();
+
+                        if (log10IntensityPlot.isVisible()){
+                            log10IntensityPlot.setNotify(true);
+                        }
+                        //log10IntensityPlot.plot(collectionSelected, WORKING_DIRECTORY_NAME);
+                        // analysisModel.fireTableDataChanged();
                     }
-
                 }
                  analysisModel.fireTableDataChanged();
                 // check if key is depresed
@@ -783,7 +788,6 @@ public class Scatter {
                 for(int i=0; i<total; i++){
                     collectionSelected.getDataset(rowIndex[i]).setInUse(true);
                 }
-
                 analysisModel.fireTableDataChanged();
             }
         }));
@@ -885,9 +889,6 @@ public class Scatter {
                     } catch (Exception e1) {
                         e1.printStackTrace();
                     }
-//                    StructureFactorTest temp = new StructureFactorTest(collectionSelected, collectionSelected.getDataset(index), WORKING_DIRECTORY);
-//                    temp.pack();
-//                    temp.setVisible(true);
                 }
 
             }
@@ -979,7 +980,6 @@ public class Scatter {
 
                 if (index > -1){
                     //To change body of implemented methods use File | Settings | File Templates.
-                    System.out.println("DeSelecting All");
                     int total = collectionSelected.getDatasets().size();
                     for(int i=0; i<total; i++){
                         collectionSelected.getDataset(i).setInUse(false);
@@ -1035,6 +1035,7 @@ public class Scatter {
 
         JScrollPane analysisList = new JScrollPane(analysisTable);
         analysisPane.add(analysisList);
+
         analysisTable.setFillsViewportHeight(false);
         analysisList.setOpaque(true);
         analysisPane.setOpaque(true);
@@ -1157,13 +1158,15 @@ public class Scatter {
         errorPlot = ErrorPlot.getInstance();
         powerLawPlot = PowerLawPlot.getInstance();
 
+
         mergeReport.setWorkingDirectory(WORKING_DIRECTORY.getWorkingDirectory());
         similarityObject = new Similarity(status, mainProgressBar);
 
         //normalKratkyRg = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (GUINIER)");
         //normalKratkyRgReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Rg-based (Real space)");
-        normalKratkyVc = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Guinier)");
-        normalKratkyVcReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Real space)");
+
+//        normalKratkyVc = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Guinier)");
+//        normalKratkyVcReal = new NormalizedKratkyPlot("DIMENSIONLESS KRATKY PLOT Vc-based (Real space)");
 
         // create plot, set attribute to true
         // on close plot, set attribute to false
@@ -1225,6 +1228,7 @@ public class Scatter {
                 }
             }
         });
+
 
 
         // popup mouse item for samples list
@@ -1329,7 +1333,9 @@ public class Scatter {
         kratkyPlotButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                kratky.clearAll();
+                if (kratky.isVisible()){
+                    kratky.closeWindow();
+                }
                 createKratkyPlot();
             }
         });
@@ -1338,7 +1344,9 @@ public class Scatter {
         qIqPlotButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                qIqPlot.clearAll();
+                if (qIqPlot.isVisible()){
+                    qIqPlot.closeWindow();
+                }
                 createQIQPlot();
             }
         });
@@ -1541,7 +1549,7 @@ public class Scatter {
                         File theFileToSave = fc.getSelectedFile();
 
                         String cleaned = cleanUpFileName(fc.getSelectedFile().getName());
-                        System.out.println("CLEANED FILE NAME " + cleaned);
+
                         if(fc.getSelectedFile()!=null){
 
                             WORKING_DIRECTORY.setWorkingDirectory(fc.getCurrentDirectory().toString());
@@ -1549,7 +1557,6 @@ public class Scatter {
                             FileObject dataToWrite = new FileObject(fc.getCurrentDirectory(), version);
                             dataToWrite.setSource(comboBoxSource, BEAMLINEMANUFACTURER);
                             dataToWrite.writeSAXSFile(cleaned, tempDataset);
-
 
                             //close the output stream
                             status.setText(cleaned + ".dat written to "+fc.getCurrentDirectory());
@@ -1566,16 +1573,16 @@ public class Scatter {
                             dataFilesModel.addElement(new DataFileElement(collectionSelected.getLast().getFileName(), location));
                             analysisModel.fireTableDataChanged();
                             resultsModel.fireTableDataChanged();
-
                             //Logger.getLogger(Scatter.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
 
                     averageButton.setEnabled(true);
                 }
-
             }
         });
+
+
 
         medianButton.addActionListener(new ActionListener() {
             @Override
@@ -1642,6 +1649,7 @@ public class Scatter {
                 }
             }
         });
+
 
         singleButton.addActionListener(new ActionListener() {
             @Override
@@ -1724,6 +1732,293 @@ public class Scatter {
                 scaleToIZeroButton.setEnabled(true);
             }
         });
+
+
+        new FileDrop( mini1, new FileDrop.Listener() {
+
+            @Override
+            public void filesDropped(final File[] files) {
+                final int panel = 0;
+                collectionSelected = (Collection)collections.get(0);
+                collectionSelected.setPanelID(0);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+
+                collectionButtons.get(0).setSelected(true);
+
+                new Thread() {
+                    public void run() {
+                        miniPlots.get(panel).setNotify(false);
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(0), status, 0, convertNmToAngstromCheckBox.isSelected(), autoRgCheckBox.isSelected(), false, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, dataFilesList);
+                        rec1.setPDBParams(excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(qmaxForPDBText.getText()));
+                        rec1.run();
+
+                        try {
+                            rec1.get();
+                            dataFilesList.validate();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+
+                        miniPlots.get(panel).clearAll();
+                        miniPlots.get(panel).plot(collectionSelected);
+                        minis.get(panel).removeAll();
+                        //minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
+                        minis.get(panel).add(miniPlots.get(panel).getPanel());
+                        miniPlots.get(panel).setNotify(true);
+                        minis.get(panel).revalidate();
+                    }
+                }.start();
+            }
+        });
+
+
+
+        new FileDrop( mini2, new FileDrop.Listener() {
+
+            @Override
+            public void filesDropped(final File[] files) {
+                final int panel = 1;
+                collectionSelected = (Collection)collections.get(panel);
+                collectionSelected.setPanelID(panel);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+
+                collectionButtons.get(panel).setSelected(true);
+                new Thread() {
+                    public void run() {
+                        miniPlots.get(panel).setNotify(false);
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), status, panel, convertNmToAngstromCheckBox.isSelected(), autoRgCheckBox.isSelected(), false, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, dataFilesList);
+                        rec1.setPDBParams(excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(qmaxForPDBText.getText()));
+                        rec1.run();
+
+                        try {
+                            rec1.get();
+                            dataFilesList.validate();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+
+                        miniPlots.get(panel).clearAll();
+                        miniPlots.get(panel).plot(collectionSelected);
+                        minis.get(panel).removeAll();
+                        //minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
+                        minis.get(panel).add(miniPlots.get(panel).getPanel());
+                        miniPlots.get(panel).setNotify(true);
+                        minis.get(panel).revalidate();
+                    }
+                }.start();
+
+            }
+        });
+
+
+
+        new FileDrop( mini3, new FileDrop.Listener() {
+
+            @Override
+            public void filesDropped(final File[] files) {
+                final int panel = 2;
+                collectionSelected = (Collection)collections.get(panel);
+                collectionSelected.setPanelID(panel);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+
+                collectionButtons.get(panel).setSelected(true);
+
+                new Thread() {
+                    public void run() {
+                        miniPlots.get(panel).setNotify(false);
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), status, panel, convertNmToAngstromCheckBox.isSelected(), autoRgCheckBox.isSelected(), false, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, dataFilesList);
+                        rec1.setPDBParams(excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(qmaxForPDBText.getText()));
+                        rec1.run();
+
+                        try {
+                            rec1.get();
+                            dataFilesList.validate();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+
+                        miniPlots.get(panel).clearAll();
+                        miniPlots.get(panel).plot(collectionSelected);
+                        minis.get(panel).removeAll();
+                        //minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
+                        minis.get(panel).add(miniPlots.get(panel).getPanel());
+                        miniPlots.get(panel).setNotify(true);
+                        minis.get(panel).revalidate();
+                    }
+                }.start();
+
+            }
+        });
+
+
+
+        new FileDrop( mini4, new FileDrop.Listener() {
+            @Override
+            public void filesDropped(final File[] files) {
+                final int panel = 3;
+                collectionSelected = (Collection)collections.get(panel);
+                collectionSelected.setPanelID(panel);
+                for(int i=0; i < totalPanels; i++){
+                    collectionButtons.get(i).setSelected(false);
+                }
+                collectionButtons.get(panel).setSelected(true);
+
+                new Thread() {
+                    public void run() {
+
+                        miniPlots.get(panel).setNotify(false);
+                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), getStatus(), panel, convertNmToAngstromCheckBox.isSelected(), autoRgCheckBox.isSelected(), false, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                        // add other attributes and then run
+                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, dataFilesList);
+                        rec1.setPDBParams(excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(qmaxForPDBText.getText()));
+                        rec1.run();
+                        try {
+                            rec1.get();
+                            dataFilesList.validate();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+
+                        miniPlots.get(panel).clearAll();
+                        miniPlots.get(panel).plot(collectionSelected);
+                        minis.get(panel).removeAll();
+                        //minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
+                        minis.get(panel).add(miniPlots.get(panel).getPanel());
+                        miniPlots.get(panel).setNotify(true);
+                        minis.get(panel).revalidate();
+                    }
+                }.start();
+            }
+        });
+
+
+
+        //samples Panel
+        new FileDrop(samples, new FileDrop.Listener() {
+            @Override
+            public void filesDropped(final File[] files) {
+
+                final int panel = 96;
+                ReceivedDroppedFiles rec1 = null;
+
+                if (buildListFromFileCheckBox.isSelected()){
+
+                    if (files.length == 1){
+                        try{
+                            FileListBuilder builder = new FileListBuilder(files[0], WORKING_DIRECTORY.getWorkingDirectory());
+                            rec1 = new ReceivedDroppedFiles(builder.getFoundFiles(), (Collection)collections.get(panel), getStatus(), panel, onDropConvertNmCheckBox.isSelected(), false, true, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                            status.setText("Loading files, please wait");
+                        } catch (Exception e){
+                            //programInstance.status.setText(" DROP only one file please");
+                        }
+                    } else {
+                        status.setText(" DROP only one file please");
+                    }
+
+                    buildListFromFileCheckBox.setSelected(false);
+                } else {
+
+                    rec1 = new ReceivedDroppedFiles(
+                            files,
+                            (Collection)collections.get(panel),
+                            getStatus(),
+                            panel,
+                            onDropConvertNmCheckBox.isSelected(),
+                            false,
+                            true,
+                            mainProgressBar,
+                            WORKING_DIRECTORY.getWorkingDirectory());
+                }
+
+                samplesList.removeAll(); // still in samples JScrollPane
+                // rec1.setJList(samplesList);
+                rec1.setSampleBufferModels(sampleFilesModel);
+                //samplesList.setModel(sampleFilesModel);
+                rec1.useShortenedConstructor();
+
+                //new Thread(rec1).start();
+
+                ReceivedDroppedFiles finalRec = rec1;
+                new Thread(){
+                    public void run(){
+                        finalRec.run();
+                        updateList(samplesList);
+                    }
+                }.start();
+            }
+        });
+
+
+        new FileDrop(buffers, new FileDrop.Listener() {
+            @Override
+            public void filesDropped(final File[] files) {
+                final int panel = 69;
+                new Thread() {
+                    public void run() {
+
+                        ReceivedDroppedFiles rec1 = null;
+
+                        if (buildListFromFileCheckBox.isSelected()){
+
+                            if (files.length == 1){
+                                try{
+                                    FileListBuilder builder = new FileListBuilder(files[0], WORKING_DIRECTORY.getWorkingDirectory());
+                                    rec1 = new ReceivedDroppedFiles(builder.getFoundFiles(), (Collection)collections.get(panel), getStatus(), panel, onDropConvertNmCheckBox.isSelected(), false, true, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                                    status.setText("Loading files, please wait");
+                                } catch (Exception e){
+
+                                }
+                            } else {
+                                status.setText(" DROP only one file please");
+                            }
+
+                            buildListFromFileCheckBox.setSelected(false);
+                        } else {
+                            rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), getStatus(), panel, onDropConvertNmCheckBox.isSelected(), false, true, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                        }
+
+                        // add other attributes and then run
+                        rec1.setSampleBufferModels(bufferFilesModel);
+                        rec1.useShortenedConstructor();
+                        rec1.run();
+                        try {
+                            rec1.get();
+                            mainProgressBar.setValue(0);
+                            mainProgressBar.setStringPainted(false);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                        }
+
+                        status.setText("Total Loaded: " + bufferFilesModel.getSize());
+                        buffersList.removeAll();
+                        buffersList.setModel(bufferFilesModel);
+                    }
+                }.start();
+            }
+        });
+
 
         scaleMergeButton.addActionListener(new ActionListener() {
             @Override
@@ -1949,12 +2244,8 @@ public class Scatter {
                     }
                 }
 
-//                System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
-//                System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
 
                 if (lastIndexInSignalPlot <= 0){
-//                    System.out.println("FIRST INDEX " + firstIndexInSignalPlot);
-//                    System.out.println(" LAST INDEX " + lastIndexInSignalPlot);
                     lastIndexInSignalPlot = total;
                 } else {
                     if (firstIndexInSignalPlot < lastIndexInSignalPlot && lastIndexInSignalPlot < total){
@@ -1997,19 +2288,35 @@ public class Scatter {
                 signalPlotThread.setSampleJList(samplesList);
                 signalPlotThread.setPointsToExclude(Integer.valueOf((String)excludeComboBox.getSelectedItem()));
 
-//                double tempqmax = Double.parseDouble(subtractQmaxField.getText());
-//                double tempqmin = Double.parseDouble(subtractQminField.getText());
+                signalPlotButton.setEnabled(false);
+                new Thread() {
+                    public void run() {
+//                        TRACEButton.setEnabled(false);
+//                        signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
+//                        signalPlotThread.setSampleJList(samplesList);
+                        signalPlotThread.execute();
 
-//                if (tempqmax > 0.1 && ((tempqmax > tempqmin) || (tempqmin==0))){
-//                    tempSignalPlot.setMaxQvalueInCommon(tempqmax);
-//                }
-//
-//                if (tempqmin < 0.2 && ((tempqmax > tempqmin) || (tempqmax==0))){
-//                    tempSignalPlot.setMinQvalueInCommon(tempqmin);
-//                }
-                signalPlotThread.execute();
+                        try {
+
+                            if (similarityPlotObject != null && similarityPlotObject.isVisible()){
+                                similarityPlotObject.setPlot(signalPlotThread);
+                            }
+
+                            signalPlotButton.setEnabled(true);
+                            signalPlotThread.get();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                            signalPlotButton.setEnabled(true);
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
+                            signalPlotButton.setEnabled(true);
+                        }
+
+                    }
+                }.start();
+
+                //signalPlotThread.execute();
                 //signalPlotThread.getPlotMe();
-
                 //Thread temp1 = new Thread(tempSignalPlot);
                 //temp1.start();
             }
@@ -2025,7 +2332,6 @@ public class Scatter {
                 status.setText("Cleared");
                 sampleFilesModel.clear();
                 mergeReport.clear();
-                //samplesList.removeAll();
 
                 if (clearALL){
                     ((Collection)collections.get(69)).removeAllDatasets();
@@ -2202,6 +2508,7 @@ public class Scatter {
                 }
 
                 boolean finalSingles1 = singles;
+
                 new Thread() {
                     public void run() {
 
@@ -2210,13 +2517,23 @@ public class Scatter {
                         subTemp.setNameAndDirectory(subtractionFileNameField.getText(), OUTPUT_DIR_SUBTRACTION_NAME);
                         subTemp.setCollectionToUpdate(collectionSelected);
 
-                        Thread temp1 = new Thread(subTemp);
-                        temp1.start();
+                        subTemp.run();
                         try {
-                            temp1.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            subTemp.get();
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        } catch (ExecutionException e1) {
+                            e1.printStackTrace();
                         }
+
+//                        Thread temp1 = new Thread(subTemp);
+//                        temp1.start();
+//                        try {
+//                            temp1.join();
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+
                         // add dataset to collectionSelected
                         mergeReport.setWorkingDirectory(OUTPUT_DIR_SUBTRACTION_NAME);
                         mergeReport.setSubtractedPlot(subTemp.getReturnCollection());
@@ -2235,18 +2552,21 @@ public class Scatter {
                         status.setText("File Written to : " + OUTPUT_DIR_SUBTRACTION_NAME);
                         updateActiveModels();
                         int id = collectionSelected.getPanelID();
-                        miniPlots.get(id).chart.setNotify(false);
-                        miniPlots.get(id).frame.removeAll();
-                        miniPlots.get(id).chart.setNotify(false);
+
+                        miniPlots.get(id).setNotify(false);
+//                        miniPlots.get(id).frame.removeAll();
+//                        miniPlots.get(id).chart.setNotify(false);
                         miniPlots.get(id).plot(collectionSelected);
-                        minis.get(id).add(miniPlots.get(id).frame.getChartPanel());
-                        miniPlots.get(id).chart.setNotify(true);
+                        minis.get(id).removeAll();
+                        minis.get(id).add(miniPlots.get(id).getPanel());
+                        miniPlots.get(id).setNotify(true);
                     }
                 }.start();
 
                 //mergeReport.set
             }
         });
+
         radioButtonLoad1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -3019,32 +3339,27 @@ public class Scatter {
                     return;
                 }
 
-//                signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
-//                signalPlotThread.setSampleJList(samplesList);
-//                signalPlotThread.execute();
-
                 new Thread() {
                     public void run() {
+                        TRACEButton.setEnabled(false);
                         signalPlotThread = new SignalPlot(sampleCollection, bufferCollection, status, addRgToSignalCheckBox.isSelected(), mainProgressBar, Double.parseDouble(thresholdField.getText()));
                         signalPlotThread.setSampleJList(samplesList);
                         signalPlotThread.execute();
-
                         try {
                             signalPlotThread.get();
                             mergeReport.setSignalPlot(signalPlotThread.getChart("A"));
-                            RESETRANGEButton.doClick();
+                            TRACEButton.setEnabled(true);
                         } catch (InterruptedException e1) {
                             e1.printStackTrace();
+                            TRACEButton.setEnabled(true);
                         } catch (ExecutionException e1) {
                             e1.printStackTrace();
+                            TRACEButton.setEnabled(true);
                         }
-
+                        RESETRANGEButton.doClick();
                     }
                 }.start();
 
-//                Thread temp1 = new Thread(tempSignalPlot);
-//                temp1.start();
-//                temp1.interrupt();
             }
         });
 
@@ -3830,6 +4145,19 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
 
+//                if (similarityPlotForSubtraction.isVisible()){
+//                    System.out.println("VISILE WINDOW");
+//                    similarityPlotForSubtraction.closeWindow();
+//                }
+
+                Frame[] temp = Frame.getFrames();
+                for (int i=0; i<temp.length; i++){
+                    if (temp[i].getTitle().matches("(.*)SIMILARITY PLOT(.*)")){
+                        similarityPlotObject.terminateFrame();
+                        similarityPlotObject.cancel(true);
+                    }
+                }
+
                 Collection sampleCollection = (Collection) collections.get(96);
                 Collection bufferCollection = (Collection) collections.get(69);
                 sampleCollection.setWORKING_DIRECTORY_NAME(OUTPUT_DIR_SUBTRACTION_NAME);
@@ -3876,16 +4204,24 @@ public class Scatter {
                     return;
                 }
 
+                double qmin = Double.parseDouble(qminSubtractionField.getText());
+                double qmax = Double.parseDouble(qmaxSubtractionField.getText());
+
 
                 new Thread() {
                     public void run() {
-                        SimilarityPlot simPlotThread = new SimilarityPlot(sampleCollection, bufferCollection, status, mainProgressBar);
-                        simPlotThread.execute();
+                        similarityButton.setEnabled(false);
+                        //similarityPlotForSubtraction.setSimilarityPlot(sampleCollection, bufferCollection, status, mainProgressBar, qmin, qmax);
+                        similarityPlotObject = new SimilarityPlot(sampleCollection, bufferCollection, status, mainProgressBar, qmin, qmax);
+                        similarityPlotObject.setSampleJList(samplesList);
+
+                        similarityPlotObject.setPlot(signalPlotThread);
+                        similarityPlotObject.execute();
 
                         try {
-                            simPlotThread.get();
-                            simPlotThread.createFrame();
-                            System.out.println("FINISHED simPlotThread");
+                            similarityPlotObject.get();
+                            similarityPlotObject.createFrame();
+                            similarityButton.setEnabled(true);
                         } catch (InterruptedException e1) {
                             e1.printStackTrace();
                         } catch (ExecutionException e1) {
@@ -3960,6 +4296,8 @@ public class Scatter {
         }
     }
 
+
+
     private void clearCollection(int panel){
 
         ((Collection)collections.get(panel)).removeAllDatasets();
@@ -3972,15 +4310,25 @@ public class Scatter {
         IofQPofRPlot iofQPofRPlot = IofQPofRPlot.getInstance();
         iofQPofRPlot.clear();
 
+        dataFilesModel.removeAllElements();
         dataFilesModel.clear();
         dataFilesList.removeAll();
 
+        int totalRows = analysisTable.getRowCount()-1;
+        analysisTable.removeAll();
+
         analysisModel.clear();
         resultsModel.clear();
+
         analysisMiniPlots.clearMiniPlots();
 
         prStatusLabel.setText("");
         status.setText("Cleared");
+
+        // singleTon Plots
+        log10IntensityPlot.clearPlot();
+        kratky.clearAll();
+        qIqPlot.clearAll();
 
         closeWindows();
     }
@@ -4041,6 +4389,9 @@ public class Scatter {
     }
 
     public static void main(String[] args) {
+
+
+
         //check from property file
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
@@ -4103,14 +4454,11 @@ public class Scatter {
         }
 
         //
-        File theDir = new File(WORKING_DIRECTORY.getWorkingDirectory());
-        if (!theDir.exists()) {
-            WORKING_DIRECTORY = new WorkingDirectory(System.getProperty("user.dir"));
-        }
 
-        JFrame frame = new JFrame("ScÅtter: Software for SAXS Analysis");
-        final Scatter programInstance = new Scatter();
-        frame.setContentPane(programInstance.panel1);
+
+//        JFrame frame = new JFrame("ScÅtter: Software for SAXS Analysis");
+//        final Scatter programInstance = new Scatter();
+//        frame.setContentPane(programInstance.panel1);
 
         // set source
         //programInstance.comboBoxSource.setSelectedIndex(Integer.parseInt(XRAYSOURCE));
@@ -4123,393 +4471,123 @@ public class Scatter {
             //WORKING_DIRECTORY_NAME = System.getProperty("user.dir");
        //     WORKING_DIRECTORY = new WorkingDirectory("user.dir");
        // }
-        programInstance.workingDirLabel.setText(WORKING_DIRECTORY.getWorkingDirectory());
-        System.out.println("WORKING DIR NAME => " + WORKING_DIRECTORY.getWorkingDirectory());
+        SwingUtilities.invokeLater(new Runnable() {
 
-        theDir = new File(programInstance.ATSAS_DIRECTORY);
-        if (!theDir.exists()) {
-            ATSAS_DIRECTORY = System.getProperty("user.dir");
+            public void run() {
+                JFrame frame = new JFrame("ScÅtter: Software for SAXS Analysis");
+                final Scatter programInstance = new Scatter();
+                frame.setContentPane(programInstance.panel1);
 
-        }
-        System.out.println("ATSAS DIRECTORY => " + ATSAS_DIRECTORY);
-        programInstance.atsasDirLabel.setText(ATSAS_DIRECTORY);
+                programInstance.workingDirLabel.setText(WORKING_DIRECTORY.getWorkingDirectory());
+                System.out.println("WORKING DIR NAME => " + WORKING_DIRECTORY.getWorkingDirectory());
 
-        theDir = new File(programInstance.OUTPUT_DIR_SUBTRACTION_NAME);
-
-        if (!theDir.exists()) {
-            OUTPUT_DIR_SUBTRACTION_NAME = System.getProperty("user.dir");
-        }
-
-        System.out.println("SUBTRACTION DIRECTORY => " + OUTPUT_DIR_SUBTRACTION_NAME);
-
-        File theCWD = new File(OUTPUT_DIR_SUBTRACTION_NAME);
-        //programInstance.subtractOutPutDirectoryLabel.setText(OUTPUT_DIR_SUBTRACTION_NAME);
-        programInstance.subtractOutPutDirectoryLabel.setText(":/"+theCWD.getName());
-
-        programInstance.sourceTextField.setText(BEAMLINEMANUFACTURER);
-
-        new FileDrop( programInstance.getLoadPanel(1), new FileDrop.Listener() {
-            @Override
-            public void filesDropped(final File[] files) {
-                collectionSelected = (Collection)collections.get(0);
-                collectionSelected.setPanelID(0);
-                for(int i=0; i < totalPanels; i++){
-                    collectionButtons.get(i).setSelected(false);
+                File theDir = new File(WORKING_DIRECTORY.getWorkingDirectory());
+                if (!theDir.exists()) {
+                    WORKING_DIRECTORY = new WorkingDirectory(System.getProperty("user.dir"));
                 }
 
-                collectionButtons.get(0).setSelected(true);
-                miniPlots.get(0).chart.setNotify(false);
+                theDir = new File(programInstance.ATSAS_DIRECTORY);
+                if (!theDir.exists()) {
+                    ATSAS_DIRECTORY = System.getProperty("user.dir");
 
-                new Thread() {
-                    public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(0), programInstance.getStatus(), 0, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        // add other attributes and then run
-                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
-                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
-                        Thread temp1 = new Thread(rec1);
-                        temp1.start();
-                        try {
-                            temp1.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        miniPlots.get(0).frame.removeAll();
-                        miniPlots.get(0).chart.setNotify(false);
-                        miniPlots.get(0).plot(collectionSelected);
-                        minis.get(0).add(miniPlots.get(0).frame.getChartPanel());
-                        miniPlots.get(0).chart.setNotify(true);
-                    }
-                }.start();
-            }
-        });
-
-        // Load Files from Files Tab Panel 2
-        new FileDrop( programInstance.getLoadPanel(2), new FileDrop.Listener() {
-            @Override
-            public void filesDropped(final File[] files) {
-                final int panel = 1;
-                collectionSelected = (Collection)collections.get(panel);
-                collectionSelected.setPanelID(panel);
-                for(int i=0; i < totalPanels; i++){
-                    collectionButtons.get(i).setSelected(false);
                 }
-                collectionButtons.get(panel).setSelected(true);
+                System.out.println("ATSAS DIRECTORY => " + ATSAS_DIRECTORY);
+                programInstance.atsasDirLabel.setText(ATSAS_DIRECTORY);
 
-                miniPlots.get(panel).chart.setNotify(false);
-                new Thread() {
-                    public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        // add other attributes and then run
-                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
-                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
-                        Thread temp1 = new Thread(rec1);
-                        temp1.start();
-                        try {
-                            temp1.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        miniPlots.get(panel).frame.removeAll();
-                        miniPlots.get(panel).chart.setNotify(false);
-                        miniPlots.get(panel).plot(collectionSelected);
-                        minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
-                        miniPlots.get(panel).chart.setNotify(true);
-                    }
-                }.start();
-            }
-        });
-        // Load Files from Files Tab Panel 3
-        new FileDrop( programInstance.getLoadPanel(3), new FileDrop.Listener() {
-            @Override
-            public void filesDropped(final File[] files) {
-                final int panel = 2;
-                collectionSelected = (Collection)collections.get(panel);
-                collectionSelected.setPanelID(panel);
-                for(int i=0; i < totalPanels; i++){
-                    collectionButtons.get(i).setSelected(false);
+                theDir = new File(programInstance.OUTPUT_DIR_SUBTRACTION_NAME);
+
+                if (!theDir.exists()) {
+                    OUTPUT_DIR_SUBTRACTION_NAME = System.getProperty("user.dir");
                 }
-                collectionButtons.get(panel).setSelected(true);
 
-                miniPlots.get(panel).chart.setNotify(false);
-                new Thread() {
-                    public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        // add other attributes and then run
-                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
-                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
-                        Thread temp1 = new Thread(rec1);
-                        temp1.start();
-                        try {
-                            temp1.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        miniPlots.get(panel).frame.removeAll();
-                        miniPlots.get(panel).chart.setNotify(false);
-                        miniPlots.get(panel).plot(collectionSelected);
-                        minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
-                        miniPlots.get(panel).chart.setNotify(true);
-                    }
-                }.start();
-            }
-        });
-        // Load Files from Files Tab Panel 4
-        new FileDrop( programInstance.getLoadPanel(4), new FileDrop.Listener() {
-            @Override
-            public void filesDropped(final File[] files) {
-                final int panel = 3;
-                collectionSelected = (Collection)collections.get(panel);
-                collectionSelected.setPanelID(panel);
-                for(int i=0; i < totalPanels; i++){
-                    collectionButtons.get(i).setSelected(false);
-                }
-                collectionButtons.get(panel).setSelected(true);
+                System.out.println("SUBTRACTION DIRECTORY => " + OUTPUT_DIR_SUBTRACTION_NAME);
 
-                miniPlots.get(panel).chart.setNotify(false);
-                new Thread() {
-                    public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        // add other attributes and then run
-                        rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
-                        rec1.setPDBParams(programInstance.excludeWatersFromInputCheckBox.isSelected(), Double.parseDouble(programInstance.qmaxForPDBText.getText()));
-                        Thread temp1 = new Thread(rec1);
-                        temp1.start();
-                        try {
-                            temp1.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        miniPlots.get(panel).frame.removeAll();
-                        miniPlots.get(panel).chart.setNotify(false);
-                        miniPlots.get(panel).plot(collectionSelected);
-                        minis.get(panel).add(miniPlots.get(panel).frame.getChartPanel());
-                        miniPlots.get(panel).chart.setNotify(true);
-                    }
-                }.start();
-            }
-        });
-
-        //Buffers panel
-        new FileDrop(programInstance.buffers, new FileDrop.Listener() {
-            @Override
-            public void filesDropped(final File[] files) {
-                final int panel = 69;
-                new Thread() {
-                    public void run() {
-
-                        ReceivedDroppedFiles rec1 = null;
-
-                        if (programInstance.buildListFromFileCheckBox.isSelected()){
-
-                            if (files.length == 1){
-                                try{
-                                    FileListBuilder builder = new FileListBuilder(files[0], WORKING_DIRECTORY.getWorkingDirectory());
-                                    rec1 = new ReceivedDroppedFiles(builder.getFoundFiles(), (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                                    programInstance.status.setText("Loading files, please wait");
-                                } catch (Exception e){
-
-                                }
-                            } else {
-                                programInstance.status.setText(" DROP only one file please");
-                            }
-
-                            programInstance.buildListFromFileCheckBox.setSelected(false);
-                        } else {
-                            rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        }
-
-                        // add other attributes and then run
-                        rec1.setSampleBufferModels(programInstance.bufferFilesModel);
-                        rec1.useShortenedConstructor();
-                        Thread temp1 = new Thread(rec1);
-                        temp1.start();
-                        try {
-                            temp1.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        programInstance.status.setText("Total Loaded: " + programInstance.bufferFilesModel.getSize());
-                        programInstance.buffersList.removeAll();
-                        programInstance.buffersList.setModel(programInstance.bufferFilesModel);
-                        //programInstance.buffersList.validate();
-                        programInstance.buffersList.updateUI();
-                    }
-                }.start();
-            }
-        });
-
-        //samples Panel
-        new FileDrop(programInstance.samples, new FileDrop.Listener() {
-            @Override
-            public void filesDropped(final File[] files) {
-
-                final int panel = 96;
-
-                SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>(){
-
-                    @Override
-                    protected Void doInBackground() throws Exception {
-                        return null;
-                    }
-
-                    @Override
-                    protected void done() {
-                        programInstance.samplesList.repaint();;
-                    }
-                };
-
-                new Thread() {
-                    public void run() {
-
-                        ReceivedDroppedFiles rec1 = null;
-
-                        if (programInstance.buildListFromFileCheckBox.isSelected()){
-
-                            if (files.length == 1){
-                                try{
-                                    FileListBuilder builder = new FileListBuilder(files[0], WORKING_DIRECTORY.getWorkingDirectory());
-                                    rec1 = new ReceivedDroppedFiles(builder.getFoundFiles(), (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                                    programInstance.status.setText("Loading files, please wait");
-                                } catch (Exception e){
-                                    //programInstance.status.setText(" DROP only one file please");
-                                }
-                            } else {
-                                programInstance.status.setText(" DROP only one file please");
-                            }
-
-                            programInstance.buildListFromFileCheckBox.setSelected(false);
-                        } else {
-                            rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        }
-
-                        //ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.onDropConvertNmCheckBox.isSelected(), false, true, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        // add other attributes and then run
-                        rec1.setSampleBufferModels(programInstance.sampleFilesModel);
-                        rec1.useShortenedConstructor();
-                        Thread temp1 = new Thread(rec1);
-                        temp1.start();
-                        try {
-                            temp1.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        programInstance.samplesList.removeAll();  // remove model and resetModel
-
-                        programInstance.samplesList.setModel(programInstance.sampleFilesModel);
-                        programInstance.status.setText("Total Loaded: " + programInstance.sampleFilesModel.getSize());
-
-                        // populate drop down
-                        Collection thisCollection = ((Collection) collections.get(panel));
-
-                        programInstance.thresholdField.setText(Constants.ThreeDecPlace.format(thisCollection.getMaxq()*0.05 + thisCollection.getMaxq()));
-
-                        int totalDatasets = thisCollection.getDatasetCount();
-                        programInstance.setReferenceBox.removeAllItems();
-
-                        for(int i=0; i< totalDatasets; i++){
-                            String name = thisCollection.getDataset(i).getFileName();
-                            programInstance.setReferenceBox.addItem(new ReferenceItem(name, i));
-                        }
-                        programInstance.setReferenceBox.setSelectedIndex(programInstance.setReferenceBox.getItemCount()-1);
-                        //programInstance.samplesList.validate();
-                        // programInstance.samplesList.repaint();
-                        //programInstance.samples.validate();
-
-//                        programInstance.samples.getViewport().invalidate();
-//                        programInstance.samples.getViewport().repaint();
-//                        programInstance.samplesList.invalidate();
-//                        programInstance.samplesList.repaint();
-                        programInstance.samplesList.updateUI();
-                    }
-                }.start();
-
-
-            }
-        });
+                File theCWD = new File(OUTPUT_DIR_SUBTRACTION_NAME);
+                //programInstance.subtractOutPutDirectoryLabel.setText(OUTPUT_DIR_SUBTRACTION_NAME);
+                programInstance.subtractOutPutDirectoryLabel.setText(":/"+theCWD.getName());
+                programInstance.sourceTextField.setText(BEAMLINEMANUFACTURER);
 
 
 //similarity Panel
-        new FileDrop(programInstance.covFilesScrollPanel, new FileDrop.Listener() {
-            @Override
-            public void filesDropped(final File[] files) {
+                new FileDrop(programInstance.covFilesScrollPanel, new FileDrop.Listener() {
+                    @Override
+                    public void filesDropped(final File[] files) {
 
-                final int panel = 29;
+                        final int panel = 29;
 
-                new Thread() {
-                    public void run() {
-                        ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
-                        // add other attributes and then run
-                        Collection thisCollection = ((Collection) collections.get(panel));
-                        rec1.setSampleBufferModels(programInstance.similarityFilesModel);
-                        Thread temp1 = new Thread(rec1);
-                        temp1.start();
-                        try {
-                            temp1.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        // populate drop down
-                        System.out.println("Populating list");
-                        programInstance.similarityList.removeAll();
-                        programInstance.similarityFilesModel.clear();
-                        //sampleBufferFilesList.removeAll();
-                        //repopulate
-                        int totalDatasets = thisCollection.getDatasetCount();
-                        Color tempColor;
-                        for(int i=0; i< totalDatasets; i++){
-                            String name = thisCollection.getDataset(i).getFileName();
-                            name = name + "_" + i;
-                            //thisCollection.getDataset(i).setFileName(name);
-                            tempColor = ((Collection)collections.get(panel)).getDataset(i).getColor();
-                            programInstance.similarityFilesModel.addElement(new SampleBufferElement(name, i, tempColor, thisCollection.getDataset(i)));
-                        }
+                        new Thread() {
+                            public void run() {
+                                ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), programInstance.getStatus(), panel, programInstance.convertNmToAngstromCheckBox.isSelected(), false, false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
+                                // add other attributes and then run
+                                Collection thisCollection = ((Collection) collections.get(panel));
+                                rec1.setSampleBufferModels(programInstance.similarityFilesModel);
+                                Thread temp1 = new Thread(rec1);
+                                temp1.start();
+                                try {
+                                    temp1.join();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                                // populate drop down
+                                System.out.println("Populating list");
+                                programInstance.similarityList.removeAll();
+                                programInstance.similarityFilesModel.clear();
+                                //sampleBufferFilesList.removeAll();
+                                //repopulate
+                                int totalDatasets = thisCollection.getDatasetCount();
+                                Color tempColor;
+                                for(int i=0; i< totalDatasets; i++){
+                                    String name = thisCollection.getDataset(i).getFileName();
+                                    name = name + "_" + i;
+                                    //thisCollection.getDataset(i).setFileName(name);
+                                    tempColor = ((Collection)collections.get(panel)).getDataset(i).getColor();
+                                    programInstance.similarityFilesModel.addElement(new SampleBufferElement(name, i, tempColor, thisCollection.getDataset(i)));
+                                }
 
-                        //sampleBufferFilesList.setModel(sampleBufferFilesModel);
-                        programInstance.similarityList.setModel(programInstance.similarityFilesModel);
-                        programInstance.qminSimilarityField.setText(String.valueOf(thisCollection.getDataset(0).getAllData().getMinX()));
-                        programInstance.qmaxSimilarityField.setText(String.valueOf(thisCollection.getDataset(0).getAllData().getMaxX()));
+                                //sampleBufferFilesList.setModel(sampleBufferFilesModel);
+                                programInstance.similarityList.setModel(programInstance.similarityFilesModel);
+                                programInstance.qminSimilarityField.setText(String.valueOf(thisCollection.getDataset(0).getAllData().getMinX()));
+                                programInstance.qmaxSimilarityField.setText(String.valueOf(thisCollection.getDataset(0).getAllData().getMaxX()));
 
-                        programInstance.status.setText("Total Loaded: " + programInstance.similarityFilesModel.getSize());
-                        programInstance.similarityList.revalidate();
-                        programInstance.similarityList.repaint();
+                                programInstance.status.setText("Total Loaded: " + programInstance.similarityFilesModel.getSize());
+                                programInstance.similarityList.revalidate();
+                                programInstance.similarityList.repaint();
+                            }
+                        }.start();
                     }
-                }.start();
-            }
-        });
+                });
 
 
-
-        // if files, add to Collection
-        if (args.length > 0){
-            int totalFiles = args.length;
-            ArrayList<File> filestoload = new ArrayList<>();
-            for(int i=0; i<totalFiles; i++){
-                // if *.dat files, then add to collection
-                // verify they are files and then add to Files Array
-                File f = new File(args[i]);
-                if(f.exists() && !f.isDirectory()) {
-                    // do something
-                    if (args[i].endsWith(".dat")){
-                        filestoload.add(new File(args[i]));
-                        System.out.println(i + " Loading File : " + args[i]);
+                // if files, add to Collection
+                if (args.length > 0){
+                    int totalFiles = args.length;
+                    ArrayList<File> filestoload = new ArrayList<>();
+                    for(int i=0; i<totalFiles; i++){
+                        // if *.dat files, then add to collection
+                        // verify they are files and then add to Files Array
+                        File f = new File(args[i]);
+                        if(f.exists() && !f.isDirectory()) {
+                            // do something
+                            if (args[i].endsWith(".dat")){
+                                filestoload.add(new File(args[i]));
+                                System.out.println(i + " Loading File : " + args[i]);
+                            }
+                        }
                     }
-                }
-            }
 
-            if (filestoload.size() > 0){
-                collectionSelected = (Collection)collections.get(0);
-                collectionSelected.setPanelID(0);
-                for(int i=0; i < totalPanels; i++){
-                    collectionButtons.get(i).setSelected(false);
-                }
+                    if (filestoload.size() > 0){
+                        collectionSelected = (Collection)collections.get(0);
+                        collectionSelected.setPanelID(0);
+                        for(int i=0; i < totalPanels; i++){
+                            collectionButtons.get(i).setSelected(false);
+                        }
 
-                collectionButtons.get(0).setSelected(true);
-                miniPlots.get(0).chart.setNotify(false);
+                        collectionButtons.get(0).setSelected(true);
+                        miniPlots.get(0).setNotify(false);
 
 
-                File[] files =  filestoload.toArray(new File[filestoload.size()]);
+                        File[] files =  filestoload.toArray(new File[filestoload.size()]);
+                        miniPlots.get(0).setNotify(false);
                         ReceivedDroppedFiles rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(0), programInstance.getStatus(), 0, programInstance.convertNmToAngstromCheckBox.isSelected(), programInstance.autoRgCheckBox.isSelected(), false, programInstance.mainProgressBar, programInstance.WORKING_DIRECTORY.getWorkingDirectory());
                         // add other attributes and then run
                         rec1.setModels(analysisModel, resultsModel, dataFilesModel, programInstance.dataFilesList);
@@ -4521,18 +4599,21 @@ public class Scatter {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        miniPlots.get(0).frame.removeAll();
-                        miniPlots.get(0).chart.setNotify(false);
+
+                        miniPlots.get(0).clearAll();
                         miniPlots.get(0).plot(collectionSelected);
-                        minis.get(0).add(miniPlots.get(0).frame.getChartPanel());
-                        miniPlots.get(0).chart.setNotify(true);
+                        minis.get(0).removeAll();
+                        minis.get(0).add(miniPlots.get(0).getPanel());
+                        miniPlots.get(0).setNotify(true);
+                        minis.get(0).validate();
+                    }
+                }
+
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.pack();
+                frame.setVisible(true);
             }
-        }
-
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.setVisible(true);
-
+        });
     }
 
 
@@ -4577,10 +4658,6 @@ public class Scatter {
                 status.setText("Switched to collection " + (j+1));
 
                 resultsModel.clear();
-//                analysisModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
-//                resultsModel.addDataset(((Collection)collections.get(collectionNumber)).getLast());
-                // update dataFilesList in dataFilesPanel;
-                // rebuild dataFilesPanel from collection.get(i)
 
                 for(int jj=0; jj<((Collection)collections.get(selected)).getDatasets().size(); jj++){
                     String name = ((Collection)collections.get(selected)).getDataset(jj).getFileName();
@@ -4593,11 +4670,6 @@ public class Scatter {
                 collectionSelected = (Collection)collections.get(selected);
                 collectionNote.setText(collectionSelected.getNote());
 
-//                ffCEFileSelectionComboBox.setModel(new CEComboBoxModel(collectionSelected));
-//                ((CEComboBoxModel)ffCEFileSelectionComboBox.getModel()).updateCollection(collectionSelected);
-
-
-                System.out.println("REPAINTING");
                 ffCEFileSelectionComboBox.revalidate();
                 ffCEFileSelectionComboBox.repaint();
 
@@ -4877,9 +4949,9 @@ public class Scatter {
         public ErrorPlot errorPlot;
         public PowerLawFit powerLawPlot;
 */
-        if (KratkyPlot.frame.isVisible()){
-
-        }
+//        if (KratkyPlot.frame.isVisible()){
+//
+//        }
     }
 
     //Analysis Spinners
@@ -5236,7 +5308,6 @@ public class Scatter {
                             index = i;
                         }
                     }
-
 
                     thickBox.setSelectedIndex(index);
                     preview.add(thickBox);
@@ -5800,6 +5871,20 @@ public class Scatter {
 
         status.setText("CWD Changed to : " + WORKING_DIRECTORY.getWorkingDirectory());
     }
+
+
+    private void updateList(final JList list) {
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+//                System.out.println("list " + sampleFilesModel.size() + " " + list.getModel().getSize());
+//                list.revalidate();
+//                list.repaint();
+                list.updateUI();
+                System.out.println("RUNNING LATER ");
+            }
+        });
+    }
+
 
 
 } // end of Scatter class

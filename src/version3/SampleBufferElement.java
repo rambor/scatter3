@@ -46,6 +46,5 @@ public class SampleBufferElement extends DataFileElement {
     private void firePropertyChange(String isSelected, Object oldValue, Object newValue) {
         booleanListener.propertyChange(new PropertyChangeEvent(this, isSelected, oldValue, newValue));
     }
-
 }
 

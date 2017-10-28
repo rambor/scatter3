@@ -4,18 +4,26 @@ import org.jfree.chart.*;
 import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.entity.ChartEntity;
+import org.jfree.chart.entity.XYItemEntity;
 import org.jfree.chart.labels.XYToolTipGenerator;
+import org.jfree.chart.plot.IntervalMarker;
+import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.PaintScale;
 import org.jfree.chart.renderer.xy.XYBlockRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.PaintScaleLegend;
 import org.jfree.data.xy.*;
+import org.jfree.ui.Layer;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,17 +36,18 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
     private JFreeChart chart;
     private ChartFrame frame;
     private ChartPanel chartPanel;
-    private RatioSimilarityTest similarityPlotObject;
+    //private static RatioSimilarityTest similarityPlotObject;
     private Collection simCollection;
+    private SignalPlot signalPlot;
 
     private DefaultXYZDataset residualDataset;
-    public ArrayList<ResidualDifferences> residualDifferencesModel;
-//    public ArrayList<XYTextAnnotation> residualsLabels;
-    public ArrayList<Integer> frameIndices;
+    private ArrayList<ResidualDifferences> residualDifferencesModel;
+
+    private ArrayList<Integer> frameIndices;
     private double maxResidualDataset;
     private double minResidualDataset;
     private int totalDatasetsInUse;
-    int min, max;
+    static int min, max;
 
     public JList samplesList;
     private JLabel status;
@@ -50,23 +59,29 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
     private JProgressBar mainStatus;
     private XYSeries buffer = new XYSeries("buffer");
     private XYSeries bufferError = new XYSeries("buffer error");
+    private double qmin, qmax;
+
+    private Point locationOfWindow;
 
 
-    public SimilarityPlot(Collection sampleCollection, Collection bufferCollection, JLabel status, JProgressBar bar){
 
-        this.samplesCollection = sampleCollection;
-        this.buffersCollection = bufferCollection;
+    public SimilarityPlot(Collection sampleCollection, Collection bufferCollection, JLabel status, JProgressBar bar, double qmin, double qmax){
+
+        locationOfWindow = new Point(200,200);
+
+        this.samplesCollection = sampleCollection; // reference to collection in Main
+        this.buffersCollection = bufferCollection; // reference to collection in Main
 
         mainStatus = bar;
         this.status = status;
+        this.qmin = qmin;
+        this.qmax = qmax;
     }
+
 
 
     @Override
     protected Void doInBackground() throws Exception {
-
-        int select = buffersCollection.getTotalSelected();
-        int sampleSize = samplesCollection.getTotalSelected();
 
         status.setText("compiling buffers");
         this.makeBuffer();
@@ -100,6 +115,8 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
         try {
             get();
             status.setText("FINISHED");
+            residualDifferencesModel.clear();
+            frameIndices.clear();
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -131,20 +148,19 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
 //        }
 
         // max for DurbinWatson is 4
-        SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), maxResidualDataset+0.1*maxResidualDataset);
+        //SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), maxResidualDataset+0.03*maxResidualDataset);
+        SpectrumPaintScale ps = new SpectrumPaintScale(0, 4);
         r.setPaintScale(ps);
         r.setBlockHeight(1.0f);
         r.setBlockWidth(1.0f);
+
         plot.setRenderer(r);
         plot.setOutlineVisible(false);
         plot.setDomainGridlinesVisible(false);
         plot.setRangeGridlinesVisible(false);
-//        plot.setDomainCrosshairVisible(false);
-//        plot.setRangeCrosshairVisible(false);
-
 
         chart = new JFreeChart(
-                "Residuals Similarity Plot",
+                "Residuals Similarity Plot | range : " + Constants.ThreeDecPlace.format(qmin) + " to " + Constants.ThreeDecPlace.format(qmax) ,
                 JFreeChart.DEFAULT_TITLE_FONT,
                 plot,
                 false
@@ -163,6 +179,18 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
         legend.setBackgroundPaint(Color.WHITE);
         chart.addSubtitle(legend);
         chart.setBackgroundPaint(Color.white);
+
+//        chart.getXYPlot().getRenderer().setBaseToolTipGenerator(
+//                new XYToolTipGenerator() {
+//            public String generateToolTip(XYDataset dataset, int series, int item) {
+//                XYZDataset xyzDataset = (XYZDataset)dataset;
+//                double x = xyzDataset.getXValue(series, item);
+//                double y = xyzDataset.getYValue(series, item);
+//                double z = xyzDataset.getZValue(series, item);
+//                return ("frames : " + x + " to " + y);
+//            }
+//        });
+
     }
 
 
@@ -194,21 +222,23 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
     public void createFrame(){
 
 
-        chartPanel = new ChartPanel(chart){
-            @Override
-            public void restoreAutoBounds(){
-                System.out.println("min " + min + " max " + max);
-                super.restoreAutoDomainBounds();
-                super.restoreAutoRangeBounds();
-                super.getChart().getXYPlot().getRangeAxis().setAutoRange(false);
-                super.getChart().getXYPlot().getRangeAxis().setRange(min, max);
-                super.getChart().getXYPlot().getDomainAxis().setRange(min, max);
-            }
-        };
+//        chartPanel = new ChartPanel(chart){
+//            @Override
+//            public void restoreAutoBounds(){
+//                System.out.println("min " + min + " max " + max);
+//                super.restoreAutoDomainBounds();
+//                super.restoreAutoRangeBounds();
+//                super.getChart().getXYPlot().getRangeAxis().setAutoRange(false);
+//                super.getChart().getXYPlot().getRangeAxis().setRange(min, max);
+//                super.getChart().getXYPlot().getDomainAxis().setRange(min, max);
+//            }
+//        };
 
+        chartPanel = new ChartPanel(chart);
+
+        chartPanel.setDisplayToolTips(true);
         frame = new ChartFrame("SC\u212BTTER \u2263 SIMILARITY PLOT", chartPanel.getChart());
-        frame.getChartPanel().setDisplayToolTips(true);
-
+//        frame.getChartPanel().setDisplayToolTips(true);
 
 //        frame.getChartPanel().getChart().getXYPlot().getRenderer(0).setBaseToolTipGenerator(new XYToolTipGenerator() {
 //            @Override
@@ -219,15 +249,93 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
 
 //        frame.getChartPanel().setRangeZoomable(false);
 //        frame.getChartPanel().setDomainZoomable(false);
+
         frame.getChartPanel().setMouseZoomable(false);
         frame.getChartPanel().setHorizontalAxisTrace(true);
         frame.getChartPanel().setVerticalAxisTrace(true);
         // add mouse listener for getting values
+        frame.addWindowListener(new WindowAdapter() {
+            public void WindowClosing(WindowEvent e) {
+                locationOfWindow = frame.getLocation();
+                frame.dispose();
+            }
+        });
+
+
+        frame.getChartPanel().addChartMouseListener(new ChartMouseListener() {
+
+            @Override
+            public void chartMouseClicked(ChartMouseEvent chartMouseEvent) {
+                ChartEntity ce = chartMouseEvent.getEntity();
+                if (ce instanceof XYItemEntity){
+                    XYItemEntity e = (XYItemEntity) ce;
+                    XYDataset d = e.getDataset();
+                    int series = e.getSeriesIndex();
+                    int index = e.getItem();
+
+                    int size = samplesList.getModel().getSize();
+                    int trueStart = d.getX(series, index).intValue();
+                    int trueEnd = d.getY(series,index).intValue();
+
+                    if (signalPlot.getChartFrame().isVisible()){
+                        updateMarkers(d.getX(series, index).doubleValue(), d.getY(series,index).doubleValue());
+                    }
+
+                    // set everything within range to true, everything else false
+                    for(int i=0; i<size; i++){
+                        // sampleFilesModel.get(i).isSelected()
+                        if ((i < trueStart) || (i > trueEnd)){
+                            ((SampleBufferElement) samplesList.getModel().getElementAt(i)).setSelected(false);
+                        } else {
+                            ((SampleBufferElement) samplesList.getModel().getElementAt(i)).setSelected(true);
+                        }
+                    }
+
+                    samplesList.repaint();
+                    chartMouseEvent.getChart().setTitle("Selected frames : " + Integer.toString((int)d.getX(series, index).intValue()) + " to " + Integer.toString((int)d.getY(series, index).intValue()));
+                }
+
+            }
+
+            @Override
+            public void chartMouseMoved(ChartMouseEvent chartMouseEvent) {
+
+            }
+        });
 
         frame.pack();
+
+        //frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
+        frame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                try {
+                   // frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+                    residualDataset = null;
+                    residualDifferencesModel.clear();
+                    System.out.println("CLOSED");
+                } catch (Exception ex) {
+                    System.out.println("Exception: " + ex.getMessage());
+                }
+            }
+        });
+
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setMinimumSize(new Dimension(640,480));
         frame.setVisible(true);
     }
+
+    public boolean isVisible(){ return frame.isVisible();}
+
+    private void updateMarkers(Double trueStart, Double trueEnd){
+        signalPlot.updateMarkers(trueStart, trueEnd);
+    }
+
+    public void setSampleJList(JList list){
+        this.samplesList = list;
+    }
+
 
     private void makeSamples(){
         simCollection = new Collection();
@@ -356,7 +464,6 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
         ArrayList<XYSeries> returnMe = new ArrayList<XYSeries>();
 
         // calculate Average and Median for set
-
         ArrayList<XYSeries> median_reduced_set = StatMethods.medianDatasets(collection);
         ArrayList<XYSeries> averaged = StatMethods.weightedAverageDatasets(collection);
 
@@ -387,7 +494,6 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
     private void createResidualsDataset() {
 
         residualDataset = new DefaultXYZDataset();
-
         maxResidualDataset = 0;
         minResidualDataset = 100;
 
@@ -464,11 +570,16 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
                 scaledH = 0;
             }
 
-            //Color tempColor = Color.getHSBColor(scaledH, saturation, 1f);
+            //var h = (1.0 - value) * 240
+            //return "hsl(" + h + ", 100%, 50%)";
             return Color.getHSBColor(scaledH, saturation, 1f);
+            //return Color.getHSBColor(scaledH*240, 1f, 0.5f);
         }
     }
 
+    /**
+     * multi-thread version, seems to have a race condition perhaps with tar XYSeries
+     */
 //    private void calculateResiduals(){
 //
 //        //ratioModels = new ArrayList<>();
@@ -484,8 +595,6 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
 //
 //                // Residual Differences
 //                int order=0;
-//
-//
 //                for(int i=0; i < totalDatasets; i++){
 //
 //                    if (simCollection.getDataset(i).getInUse()){
@@ -508,8 +617,8 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
 //                                        THREAD_SAFE_LIST,
 //                                        tar.getAllData(),
 //                                        tar.getAllDataError(),
-//                                        0.0131,
-//                                        0.178,
+//                                        qmin,
+//                                        qmax,
 //                                        refIndex,
 //                                        tar.getId(),
 //                                        12,
@@ -591,8 +700,8 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
                             ref,
                             tar.getAllData(),
                             tar.getAllDataError(),
-                            0.0131,
-                            0.178,
+                            qmin,
+                            qmax,
                             12,
                             refIndex,
                             tar.getId(),
@@ -613,5 +722,20 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
 
     public synchronized void increment() {
         mainStatus.setValue(counter.incrementAndGet());
+    }
+
+
+    public void terminateFrame(){
+        try {
+            frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
+            residualDataset = null;
+            residualDifferencesModel.clear();
+        } catch (Exception ex) {
+            System.out.println("Exception: " + ex.getMessage());
+        }
+    }
+
+    public void setPlot(SignalPlot panel){
+        this.signalPlot = panel;
     }
 }

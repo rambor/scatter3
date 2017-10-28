@@ -58,6 +58,35 @@ public class Collection {
         miniCollection.removeAllSeries();
     }
 
+    public void createDataset(LoadedFile loaded, int newIndex, boolean guinier){
+        datasets.add(new Dataset(
+                loaded.allData,       //data
+                loaded.allDataError,  //original
+                loaded.filebase,
+                newIndex, guinier));
+
+        totalDatasets = datasets.size();
+
+        Dataset dat = datasets.get(totalDatasets-1);
+        miniCollection.addSeries(dat.getData()); // log10 data
+        // reset max and min values for collection
+
+        if (dat.getMaxI() > this.maxI ) {
+            this.maxI = dat.getMaxI();
+        }
+
+        if (dat.getMinI() < this.minI ) {
+            this.minI = dat.getMinI();
+        }
+        if (dat.getMaxq() > this.maxq ) {
+            this.maxq = dat.getMaxq();
+        }
+        if (dat.getMinq() < this.minq ) {
+            this.minq = dat.getMinq();
+        }
+
+        this.notifyDataSetsChange();
+    }
     /**
      * Adds dataset to collection
      * @param dat Dataset to be added
@@ -72,7 +101,7 @@ public class Collection {
         datasets.add(dat);
         totalDatasets = datasets.size();
 
-        miniCollection.addSeries(dat.getData()); // log10 data
+        miniCollection.addSeries(datasets.get(totalDatasets-1).getData()); // log10 data
         // reset max and min values for collection
 
         if (dat.getMaxI() > this.maxI ) {
@@ -159,8 +188,10 @@ public class Collection {
      *
      */
     public void removeAllDatasets(){
+
         datasets.clear();
         miniCollection.removeAllSeries();
+
         datasets = new ArrayList<>();
         miniCollection = new XYSeriesCollection();
 
@@ -314,6 +345,5 @@ public class Collection {
             client.propertyChange(evt);
         }
     }
-
 
 }

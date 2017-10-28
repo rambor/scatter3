@@ -61,8 +61,10 @@ public class ScaleManager extends SwingWorker<Void, Void> {
 
 
         for(int i=0; i<totalDatasetsInCollection; i++){  // find frame with largest Intensity within range
+
             Dataset tempDatset = collectionInUse.getDataset(i);
             XYDataItem xyItem;
+
             if (tempDatset.getInUse()){
                 totalToCalculate++;
                 int totalInData = tempDatset.getAllData().getItemCount();  // in case lower is larger than user specified by spinners

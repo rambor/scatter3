@@ -258,12 +258,6 @@ public class KratkyPlot {
         return false;
     }
 
-    public void clearAll(){
-        collectionToPlot.removeAllSeries();
-        if (frame != null){
-            frame.removeAll();
-        }
-    }
 
 
     public void changeVisibleSeries(int index, boolean flag){
@@ -298,6 +292,14 @@ public class KratkyPlot {
         locationOfWindow = frame.getLocation();
         frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
     }
+
+    public void clearAll(){
+        collectionToPlot.removeAllSeries();
+        if (frame != null){
+            frame.removeAll();
+        }
+    }
+
 
     public void setNotify(boolean state){
         frame.getChartPanel().getChart().setNotify(state);

@@ -235,12 +235,15 @@ public class MergeReport {
                 differenceSeriesB.add(targetDataset.getId(), differences.getShapiroWilkStatistic());
             }
         }
+
         String difftitle = "B";
-        durbinWatsonCompareText = "*B.* Durbin-Watson and Shapiro-Wilks tests examine the distribution of the residuals between two frames. In this case, comparisons are made relative to the first frame. Radiation damage can be observed as a decrease in the statistic.";
+        durbinWatsonCompareText = "*B.* Durbin-Watson and Shapiro-Wilks tests examining the distribution of the residuals between two frames. In this case, comparisons are made in reference to the first frame. Radiation damage or lack of similarity can be observed as a trend in either statistic across the frame set. Likewise, similarity is demonstrated by a random distribution of the statistics.";
+
         if (isHPLCLayout){
-            durbinWatsonCompareText = "*C.* Durbin-Watson and Shapiro-Wilks tests examine the distribution of the residuals between two frames. In this case, comparisons are made relative to the first frame. Radiation damage can be observed as a decrease in the statistic.";
+            durbinWatsonCompareText = "*C.* Durbin-Watson and Shapiro-Wilks tests examining the distribution of the residuals between two frames. In this case, comparisons are made in reference to the first frame. Radiation damage or lack of similarity can be observed as a trend in either statistic across the frame set. Likewise, similarity is demonstrated by a random distribution of the statistics.";
             difftitle = "C";
         }
+
         differencePlot = makeDoublePlot(differenceSeriesA, differenceSeriesB, "Durbin-Watson", "Shapiro-Wilks", difftitle).createBufferedImage((int)imageWidth*3,(int)imageHeight*3);
 
         // make Rg-Izero plot
@@ -278,10 +281,10 @@ public class MergeReport {
             }
 
             difftitle = "C";
-            rgIzeroText = "*C.* Double Y plot with I(0) and R{_}g{_} estimated from the Guinier region for each subtracted frame. For a single concentration measurement made over several frames, radiation damage will be observed as an increase in I(0) and R{_}g{_}. For SEC-SAXS, I(0) should change with the concentration of the particle during elution.";
+            rgIzeroText = "*C.* Double Y plot with I(0), orange, and R{_}g{_}, cyan, estimated from the Guinier region for each subtracted frame. For a single concentration measurement made over several frames, radiation damage will be observed as an increase in I(0) and R{_}g{_}. For SEC-SAXS, I(0) should change with the concentration of the particle during elution.";
             if (isHPLCLayout){
                 difftitle = "D";
-                rgIzeroText = "*D.* Double Y plot with I(0) and R{_}g{_} estimated from the Guinier region for each subtracted frame. For a single concentration measurement made over several frames, radiation damage will be observed as an increase in I(0) and R{_}g{_}. For SEC-SAXS, I(0) should change with the concentration of the particle during elution.";
+                rgIzeroText = "*D.* Double Y plot with I(0), orange, and R{_}g{_}, cyan, estimated from the Guinier region for each subtracted frame. For a single concentration measurement made over several frames, radiation damage will be observed as an increase in I(0) and R{_}g{_}. For SEC-SAXS, I(0) should change with the concentration of the particle during elution.";
             }
             rgIzeroDoublePlot = makeDoublePlot(guinierIzeroSeries, guinierRgSeries, "I(0)", "Rg Å", difftitle).createBufferedImage((int)imageWidth*3,(int)imageHeight*3);
         }
@@ -436,11 +439,15 @@ public class MergeReport {
             String filename = Functions.sanitizeForFilename(titleText);
             outputStream = new FileOutputStream(workingDirectory+"/"+filename+".pdf");
             document.save(outputStream);
+            document = null;
+            outputStream.close();
+            System.gc();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
 

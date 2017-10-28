@@ -34,8 +34,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
 
     private JFreeChart chart;
     private ChartFrame frame;
-    private ChartPanel chartPanel;
-    private RatioSimilarityTest similarityPlotObject;
+    //private ChartPanel chartPanel;
 
     private XYLineAndShapeRenderer renderer1;
     private XYLineAndShapeRenderer rightRenderer;
@@ -53,8 +52,8 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
     private Number maxQvalueInCommon = 0;
 
     private JProgressBar mainStatus;
-    private XYSeries buffer = new XYSeries("buffer");
-    private XYSeries bufferError = new XYSeries("buffer error");
+    private XYSeries buffer;
+    private XYSeries bufferError;
     private boolean useRg = false;
     private double threshold;
     private int startAtPoint, totalInSamples;
@@ -463,7 +462,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
                 false
         );
 
-        chartPanel = new ChartPanel(chart){
+        ChartPanel chartPanel = new ChartPanel(chart){
             @Override
             public void restoreAutoBounds(){
                 super.restoreAutoDomainBounds();
@@ -602,6 +601,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
         // add mouse listener for getting values
         // frame.getChartPanel().addKeyListener();
         frame.getChartPanel().addMouseListener(new MouseMarker(frame.getChartPanel(), samplesList));
+
         frame.getChartPanel().addChartMouseListener(new ChartMouseListener() {
             private Double markerStart = Double.NaN;
             private Double markerEnd = Double.NaN;
@@ -914,6 +914,16 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
     public void setFirstLastFrame(int firstFrame, int lastFrame){
         this.firstFrame = firstFrame;
         this.lastFrame = lastFrame;
+
+    }
+
+
+    public void updateMarkers(Double startValue, Double endValue){
+        frame.getChartPanel().getChart().getXYPlot().clearDomainMarkers();
+        Marker marker = new IntervalMarker(startValue, endValue);
+        marker.setPaint(new Color(0xDD, 0xFF, 0xDD, 0x80));
+        marker.setAlpha(0.5f);
+        frame.getChartPanel().getChart().getXYPlot().addDomainMarker(marker,Layer.BACKGROUND);
     }
 
     private final static class MouseMarker extends MouseAdapter {
@@ -951,11 +961,9 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
             Point2D p = panel.translateScreenToJava2D( e.getPoint());
             Rectangle2D plotArea = panel.getScreenDataArea();
             XYPlot plot = (XYPlot) chart.getPlot();
-
            // int mouseX = e.getX();
            // int onscreen = e.getXOnScreen();
            // System.out.println("x = " + mouseX + " onscreen " + onscreen);
-
             return plot.getDomainAxis().java2DToValue(p.getX(), plotArea, plot.getDomainAxisEdge());
         }
 
@@ -983,7 +991,6 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
         @Override
         public void mousePressed(MouseEvent e) {
             markerStart = getPosition(e);
-
             // if key pressed
         }
 
@@ -1016,5 +1023,9 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
 
     public XYSeriesCollection getPlotMe() {
         return plotMe;
+    }
+
+    public ChartPanel getChartPanel(){
+        return frame.getChartPanel();
     }
 }

@@ -35,7 +35,6 @@ public class ReceivedDroppedFiles extends SwingWorker<Void, Integer> {
     private int panelIndex;
     private double qmax;
     private boolean exclude, shortened = false;
-    private JList list;
 
 
     public ReceivedDroppedFiles(File[] files, Collection targetCollection, JLabel status, int index, boolean convertNMtoAng, boolean doGuinier, boolean sort, final JProgressBar bar, String workingDirectoryName){
@@ -171,7 +170,8 @@ public class ReceivedDroppedFiles extends SwingWorker<Void, Integer> {
             if (panelIndex == 96 ){
 //                list.revalidate();
 //                list.repaint();
-                list.validate();
+//                list.validate();
+//                list.updateUI();
             }
             get();
         } catch (ExecutionException | InterruptedException e) {
@@ -179,10 +179,6 @@ public class ReceivedDroppedFiles extends SwingWorker<Void, Integer> {
         }
     }
 
-
-    public void setJList(JList list){
-        this.list = list;
-    }
 
 
     private void updateModels(int collectionIndex) {
@@ -218,8 +214,6 @@ public class ReceivedDroppedFiles extends SwingWorker<Void, Integer> {
                 sampleBufferFilesModel.addElement(new SampleBufferElement(name, i, tempColor, targetCollection.getDataset(i)));
             }
 
-            //sampleBufferFilesList.setModel(sampleBufferFilesModel);
-//            sampleBufferFilesModel.notifyAll();
         }
     }
 

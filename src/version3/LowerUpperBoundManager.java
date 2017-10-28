@@ -19,6 +19,7 @@ public class LowerUpperBoundManager extends SwingWorker<Void, Integer>  {
     private JLabel status;
     private int column;
     private double limit;
+    private JTable list;
 
     public LowerUpperBoundManager(int numberOfCPUs, Collection collection, JProgressBar bar, JLabel label, int column, double limit){
         this.numberOfCPUs = numberOfCPUs;
@@ -146,6 +147,7 @@ public class LowerUpperBoundManager extends SwingWorker<Void, Integer>  {
         return null;
     }
 
+
     @Override
     protected void process(List<Integer> chunks) {
         int i = chunks.get(chunks.size()-1);
@@ -160,9 +162,18 @@ public class LowerUpperBoundManager extends SwingWorker<Void, Integer>  {
             bar.setValue(0);
             bar.setStringPainted(false);
             status.setText("FINISHED TRUNCATING DATASETS");
+            if (list != null){
+                list.validate();
+            }
+
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+
+    public void setJList(JTable list){
+        this.list = list;
     }
 
 }
