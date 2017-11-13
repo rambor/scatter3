@@ -142,8 +142,8 @@ public class MooreTransform extends IndirectFT {
 
                 for(int c=0; c < coeffs_size; c++){
                     if (c == 0){
-                        //a_matrix.set(r, 0, tempData.getXValue()); // constant background term
-                        a_matrix.set(r, 0, 1);
+                        a_matrix.set(r, 0, tempData.getXValue()); // constant background term
+                        //a_matrix.set(r, 0, 1);
                     } else {
                         a_matrix.set(r, c, dmax_PI_TWO_INV_PI * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (n_pi_squared[c] - qd2));
                     }
@@ -165,9 +165,9 @@ public class MooreTransform extends IndirectFT {
                 am_vector.set(i, 0, 0);
             }
         } else { // constant background
-            am_vector.set(0,0,0.000000001); // set background constant, initial guess could be Gaussian
+            am_vector.set(0,0,0); // set background constant, initial guess could be Gaussian
             for (int i=1; i < coeffs_size; i++){
-                am_vector.set(i, 0, 0);
+                am_vector.set(i, 0, 0.0000000000001);
             }
         }
     }
@@ -964,7 +964,7 @@ public class MooreTransform extends IndirectFT {
     public double calculateQIQ(double qvalue) {
 
         double dmaxq = dmax * qvalue;
-        double resultM = coefficients[0];
+        double resultM = coefficients[0]*qvalue; // if coefficients is 0, means no background
 
         for(int i=1; i < totalCoefficients; i++){
             //resultM = resultM + coefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);

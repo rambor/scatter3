@@ -143,8 +143,8 @@ public class SineIntegralTransform extends IndirectFT {
 
                 for(int col=0; col < coeffs_size; col++){
                     if (col == 0){ // constant background term
-                        //a_matrix.set(row, 0, tempData.getXValue());
-                        a_matrix.set(row, 0, 1);
+                        a_matrix.set(row, 0, tempData.getXValue());
+                        //a_matrix.set(row, 0, 1);
                     } else { // for col >= 1
                         double r_value = r_vector[col-1];
                         a_matrix.set(row, col, FastMath.sin(r_value*tempData.getXValue()) / r_value);
@@ -163,7 +163,7 @@ public class SineIntegralTransform extends IndirectFT {
     private void initializeCoefficientVector(){
         am_vector = new SimpleMatrix(coeffs_size,1);  // am is 0 column
         //Gaussian guess = new Gaussian(dmax*0.5, 0.2*dmax);
-        double initialValue = 0.000001;
+        double initialValue = 0.0000000000001;
         if (positiveOnly){
             initialValue=1;
         }
@@ -175,7 +175,7 @@ public class SineIntegralTransform extends IndirectFT {
             }
         } else {
             //am_vector.set(0,0,0.000000001); // set background constant, initial guess could be Gaussian
-            am_vector.set(0,0,0.0000001); // set background constant, initial guess could be Gaussian
+            am_vector.set(0,0,0); // set background constant, initial guess could be Gaussian
             for (int i=1; i < coeffs_size; i++){
                 //am_vector.set(i, 0, guess.value(r_vector[i-1]));
                 am_vector.set(i, 0, initialValue);
@@ -294,7 +294,7 @@ public class SineIntegralTransform extends IndirectFT {
             //------------------------------------------------------------
             if (gap/dobj < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
-               // System.out.println(status);
+                System.out.println(status);
                 break calculationLoop;
             }
 
@@ -453,11 +453,11 @@ public class SineIntegralTransform extends IndirectFT {
         coeffs_size = coefficients.length; // this resets the coefficients to possibly include background term as first element
 
         // calculate residuals
-        residuals = new XYSeries("residuals");
-        for(int i=0; i < rows; i++){
-            XYDataItem item = data.getDataItem(i); // isn't quite correct, using data to get q-values, should be based on input for making design matrix
-            residuals.add(item.getX(), tempResiduals.get(i,0));
-        }
+//        residuals = new XYSeries("residuals");
+//        for(int i=0; i < rows; i++){
+//            XYDataItem item = data.getDataItem(i); // isn't quite correct, using data to get q-values, should be based on input for making design matrix
+//            residuals.add(item.getX(), tempResiduals.get(i,0));
+//        }
     }
 
     /**
@@ -723,11 +723,11 @@ public class SineIntegralTransform extends IndirectFT {
         coeffs_size = coefficients.length; // this resets the coefficients to possibly include background term as first element
 
         // calculate residuals
-        residuals = new XYSeries("residuals");
-        for(int i=0; i < rows; i++){
-            XYDataItem item = data.getDataItem(i); // isn't quite correct, using data to get q-values, should be based on input for making design matrix
-            residuals.add(item.getX(), tempResiduals.get(i,0));
-        }
+//        residuals = new XYSeries("residuals");
+//        for(int i=0; i < rows; i++){
+//            XYDataItem item = data.getDataItem(i); // isn't quite correct, using data to get q-values, should be based on input for making design matrix
+//            residuals.add(item.getX(), tempResiduals.get(i,0));
+//        }
     }
 
     private SimpleMatrix hessphi_coeffs_nonNegative_abs(SimpleMatrix laplacian, SimpleMatrix d1, double d1_xo_uo, double d2_xo_uo, int numColsInLaplacian) {
@@ -956,6 +956,7 @@ public class SineIntegralTransform extends IndirectFT {
         totalCoefficients = includeBackground ? coeffs_size: coeffs_size + 1;
 
         coefficients = new double[totalCoefficients];
+
         if (!includeBackground){
             coefficients[0] = 0; // set background to 0
             for (int j=1; j < totalCoefficients; j++){
@@ -963,6 +964,7 @@ public class SineIntegralTransform extends IndirectFT {
                 //System.out.println(j + " COEFFS " + coefficients[j]);
             }
         } else {
+
             for (int j=0; j < coeffs_size; j++){
                 coefficients[j] = am_vector.get(j,0);
             }
@@ -979,11 +981,11 @@ public class SineIntegralTransform extends IndirectFT {
         coeffs_size = coefficients.length; // this resets the coefficients to possibly include background term as first element
 
         // calculate residuals
-        residuals = new XYSeries("residuals");
-        for(int i=0; i < rows; i++){
-            XYDataItem item = data.getDataItem(i); // isn't quite correct, using data to get q-values, should be based on input for making design matrix
-            residuals.add(item.getX(), tempResiduals.get(i,0));
-        }
+//        residuals = new XYSeries("residuals");
+//        for(int i=0; i < rows; i++){
+//            XYDataItem item = data.getDataItem(i); // isn't quite correct, using data to get q-values, should be based on input for making design matrix
+//            residuals.add(item.getX(), tempResiduals.get(i,0));
+//        }
     }
 
 
@@ -1040,6 +1042,11 @@ public class SineIntegralTransform extends IndirectFT {
                 int index = i-1;
                 prDistribution.add(r_vector[index], coefficients[index+1]);
                 prDistributionForFitting.add(r_vector[index], coefficients[index+1]);
+
+                // if using background, add to each term?
+                if (includeBackground){
+
+                }
             }
             //System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
         }
@@ -1098,7 +1105,7 @@ public class SineIntegralTransform extends IndirectFT {
     @Override
     public double calculateQIQ(double qvalue) {
 
-        double sum = coefficients[0];
+        double sum = coefficients[0]*qvalue;
         double rvalue;
         for(int j=0; j< r_vector_size; j++){
             rvalue = r_vector[j];

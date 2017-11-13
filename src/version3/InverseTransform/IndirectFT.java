@@ -949,7 +949,6 @@ double topB = 1000;
 
         // see if q-value exists but to what significant figure?
         // if low-q is truncated and is missing must exclude from calculation
-
         for (int i=1; i <= bins && i*pi_inv_dmax <= qmax; i++){
 
             cardinal = i*pi_inv_dmax; // <= q-value
@@ -1021,7 +1020,6 @@ double topB = 1000;
 //            System.out.println(i + " SVD " + sing[i]);
 //        }
         double denominator = (includeBackground) ? (totalCoefficients - delta - 1) : (totalCoefficients - 2.0 - delta);
-       // System.out.println("chi sum : " + chi + " del " + delta + " den : " + denominator);
         return chi*1.0/delta;
     }
 
