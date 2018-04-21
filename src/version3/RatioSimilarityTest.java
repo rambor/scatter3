@@ -510,6 +510,7 @@ public class RatioSimilarityTest {
 //                }
 
                 data[2][j] = tempStat;
+                System.out.println(" stat " + i + " " + j + " " + tempStat);
                 residualsLabels.add(new XYTextAnnotation(String.format("%.2f", temp.getDurbinWatsonStatistic()), frameIndices.get(i), frameIndices.get(j)));
 
 //                if (tempStat > 1.5){
@@ -594,6 +595,7 @@ public class RatioSimilarityTest {
 
     /**
      * residuals chart
+     * Durbin-Watson
      */
     private void makeCharts(){
         this.createResidualsDataset();
@@ -614,8 +616,8 @@ public class RatioSimilarityTest {
 
         // max for DurbinWatson is 4
         //SpectrumPaintScale ps = new SpectrumPaintScale(1.5, 2.3);
-        SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), maxResidualDataset+0.03*maxResidualDataset);
-        //SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), 4);
+        //SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), maxResidualDataset+0.03*maxResidualDataset);
+        SpectrumPaintScale ps = new SpectrumPaintScale(0, 4);
 
         r.setPaintScale(ps);
         r.setBlockHeight(1.0f);
@@ -660,19 +662,15 @@ public class RatioSimilarityTest {
 
         topPlotPanel.removeAll();
         topPlotPanel.add(topChartPanel);
-
-//        topPlotPanel.revalidate();
-        panel1.revalidate();
-//        mainFrame.revalidate();
-
-
+        //panel1.revalidate();
     }
 
 
     public void makePlot(){
+
         residualDifferencesModel.clear();
 
-        mainFrame.revalidate();
+       // mainFrame.revalidate();
         mainFrame.setContentPane(this.panel1);
         mainFrame.setPreferredSize(new Dimension(800,600));
         mainFrame.pack();
@@ -711,12 +709,9 @@ public class RatioSimilarityTest {
             float scaledH = H1 + scaledValue * (H2 - H1);
 
             // HSB white is s: 0, b: 1
-            if (value == getLowerBound() || value == getUpperBound()){
+            if (value <= getLowerBound() || value >= getUpperBound()){
                 saturation = 0;
                 //scaledH = H1 + (float) (getLowerBound() / (getUpperBound() - getLowerBound())) * (H2 - H1);
-                scaledH = 0;
-            } else if (value < getLowerBound() || value > getUpperBound()){
-                saturation = 0;
                 scaledH = 0;
             }
 

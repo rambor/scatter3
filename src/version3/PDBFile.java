@@ -9,6 +9,7 @@ import quickhull3d.QuickHull3D;
 import javax.swing.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -83,8 +84,8 @@ public class PDBFile {
         calculatePofR();
         this.convertPofRToIntensities();
 
-        //this.centerCoordinates();
-        //this.convertToBeadModel(2.0);
+        this.centerCoordinates();
+        this.convertToBeadModel(delta_r*0.5);
     }
 
     private void calculatePofR() {
@@ -139,6 +140,7 @@ public class PDBFile {
             double[] atom, atom2;
             double refx, refy, refz, difx, dify, difz, distance;
             int startIndex, bin;
+            double dmax_temp=0;
 
             for (int i = 0; i < totalAtoms; i++) { // n*(n-1)/2 distances
                 atom = workingCoords.get(i).getCoords(); // use different weights for atom type here
@@ -155,7 +157,7 @@ public class PDBFile {
                     difz = refz - atom2[2];
 
                     distance = FastMath.sqrt(difx * difx + dify * dify + difz * difz);
-                    distances.add(distance);
+                    //distances.add(distance);
                     // which bin low res?
                     // lower < value <= upper
                     bin = (int) Math.floor(distance * inv_delta); // casting to int is equivalent to floor
@@ -167,8 +169,32 @@ public class PDBFile {
                     //highResHisto[(bin >= high_res_pr_bins) ? bin - 1 : bin] += 1;
                     highResHisto[bin] += 1;
                     startIndex++;
+                    if (distance > dmax_temp){
+                        dmax_temp = distance;
+                    }
                 }
             }
+
+
+            System.out.println(String.format("FINISHED DISTANCES => dmax_temp : %.3f", dmax_temp));
+            ArrayList<String> output = new ArrayList();
+            output.add(String.format("REMARK 265                          DMAX : %d (Angstroms)%n", dmax));
+            output.add(String.format("REMARK 265   RESOLUTION LIMIT       QMAX : %.6f (Angstroms^-1)%n", qmax));
+            output.add(String.format("REMARK 265   RESOLUTION LIMIT  BIN WIDTH : %.2f (Angstroms)%n", delta_r));
+            output.add(String.format("REMARK 265 %n"));
+            output.add(String.format("REMARK 265           BIN WIDTH (delta r) : %.4f %n", delta_r));
+            output.add(String.format("REMARK 265 %n"));
+            output.add(String.format("REMARK 265  BIN COEFFICIENTS (UNSCALED) %n"));
+            output.add(String.format("REMARK 265 %n"));
+            output.add(String.format("REMARK 265      CONSTANT BACKGROUND EXCLUDED FROM FIT %n"));
+            output.add(String.format("REMARK 265      CONSTANT BACKGROUND m(0) : 0.000E+00 %n"));
+            output.add(String.format("REMARK 265 %n"));
+            output.add(String.format("REMARK 265 P(R) DISTRIBUTION BINNED USING SHANNON NUMBER %n"));
+            output.add(String.format("REMARK 265 R-values REPRESENT THE MID-POINT OF EACH BIN %n"));
+            output.add(String.format("REMARK 265 BIN HEIGHT REPRESENTS THE VALUE OF P(R-value) %n"));
+            output.add(String.format("REMARK 265        BIN            R-value : BIN HEIGHT %n"));
+            output.add(String.format("REMARK 265 %n"));
+
 
             pdbdata = new XYSeries(filename);
             high_res_pr_data = new XYSeries(filename);
@@ -176,12 +202,20 @@ public class PDBFile {
             double temparea = 0;
             for (int i = 0; i < pr_bins; i++) {
                 pdbdata.add((i + 0.5) * delta_r, histo[i]);  // middle position of the histogram bin
+
+                int index = i+1;
+                output.add(String.format("REMARK 265       BIN_%-2d          %9.3f : %d %n", index, ((i + 0.5) * delta_r), histo[i]));
+
                 //pdbdata.add((i+1) * delta_r, histo[i]);    // far edge position of the histogram bin
                 //pdbdata.add(i * delta_r, histo[i]);        // near edge position of the histogram bin
                 //XYDataItem tempItem = pdbdata.getDataItem(i);
                 //System.out.println(tempItem.getXValue() + " " + tempItem.getYValue() + " 0 ");
                 temparea += delta_r*histo[i];
             }
+
+            output.add(String.format("REMARK 265 %n"));
+            output.add(String.format("REMARK 265            TOTAL SHANNON BINS : %d %n", pr_bins));
+
             // pdbdata.add(delta_r*(pr_bins), 0); // dmax is contained in the last bin
             pdbdata.add(ns_dmax, 0);
 
@@ -230,7 +264,10 @@ public class PDBFile {
 //            System.out.println("END OF POFR POINTS");
             //calculateMooreCoefficients(pr_bins, ns_dmax);
             // calcualte p(r) distribution to the specified resolution
+String nameBin =  String.format("prbins_%.2f", qmax);
+            writeToFile(output, nameBin, "txt");
         }
+        System.out.println("FINISHED --");
     }
 
     /**
@@ -249,7 +286,7 @@ public class PDBFile {
 
         double constant = 0.5*dmax/(totalr-1); // first bin is just 0,0
 
-        int totalDistances = distances.size();
+        //int totalDistances = distances.size();
         XYDataItem tempItem;
         //System.out.println("ICALC");
         while (q_at < qmax){  // integrate using trapezoid rule
@@ -412,7 +449,7 @@ public class PDBFile {
             lines.add(centeredAtoms.get(i).getPDBline());
         }
         lines.add(String.format("END %n"));
-        writeToFile(lines, "centeredPDB");
+        writeToFile(lines, "centeredPDB", "pdb");
     }
 
 
@@ -472,12 +509,14 @@ public class PDBFile {
         ArrayList<String> lines = new ArrayList<>();
         ArrayList<Bead> keepers = new ArrayList<>();
 
+        int totalBeads = beads.size();
+        int swapIndex = totalBeads -1;
         count=1;
         for(int atom=0; atom<totalAtoms; atom++){
             PDBAtom temp = centeredAtoms.get(atom);
             // if atom is within radius of a bead,keep bead
-            int totalBeads = beads.size();
-            ArrayList<Bead> removeThese = new ArrayList<>();
+            //int totalBeads = beads.size();
+            //ArrayList<Bead> removeThese = new ArrayList<>();
             findLoop: // find all beads within bead_radius of atom
             for(int b=0; b<totalBeads; b++){
                 Bead tempbead = beads.get(b);
@@ -485,15 +524,19 @@ public class PDBFile {
                     lines.add(tempbead.getPDBLine(count));
                     keepers.add(tempbead);
                     //beads.remove(b);
-                    removeThese.add(tempbead);
+                    //removeThese.add(tempbead);
                     count++;
                     //break findLoop;
+                    Collections.swap(beads, b, swapIndex);
+                    swapIndex--;
+                    totalBeads--;
                 }
             }
-            beads.removeAll(removeThese);
+            //beads.removeAll(removeThese);
         }
 
         totalAtoms = keepers.size();
+        // calculate dmax
         double max = 0;
         for(int i=0; i<totalAtoms; i++){
             int next = i+1;
@@ -507,22 +550,24 @@ public class PDBFile {
             }
         }
         max = Math.sqrt(max);
+        System.out.println("FINISHED BEAD MODEL");
 
         ArrayList<String> output = new ArrayList();
+        output.add(String.format("REMARK 265            BEAD RADIUS : %.1f %n", bead_radius));
         output.add(String.format("REMARK 265            BEAD VOLUME : %.1f %n", volume));
         output.add(String.format("REMARK 265           TOTAL VOLUME : %.1f %n", volume*lines.size()));
         output.add(String.format("REMARK 265  DMAX CENTER-TO-CENTER : %.1f %n", max));
         output.add(String.format("REMARK 265      DMAX EDGE-TO-EDGE : %.1f %n", max+2*bead_radius));
         output.addAll(lines);
         output.add(String.format("END %n"));
-        writeToFile(output, "bead_model");
+        writeToFile(output, "bead_model_"+String.format("%.2f", bead_radius), "pdb");
     }
 
-    public void writeToFile(ArrayList<String> lines, String name){
+    public void writeToFile(ArrayList<String> lines, String name, String ext){
 
         try {
             // Create file
-            FileWriter fstream = new FileWriter(currentWorkingDirectory + "/"+name+".pdb");
+            FileWriter fstream = new FileWriter(currentWorkingDirectory + "/"+name+"."+ext);
             BufferedWriter out = new BufferedWriter(fstream);
             int total = lines.size();
             for(int i=0; i<total; i++){

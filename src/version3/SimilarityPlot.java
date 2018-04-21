@@ -143,13 +143,10 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
         XYPlot plot = new XYPlot(residualDataset, xAxis, yAxis, null);
         XYBlockRenderer r = new XYBlockRenderer();
 
-//        for(int i=0; i<residualsLabels.size(); i++){
-//            plot.addAnnotation(residualsLabels.get(i));
-//        }
-
         // max for DurbinWatson is 4
         //SpectrumPaintScale ps = new SpectrumPaintScale(minResidualDataset - (0.07*minResidualDataset), maxResidualDataset+0.03*maxResidualDataset);
         SpectrumPaintScale ps = new SpectrumPaintScale(0, 4);
+
         r.setPaintScale(ps);
         r.setBlockHeight(1.0f);
         r.setBlockWidth(1.0f);
@@ -238,18 +235,6 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
 
         chartPanel.setDisplayToolTips(true);
         frame = new ChartFrame("SC\u212BTTER \u2263 SIMILARITY PLOT", chartPanel.getChart());
-//        frame.getChartPanel().setDisplayToolTips(true);
-
-//        frame.getChartPanel().getChart().getXYPlot().getRenderer(0).setBaseToolTipGenerator(new XYToolTipGenerator() {
-//            @Override
-//            public String generateToolTip(XYDataset xyDataset, int i, int i2) {
-//                return (String) xyDataset.getSeriesKey(i);
-//            }
-//        });
-
-//        frame.getChartPanel().setRangeZoomable(false);
-//        frame.getChartPanel().setDomainZoomable(false);
-
         frame.getChartPanel().setMouseZoomable(false);
         frame.getChartPanel().setHorizontalAxisTrace(true);
         frame.getChartPanel().setVerticalAxisTrace(true);
@@ -294,7 +279,6 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
                     samplesList.repaint();
                     chartMouseEvent.getChart().setTitle("Selected frames : " + Integer.toString((int)d.getX(series, index).intValue()) + " to " + Integer.toString((int)d.getY(series, index).intValue()));
                 }
-
             }
 
             @Override
@@ -304,8 +288,6 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
         });
 
         frame.pack();
-
-        //frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 
         frame.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
@@ -513,9 +495,9 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
             for(int j=nonZeroCol; j < N; j++){
 
                 ResidualDifferences temp = residualDifferencesModel.get(index);
+
                 double tempStat = temp.getStatistic();
                 data[2][j] = tempStat;
-
 
                 if (tempStat > maxResidualDataset){
                     maxResidualDataset = temp.getStatistic();
@@ -542,6 +524,9 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
         public SpectrumPaintScale(double lowerBound, double upperBound) {
             this.lowerBound = lowerBound;
             this.upperBound = upperBound;
+
+            // 2/2 should be red => HSB(0,1,1)
+            // 0/2 should be blue => HSB(200,1,1)
         }
 
         @Override
@@ -556,9 +541,13 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
 
         @Override
         public Paint getPaint(double value) {
+
             float saturation =1f;
-            float scaledValue = (float) (value / (getUpperBound() - getLowerBound()));
-            float scaledH = H1 + scaledValue * (H2 - H1);
+            //float scaledValue = (float) (value / (getUpperBound() - getLowerBound()));
+            float scaledValue = (float) (getUpperBound() - value);
+
+           // float scaledH = H1 + scaledValue * (H2 - H1);
+            float scaledH =  (float)(value/getUpperBound());
 
             // HSB white is s: 0, b: 1
             if (value == getLowerBound() || value == getUpperBound()){
@@ -573,7 +562,6 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
             //var h = (1.0 - value) * 240
             //return "hsl(" + h + ", 100%, 50%)";
             return Color.getHSBColor(scaledH, saturation, 1f);
-            //return Color.getHSBColor(scaledH*240, 1f, 0.5f);
         }
     }
 

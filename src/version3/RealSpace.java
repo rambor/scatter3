@@ -573,7 +573,7 @@ public class RealSpace {
         return l1_norm/shannon;
     }
 
-    public double max_kurtosis_shannon_sampled(int rounds){
+    public double max_kurtosis_shannon_sampled(){
         return kurtosis;
     }
 

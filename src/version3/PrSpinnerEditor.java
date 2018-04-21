@@ -28,22 +28,16 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
 
     private JLabel status;
     private JCheckBox qIqFit;
-    private JComboBox lambdaBox;
     private JCheckBox l1NormCheckBox;
-    private JComboBox cBox;
-    private JCheckBox useDirectFT;
     private JCheckBox backgroundCheckBox;
     private JCheckBox positiveOnly;
 
     // Initializes the spinner.
-    public PrSpinnerEditor(PrModel prModel, JLabel status,  JCheckBox qIqCheckBox, JComboBox lambdaBox, JCheckBox l1NormCheckBox, JComboBox cBox, JCheckBox useDirectFT, JCheckBox excludeBackground, JCheckBox positiveOnly) {
+    public PrSpinnerEditor(PrModel prModel, JLabel status,  JCheckBox qIqCheckBox, JCheckBox l1NormCheckBox, JCheckBox excludeBackground, JCheckBox positiveOnly) {
         super(new JTextField());
         spinner = new JSpinner();
 
-        this.lambdaBox = lambdaBox;
         this.l1NormCheckBox = l1NormCheckBox;
-        this.cBox = cBox;
-        this.useDirectFT = useDirectFT;
         this.backgroundCheckBox = excludeBackground;
         this.positiveOnly = positiveOnly;
 
@@ -142,10 +136,11 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
     private void updateModel(RealSpace prDataset){
         IFTObject tempPr = new IFTObject (
                 prDataset,
-                Double.parseDouble(lambdaBox.getSelectedItem().toString()),
+                prModel.getLambdaBoxSelectedItem(),
                 l1NormCheckBox.isSelected(),
-                Integer.parseInt(cBox.getSelectedItem().toString()),
-                useDirectFT.isSelected(),
+                prModel.getCBoxSelectedItem(),
+                prModel.getUseDirectFT(),
+                prModel.getUseLegendre(),
                 backgroundCheckBox.isSelected(),
                 positiveOnly.isSelected()
 

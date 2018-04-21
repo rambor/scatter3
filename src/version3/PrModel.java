@@ -20,6 +20,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     private final LinkedList<RealSpace> datalist;
     private JCheckBox fitModel;
     private JCheckBox useDirectFT;
+    private JCheckBox useLegendre;
     private JCheckBox excludeBackground;
     private JCheckBox postiveOnly;
     private ArrayList<ArrayList<Boolean>> editable_cells;
@@ -32,6 +33,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
 
     private DecimalFormat oneDecimalPlace = new DecimalFormat("0.0");
     private DecimalFormat twoDecPlac = new DecimalFormat("0.00");
+    private DecimalFormat threeDecPlac = new DecimalFormat("0.000");
     private DecimalFormat scientific = new DecimalFormat("0.00E0");
     private DecimalFormat twoOneFormat = new DecimalFormat("0.0");
 
@@ -47,6 +49,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                    JCheckBox fitModel,
                    JComboBox cBox,
                    JCheckBox useDirectFT,
+                   JCheckBox useLegendre,
                    JCheckBox excludeBackground,
                    JCheckBox positiveOnly){
         this.status = status;
@@ -64,6 +67,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         this.dmaxStart = dmaxSlider;
         this.cBox = cBox;
         this.useDirectFT = useDirectFT;
+        this.useLegendre = useLegendre;
         this.excludeBackground = excludeBackground;
         this.postiveOnly = positiveOnly;
     }
@@ -184,7 +188,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 return twoOneFormat.format(dataset.getDmax());
             case 10:
                // return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
-                 return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.max_kurtosis_shannon_sampled(13))+")";
+                 return twoDecPlac.format(dataset.getChi2()) + " ("+threeDecPlac.format(dataset.max_kurtosis_shannon_sampled())+")";
                 //return twoDecPlac.format(dataset.getChi2()) ;
             case 11:
                 return scientific.format(dataset.getScale());
@@ -249,6 +253,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                             fitModel.isSelected(),
                             Integer.parseInt(cBox.getSelectedItem().toString()),
                             useDirectFT.isSelected(),
+                            useLegendre.isSelected(),
                             excludeBackground.isSelected(),
                             postiveOnly.isSelected()
                     );
@@ -345,4 +350,21 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     public void stateChanged(ChangeEvent e) {
 
     }
+
+    boolean getUseLegendre(){
+        return useLegendre.isSelected();
+    }
+
+    boolean getUseDirectFT(){
+        return useDirectFT.isSelected();
+    }
+
+    int getCBoxSelectedItem(){
+        return Integer.parseInt(cBox.getSelectedItem().toString());
+    }
+
+    double getLambdaBoxSelectedItem(){
+        return Double.parseDouble(lambdaBox.getSelectedItem().toString());
+    }
+
 }

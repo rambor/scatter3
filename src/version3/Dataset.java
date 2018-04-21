@@ -161,7 +161,6 @@ public class Dataset {
         allDataError = new XYSeries(tempName);
         allDataYError = new YIntervalSeries(tempName);
         plottedData = new XYSeries(tempName);  // actual log10 data that is plotted
-
         double tempy;
         for(int i=0; i<totalCountInAllData; i++) {
             XYDataItem tempXY = dat.getDataItem(i);
@@ -175,7 +174,6 @@ public class Dataset {
                 //guinierData.add(tempXY.getX().doubleValue()*tempXY.getX().doubleValue(), Math.log(tempy));
             }
         }
-
 
         plottedError = new XYSeries(tempName); // actual log10 data that is plotted
         plottedKratkyData = new XYSeries(tempName);

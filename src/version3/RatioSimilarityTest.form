@@ -67,7 +67,7 @@
               </grid>
             </constraints>
             <properties>
-              <text value="&lt;html&gt;&lt;ul&gt;&lt;li&gt;Similarity between SAXS curves can be assessed using the Durbin-Watson (DW) and Ljung-Box scores&lt;/li&gt;&lt;li&gt;SAXS profiles with same shape will have a DW score of 1.95 and a Ljung-Box near zero&lt;/li&gt;&#10;&lt;li&gt;Only data with the largest continuous stretch within 1.95 should be merged&lt;/li&gt;&#10;&lt;li&gt;Interparticle inteference or aggregation can be detected by increasing q-min&lt;/li&gt;&#10;&lt;/html&gt;  "/>
+              <text value="&lt;html&gt;&lt;ul&gt;&lt;li&gt;Similarity between SAXS curves can be assessed using the Durbin-Watson (DW) and Ljung-Box scores&lt;/li&gt;&lt;li&gt;SAXS profiles with same shape will have a DW score of 2 and a Ljung-Box near zero (low as possible)&lt;/li&gt;&#10;&lt;li&gt;Only data with the largest continuous stretch within 2 should be merged&lt;/li&gt;&#10;&lt;li&gt;Interparticle inteference or aggregation can be detected by adjusting q-min&lt;/li&gt;&#10;&lt;/html&gt;  "/>
             </properties>
           </component>
           <grid id="5766e" layout-manager="FormLayout">

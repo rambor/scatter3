@@ -98,7 +98,7 @@ public class SineIntegralTransform extends IndirectFT {
 
 
     public void createDesignMatrix(XYSeries datasetInuse){
-        ns = (int) Math.ceil(qmax*dmax*INV_PI)  ;  //
+        ns = (int) Math.round(qmax*dmax*INV_PI) + 1 ;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
         rows = datasetInuse.getItemCount();    // rows
 
@@ -181,7 +181,6 @@ public class SineIntegralTransform extends IndirectFT {
                 am_vector.set(i, 0, initialValue);
             }
         }
-
     }
 
 
@@ -190,7 +189,8 @@ public class SineIntegralTransform extends IndirectFT {
      * Minimize on the absolute value of the coefficients, coeficients can be positive or negative
      * Can include background or not
      */
-    public void rambo_coeffs_L1(){
+    public void
+    rambo_coeffs_L1(){
 
         // initialize coefficient vector
         this.initializeCoefficientVector();
@@ -292,16 +292,16 @@ public class SineIntegralTransform extends IndirectFT {
             //------------------------------------------------------------
             //       Shall we Stop?
             //------------------------------------------------------------
-            if (gap/dobj < reltol) {
+            if (gap/dobj < reltol ) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
-                System.out.println(status);
+                //System.out.println(status);
                 break calculationLoop;
             }
 
             //------------------------------------------------------------
             //       UPDATE t
             //------------------------------------------------------------
-            if (s >= 0.5){
+            if (s >= 0.5 && gap > 0){
                 t = Math.max(Math.min(twoColsMu/gap, MU*t), t);
             }
             inv_t = 1.0/t;
@@ -1000,7 +1000,7 @@ public class SineIntegralTransform extends IndirectFT {
         //del_r = prDistribution.getX(2).doubleValue() - prDistribution.getX(1).doubleValue() ;
 
         XYDataItem item;
-        for(int i=1; i<totalInDistribution-2; i++){ // exclude last two points?
+        for(int i=1; i<totalInDistribution-1; i++){ // exclude last two points?
             item = prDistribution.getDataItem(i);
             double rvalue = item.getXValue();
             tempRg2Sum += rvalue*rvalue*item.getYValue()*del_r;
@@ -1015,7 +1015,7 @@ public class SineIntegralTransform extends IndirectFT {
             sum +=  coefficients[j+1];
         }
 
-        //izero = (sum + standardizedMin)*standardizedScale;
+        //izero = tempRgSum*standardizedScale+standardizedMin;
         izero = sum*standardizedScale+standardizedMin;
         rAverage = xaverage/tempRgSum;
         area = tempRgSum;
@@ -1040,9 +1040,13 @@ public class SineIntegralTransform extends IndirectFT {
                 //prDistributionForFitting.add(dmax,0);
             } else { // odd
                 int index = i-1;
-                prDistribution.add(r_vector[index], coefficients[index+1]);
-                prDistributionForFitting.add(r_vector[index], coefficients[index+1]);
+                double value = coefficients[index+1];
+                prDistribution.add(r_vector[index], value);
+                prDistributionForFitting.add(r_vector[index], value);
 
+//                if (value<0){
+//                    System.out.println( " WARNING NEGATIVE BIN r: " + r_vector[index] + " => " + value);
+//                }
                 // if using background, add to each term?
                 if (includeBackground){
 

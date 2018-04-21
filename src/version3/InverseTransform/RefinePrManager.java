@@ -1,5 +1,6 @@
 package version3.InverseTransform;
 
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
@@ -27,6 +28,8 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     private double s_o;
     private double dmax;
 
+    private boolean useLegendre = false;
+
     private double pi_invDmax;
     private double upperq;
     private final boolean useL1;
@@ -50,7 +53,17 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     private AtomicBoolean isNewModel;
     private double median;
 
-    public RefinePrManager(RealSpace dataset, int numberOfCPUs, int refinementRounds, double rejectionCutOff, double lambda, int cBoxValue, boolean useL1, boolean includeBackground, boolean useDirect, boolean positiveOnly){
+    public RefinePrManager(RealSpace dataset,
+                           int numberOfCPUs,
+                           int refinementRounds,
+                           double rejectionCutOff,
+                           double lambda,
+                           int cBoxValue,
+                           boolean useL1,
+                           boolean includeBackground,
+                           boolean useDirect,
+                           boolean useLegendre,
+                           boolean positiveOnly){
 
         this.numberOfCPUs = numberOfCPUs;
         this.dataset = dataset;
@@ -66,6 +79,9 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         this.useBackgroundInFit = includeBackground;
         this.positiveOnly = positiveOnly;
         this.useDirectFT = useDirect;
+        this.useLegendre = useLegendre;
+
+
         this.cBoxValue = cBoxValue;
 
         this.upperq = dataset.getfittedqIq().getMaxX();
@@ -80,6 +96,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
         //dataset.setStandardizationMean(this.standardizedMin, this.standardizedScale);
         this.median = dataset.getIndirectFTModel().calculateMedianResidual(standardizedSeries);
+        System.out.println("med " + this.median);
     }
 
 
@@ -246,7 +263,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
             for (int i=0; i<totalItems; i++){
                 XYDataItem tempData = allError.getDataItem(i);
-                errorActiveSet.add(tempData.getXValue(), tempData.getXValue() * tempData.getYValue());
+                errorActiveSet.add(tempData.getXValue(), tempData.getXValue() * tempData.getYValue()); // transformed as q*I(q)
                 relativeErrorSeries.add(tempData.getXValue(), Math.abs(activeSet.getY(i).doubleValue() / (tempData.getXValue() * tempData.getYValue())));
             }
 
@@ -321,12 +338,19 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
                 // calculate PofR using standardized dataset
                 IndirectFT tempIFT;
-                if (useDirectFT){
+//                if (useDirectFT){
+//                    tempIFT = new SineIntegralTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+//                } else {  // use Moore Method
+//                    tempIFT = new MooreTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
+//                }
+
+                if (useDirectFT && !useLegendre){
                     tempIFT = new SineIntegralTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
-                } else {  // use Moore Method
+                } else if (useLegendre && !useDirectFT) {
+                    tempIFT = new LegendreTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, standardizedScale);
+                } else  {  // use Moore Method
                     tempIFT = new MooreTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
                 }
-
 
                 // Calculate Residuals
                 tempMedian = tempIFT.calculateMedianResidual(activeSet); // squared residual using standardized data
@@ -476,7 +500,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                 keptSeries.add(dataset.getfittedIq().getDataItem(i));
                 keptqIq.add(tempData);
                 keptNonStandardizedqIq.add(xObsValue, dataset.getfittedIq().getY(i).doubleValue()*xObsValue);
-                keptErrorSeries.add(xObsValue, fittedErrors.getY(i).doubleValue());
+                keptErrorSeries.add(xObsValue, fittedErrors.getY(i).doubleValue()*xObsValue);
             }
         }
 
@@ -487,11 +511,22 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             dataset.updatedRefinedSets(keptSeries, keptErrorSeries);
             dataset.getCalcIq().clear();
             IndirectFT tempIFT;
-            if (useDirectFT){ // unstandardized datasets
+//            if (useDirectFT){ // unstandardized datasets
+//                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+//            } else {  // use Moore Method
+//                tempIFT = new MooreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
+//            }
+
+            if (useDirectFT && !useLegendre){
                 tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
-            } else {  // use Moore Method
+            } else if (useLegendre && !useDirectFT) {
+
+                tempIFT = new LegendreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, standardizedScale);
+
+            } else  {  // use Moore Method
                 tempIFT = new MooreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
             }
+
             // for chi_estimate calculations, nonStandardized datasets must be specified
             //btempIFT.setNonStandardizedData(keptNonStandardizedqIq);
 

@@ -147,7 +147,6 @@ public class Scatter {
     private JTextField qmaxLimitField;
     private JTextField qminLimitField;
     private JButton runSphereModelButton;
-    private JButton SVDReduceButton;
 
     private JPanel menuBarPrPanel;
     private JPanel prGraphPanels;
@@ -323,11 +322,14 @@ public class Scatter {
     private JLabel methodInUseLabel;
     private JCheckBox positiveOnlyCheckBox;
     private JButton similarityButton;
+    private JCheckBox legendreCheckBox;
+    private JCheckBox showBinsCheckBox;
+    private JLabel prLambdaLabel;
     //private JCheckBox volumeScalingCheckBox;
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.1q";
+    private String version = "3.1v";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -406,6 +408,7 @@ public class Scatter {
     public Scatter() { // constructor
 
         versionLabel.setText("Version : "+ version);
+        prLambdaLabel.setText("\u03bb");
         MessageConsole mc = new MessageConsole(stdOutText);
         //mc.redirectOut();
         //mc.redirectErr(Color.RED, null);
@@ -417,7 +420,7 @@ public class Scatter {
         refinementRoundsBox.setSelectedIndex(0);
         rejectionCutOffBox.setSelectedIndex(3);
         simBinsComboBox.setSelectedIndex(0);
-        lambdaBox.setSelectedIndex(2);
+        lambdaBox.setSelectedIndex(3);
         cBox.setSelectedIndex(1);
         lambdaCEcomboBox.setSelectedIndex(3);
         ceComboBoxRounds.setSelectedIndex(1);
@@ -881,7 +884,7 @@ public class Scatter {
                     }
                 }
 
-                if (total >2){
+                if (total > 2){
                     // select dataset with form factor
                     try {
                         RatioSimilarityTest temp = new RatioSimilarityTest(collectionSelected, 0.011, 0.178);
@@ -889,6 +892,8 @@ public class Scatter {
                     } catch (Exception e1) {
                         e1.printStackTrace();
                     }
+                } else {
+                    status.setText("Please select more than two datasets");
                 }
 
             }
@@ -1078,7 +1083,18 @@ public class Scatter {
         dmaxStart = new DoubleValue(97);
 
         //Pr Table JLabel status, WorkingDirectory cwd, Double lambda
-        prTable = new JTable(new PrModel(status, WORKING_DIRECTORY, lambdaBox, dmaxLow, dmaxHigh, dmaxSlider, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
+        prTable = new JTable(new PrModel(status,
+                WORKING_DIRECTORY,
+                lambdaBox,
+                dmaxLow,
+                dmaxHigh,
+                dmaxSlider,
+                l1NormCheckBox,
+                cBox,
+                useDirectFourierTransformCheckBox,
+                legendreCheckBox,
+                excludeBackgroundInFitCheckBox,
+                positiveOnlyCheckBox));
 
         prModel = (PrModel) prTable.getModel();
 
@@ -1086,11 +1102,11 @@ public class Scatter {
         TableColumnModel pcm = prTable.getColumnModel();
 
         TableColumn pc = pcm.getColumn(4);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, l1NormCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
         pc = pcm.getColumn(5);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, l1NormCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
         pc = pcm.getColumn(9);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, lambdaBox, l1NormCheckBox, cBox, useDirectFourierTransformCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, l1NormCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
 
         pc = pcm.getColumn(2);
         pc.setCellEditor(new CheckBoxCellEditorRenderer());
@@ -1972,50 +1988,53 @@ public class Scatter {
         new FileDrop(buffers, new FileDrop.Listener() {
             @Override
             public void filesDropped(final File[] files) {
+
                 final int panel = 69;
-                new Thread() {
-                    public void run() {
+                ReceivedDroppedFiles rec1 = null;
 
-                        ReceivedDroppedFiles rec1 = null;
+                if (buildListFromFileCheckBox.isSelected()){
 
-                        if (buildListFromFileCheckBox.isSelected()){
-
-                            if (files.length == 1){
-                                try{
-                                    FileListBuilder builder = new FileListBuilder(files[0], WORKING_DIRECTORY.getWorkingDirectory());
-                                    rec1 = new ReceivedDroppedFiles(builder.getFoundFiles(), (Collection)collections.get(panel), getStatus(), panel, onDropConvertNmCheckBox.isSelected(), false, true, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
-                                    status.setText("Loading files, please wait");
-                                } catch (Exception e){
-
-                                }
-                            } else {
-                                status.setText(" DROP only one file please");
-                            }
-
-                            buildListFromFileCheckBox.setSelected(false);
-                        } else {
-                            rec1 = new ReceivedDroppedFiles(files, (Collection)collections.get(panel), getStatus(), panel, onDropConvertNmCheckBox.isSelected(), false, true, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                    if (files.length == 1){
+                        try{
+                            FileListBuilder builder = new FileListBuilder(files[0], WORKING_DIRECTORY.getWorkingDirectory());
+                            rec1 = new ReceivedDroppedFiles(builder.getFoundFiles(), (Collection)collections.get(panel), getStatus(), panel, onDropConvertNmCheckBox.isSelected(), false, true, mainProgressBar, WORKING_DIRECTORY.getWorkingDirectory());
+                            status.setText("Loading files, please wait");
+                        } catch (Exception e){
+                            //programInstance.status.setText(" DROP only one file please");
                         }
+                    } else {
+                        status.setText(" DROP only one file please");
+                    }
 
-                        // add other attributes and then run
-                        rec1.setSampleBufferModels(bufferFilesModel);
-                        rec1.useShortenedConstructor();
-                        rec1.run();
-                        try {
-                            rec1.get();
-                            mainProgressBar.setValue(0);
-                            mainProgressBar.setStringPainted(false);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        } catch (ExecutionException e1) {
-                            e1.printStackTrace();
-                        }
+                    buildListFromFileCheckBox.setSelected(false);
+                } else {
 
-                        status.setText("Total Loaded: " + bufferFilesModel.getSize());
-                        buffersList.removeAll();
-                        buffersList.setModel(bufferFilesModel);
+                    rec1 = new ReceivedDroppedFiles(
+                            files,
+                            (Collection)collections.get(panel),
+                            getStatus(),
+                            panel,
+                            onDropConvertNmCheckBox.isSelected(),
+                            false,
+                            true,
+                            mainProgressBar,
+                            WORKING_DIRECTORY.getWorkingDirectory());
+                }
+
+                buffersList.removeAll(); // still in samples JScrollPane
+                rec1.setSampleBufferModels(bufferFilesModel);
+                rec1.useShortenedConstructor();
+
+                //new Thread(rec1).start();
+
+                ReceivedDroppedFiles finalRec = rec1;
+                new Thread(){
+                    public void run(){
+                        finalRec.run();
+                        updateList(buffersList);
                     }
                 }.start();
+
             }
         });
 
@@ -3500,21 +3519,27 @@ public class Scatter {
         });
 
 
+
         checkBoxDirect.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
 
                 positiveOnlyCheckBox.setSelected(false);
-                //l1NormCheckBox.setSelected(true);
+
                 if (checkBoxDirect.isSelected()){
                     useDirectFourierTransformCheckBox.setSelected(true);
+                    positiveOnlyCheckBox.setSelected(true);
+
                     l1NormCheckBox.setSelected(false);
-                    lambdaBox.setSelectedIndex(2);
+                    legendreCheckBox.setSelected(false);
+
+                    lambdaBox.setSelectedIndex(1);
                     if (excludeBackgroundInFitCheckBox.isSelected()){
                         methodInUseLabel.setText("Direct Inverse FT Method with constant background");
                     } else {
                         methodInUseLabel.setText("Direct Inverse FT Method no background ");
                     }
+
                 } else {
 
                     useDirectFourierTransformCheckBox.setSelected(false);
@@ -3528,7 +3553,8 @@ public class Scatter {
                             methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
                         }
                     }
-                    lambdaBox.setSelectedIndex(6);
+
+                    lambdaBox.setSelectedIndex(2);
                 }
                 prStatusLabel.setText(methodInUseLabel.getText());
             }
@@ -3540,6 +3566,7 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 positiveOnlyCheckBox.setSelected(false);
                 useDirectFourierTransformCheckBox.setSelected(false);
+                legendreCheckBox.setSelected(false);
                 checkBoxDirect.setSelected(false);
 
                 if (l1NormCheckBox.isSelected()){
@@ -3548,17 +3575,17 @@ public class Scatter {
                     excludeBackgroundInFitCheckBox.setSelected(true);
 
                     methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
-                    lambdaBox.setSelectedIndex(6);
+                    lambdaBox.setSelectedIndex(2);
                 } else {
                    // checkBoxDirect.setSelected(false);
                    // useDirectFourierTransformCheckBox.setSelected(true);
                    // excludeBackgroundInFitCheckBox.setSelected(true);
                     if (excludeBackgroundInFitCheckBox.isSelected()){
                         methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
-                        lambdaBox.setSelectedIndex(6);
+                        lambdaBox.setSelectedIndex(2);
                     } else {
                         methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
-                        lambdaBox.setSelectedIndex(6);
+                        lambdaBox.setSelectedIndex(2);
                     }
                 }
                 prStatusLabel.setText(methodInUseLabel.getText());
@@ -3674,6 +3701,8 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
 
                     if (excludeBackgroundInFitCheckBox.isSelected()){
+
+                        legendreCheckBox.setSelected(false);
 
                         if (useDirectFourierTransformCheckBox.isSelected()){
 
@@ -4079,8 +4108,9 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
                 if (useDirectFourierTransformCheckBox.isSelected()){
                     l1NormCheckBox.setSelected(false);
+                    legendreCheckBox.setSelected(false);
                     checkBoxDirect.setSelected(true);
-                    lambdaBox.setSelectedIndex(2);
+                    lambdaBox.setSelectedIndex(1);
 
                     if (positiveOnlyCheckBox.isSelected()){
 
@@ -4105,7 +4135,7 @@ public class Scatter {
                     } else {
                         methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
                     }
-                    lambdaBox.setSelectedIndex(6);
+                    lambdaBox.setSelectedIndex(2);
                 }
 
                 prStatusLabel.setText(methodInUseLabel.getText());
@@ -4117,6 +4147,7 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
 
                 l1NormCheckBox.setSelected(false);
+                legendreCheckBox.setSelected(false);
                 useDirectFourierTransformCheckBox.setSelected(true);
                 checkBoxDirect.setSelected(true);
                 if (positiveOnlyCheckBox.isSelected()){
@@ -4230,6 +4261,37 @@ public class Scatter {
                     }
                 }.start();
 
+            }
+        });
+
+        legendreCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                positiveOnlyCheckBox.setSelected(false);
+
+                if (legendreCheckBox.isSelected()){
+
+                    useDirectFourierTransformCheckBox.setSelected(false);
+                    checkBoxDirect.setSelected(false);
+                    excludeBackgroundInFitCheckBox.setSelected(false);
+                    l1NormCheckBox.setSelected(false);
+                    legendreCheckBox.setSelected(true);
+
+                    lambdaBox.setSelectedIndex(5);
+                    methodInUseLabel.setText("Legendre Distribution Estimation");
+                } else {
+
+                    useDirectFourierTransformCheckBox.setSelected(true);
+                    checkBoxDirect.setSelected(true);
+                    positiveOnlyCheckBox.setSelected(true);
+                    excludeBackgroundInFitCheckBox.setSelected(false);
+
+                    l1NormCheckBox.setSelected(false);
+                    methodInUseLabel.setText("Direct FT L1-Norm Positive Only");
+
+                    lambdaBox.setSelectedIndex(3);
+                }
             }
         });
     }
@@ -5688,6 +5750,7 @@ public class Scatter {
                                 l1NormCheckBox.isSelected(),
                                 excludeBackgroundInFitCheckBox.isSelected(),
                                 useDirectFourierTransformCheckBox.isSelected(),
+                                legendreCheckBox.isSelected(),
                                 positiveOnlyCheckBox.isSelected());
 
                         prStatusLabel.setText("");

@@ -83,7 +83,7 @@ public class MooreTransform extends IndirectFT {
      */
     public void createDesignMatrix(XYSeries datasetInuse){
 
-        ns = (int) Math.ceil(qmax*dmax*INV_PI) ;  //
+        ns = (int) Math.floor(qmax*dmax*INV_PI) ;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
         r_vector_size_for_fitting = new double[ns];
 
@@ -191,8 +191,8 @@ public class MooreTransform extends IndirectFT {
         double t0 = Math.min(Math.max(1, 1.0/lambda), 2*cols/0.001);
         double pitr = 0, pflg = 0, gap;
 
-        double t = t0;
-        double tau = 0.01;
+        double t_constant= t0;
+        double tau = 0.01, inv_t;
 
         //Hessian and preconditioner
         SimpleMatrix d1 = new SimpleMatrix(cols,cols);
@@ -213,7 +213,6 @@ public class MooreTransform extends IndirectFT {
         DenseMatrix64F utemp = new DenseMatrix64F(cols,1);
         CommonOps.fill(utemp,1);
         SimpleMatrix u = SimpleMatrix.wrap(utemp);
-        double inv_t;
         SimpleMatrix a_transpose = a_matrix.transpose();
         SimpleMatrix gradphi0;
         SimpleMatrix gradux = new SimpleMatrix(hessian_size,1);
@@ -255,10 +254,11 @@ public class MooreTransform extends IndirectFT {
 
             // get max of At*nu
             // maxAtnu = max(vec);
-            maxAtnu = inf_norm(a_transpose.mult(nu));
+            //maxAtnu = inf_norm(a_transpose.mult(nu));
+            maxAtnu = min(a_transpose.mult(nu));
 
-            if (maxAtnu > lambda){
-                nu = nu.scale(lambda/(maxAtnu));
+            if (maxAtnu < -lambda){
+                nu = nu.scale(lambda/(-maxAtnu));
             }
 
             /*
@@ -285,17 +285,17 @@ public class MooreTransform extends IndirectFT {
             if (gap/dobj < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
                 //status = "SOLVED : " + " | ratio " + gap/dobj + " < reltol " + reltol + " at " + ntiter;
-                //System.out.println(status);
+                System.out.println(status);
                 break calculationLoop;
             }
 
             //------------------------------------------------------------
             //       UPDATE t
             //------------------------------------------------------------
-            if (s >= 0.5){
-                t = Math.max(Math.min(twoColsMu/gap, MU*t), t);
+            if (s >= 0.5 && gap > 0){
+                t_constant = Math.max(Math.min(twoColsMu/gap, MU*t_constant), t_constant);
             }
-            inv_t = 1.0/t;
+            inv_t = 1.0/t_constant;
 
             //------------------------------------------------------------
             //      CALCULATE NEWTON STEP
@@ -368,7 +368,7 @@ public class MooreTransform extends IndirectFT {
             }
 
             phi = (z.transpose().mult(z)).get(0,0) + lambda*u.elementSum() - logfSum*inv_t;
-
+            //System.out.println("NTITER " + ntiter + " t: " + t_constant + " " + logfSum + " logfSum*inv_t " + (logfSum*inv_t));
             s=1.0;
             gdx = (gradux.transpose()).mult(dxu).get(0,0);
 
@@ -580,7 +580,7 @@ public class MooreTransform extends IndirectFT {
             //System.out.println(ntiter + " : " + gap +" GAP  ratio " + (gap/dobj ) + " " + pobj + " dobj " + dobj);
             if (gap/dobj < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
-                //System.out.println(status);
+                System.out.println(status);
                 break calculationLoop;
             }
 
@@ -588,7 +588,7 @@ public class MooreTransform extends IndirectFT {
             //       UPDATE t
             //------------------------------------------------------------
 
-            if (s >= 0.5){
+            if (s >= 0.5 && gap > 0){
                 t = Math.max(Math.min(twoCoeffsMU/gap, MU*t), t);
             }
             inv_t = 1.0/t;

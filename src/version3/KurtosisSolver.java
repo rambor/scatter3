@@ -131,7 +131,8 @@ public class KurtosisSolver extends SwingWorker {
 
         // print residuals
         double[] calcl = designMatrix.operate(optimum.getPoint());
-double diffvalue;
+
+        double diffvalue;
         System.out.println("RESIDUALS");
         for (int i = 0; i < calcl.length; ++i) {
             diffvalue = obs[i] - calcl[i];
@@ -141,7 +142,6 @@ double diffvalue;
 
         return null;
     }
-
 
     private void createQIQDataset(){
         int rows = originalData.getItemCount();
@@ -275,7 +275,7 @@ double diffvalue;
         }
 
         /**
-         * return gradient of the parameeters
+         * return gradient of the parameters
          * return vector is equal to the number of parameters
          * @return
          */
@@ -283,7 +283,6 @@ double diffvalue;
             return new ObjectiveFunctionGradient(new MultivariateVectorFunction() {
                 public double[] value(double[] point) {
                     // difference betweens
-
                     double[] diff = factors.operate(point);
 //                    double[] r = factors.operate(point);
 //                    for (int i = 0; i < r.length; ++i) {
@@ -308,7 +307,7 @@ double diffvalue;
                     int total = diff.length;
                     double qd, sinterm;
                     double firstterm, secondterm, thirdsum;
-double derivative;
+                    double derivative;
 
                     for(int i=0; i<total_params;i++) {
                         //for each param, calculate gradient
@@ -319,7 +318,8 @@ double derivative;
                         firstterm = 0;
                         secondterm = 0;
                         thirdsum = 0;
-derivative=0;
+
+                        derivative=0;
                         for(int q=0; q<total; q++){
                             diff_value = diff[q];
                             qd = qvalues[q]*dmax;

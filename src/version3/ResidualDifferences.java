@@ -90,23 +90,21 @@ public class ResidualDifferences extends BinaryComparisonModel {
      */
     @Override
     double getStatistic(){
-        //return ljungBoxStatistic;
+        // return ljungBoxStatistic;
         // return durbinWatsonStatistic;
         // shapiroWilkStatistic => 0.7 seems to suggest a good cutoff
-//        if ((ljungBoxStatistic < 30) || (durbinWatsonStatistic > 1.8 && durbinWatsonStatistic < 2.2)){
-//            //this.printTests("ORDER " + this.order);
-//            return 1;
-//        }
+        double value;
 
-        if ((durbinWatsonStatistic > 1.75 && durbinWatsonStatistic < 2.15)){
+        if ((durbinWatsonStatistic > 1.9 && durbinWatsonStatistic < 2.1)){
             ////this.printTests("ORDER " + this.order);
-            //return 0;
-            return 1.95;
+            value = 0;
+            //return 2.00;
         } else {
-            return durbinWatsonStatistic;
+            value = (Math.abs(durbinWatsonStatistic-2.0));
+            //return durbinWatsonStatistic;
         }
 
-        //return 0;
+        return value + 2;
     }
 
     /**
@@ -201,7 +199,7 @@ public class ResidualDifferences extends BinaryComparisonModel {
         double lowerq = lqmin, upperq = lowerq+increment;
 
         for(int i=0; i<bins; i++){
-            ArrayList<Double> selectFrom = new ArrayList<>();
+            ArrayList<Double> selectFrom = new ArrayList<Double>();
 
             for(int j=start; j<totalResiduals; j++){
                 qvalue = testSeries.getX(j).doubleValue();
@@ -220,6 +218,7 @@ public class ResidualDifferences extends BinaryComparisonModel {
             for (int m=0; m<perBin[i]; m++){
                 keptResiduals.add(selectFrom.get(m).doubleValue());
             }
+            selectFrom.clear();
         }
 
         // throw excepction if keptResiduals is not 49 in lenght

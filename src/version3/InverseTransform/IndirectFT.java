@@ -279,7 +279,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public final double INV_PI = 1.0/Math.PI;
     public final double TWO_INV_PI = 2.0/Math.PI;
     public boolean useL1;
-    public XYSeries nonData, data, residuals, errors; // should be qI(q) dataset
+    public XYSeries nonData, data, residuals, errors, standardVariance; // should be qI(q) dataset ( non-standardized)
     public final int multiplesOfShannonNumber;
     public double standardizedMin;
     public double standardizedScale;
@@ -297,14 +297,14 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
      * LINE SEARCH PARAMETERS
      */
     public double alpha = 0.01;            // minimum fraction of decrease in the objective
-    public double beta  = 0.5;             // stepsize decrease factor
+    public double beta  = 0.2;             // stepsize decrease factor
     public int max_ls_iter = 400;          // maximum backtracking line search iteration
     /*
      * Interior Point Parameters
      */
     public int MU = 2;                    // updating parameter of t
     public int max_nt_iter = 500;         // maximum IPM (Newton) iteration
-    public double reltol = 0.001;
+    public double reltol = 0.0001;
     public double eta = 0.001;
     public double tau = 0.01;
     public int pcgmaxi = 5000;
@@ -345,10 +345,10 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
      * @param cBoxValue
      * @param useL1
      * @param includeBackground
-     * @param standardizationMean
+     * @param standardizationMin
      * @param standardizationStDev
      */
-    public IndirectFT(XYSeries standardizedData, XYSeries errors, double dmax, double qmax, double lambda, int cBoxValue, boolean useL1, boolean includeBackground, double standardizationMean, double standardizationStDev){
+    public IndirectFT(XYSeries standardizedData, XYSeries errors, double dmax, double qmax, double lambda, int cBoxValue, boolean useL1, boolean includeBackground, double standardizationMin, double standardizationStDev){
         this.data = standardizedData;
         this.errors = errors;
         this.qmax = qmax;
@@ -359,9 +359,10 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
         this.multiplesOfShannonNumber = cBoxValue;
         this.dmax_PI_TWO_INV_PI = dmax * Math.PI * TWO_INV_PI;
         this.PI_INV_DMAX = Math.PI/dmax;
-        standardizedMin = standardizationMean;
+        standardizedMin = standardizationMin;
         standardizedScale = standardizationStDev;
         this.createNonStandardizedData();
+
     }
 
 
@@ -902,15 +903,23 @@ double topB = 1000;
     private void standardizeData(){
         XYDataItem tempData;
         data = new XYSeries("Standardized data");
+        standardVariance = new XYSeries("standardized error");
+
         int totalItems = nonData.getItemCount();
 
         standardizedMin = nonData.getMinY();
         standardizedScale = nonData.getMaxY() - standardizedMin;
         double invstdev = 1.0/ standardizedScale;
+        standardizedMin=0;
+        double temperrorvalue;
 
         for(int r=0; r<totalItems; r++){
             tempData = nonData.getDataItem(r);
             data.add(tempData.getX(), (tempData.getYValue() - standardizedMin)*invstdev);
+
+            temperrorvalue = errors.getY(r).doubleValue()*tempData.getXValue()*invstdev;
+
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // get residual for this q-value
         }
     }
 
@@ -932,7 +941,6 @@ double topB = 1000;
         int bins = ns, count=0, total = data.getItemCount();
         // ns is over-estimated as it includes a q-value that is not actually measured
         // so, how to calculate chi?
-
 
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         // calculate residuals
@@ -1036,7 +1044,6 @@ double topB = 1000;
         //double[] ratio = new double[total];
         ArrayList<Double> test_residuals = new ArrayList<Double>();
 
-
         /*
          * bin the ratio
          * qmax*dmax/PI
@@ -1045,13 +1052,21 @@ double topB = 1000;
         double[] kurtosises = new double[rounds];
         // calculate kurtosis
         double qmin = residuals.getMinX();
-        double bins = ns*3.0;
+        double bins = ns*2.0;
         double delta_q = (residuals.getMaxX()-qmin)/bins;
 
         double samplingLimit, lowerLimit;
         Random randomGenerator = new Random();
         int[] randomNumbers;
 
+        double numerator=0, value, diff;
+        double denominator;// = residuals.getY(0).doubleValue()*residuals.getY(0).doubleValue();
+//        for (int i=1; i<total; i++){
+//            value = residuals.getY(i).doubleValue();
+//            diff = value - residuals.getY(i-1).doubleValue(); // x_(t) - x_(t-1)
+//            numerator += diff*diff;
+//            denominator += value*value; // sum of (x_t)^2
+//        }
 
         for (int i=0; i<rounds; i++){
             // for each round, get a random set of values from ratio
@@ -1085,12 +1100,24 @@ double topB = 1000;
                 }
             }
             // calculate kurtosis
-            kurtosises[i] = StatMethods.kurtosis(test_residuals);
+            //kurtosises[i] = StatMethods.kurtosis(test_residuals);
+
+            numerator = 0;
+            denominator = test_residuals.get(0)*test_residuals.get(0);
+            for (int j=1; j<test_residuals.size(); j++){
+                value = test_residuals.get(j);
+                diff = value - test_residuals.get(j-1); // x_(t) - x_(t-1)
+                numerator += diff*diff;
+                denominator += value*value; // sum of (x_t)^2
+            }
+            kurtosises[i] = numerator/denominator;
             //System.out.println(i + " KURT : " + kurtosises[i] + " SL : " + samplingLimit);
         }
 
         Arrays.sort(kurtosises);
-        return kurtosises[(rounds-1)/2];
+        //return Math.abs(kurtosises[rounds-1]- kurtosises[0]);
+        return Math.abs(2-kurtosises[(rounds-1)/2]);
+        //return Math.abs(2-numerator/denominator);
     }
 
 
@@ -1127,7 +1154,8 @@ double topB = 1000;
         for (int i = 0; i < dataLimit; i++){
 //            tempitem = dataset.getDataItem(i); // in standardized form
 //            resi = this.calculateQIQ(tempitem.getXValue()) - (tempitem.getYValue()*standardizedScale + standardizedMin);
-            //System.out.println(i + " " + tempResiduals.get(i,0) + " resi " + resi);
+//            System.out.println(i + " " + tempResiduals.get(i,0) );
+
             resi = tempResiduals.get(i,0);
             // calculate value
             residualsList.add(resi*resi);
@@ -1179,6 +1207,12 @@ double topB = 1000;
             output += String.format("REMARK 265  MOORE COEFFICIENTS (UNSCALED)%n");
             for (int i=1; i<totalCoefficients;i++){
                 output +=  String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefficients[i]);
+            }
+        } else if (this.getClass().getName().contains("LegendreTransform")){
+            output += String.format("REMARK 265 %n");
+            output += String.format("REMARK 265  LEGENDRE COEFFICIENTS (UNSCALED)%n");
+            for (int i=1; i<totalCoefficients;i++){
+                output +=  String.format("REMARK 265                        l_(%2d) : %.3E %n", i-1, coefficients[i]);
             }
         }
 

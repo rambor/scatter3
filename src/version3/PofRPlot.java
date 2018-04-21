@@ -7,6 +7,7 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
 import org.jfree.data.xy.XYSeries;
@@ -32,6 +33,8 @@ public class PofRPlot {
     private XYSeriesCollection pdbCollection = new XYSeriesCollection();
 
     private XYSplineRenderer splineRend = new XYSplineRenderer();
+//    private XYBarRenderer barRend = new XYBarRenderer();
+//    private Monotonic splineRend = new Monotonic();
     private XYLineAndShapeRenderer renderer1 = new XYSplineRenderer();
 
     private static PofRPlot singleton = new PofRPlot( );
@@ -163,6 +166,9 @@ public class PofRPlot {
         plot.setRangeCrosshairVisible(true);
 
         splineRend = new XYSplineRenderer();
+        //splineRend = new Monotonic(9);
+        //barRend = new XYBarRenderer();
+
         renderer1 = new XYSplineRenderer();
 
         splineRend.setBaseShapesVisible(false);
@@ -184,8 +190,13 @@ public class PofRPlot {
             }
         }
 
+//        int precision = splineRend.getPrecision();
+//        System.out.println("PRECISION " + precision);
+//        splineRend.setPrecision(precision*3);
+
         plot.setDataset(0, splineCollection);  //Moore Function
         plot.setRenderer(0, splineRend);       //render as a line
+        //plot.setRenderer(0, barRend);
 
         plot.setDataset(1, pdbCollection); //PDB data
         plot.setRenderer(1, renderer1);

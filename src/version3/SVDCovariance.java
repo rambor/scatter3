@@ -20,6 +20,8 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
@@ -167,7 +169,13 @@ public class SVDCovariance extends SwingWorker<String, Object> {
 
         System.out.println("/nSINGULAR VALUE => INDX    VALUE   RATIO");
 
-        double[] singularValues = svd.getSingularValues();
+        Double[] singularValues = new Double[totalSets];// = svd.getSingularValues(); // sould be sorted values
+        for(int i=0; i < totalSets; i++){
+            singularValues[i] = W.get(i,i);
+        }
+
+        Arrays.sort(singularValues, Collections.reverseOrder());
+
         double invSingularSquaredSum = 0;
 
         for (int i=0; i<singularValues.length; i++){
@@ -187,7 +195,8 @@ public class SVDCovariance extends SwingWorker<String, Object> {
         singularValuesSeries = new XYSeries("Singular Values");
 
         for(int i=0; i < totalSets; i++){
-            svvalue = W.get(i,i);
+            //svvalue = W.get(i,i);
+            svvalue = singularValues[i];
             singularValuesSeries.add(i+1, svvalue);
 
             tempSum += svvalue*svvalue;

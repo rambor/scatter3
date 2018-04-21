@@ -286,6 +286,7 @@ public class MergeReport {
                 difftitle = "D";
                 rgIzeroText = "*D.* Double Y plot with I(0), orange, and R{_}g{_}, cyan, estimated from the Guinier region for each subtracted frame. For a single concentration measurement made over several frames, radiation damage will be observed as an increase in I(0) and R{_}g{_}. For SEC-SAXS, I(0) should change with the concentration of the particle during elution.";
             }
+
             rgIzeroDoublePlot = makeDoublePlot(guinierIzeroSeries, guinierRgSeries, "I(0)", "Rg Å", difftitle).createBufferedImage((int)imageWidth*3,(int)imageHeight*3);
         }
     }
@@ -449,7 +450,6 @@ public class MergeReport {
         }
 
     }
-
 
 
     private static String escape(String text){

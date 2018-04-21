@@ -9,6 +9,7 @@ public class IFTObject implements Runnable {
 
     private boolean useL1;
     private boolean useDirectFT = false;
+    private boolean useLegendre = false;
     private RealSpace dataset;
     private int cBoxValue=2;
     private boolean includeBackground = false;
@@ -29,6 +30,7 @@ public class IFTObject implements Runnable {
             boolean useL1,
             int cBoxValue,
             boolean useDirectFt,
+            boolean useLegendre,
             boolean includeBackground,
             boolean positiveOnly){
 
@@ -45,6 +47,7 @@ public class IFTObject implements Runnable {
 
         this.cBoxValue = cBoxValue;
         this.useDirectFT = useDirectFt;      // default is true for Scatter => rambo method
+        this.useLegendre = useLegendre;
         this.includeBackground = includeBackground; //
         this.positiveOnly = positiveOnly;
     }
@@ -54,11 +57,15 @@ public class IFTObject implements Runnable {
     public void run() {
         IndirectFT tempIFT;
 
-        if (useDirectFT){
+        if (useDirectFT && !useLegendre){
 
             tempIFT = new SineIntegralTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, cBoxValue, includeBackground, positiveOnly);
 
-        } else {  // use Moore Method
+        } else if (useLegendre && !useDirectFT) {
+
+            tempIFT = new LegendreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, 1, includeBackground);
+
+        } else  {  // use Moore Method
 
             tempIFT = new MooreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, cBoxValue, includeBackground);
         }

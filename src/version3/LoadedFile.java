@@ -183,7 +183,6 @@ public class LoadedFile {
 
                         // take the longest range of positive values, excluding negatives?
 
-
 //                        if (allData.getItemCount() != count){
 //                            System.out.println("POSSIBLE DUPLICATE ENTRIES: READ " + count + " LINES in => " + (System.nanoTime() - start)/1000 + " nanoseconds");
 //                        }
@@ -232,7 +231,7 @@ public class LoadedFile {
         String[] row;
         newString = line.replaceAll( "[\\s\\t]+", " " );
         trimmed = newString.trim();
-        row = trimmed.split("\\s|;");
+        row = trimmed.split("\\s|;|,\\s"); // CSV files could have a ", "
         // if row[0] and row[1] contain commas, then we are assuming comma is a decimal delimiter
         // Denmark, Sweden, Finland, Netherlands, Spain, Germany, France use comma
 
