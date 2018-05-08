@@ -41,6 +41,7 @@ public class VolumePlot {
     XYSeries calcPorod;
     XYSeries volumePorodLine;
     XYSeries powerLawSeries;
+    XYSeries powerLawTopSeries;
 
     private XYSeriesCollection volumePorodCollection;
     private XYSeriesCollection volumeKratkyCollection;
@@ -50,6 +51,8 @@ public class VolumePlot {
     private JLabel oldV;
     private JLabel exponentV;
     private JLabel porodVolumeExponent;
+
+    private Number firstPowerLaw, lastPowerLaw;
 
     private String workingDirectoryName;
 
@@ -108,6 +111,7 @@ public class VolumePlot {
         calcPorod = new XYSeries("Porod Calc");
         volumePorodLine = new XYSeries("Porod Volume");
         powerLawSeries = new XYSeries("Power Law");
+        powerLawTopSeries = new XYSeries("Power Law");
 
         int endPoint = dataset.getOriginalPositiveOnlyData().getItemCount() - 1;
         int qmaxEndPoint = endPoint/2;
@@ -129,6 +133,7 @@ public class VolumePlot {
 
         XYDataItem tempXY;
         double q4, tempX, tempY, q4y, q2y, logq, logI;
+
         for (int i = startPoint; i < endPoint; i++){
             if (i < qmaxEndPoint) {
                 tempXY = dataset.getOriginalPositiveOnlyDataItem(i);
@@ -144,6 +149,8 @@ public class VolumePlot {
                 q2y = tempX*tempX*tempY;
 
                 volumeKratky1st.add(tempX, q2y);
+                //volumeKratky1st.add(logq, logI);
+
                 volumePorod1st.add(q4, q4y);
                 volumePorod2nd.add(q4, q4y);
                 volumePorod3rd.add(q4, q4y);
@@ -175,8 +182,14 @@ public class VolumePlot {
             }
         }
 
-        volumeKratkyCollection.addSeries(volumeKratky1st);
-        volumeKratkyCollection.addSeries(volumeKratky2nd);
+        firstPowerLaw = powerLaw1st.getX(5);
+        lastPowerLaw = powerLaw1st.getMaxX();
+
+//        volumeKratkyCollection.addSeries(volumeKratky1st);
+//        volumeKratkyCollection.addSeries(volumeKratky2nd);
+        volumeKratkyCollection.addSeries(powerLaw1st);
+        volumeKratkyCollection.addSeries(powerLaw2nd);
+
         volumePorodCollection.addSeries(volumePorod1st); //red dots
         volumePorodCollection.addSeries(volumePorod3rd); //black dot
 
@@ -219,10 +232,17 @@ public class VolumePlot {
 
         //Calculate residuals
         powerLawSeries.clear();
+        powerLawTopSeries.clear();
         for (int i =0; i< powerLawX.length; i++){
             powerLawSeries.add(Math.exp(powerLawX[i]), (powerLawY[i] - (powerLawX[i]*tempArray[0] + tempArray[1])));
         }
+
+        powerLawTopSeries.add(firstPowerLaw, (firstPowerLaw.doubleValue()*tempArray[0] + tempArray[1]));
+        powerLawTopSeries.add(lastPowerLaw, (lastPowerLaw.doubleValue()*tempArray[0] + tempArray[1]));
+
+        volumeKratkyCollection.addSeries(powerLawTopSeries);
         volumePowerLawCollection.addSeries(powerLawSeries);
+
         double porodExponent = -1.0*tempArray[0];
 
         //Setting Layout Manager
@@ -610,6 +630,7 @@ public class VolumePlot {
             }
             //if user types in a number in spinner, must truncate from that number
         }
+        System.out.println("SPINNER?");
         //calculate new slope and intercept for fit
         //Create Preliminary fit to line
         double[] volumePorodX = new double[volumePorod1st.getItemCount()];
@@ -667,15 +688,18 @@ public class VolumePlot {
         //Calculate residuals
         tempArray = Functions.leastSquares(powerLawX,powerLawY);
         powerLawSeries.clear();
+        powerLawTopSeries.clear();
         volumePowerLawCollection.removeAllSeries();
         for (int i =0; i< powerLawX.length; i++){
             powerLawSeries.add(Math.exp(powerLawX[i]), (powerLawY[i] - (powerLawX[i]*tempArray[0] + tempArray[1])));
         }
+        powerLawTopSeries.add(firstPowerLaw, (firstPowerLaw.doubleValue()*tempArray[0] + tempArray[1]));
+        powerLawTopSeries.add(lastPowerLaw, (lastPowerLaw.doubleValue()*tempArray[0] + tempArray[1]));
 
         //  Methods.updatePx(collectionSelected.getDataset(fIndex), porodExponentLabelList.get(fIndex), resultsPx.get(fIndex), tempArray[0], tempArray[2]);
         volumePowerLawCollection.addSeries(powerLawSeries);
 
-        double stov = Math.PI*(Math.exp(tempArray[1])/porodInvariantOld);
+        //double stov = Math.PI*(Math.exp(tempArray[1])/porodInvariantOld);
         //status.setText("S-to-V estimate: " + fourDecPlac.format(stov));
 
         porodVolumeExponent.setText(Constants.OneDecPlace.format(-1.0*tempArray[0]));
@@ -684,7 +708,6 @@ public class VolumePlot {
 
         // fire table data changed
         analModel.fireTableDataChanged();
-
     }
 
     private ChartFrame plotVolumePorod(XYSeriesCollection volumeset, double maxq){
@@ -824,9 +847,9 @@ public class VolumePlot {
     private ChartFrame plotVolumeKratky(XYSeriesCollection volumeset, double maxq){
         JFreeChart volumeKratkyChart;
         volumeKratkyChart = ChartFactory.createXYLineChart(
-                "Kratky Plot",                     // chart title
-                "q",                    // domain axis label
-                "q^2*I(q)",                // range axis label
+                "Power-law Plot",                     // chart title
+                "ln[q]",                    // domain axis label
+                "ln[I(q)]",                // range axis label
                 volumeset,                 // data
                 PlotOrientation.VERTICAL,
                 false,                       // include legend
@@ -834,19 +857,25 @@ public class VolumePlot {
                 false
         );
 
+        double upper = volumeset.getSeries(1).getMaxY() + volumeset.getSeries(1).getMaxY()*0.3;
+
         volumeKratkyChart.getTitle().setFont(new java.awt.Font("Tahoma", 1, 18));
         volumeKratkyChart.getTitle().setMargin(10, 0, 0, 0);
 
         final XYPlot plot = volumeKratkyChart.getXYPlot();
         final NumberAxis domainAxis = new NumberAxis("");
         final NumberAxis rangeAxis = new NumberAxis("");
-        String quote = "q (\u212B \u207B\u00B9)";
+        String quote = "ln[q (\u212B \u207B\u00B9)]";
         domainAxis.setLabel(quote);
-        quote = "q\u00B2 \u00D7 I(q)";
+        quote = "ln[I(q)]";
         rangeAxis.setLabel(quote);
         rangeAxis.setLabelFont(Constants.BOLD_16);
+        rangeAxis.setUpperBound(upper);
 
-        domainAxis.setRange(0, 0.25);
+        //domainAxis.setRange(0, 0.25);
+        domainAxis.setAutoRange(true);
+        domainAxis.setAutoRangeStickyZero(false);
+        domainAxis.setAutoRangeIncludesZero(false);
 
         plot.setBackgroundPaint(null);
         plot.setDomainAxis(domainAxis);
@@ -855,12 +884,14 @@ public class VolumePlot {
         plot.setRangeCrosshairVisible(true);
         plot.setOutlineVisible(false);
 
+
         XYSplineRenderer splineRend = new XYSplineRenderer();
         XYLineAndShapeRenderer dotRend = new XYLineAndShapeRenderer();
 
         plot.getRangeAxis(0).setTickLabelsVisible(false);
         plot.getRangeAxis(0).setAutoRange(true);
-        plot.getDomainAxis(0).setAutoRange(false);
+        plot.getDomainAxis(0).setAutoRange(true);
+
         // need to turn off zoom
 
         plot.setDataset(0, volumeset);
@@ -876,16 +907,23 @@ public class VolumePlot {
         dotRend.setSeriesShapesFilled(1, false);
         dotRend.setSeriesShapesVisible(1, true);
 
+        dotRend.setSeriesLinesVisible(2, true);
+        dotRend.setSeriesStroke(2, new BasicStroke(2));
+        dotRend.setSeriesShapesFilled(2, false);
+        dotRend.setSeriesShapesVisible(2, false);
+
+
         dotRend.setSeriesPaint(0, Constants.DarkGray);
         dotRend.setSeriesPaint(1, Constants.MediumRed);
+        dotRend.setSeriesPaint(2, Constants.DodgerBlue);
 
         volumeKratkyChart.setBorderVisible(false);
 
-        ChartFrame plotVolumeKratkyFrame = new ChartFrame("Kratky", volumeKratkyChart);
+        ChartFrame plotVolumeKratkyFrame = new ChartFrame("Power-law", volumeKratkyChart);
         plotVolumeKratkyFrame.getChartPanel().setChart(volumeKratkyChart);
         plotVolumeKratkyFrame.getChartPanel().setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
         plotVolumeKratkyFrame.pack();
-        plotVolumeKratkyFrame.getChartPanel().setMouseZoomable(false);
+        plotVolumeKratkyFrame.getChartPanel().setMouseZoomable(true);
 
         return plotVolumeKratkyFrame;
     }

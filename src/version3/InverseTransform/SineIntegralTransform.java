@@ -1014,7 +1014,6 @@ public class SineIntegralTransform extends IndirectFT {
         for(int j=0; j< r_vector_size; j++){
             sum +=  coefficients[j+1];
         }
-
         //izero = tempRgSum*standardizedScale+standardizedMin;
         izero = sum*standardizedScale+standardizedMin;
         rAverage = xaverage/tempRgSum;

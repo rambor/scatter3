@@ -21,6 +21,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     private JCheckBox fitModel;
     private JCheckBox useDirectFT;
     private JCheckBox useLegendre;
+    private LaguerreParamsSingleton laguerreParamsSingleton;
     private JCheckBox excludeBackground;
     private JCheckBox postiveOnly;
     private ArrayList<ArrayList<Boolean>> editable_cells;
@@ -50,6 +51,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                    JComboBox cBox,
                    JCheckBox useDirectFT,
                    JCheckBox useLegendre,
+                   LaguerreParamsSingleton laguerreParamsSingleton,
                    JCheckBox excludeBackground,
                    JCheckBox positiveOnly){
         this.status = status;
@@ -69,6 +71,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         this.useDirectFT = useDirectFT;
         this.useLegendre = useLegendre;
         this.excludeBackground = excludeBackground;
+        this.laguerreParamsSingleton = laguerreParamsSingleton;
         this.postiveOnly = positiveOnly;
     }
 
@@ -177,8 +180,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 index = dataset.getStop();
                 return index;
             case 6: //I-zero
-                double tempIzero = dataset.getGuinierIzero();
-                return "<html><b><font color=\"#ffA500\">" + scientific.format(dataset.getIzero()).toString() + "</font></b> (<font color=\"#808080\">" + scientific.format(tempIzero).toString() +"</font>)</html>";
+                return "<html><b><font color=\"#ffA500\">" + scientific.format(dataset.getIzero()).toString() + "</font></b> (<font color=\"#808080\">" + scientific.format(dataset.getGuinierIzero()).toString() +"</font>)</html>";
             case 7: //Rg
                 String tempRg = twoDecPlac.format(dataset.getGuinierRg()).toString();
                 return "<html><b><font color=\"#ffA500\">" + twoDecPlac.format(dataset.getRg()).toString()  + "</font></b> (<font color=\"#808080\">" +  tempRg +"</font>)</html>";
@@ -254,6 +256,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                             Integer.parseInt(cBox.getSelectedItem().toString()),
                             useDirectFT.isSelected(),
                             useLegendre.isSelected(),
+                            laguerreParamsSingleton,
                             excludeBackground.isSelected(),
                             postiveOnly.isSelected()
                     );
@@ -354,6 +357,10 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     boolean getUseLegendre(){
         return useLegendre.isSelected();
     }
+    boolean getUseLaguerre(){
+        return laguerreParamsSingleton.getIsSelected();
+    }
+    LaguerreParamsSingleton getLaguerreParamsSingleton(){ return laguerreParamsSingleton;}
 
     boolean getUseDirectFT(){
         return useDirectFT.isSelected();

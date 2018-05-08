@@ -2,6 +2,7 @@ package version3;
 
 
 import org.jfree.data.xy.*;
+import version3.sasCIF.SasDetails;
 
 import java.awt.*;
 import java.beans.PropertyChangeListener;
@@ -50,6 +51,8 @@ public class Dataset {
     private XYSeries calcI;
     private String filename;
     private String originalFilename;
+
+    private SasDetails sasDetails;
 
     private final int totalCountInAllData;
     private final int totalCountInPositiveData;
@@ -1495,5 +1498,9 @@ public void lowBoundPlottedLog10IntensityData(int newStart){
 
     public void setPorodVolumeQmax(double porodVolumeQmax) {
         this.porodVolumeQmax = porodVolumeQmax;
+    }
+
+    public SasDetails getSasDetails() {
+        return sasDetails;
     }
 }

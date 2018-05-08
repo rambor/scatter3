@@ -3,6 +3,7 @@ package version3;
 
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
+import version3.sasCIF.*;
 
 import javax.swing.*;
 import java.io.BufferedWriter;
@@ -131,6 +132,48 @@ public class FileObject {
         }
     }
 
+
+    public String writeCIFFile(Dataset dataset, JLabel status, String filename, String workingDirectoryName, boolean isRefined){
+
+        status.setText("Writing COMBO CIF FILE to file: " + filename);
+
+        if (dataset.getRealSpaceModel().getRg() > 0 && dataset.getRealSpaceModel().getIzero() > 0){
+            dataset.getRealSpaceModel().estimateErrors(); // this function sets the spline function in indirectFT object
+        }
+
+
+        // clean-up file name
+        String[] base = filename.split("\\.");
+
+        FileWriter fstream;
+
+        try{ // create P(r) file
+            // Create file
+            fstream = new FileWriter(workingDirectoryName+ "/" + base[0] + ".cif");
+            BufferedWriter out = new BufferedWriter(fstream);
+
+            SasSet sasset = new SasSet(dataset);
+
+            SasDetails details = new SasDetails(dataset);
+            out.write(details.getText());
+
+            SasResult results = new SasResult(dataset);
+            out.write(results.getTextForOutput(1));
+
+            SasPofr pofr = new SasPofr(dataset);
+            //out.write(pofr.getTextOfFittedDataForOutput());
+
+            SasIntensities iofq = new SasIntensities(dataset);
+            out.write(iofq.getTextOfFittedDataForOutput(isRefined));
+            //Close the output stream
+            out.close();
+        }catch (Exception e){//Catch exception if any
+            System.err.println("Error: " + e.getMessage());
+        }
+
+        String sx_filename="";
+        return sx_filename;
+    }
     /**
      *
      * @param dataset

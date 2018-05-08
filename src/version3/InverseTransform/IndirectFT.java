@@ -307,6 +307,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public double reltol = 0.0001;
     public double eta = 0.001;
     public double tau = 0.01;
+    public double bin_width;
     public int pcgmaxi = 5000;
     public double dobj = Double.NEGATIVE_INFINITY;
     public double pobj = Double.POSITIVE_INFINITY;
@@ -1261,4 +1262,62 @@ double topB = 1000;
         return temp;
     }
 
+    public String getIFTParametersCIFFormat(int id){
+        int total = prDistributionForFitting.getItemCount();
+        String tempHeader =  String.format("# REMARK 265 P(r) histogram details for modeling %n");
+        tempHeader += String.format("_sas_p_of_R_details.Shannon_number %d\n", ns);
+        tempHeader += String.format("_sas_p_of_R_details.bin_width %.3f\n", bin_width);
+        tempHeader += String.format("_sas_p_of_R_details.r_average %.3f\n", rAverage);
+        tempHeader += String.format("loop_%n");
+        tempHeader += String.format("_sas_p_of_R.id %n");
+        tempHeader += String.format("_sas_p_of_R.ordinal %n");
+        tempHeader += String.format("_sas_p_of_R.bin %n");
+        tempHeader += String.format("_sas_p_of_R.bin_height %n");
+        for(int i=0; i<total; i++){
+            XYDataItem item = prDistributionForFitting.getDataItem(i);
+            int index = i+1;
+            tempHeader +=  String.format("%-2d %-2d %.3f %.4E %n", id, index, item.getXValue(), item.getYValue());
+        }
+        tempHeader += "# \n";
+        return tempHeader;
+    }
+
+    public String getPrDistributionForFittingCIFFormat(int id){
+        int total = prDistributionForFitting.getItemCount();
+        String tempHeader =  String.format("# REMARK 265 P(r) histogram details for modeling %n");
+        tempHeader += String.format("_sas_p_of_R_details.Shannon_number %d\n", ns);
+        tempHeader += String.format("_sas_p_of_R_details.bin_width %.3f\n", bin_width);
+        tempHeader += String.format("_sas_p_of_R_details.r_average %.3f\n", rAverage);
+        tempHeader += String.format("loop_%n");
+        tempHeader += String.format("_sas_p_of_R.id %n");
+        tempHeader += String.format("_sas_p_of_R.ordinal %n");
+        tempHeader += String.format("_sas_p_of_R.bin %n");
+        tempHeader += String.format("_sas_p_of_R.bin_height %n");
+        for(int i=0; i<total; i++){
+            XYDataItem item = prDistributionForFitting.getDataItem(i);
+            int index = i+1;
+            tempHeader +=  String.format("%-2d %-2d %.3f %.4E %n", id, index, item.getXValue(), item.getYValue());
+        }
+        tempHeader += "# \n";
+        return tempHeader;
+    }
+
+
+    public String getPrDistributionForPlottingCIFFormat(int id){
+        String tempHeader = String.format("# REMARK 265 P(r)-distribution for plotting %n");
+        tempHeader += String.format("loop_%n");
+        tempHeader += String.format("_sas_p_of_R.id%n");
+        tempHeader += String.format("_sas_p_of_R.ordinal%n");
+        tempHeader += String.format("_sas_p_of_R.R%n");
+        tempHeader += String.format("_sas_p_of_R.P%n");
+        tempHeader += String.format("_sas_p_of_R.P_error%n");
+
+        for (int n=0; n < prDistribution.getItemCount(); n++) {
+            XYDataItem item = prDistribution.getDataItem(n);
+            int index = n+1;
+            tempHeader += String.format("%-2d %-3d %.3E %.4E ? %n", id, index, item.getXValue(), item.getYValue());
+        }
+        tempHeader += "# \n";
+        return tempHeader;
+    }
 }

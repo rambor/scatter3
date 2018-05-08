@@ -1,9 +1,7 @@
 package version3.InverseTransform;
 
 import net.jafama.FastMath;
-import org.apache.commons.math3.analysis.DifferentiableMultivariateVectorFunction;
 import org.apache.commons.math3.analysis.MultivariateFunction;
-import org.apache.commons.math3.analysis.MultivariateMatrixFunction;
 import org.apache.commons.math3.analysis.MultivariateVectorFunction;
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
@@ -19,48 +17,64 @@ import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
 import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunctionGradient;
 import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer;
+import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.util.CombinatoricsUtils;
-import org.ejml.data.DenseMatrix64F;
-import org.ejml.ops.CommonOps;
 import org.ejml.simple.SimpleMatrix;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
-import version3.Constants;
 import version3.Functions;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
-public class LegendreTransform extends IndirectFT {
+public class LaguerreTransform extends IndirectFT {
 
     private double del_r;
     double[] r_vector;
-    double[] regularization_r_vector;
     double[] target; // data
     double[] invVariance; // data
     double[] qvalues; // data
+    double[] laguerre_values;
+    double[] beta_rkValues;
+    double[] r_k_alphaValues;
+    double[] exp_beta_rkValues;
+    double betaGamma;
+
+    double alpha, beta, initial_2nd_moment, maximum_raverage;
     int r_vector_size;
     public final double invDmax;
     private RealMatrix designMatrix; // assume this is the design matrix
-    PolynomialFunction[] functions;
 
     // Dataset should not be standardized but in the form  of [q, q*I(q)]
-    public LegendreTransform(XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, int cBoxValue, boolean includeBackground) {
-        super(dataset, errors, dmax, qmax, lambda, false, cBoxValue, includeBackground);
 
+    /**
+     * For a given Rg and raverage estimate alpha and beta
+     * @param dataset
+     * @param errors
+     * @param dmax
+     * @param qmax
+     * @param lambda
+     * @param cBoxValue
+     */
+    public LaguerreTransform(double r_ave_estimate, double rg_estimate, XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, int cBoxValue) {
+        super(dataset, errors, dmax, qmax, lambda, false, cBoxValue, false);
+
+        this.initial_2nd_moment = rg_estimate*rg_estimate*2;
+
+        this.beta = (initial_2nd_moment - r_ave_estimate*r_ave_estimate)/(r_ave_estimate); //scale
+        this.alpha = (r_ave_estimate*r_ave_estimate)/(initial_2nd_moment - r_ave_estimate*r_ave_estimate); //shape
+        System.out.println("ALPHA (SHAPE) " + this.alpha + " | BETA " + this.beta);
         this.invDmax = 1.0/dmax;
         this.invertStandardVariance();
         this.createDesignMatrix(this.data);
 
         this.rambo_coeffs_L2();
-        this.setModelUsed("Legendre L2-NORM");
+        this.setModelUsed("Laguerre L2-NORM");
     }
 
 
-    public LegendreTransform(
+    public LaguerreTransform(
             XYSeries dataset,
             XYSeries errors,
             double dmax,
@@ -76,15 +90,17 @@ public class LegendreTransform extends IndirectFT {
         this.createDesignMatrix(dataset);
         this.rambo_coeffs_L2();
 
-        this.setModelUsed("Legendre L2-NORM");
+        this.setModelUsed("Laguerre L2-NORM");
     }
 
 
 
     public void createDesignMatrix(XYSeries datasetInuse){
 
+        //
+        //
         //ns = ((int) (Math.ceil(qmax*dmax*INV_PI) + 1 )) ;  //
-        ns = ((int) (Math.round(qmax*dmax*INV_PI) + 1 )) ;  //
+        ns = ((int) (Math.round(qmax*dmax*INV_PI) + 2 )) ;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
 
         rows = datasetInuse.getItemCount();    // rows
@@ -101,29 +117,27 @@ public class LegendreTransform extends IndirectFT {
         // if I think I can squeeze out one more Shannon Number, then I need to define del_r by dmax/ns+1
         r_vector = new double[r_vector_size];
 
+        r_k_alphaValues = new double[r_vector_size];
+        exp_beta_rkValues = new double[r_vector_size];
+        beta_rkValues = new double[r_vector_size];
+
         for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
             r_vector[i] = (0.5 + i)*del_r; // dmax is not represented in this set
+            double r_value = r_vector[i];
+            r_k_alphaValues[i] = (Math.pow(r_value, alpha - 1));
+            exp_beta_rkValues[i] = (Math.exp(-r_value/beta));
+            beta_rkValues[i] = (r_value/beta);
         }
 
-        /*
-         * calculate r-values for smoothness calculation
-         */
-        int tempSize = r_vector_size*2-1;
-        double temp_del_r = del_r*0.5;
-        regularization_r_vector = new double[tempSize];
+        laguerre_values = new double[r_vector_size*ns];
 
-        for(int i=0; i < tempSize; i++){ // calculate at midpoints
-            regularization_r_vector[i] = (1 + i)*temp_del_r; // dmax is not represented in this set
+        for(int col=0; col < coeffs_size; col++){
+            for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
+                laguerre_values[r_vector_size*col + i] = laguerre(col, beta_rkValues[i]);
+            }
         }
 
-        /*
-         * set the Legendre Polynomials
-         */
-        functions = new PolynomialFunction[coeffs_size + 1];
-        functions[0] = PolynomialsUtils.createLegendrePolynomial(0);;
-        for(int i=1; i < (coeffs_size+1); i++){ // calculate at midpoints
-            functions[i] = PolynomialsUtils.createLegendrePolynomial(i); // try odd numbered
-        }
+        betaGamma = 1.0/(Math.pow(beta, alpha)*(Gamma.gamma(alpha)));
 
         /*
          * create A matrix (design Matrix)
@@ -143,26 +157,19 @@ public class LegendreTransform extends IndirectFT {
                 double[] sinc = new double[r_vector_size];
                 for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
                     double r_value = r_vector[i]; // dmax is not represented in this set
-                    sinc[i] = FastMath.sin(r_value*tempData.getXValue()) / r_value;
+                    sinc[i] = FastMath.sin(r_value*tempData.getXValue())/r_value;
                 }
 
-                double sumSinc=0;
-                for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
-                    sumSinc += sinc[i];
-                }
-                //sumSinc *= 2.0*invDmax;
-                a_matrix.set(row, 0, sumSinc);
-                designMatrix.setEntry(row, 0, sumSinc);
 
-                for(int col=1; col < coeffs_size; col++){
+                for(int col=0; col < coeffs_size; col++){
                     // sum over sinc multiplied by Legendre
-                    sumSinc=0;
+                    double sumSinc=0.0d;
                     for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
-                        double r_value = r_vector[i]; // dmax is not represented in this set
-                        sumSinc += sinc[i]*functions[col].value((2*r_value-dmax)*invDmax);
+                       // sumSinc += sinc[i]*r_k_alphaValues[i]*exp_beta_rkValues[i]*laguerre(col, beta_rkValues[i]);
+                        sumSinc += sinc[i]*r_k_alphaValues[i]*exp_beta_rkValues[i]*laguerre_values[r_vector_size*col + i];
                     }
+                    sumSinc *= betaGamma;
 
-                    //sumSinc *= 2.0*invDmax;
                     a_matrix.set(row, col, sumSinc);
                     designMatrix.setEntry(row, col, sumSinc);
                 }
@@ -178,13 +185,9 @@ public class LegendreTransform extends IndirectFT {
 
                 for(int col=0; col < coeffs_size; col++){
                     if (col == 0){ // constant background term
-                        a_matrix.set(row, 0, tempData.getXValue());
-                        designMatrix.setEntry(row, 0, tempData.getXValue());
-                        //a_matrix.set(row, 0, 1);
+
                     } else { // for col >= 1
-                        double r_value = r_vector[col-1];
-                        a_matrix.set(row, col, FastMath.sin(r_value*tempData.getXValue()) / r_value);
-                        designMatrix.setEntry(row, col, FastMath.sin(r_value*tempData.getXValue()) / r_value);
+
                     }
                 }
 
@@ -193,7 +196,6 @@ public class LegendreTransform extends IndirectFT {
                 qvalues[row] = tempData.getXValue();
             }
         }
-
     }
 
 
@@ -204,15 +206,18 @@ public class LegendreTransform extends IndirectFT {
      */
     public void rambo_coeffs_L2(){
 
-        LinearProblem problem = new LinearProblem(
+        LaguerreTransform.LinearProblem problem = new LaguerreTransform.LinearProblem(
                 designMatrix,
-                functions,
+                r_k_alphaValues,
+                exp_beta_rkValues,
+                laguerre_values,
                 qvalues,
                 target,
                 invVariance,
                 r_vector,
                 dmax,
                 lambda,
+                betaGamma,
                 includeBackground);
 
         try{
@@ -237,10 +242,10 @@ public class LegendreTransform extends IndirectFT {
                 }
             } else {
                 for(int i=0; i < coeffs_size; i++){
-                    double diff = (r_vector[i] - midpoint);
-                    guess[i] = 100*prefactor*Math.exp( -(diff*diff)*invTwoVar);
+//                    double diff = (r_vector[i] - midpoint);
+//                    guess[i] = 100*prefactor*Math.exp( -(diff*diff)*invTwoVar);
 //                    System.out.println(i + " guess " + guess[i] );
-//                    guess[i] = 0.3;
+                    guess[i] = 0.3;
                 }
             }
 
@@ -269,11 +274,12 @@ public class LegendreTransform extends IndirectFT {
             }
 
             totalCoefficients = coefficients.length;
+
             this.setPrDistribution();
             this.calculateIzeroRg();
 
         } catch (TooManyEvaluationsException ex) {
-            System.out.println("TOO Few Evaluations");
+            System.out.println("TOO Many Evaluations - solution not found");
         } catch (Exception e) {
             System.out.println("Exception occurred " + e.getMessage());
         }
@@ -306,7 +312,6 @@ public class LegendreTransform extends IndirectFT {
 
         trapesum *= dmax/(double)ns*0.5;
 
-
         rg = Math.sqrt(0.5*tempRg2Sum/tempRgSum);
 //        for(int j=0; j< totalCoefficients; j++){
 //            sum +=  coefficients[j+1];
@@ -331,19 +336,8 @@ public class LegendreTransform extends IndirectFT {
         prDistributionForFitting = new XYSeries("OutputPrDistribution");
 
         //int temp_r_vector_size = 2*r_vector_size - 1; // no background implies coeffs_size == ns
-        int temp_r_vector_size = r_vector_size; // no background implies coeffs_size == ns
-        double temp_del_r = del_r;
         bin_width = del_r;
-        double[] temp_r_vector = new double[temp_r_vector_size];
-
-        for(int i=0; i < temp_r_vector_size; i++){ // calculate at midpoints
-            // r_vector[i] = (0.5 + i)*del_r; // dmax is not represented in this set
-            temp_r_vector[i] = (0.5 + i)*temp_del_r; // dmax is not represented in this set
-        }
-
-        // System.out.println("Dmax " + dmax + " > " + temp_r_vector[temp_r_vector_size-1]);
-        totalInDistribution = temp_r_vector_size+2;
-//        totalInDistribution = r_vector_size+2;
+        totalInDistribution = r_vector_size+2;
 
         for(int i=0; i<totalInDistribution; i++){ // values in r_vector represent the midpoint or increments of (i+0.5)*del_r
 
@@ -354,14 +348,19 @@ public class LegendreTransform extends IndirectFT {
             } else { // odd
 
                 int index = i-1;
-                double pr = am_vector.get(0);
 
-                for (int a=1; a<coeffs_size; a++){
-                    pr += am_vector.get(a)*functions[a].value((2*temp_r_vector[index]-dmax)*invDmax);
+                double pr = 0;
+                //double betaRkValue = beta_rkValues[index];
+                for(int col=0; col < coeffs_size; col++){
+                    // sum over sinc multiplied by Legendre
+                    pr += am_vector.get(col)*laguerre_values[r_vector_size*col + index];
+                        //pr += am_vector.get(col)*laguerre(col, betaRkValue);
                 }
-                //pr *= 2.0*invDmax;
-                prDistribution.add(temp_r_vector[index], pr);
-                prDistributionForFitting.add(temp_r_vector[index], pr);
+
+                pr *= betaGamma*r_k_alphaValues[index]*exp_beta_rkValues[index];
+
+                prDistribution.add(r_vector[index], pr);
+                prDistributionForFitting.add(r_vector[index], pr);
             }
         }
 
@@ -402,26 +401,20 @@ public class LegendreTransform extends IndirectFT {
         double[] sinc = new double[r_vector_size];
         for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
             double r_value = r_vector[i]; // dmax is not represented in this set
-            sinc[i] = FastMath.sin(r_value*qvalue) / r_value;
+            sinc[i] = FastMath.sin(r_value*qvalue)/r_value;
         }
 
-        double sumSinc=0;
-        for(int i=0; i < r_vector_size; i++){ // Legendre at k=0 is 1 (so sum th
-            sumSinc += sinc[i];
-        }
 
-        sum += am_vector.get(0)*sumSinc;
-
-        for (int a=1; a<coeffs_size; a++){
-
-            sumSinc=0;
+        for(int col=0; col < coeffs_size; col++){
+            // sum over sinc multiplied by Legendre
+            double sumSinc=0.0d;
             for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
-                double r_value = r_vector[i]; // dmax is not represented in this set
-                sumSinc += sinc[i]*functions[a].value((2*r_value-dmax)*invDmax);
+                sumSinc += sinc[i]*r_k_alphaValues[i]*exp_beta_rkValues[i]*laguerre_values[r_vector_size*col + i];
             }
-
-            sum += am_vector.get(a)*sumSinc;
+            sum += am_vector.get(col)*sumSinc;
         }
+
+        sum *= betaGamma;
 
         return sum*standardizedScale + standardizedMin;
     }
@@ -450,7 +443,6 @@ public class LegendreTransform extends IndirectFT {
         for(int i=0; i<prDistribution.getItemCount(); i++){
             tempPr.add(prDistribution.getDataItem(i));
         }
-
 
 
         int size = fittedqIq.getItemCount();
@@ -609,21 +601,27 @@ public class LegendreTransform extends IndirectFT {
         final int totalqvalues;
         final double[] qvalues;
         final double[] rvalues;
+        final double[] r_k_alphaValues;
+        final double[] exp_beta_rkValues;
+        final double[] laguerre_values;
         final double weight;
         final boolean useBackground;
-        final PolynomialFunction[] functions;
         final double invP, invN;
         final int totalP, totalRvalues, lastP;
         final int lastRvalue;
+        final double betaGamma;
 
-        public LinearProblem(RealMatrix designMatrix, PolynomialFunction[] functions, double[] qvalues, double[] target, double[] invVar, double[] regularrvector, double dmax, double weight, boolean useBackGround) {
+        public LinearProblem(RealMatrix designMatrix, double[] rkalpha, double[] expbetarkvalues, double[]laguerrefunction,  double[] qvalues, double[] target, double[] invVar, double[] regularrvector, double dmax, double weight, double betaGamma, boolean useBackGround) {
 
             this.factors = designMatrix; // first term will be background if included
-            this.functions = functions;
+            this.r_k_alphaValues = rkalpha;
+            this.exp_beta_rkValues = expbetarkvalues;
+            this.laguerre_values = laguerrefunction;
+
             this.qvalues = qvalues;
             this.obs  = target;
             this.invVariance = invVar;
-            this.weight = weight;
+            this.weight = 0.01*weight;
             this.rvalues = regularrvector;
             this.totalRvalues = rvalues.length;
             lastRvalue = totalRvalues-1;
@@ -637,7 +635,7 @@ public class LegendreTransform extends IndirectFT {
 
             this.dmax = dmax;
             this.invDmax = 1.0/dmax;
-
+            this.betaGamma = betaGamma;
             this.useBackground = useBackGround;
         }
 
@@ -670,42 +668,34 @@ public class LegendreTransform extends IndirectFT {
 
                     } else {
                         /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |x|^2
+                         * w_i : Laguerre weights
+                         *
+                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |w_i|^2
                          */
-//                        for(int p=0; p < point.length; p++){
-//                            seconddiff = point[p];
-//                            sum += seconddiff*seconddiff;
-//                        }
-
-                        /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i+1) - P_(i)|^2
-                         */
-//                        double diff;
 //                        sum=0;
-//                        int stop = totalRvalues-1;
-//                        for (int r=0; r<stop; r++){
-//                            diff = 0;
-//                            for(int index=1; index<totalP; index++){
-//                                diff += point[index]*(functions[index].value((2*rvalues[r+1]-dmax)*invDmax) - functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
-//                            }
-//                            sum+= diff*diff;
+//                        for(int index=0; index<totalP; index++){
+//                            double squared = point[index];
+//                            sum += squared*squared;
 //                        }
 
                         /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i)|^2
+                         * w_i : Laguerre weights
+                         *
+                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(ri)|^2
                          */
-                        double diff;
                         sum=0;
                         for (int r=0; r<totalRvalues; r++){
-                            diff = point[0];
-                            for(int index=1; index<totalP; index++){
-                                diff += point[index]*(functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
+
+                            double pr = 0;
+                            for(int col=0; col < totalP; col++){
+                                pr += point[col]*laguerre_values[totalRvalues*col + r];
                             }
-                            sum+= diff*diff;
+                            pr *= betaGamma*r_k_alphaValues[r]*exp_beta_rkValues[r];
+                            sum += pr*pr;
                         }
                     }
                     // add last term to sum
-                    //System.out.println("chi " + (invN*chi2) + " " + sum + " " + ((invN*chi2) + weight*invP*sum));
+                    //System.out.println("chi " + (invN*chi2) + " " + sum + " " + ((invN*chi2) + weight*sum));
                     return invN*chi2 + weight*sum;
                 }
             });
@@ -742,57 +732,33 @@ public class LegendreTransform extends IndirectFT {
                         /*
                          * minimize gradient of Sum (qI_obs - qI_calc)^2 + |x|^2
                          */
-//                        for(int p=0; p < totalP; p++){
-//                            double sum = 0;
-//                            for (int q = 0; q < calcLength; ++q) {
-//                                sum += residualsInvVar[q]*factors.getEntry(q,p);
-//                            }
-//                            del_p[p] = -2*sum*invN + weight*2*point[p];
-//                        }
-
-
-                        /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P[r_(i+1)] - P_r(i)]|^2
-                         */
                         for(int p=0; p < totalP; p++){
                             double sum = 0;
                             for (int q = 0; q < calcLength; ++q) {
                                 sum += residualsInvVar[q]*factors.getEntry(q,p);
                             }
-                            del_p[p] = -2*sum*invN;
+                            del_p[p] = -2*sum*invN ;//+ weight*2*point[p];
                         }
 
-                        // add second term to each del_p
-                        // calculate P(r) for each r-value
+
                         double[] currentDistribution = new double[totalRvalues];
-                        for(int r=0; r<totalRvalues; r++){
-                            double value = point[0];
-                            for(int index=1; index<totalP; index++){
-                                value += point[index]*(functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
+                        for (int r=0; r<totalRvalues; r++){
+                            double pr = 0;
+                            for(int col=0; col < totalP; col++){
+                                pr += point[col]*laguerre_values[totalRvalues*col + r];
                             }
-                            currentDistribution[r] = value;
+                            currentDistribution[r] = pr*betaGamma*r_k_alphaValues[r]*exp_beta_rkValues[r];
                         }
 
-                        int stopat = lastRvalue-1;
-
-//                        for(int index=1; index<totalP; index++){ // for a given coefficient, must sum over each difference
-//
-//                            double diff = 0;
-//                            for (int r=0; r<stopat; r++){
-//                                diff += 2*(currentDistribution[r+1]- currentDistribution[r])*(functions[index].value((2*rvalues[r+1]-dmax)*invDmax) - functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
-//                            }
-//                            // add first and last term
-//                            del_p[index] += weight*diff;
-//                        }
 
                         for(int index=0; index<totalP; index++){ // for a given coefficient, must sum over each difference
 
-                            double diff = 0;
+                            double value = 0;
                             for (int r=0; r<totalRvalues; r++){
-                                diff += (currentDistribution[r])*(functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
+                                value += currentDistribution[r]*laguerre_values[totalRvalues*index + r]*r_k_alphaValues[r]*exp_beta_rkValues[r] ;
                             }
                             // add first and last term
-                            del_p[index] += 2*weight*diff;
+                            del_p[index] += 2*weight*value*betaGamma;
                         }
                     }
 
@@ -822,6 +788,7 @@ public class LegendreTransform extends IndirectFT {
         }
     }
 
+
     /*
      * precalculate standardVariance
      * used in the Apache Solver
@@ -834,5 +801,34 @@ public class LegendreTransform extends IndirectFT {
         for(int r=0; r<totalItems; r++){
             invVariance[r] = 1.0/standardVariance.getY(r).doubleValue();
         }
+    }
+
+
+
+    private double laguerre(int index, double input){
+
+        switch (index){
+            case 0:
+                return 1;
+            default :
+                double top = index + (alpha - 1);
+                double sum = 0;
+
+                for (int i=0; i<(index+1); i++){
+                    sum += Math.pow(-1, i)*binomialCoefficient(top, index - i)*Math.pow(input, i)/CombinatoricsUtils.factorialDouble(i);
+                }
+
+                return sum;
+        }
+    }
+
+
+    private double binomialCoefficient(double real, int k_integer){
+
+        double value=1;
+        for (int i=1; i<=k_integer; i++){
+            value *= (real + 1 - i)/(double)i;
+        }
+        return value;
     }
 }

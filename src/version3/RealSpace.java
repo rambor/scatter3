@@ -969,9 +969,10 @@ public class RealSpace {
 
     public void setIndirectFTModel(IndirectFT model){
         this.indirectFTModel = model;
-        this.rg = model.getRg();
+        this.rg = (model.getRg() > 0) ? model.getRg() : this.rg ;
+
         this.izero = model.getIZero();
-        this.raverage = model.rAverage;
+        this.raverage = (model.rAverage > 0) ? model.rAverage : this.raverage ;
         this.chi2 = this.indirectFTModel.getChiEstimate();
         this.kurtosis = this.indirectFTModel.getKurtosisEstimate(51);
         this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);

@@ -141,6 +141,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
                 prModel.getCBoxSelectedItem(),
                 prModel.getUseDirectFT(),
                 prModel.getUseLegendre(),
+                prModel.getLaguerreParamsSingleton(),
                 backgroundCheckBox.isSelected(),
                 positiveOnly.isSelected()
 
