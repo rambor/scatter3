@@ -630,7 +630,6 @@ public class VolumePlot {
             }
             //if user types in a number in spinner, must truncate from that number
         }
-        System.out.println("SPINNER?");
         //calculate new slope and intercept for fit
         //Create Preliminary fit to line
         double[] volumePorodX = new double[volumePorod1st.getItemCount()];

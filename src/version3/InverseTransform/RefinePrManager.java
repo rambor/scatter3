@@ -1,6 +1,5 @@
 package version3.InverseTransform;
 
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
@@ -46,7 +45,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     private XYSeries keptSeries;
     private XYSeries keptErrorSeries;
     private XYSeries standardizedSeries;
-    private XYSeries fittedErrors;
+    private XYSeries scaled_q_times_Iq_Errors;
     private double standardizedMin;
     private double standardizedScale;
     private AtomicInteger counter = new AtomicInteger(0);
@@ -91,12 +90,12 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         this.pi_invDmax = Math.PI/dmax;
 
         this.standardizedSeries = new XYSeries("Standard set");
-        this.fittedErrors = new XYSeries("fitted errors");
+        this.scaled_q_times_Iq_Errors = new XYSeries("fitted errors");
         this.standardizeData();
 
         //dataset.setStandardizationMean(this.standardizedMin, this.standardizedScale);
         this.median = dataset.getIndirectFTModel().calculateMedianResidual(standardizedSeries);
-        System.out.println("med " + this.median);
+        //System.out.println("med " + this.median);
     }
 
 
@@ -113,7 +112,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         for (int i=0; i < numberOfCPUs; i++){
             Runnable bounder = new RefinePrManager.Refiner(
                     this.standardizedSeries,
-                    this.fittedErrors,
+                    this.scaled_q_times_Iq_Errors,
                     roundsPerCPU,
                     statusLabel);
             executor.execute(bounder);
@@ -149,7 +148,8 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                 item = dataset.getfittedqIq().getDataItem(i);
                 keptErrorSeries.add(item.getX(), dataset.getErrorAllData().getY(dataset.getErrorAllData().indexOf(item.getX())));
             }
-            dataset.updatedRefinedSets(dataset.getfittedIq(), fittedErrors);
+
+            dataset.updatedRefinedSets(dataset.getfittedIq(), keptErrorSeries);
             updateText(String.format("Refinement failed, no improvement try increase number of rounds"));
         }
 
@@ -216,7 +216,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
      * standardize data
      */
     private void standardizeData(){
-        XYDataItem tempData;
+        XYDataItem tempData, tempError;
         XYSeries fitteddqIqRegion = dataset.getfittedqIq();
 
         int totalItems = fitteddqIqRegion.getItemCount();
@@ -226,7 +226,9 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
         for(int r=0; r<totalItems; r++){
             tempData = fitteddqIqRegion.getDataItem(r);
-            fittedErrors.add(dataset.getErrorAllData().getDataItem(dataset.getErrorAllData().indexOf(tempData.getX())));
+            //scaled_q_times_Iq_Errors.add(dataset.getErrorAllData().getDataItem(dataset.getErrorAllData().indexOf(tempData.getX())));
+            tempError = dataset.getErrorAllData().getDataItem(dataset.getErrorAllData().indexOf(tempData.getX()));
+            scaled_q_times_Iq_Errors.add(tempData.getX(), tempError.getYValue()*tempError.getXValue()*invstdev);  // q*sigma/scale
             standardizedSeries.add(tempData.getX(), (tempData.getYValue() - standardizedMin)*invstdev);
         }
     }
@@ -245,26 +247,27 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
         private JLabel status;
 
-        public Refiner(XYSeries qIq, XYSeries allError, int totalruns, JLabel status){
+        public Refiner(XYSeries qIq, XYSeries qIqErrorScaled, int totalruns, JLabel status){
 
             int totalItems = qIq.getItemCount() ;
             // create standardized dataset
             try {
                 activeSet = qIq.createCopy(0, totalItems-1); // possibly scaled by rescaleFactor
+                //errorActiveSet = allError.createCopy(0, totalItems-1); // possibly scaled by rescaleFactor
             } catch (CloneNotSupportedException e) {
                 e.printStackTrace();
             }
 
             //
             errorActiveSet = new XYSeries("Error qIq");
-            relativeErrorSeries = new XYSeries("Error qIq");
+            relativeErrorSeries = new XYSeries("Percent Error qIq"); // percent Error
 
             this.totalRuns = totalruns;
 
             for (int i=0; i<totalItems; i++){
-                XYDataItem tempData = allError.getDataItem(i);
-                errorActiveSet.add(tempData.getXValue(), tempData.getXValue() * tempData.getYValue()); // transformed as q*I(q)
-                relativeErrorSeries.add(tempData.getXValue(), Math.abs(activeSet.getY(i).doubleValue() / (tempData.getXValue() * tempData.getYValue())));
+                XYDataItem tempData = qIqErrorScaled.getDataItem(i);
+                errorActiveSet.add(tempData.getXValue(), tempData.getYValue()); // should be transformed as q*I(q)/scale
+                relativeErrorSeries.add(tempData.getXValue(), Math.abs(activeSet.getY(i).doubleValue() / (tempData.getYValue())));
             }
 
             countsPerBin = new ArrayList<>();
@@ -288,10 +291,12 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             double half_delta_ns = 0.5*pi_invDmax;
 
             XYSeries randomSeries = new XYSeries("Random-");
+            XYSeries randomErrorSeries = new XYSeries("Random-");
             //System.out.println("TOTAL RUNS " + totalRuns);
             for (int i=0; i < totalRuns; i++){
 
                 randomSeries.clear();
+                randomErrorSeries.clear();
 
                 // randomly grab from each bin
                 startbb = 0;
@@ -332,24 +337,20 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                         for(int h=0; h < randomNumbers.length; h++){
                             locale = randomNumbers[h];
                             randomSeries.add(activeSet.getDataItem(locale));
+                            randomErrorSeries.add(errorActiveSet.getDataItem(locale));
                         }
                     } // end of checking if bin is empty
                 }
 
                 // calculate PofR using standardized dataset
                 IndirectFT tempIFT;
-//                if (useDirectFT){
-//                    tempIFT = new SineIntegralTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
-//                } else {  // use Moore Method
-//                    tempIFT = new MooreTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
-//                }
 
                 if (useDirectFT && !useLegendre){
-                    tempIFT = new SineIntegralTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+                    tempIFT = new SineIntegralTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, useL1, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
                 } else if (useLegendre && !useDirectFT) {
-                    tempIFT = new LegendreTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, standardizedScale);
+                    tempIFT = new LegendreTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale);
                 } else  {  // use Moore Method
-                    tempIFT = new MooreTransform(randomSeries, errorActiveSet, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
+                    tempIFT = new MooreTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, useL1, useBackgroundInFit, standardizedMin, standardizedScale);
                 }
 
                 // Calculate Residuals
@@ -360,7 +361,6 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                     notifyUser(String.format("New median residual %1.5E < %1.4E at round %d", tempMedian, median, i));
                     setIFTObject(tempIFT, tempMedian);
                 }
-
                 this.increment();
             }
         }
@@ -473,14 +473,11 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             tempData = standardizedSeries.getDataItem(i);
             xObsValue = tempData.getXValue();
             yObsValue = tempData.getYValue(); // standardized in form of qIq
-            //
             // data has been standardized, so no adjustment necessary before residual calculation.
             residual = yObsValue - (keptIFTModel.calculateQIQ(xObsValue)-standardizedMin)*invStd;
 
             if (Math.abs(residual/this.getS_o()) < rejectionCutOff){
                 residualsList.add(residual*residual);
-            } else {
-               // System.out.println(xObsValue +  " REJECTED " + residual + " => " + Math.abs(residual/this.getS_o()) + " > " + rejectionCutOff);
             }
         }
 
@@ -497,39 +494,35 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             residual = yObsValue - (keptIFTModel.calculateQIQ(xObsValue)-standardizedMin)*invStd;
 
             if ( Math.abs(residual*sigmaM) < rejectionCutOff){
-                keptSeries.add(dataset.getfittedIq().getDataItem(i));
+                keptSeries.add(dataset.getfittedIq().getDataItem(i)); // unscaled data
                 keptqIq.add(tempData);
                 keptNonStandardizedqIq.add(xObsValue, dataset.getfittedIq().getY(i).doubleValue()*xObsValue);
-                keptErrorSeries.add(xObsValue, fittedErrors.getY(i).doubleValue()*xObsValue);
+                keptErrorSeries.add(xObsValue, scaled_q_times_Iq_Errors.getY(i).doubleValue());
             }
         }
 
-        // if keptqIq > bin*2 , then calculate PofR
-        // otherwise use activeqIq
+
+        /*
+         * if keptqIq > bin*2 , then calculate PofR
+         * otherwise use activeqIq
+         */
         if (keptqIq.getItemCount() > 2*bins){ // do final fitting against kepSeries
 
             dataset.updatedRefinedSets(keptSeries, keptErrorSeries);
             dataset.getCalcIq().clear();
             IndirectFT tempIFT;
-//            if (useDirectFT){ // unstandardized datasets
-//                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
-//            } else {  // use Moore Method
-//                tempIFT = new MooreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
-//            }
-
+            /*
+             * these constructuros asseme already standardized datasets
+             */
             if (useDirectFT && !useLegendre){
-                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
             } else if (useLegendre && !useDirectFT) {
-
-                tempIFT = new LegendreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, standardizedScale);
-
+                tempIFT = new LegendreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale);
             } else  {  // use Moore Method
-                tempIFT = new MooreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, cBoxValue, useBackgroundInFit, standardizedMin, standardizedScale);
+                tempIFT = new MooreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, useBackgroundInFit, standardizedMin, standardizedScale);
             }
 
             // for chi_estimate calculations, nonStandardized datasets must be specified
-            //btempIFT.setNonStandardizedData(keptNonStandardizedqIq);
-
             this.dataset.setIndirectFTModel(tempIFT); // also calculate chi2 using data passed in on the instance
             //this.dataset.updateIndirectFTModel(tempIFT);
             this.dataset.setPrDistribution(tempIFT.getPrDistribution());
@@ -549,8 +542,6 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                     }
                 }
                 this.dataset.calculateQIQ();
-                //prDataset.calculateIntensityFromModel(qIqFit.isSelected());
-                //dataset.chi_estimate(keptSeries, keptErrorSeries);  //
 
             } catch (Exception e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.

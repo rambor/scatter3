@@ -7,16 +7,13 @@ import java.util.ArrayList;
  */
 public class SasBuffer {
 
-
     private int id;
-    private String name;
-    private float temperature;
+    private int dataset_id; // dataset id
     private ArrayList<SasBufferComponent> components;
     private float pH;
     private String comment;
-    private int sample_id;
 
-    public SasBuffer(){
+    public SasBuffer(int datasetID){
 
     }
 

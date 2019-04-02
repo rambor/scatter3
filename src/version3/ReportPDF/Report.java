@@ -525,6 +525,7 @@ public class Report {
 
         plot.setDomainCrosshairLockedOnData(true);
         plot.setRangeZeroBaselineVisible(true);
+        plot.setOutlineVisible(false);
 
         //make crosshair visible
         plot.setDomainCrosshairVisible(false);

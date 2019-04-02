@@ -937,8 +937,6 @@ public class IndependentComponentAnalysis extends SwingWorker {
             }
             System.out.println(tempString);
         }
-
-
     }
 
     public void runTest(){

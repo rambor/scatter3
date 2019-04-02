@@ -25,6 +25,10 @@ interface RealSpacePrObjectInterface {
     void setNonStandardizedData(XYSeries nonStandardizedData);
     void createNonStandardizedData();
     double calculateMedianResidual(XYSeries series);
+    double calculateChiFromDataset(XYSeries series, XYSeries error);
+
+
+    void normalizeDistribution();
 
     String getHeader(double scale);
     double getArea();

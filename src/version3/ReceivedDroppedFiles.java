@@ -227,21 +227,24 @@ public class ReceivedDroppedFiles extends SwingWorker<Void, Integer> {
 
         int newIndex = targetCollection.getDatasetCount();
 
-        if (shortened){
-            targetCollection.addDataset(new Dataset(
-                    tempFile.allData,       //data
-                    tempFile.allDataError,  //original
-                    tempFile.filebase,
-                    newIndex));
+        if (tempFile.isValid()){ // do not add if it contains null intensities must throw exeption
+            if (shortened){
+                targetCollection.addDataset(new Dataset(
+                        tempFile.allData,       //data
+                        tempFile.allDataError,  //original
+                        tempFile.filebase,
+                        newIndex));
+            } else {
+                targetCollection.createDataset(tempFile, newIndex, doGuinier);
+            }
         } else {
-            targetCollection.createDataset(tempFile, newIndex, doGuinier);
-
-//            targetCollection.addDataset(new Dataset(
-//                    tempFile.allData,       //data
-//                    tempFile.allDataError,  //original
-//                    tempFile.filebase,
-//                    newIndex, doGuinier ));
+            try {
+                throw new Exception("Rejecting File, contains Null Intensities: " + tempFile.filebase);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+
     }
 
 

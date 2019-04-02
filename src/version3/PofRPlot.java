@@ -142,7 +142,7 @@ public class PofRPlot {
                                 dmax = tempdMax;
                             }
                         }
-                        System.out.println(i + " SIZE " + size + " " + dmax + " maxI " + max);
+                        //System.out.println(i + " SIZE " + size + " " + dmax + " maxI " + max);
                     }
                 }
 
@@ -171,8 +171,8 @@ public class PofRPlot {
 
         renderer1 = new XYSplineRenderer();
 
-        splineRend.setBaseShapesVisible(false);
-        renderer1.setBaseShapesVisible(false);
+        splineRend.setBaseShapesVisible(true);
+        renderer1.setBaseShapesVisible(true);
 
         renderer1.setBaseStroke(new BasicStroke(2.0f));
 

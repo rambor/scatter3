@@ -308,7 +308,17 @@ public class SimilarityPlot extends SwingWorker<Void, Integer> {
         frame.setVisible(true);
     }
 
-    public boolean isVisible(){ return frame.isVisible();}
+    /**
+     * Need a null pointer exception for this function
+     * @return
+     */
+    public boolean isVisible(){
+        if (frame != null){
+            return frame.isVisible();
+        } else {
+            return false;
+        }
+    }
 
     private void updateMarkers(Double trueStart, Double trueEnd){
         signalPlot.updateMarkers(trueStart, trueEnd);

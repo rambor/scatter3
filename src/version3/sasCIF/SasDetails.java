@@ -8,7 +8,7 @@ public class SasDetails {
 
     private Dataset dataset;
     private float thickness = 1.50f;
-    private float temperature = 25;
+    private float temperature = 25; // celcius
     private float exposure_time = 3.0f;
     private String title;
 
@@ -75,5 +75,13 @@ public class SasDetails {
 
     public void setMomentum_transfer_units(String momentum_transfer_units) {
         this.momentum_transfer_units = momentum_transfer_units;
+    }
+
+    public float getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(float temperature) {
+        this.temperature = temperature;
     }
 }

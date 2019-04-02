@@ -122,17 +122,24 @@ public class TopList{
             double invfactor = 1.0/(12.0*tempStepSize*tempStepSize);
 
             // calculate diff
-            for (int i=2; i<totalValues; i++){
+//            for (int i=2; i<totalValues; i++){
+//                // calculate derivative for each entry
+//                f_xminus_h = 16*modelParamsCount.get(parameterValues[i-1]) - modelParamsCount.get(parameterValues[i-2]);
+//                f_xplus_h = 16*modelParamsCount.get(parameterValues[i+1]) - modelParamsCount.get(parameterValues[i+2]);
+//                diff = (f_xminus_h-30*modelParamsCount.get(parameterValues[i]) + f_xplus_h);
+//                secondDerivative += diff*diff;
+//            }
+
+
+            // calculate diff
+            for (int i=0; i<parameterValues.length-1; i++){
                 // calculate derivative for each entry
-                f_xminus_h = 16*modelParamsCount.get(parameterValues[i-1]) - modelParamsCount.get(parameterValues[i-2]);
-                f_xplus_h = 16*modelParamsCount.get(parameterValues[i+1]) - modelParamsCount.get(parameterValues[i+2]);
-                diff = (f_xminus_h-30*modelParamsCount.get(parameterValues[i]) + f_xplus_h);
+                diff = modelParamsCount.get(parameterValues[i]) - modelParamsCount.get(parameterValues[i+1]);
                 secondDerivative += diff*diff;
             }
-            //System.out.println(p + " => " + totalParamsFitted + " : " + parameterValues.length);
-            //secondDerivative += forward2ndderivative(parameterValues, modelParamsCount);
-            //secondDerivative += reverse2ndderivative(parameterValues, modelParamsCount);
-            smoothtemp += secondDerivative*invfactor*invfactor/(double)totalValues;
+
+            //smoothtemp += secondDerivative*invfactor*invfactor/(double)totalValues;
+            smoothtemp += secondDerivative;
         }
 
         smoothnessScore = lambda*10000*smoothtemp;

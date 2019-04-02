@@ -279,19 +279,24 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public final double INV_PI = 1.0/Math.PI;
     public final double TWO_INV_PI = 2.0/Math.PI;
     public boolean useL1;
-    public XYSeries nonData, data, residuals, errors, standardVariance; // should be qI(q) dataset ( non-standardized)
-    public final int multiplesOfShannonNumber;
+    public XYSeries nonData; // non-standardized data, not used for fitting
+    public XYSeries data, residuals, errors, standardVariance; // should be qI(q) dataset ( non-standardized)
     public double standardizedMin;
     public double standardizedScale;
     public boolean includeBackground = true;
-    public double rg, izero, rAverage;
+    public double rg, izero, rAverage, sphericalRg;
     public double rgError, iZeroError, rAverageError;
     public int totalInDistribution, totalCoefficients, rows;
     public XYSeries prDistribution;
+    public XYSeries sphericalDistribution;
+    public XYSeries sphericalDistributionFine;
     public XYSeries prDistributionForFitting;
     public boolean negativeValuesInModel;
     public PolynomialSplineFunction splineFunction;
     public String description="";
+    public double sphericalVolume;
+    public double degreesOfFreedom, distribution_score;
+    public double n_chipoints, aic, prScore;
 
     /*
      * LINE SEARCH PARAMETERS
@@ -320,16 +325,21 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public SimpleMatrix am_vector;
     private String modelUsed;
     public double area;
+    public double finalScore;
 
+    public IndirectFT(XYSeries nonStandardizedData, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, boolean includeBackground){
 
-    public IndirectFT(XYSeries nonStandardizedData, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, int cBoxValue, boolean includeBackground){
-        this.nonData = nonStandardizedData;
-        this.errors = errors;
+        try {
+            this.nonData = nonStandardizedData.createCopy(0, nonStandardizedData.getItemCount()-1);
+            this.errors = errors.createCopy(0, errors.getItemCount()-1);; // must be transformed back to unscaled (see createNonStandardizedData)
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+
         this.lambda = lambda;
         this.useL1 = useL1;
         this.qmax = qmax;
         this.dmax = dmax;
-        this.multiplesOfShannonNumber = cBoxValue;
         this.includeBackground = includeBackground;
         this.dmax_PI_TWO_INV_PI = dmax * Math.PI * TWO_INV_PI;
         this.PI_INV_DMAX = Math.PI/dmax;
@@ -338,8 +348,8 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
 
     /**
      * used in refining Pr distribution, requires data that is already standardized
-     * @param standardizedData
-     * @param errors
+     * @param standardizedData should be in the form of (q*I(q) - qmin)/scale
+     * @param scaledqIqerrors should be in the form of q*I(q)/scale, will be transformed to unscaled
      * @param dmax
      * @param qmax
      * @param lambda
@@ -349,21 +359,25 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
      * @param standardizationMin
      * @param standardizationStDev
      */
-    public IndirectFT(XYSeries standardizedData, XYSeries errors, double dmax, double qmax, double lambda, int cBoxValue, boolean useL1, boolean includeBackground, double standardizationMin, double standardizationStDev){
-        this.data = standardizedData;
-        this.errors = errors;
+    public IndirectFT(XYSeries standardizedData, XYSeries scaledqIqerrors, double dmax, double qmax, double lambda, boolean useL1, boolean includeBackground, double standardizationMin, double standardizationStDev){
+
+        try {
+            this.data = standardizedData.createCopy(0, standardizedData.getItemCount()-1);
+            this.errors = scaledqIqerrors.createCopy(0, standardizedData.getItemCount()-1);; // must be transformed back to unscaled (see createNonStandardizedData)
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+
         this.qmax = qmax;
         this.dmax = dmax;
         this.lambda = lambda;
         this.useL1 = useL1;
         this.includeBackground = includeBackground;
-        this.multiplesOfShannonNumber = cBoxValue;
         this.dmax_PI_TWO_INV_PI = dmax * Math.PI * TWO_INV_PI;
         this.PI_INV_DMAX = Math.PI/dmax;
         standardizedMin = standardizationMin;
         standardizedScale = standardizationStDev;
         this.createNonStandardizedData();
-
     }
 
 
@@ -510,6 +524,8 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
 
         return initial;
     }
+
+    public double getBin_width(){ return bin_width;}
 
     public double max(SimpleMatrix vec){
         double initial = vec.get(0);
@@ -890,16 +906,17 @@ double topB = 1000;
                 hessian.set(r+n, c+n, d3.get(r,c));
             }
         }
-
         //hessian.print();
         return hessian;
     }
 
 
-
     /**
      *
      * standardize data
+     *
+     * min-max normalization
+     *
      */
     private void standardizeData(){
         XYDataItem tempData;
@@ -908,24 +925,38 @@ double topB = 1000;
 
         int totalItems = nonData.getItemCount();
 
-        standardizedMin = nonData.getMinY();
-        standardizedScale = nonData.getMaxY() - standardizedMin;
-        double invstdev = 1.0/ standardizedScale;
-        standardizedMin=0;
+        double sum = 0, minavg=10000000, tempminavg;
+        int windowSize = 7;
+        double invwindow = 1.0/(double)windowSize;
+        for(int r=0; r<(totalItems-windowSize); r++){
+            tempminavg = 0;
+            for (int w=0; w<windowSize; w++){
+                tempminavg += nonData.getDataItem(r).getYValue();
+            }
+
+            if (tempminavg < minavg){
+                minavg = tempminavg;
+            }
+        }
+
+        standardizedMin = minavg*invwindow;//nonData.getMinY();
+        standardizedScale = Math.abs(nonData.getMaxY() - standardizedMin);
+        double invstdev = 1.0/standardizedScale;
+
         double temperrorvalue;
 
         for(int r=0; r<totalItems; r++){
             tempData = nonData.getDataItem(r);
             data.add(tempData.getX(), (tempData.getYValue() - standardizedMin)*invstdev);
-
-            temperrorvalue = errors.getY(r).doubleValue()*tempData.getXValue()*invstdev;
-
+            temperrorvalue = errors.getY(r).doubleValue()*tempData.getXValue()*invstdev; // q*sigma/scale
             standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // get residual for this q-value
         }
     }
 
     /**
      * estimate chi-squared by evaluating the function at the points of the cardinal series
+     * errors must be standardized
+     *
      * @return
      */
     @Override
@@ -933,32 +964,96 @@ double topB = 1000;
         // how well does the fit estimate the cardinal series (shannon points)
         // how many points determined by Shannon Information Theory => ns
         double chi=0;
-        double diffTolerance = 0.0001;
+        double diffTolerance = 0.000001;
         double inv_card;
         final double pi_inv_dmax = Math.PI/dmax; // cardinal points are at increments of PI/dmax
         final double dmax_inv_pi = 1.0/pi_inv_dmax;
-        double error_value;
+        double error_value=0;
         // Number of Shannon bins, excludes the a_o
         int bins = ns, count=0, total = data.getItemCount();
         // ns is over-estimated as it includes a q-value that is not actually measured
         // so, how to calculate chi?
-
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         // calculate residuals
         residuals = new XYSeries("residuals");
         for(int i=0; i < rows; i++){
-            XYDataItem item = data.getDataItem(i); // isn't quite correct, using data to get q-values, should be based on input for making design matrix
-            residuals.add(item.getX(), tempResiduals.get(i,0));
+            XYDataItem item = data.getDataItem(i);
+            double diff = tempResiduals.get(i,0);
+            residuals.add(item.getX(), diff);
+        }
+
+        n_chipoints = 0; //1.0/(double)(bins-1);
+        double cardinal, test_q = 0, diff;
+        XYDataItem priorValue, postValue;
+        // see if q-value exists but to what significant figure?
+        // if low-q is truncated and is missing must exclude from calculation
+        double residuals_sum = 0;
+        double residuals_sum_squared = 0;
+        ArrayList<Double> values = new ArrayList<>();
+
+        /*
+         * total points in chi calculation
+         *
+         *  first => is near 0.5*PI/dmax
+         * second => 0.5*PI/dmax + PI/dmax
+         *  third => 0.5*PI/dmax + 2PI/dmax
+         *   last => if possible is nPI/dmax + 0.5*PI/dmax
+         *
+         *   shift points and adding one, so total bins should be
+         *   total bins = ns + 1
+         *
+         */
+        final double delta_q = Math.PI/(dmax*6.0d);
+        //define q-values for calculating chi2
+        int startIndex = 1;
+        double maxQ = data.getMaxX();
+        ArrayList<Integer> chiIndices = new ArrayList<>();
+        Random randomGenerator = new Random();
+        startIndex = (int)Math.floor(data.getMinX()/delta_q); //check first point
+        if ( (startIndex & 1) == 0){ // if even, starting index is greater than startIndex + 1
+            startIndex += 1;
+        } else { // if odd
+            startIndex += 2;
+        }
+        int degreesOfFreedomcorrection = startIndex-1;
+
+        double  before, after, shannon_q = startIndex*delta_q;
+        int startAt = 0;
+        chiIndices.add(0);
+        while (startIndex*delta_q < maxQ){
+
+            if ( (startIndex & 1) != 0){
+                shannon_q = startIndex*delta_q;
+                for(int i = startAt; startAt<total; i++){
+                    XYDataItem xyitem = data.getDataItem(i);
+                    if (xyitem.getXValue() > shannon_q){ // find first value greater than shannon_q
+
+                        before = shannon_q - data.getX(i-1).doubleValue();
+                        after = xyitem.getXValue() - shannon_q;
+                        if (before < after){
+                            chiIndices.add(i-1);
+                        } else {
+                            chiIndices.add(i);
+                        }
+                        startAt = i;
+                        break;
+                    }
+                }
+            }
+            startIndex++;
+        }
+
+        for(int i=0; i<chiIndices.size();i++){
+            error_value = 1.0/(standardVariance.getY(chiIndices.get(i)).doubleValue());
+            diff = residuals.getY(chiIndices.get(i)).doubleValue();
+            residuals_sum_squared += diff*diff;
+            residuals_sum += diff;
+            chi += (diff*diff)*(error_value);
+            n_chipoints += 1.0;
         }
 
 
-        double df = 0; //1.0/(double)(bins-1);
-        double cardinal, test_q = 0, diff;
-        XYDataItem priorValue, postValue;
-
-        // see if q-value exists but to what significant figure?
-        // if low-q is truncated and is missing must exclude from calculation
-        for (int i=1; i <= bins && i*pi_inv_dmax <= qmax; i++){
+        for (int i=1; i <= -bins && i*pi_inv_dmax <= qmax; i++){
 
             cardinal = i*pi_inv_dmax; // <= q-value
             inv_card = 1.0/cardinal;
@@ -966,7 +1061,7 @@ double topB = 1000;
             searchLoop:
             while ( (test_q < cardinal) && (count < total) ){
                 test_q = data.getX(count).doubleValue();
-                // find first value >= shannon cardinal value
+                // find first q-value >= shannon cardinal value
                 if (test_q >= cardinal){
                     break searchLoop;
                 }
@@ -978,18 +1073,24 @@ double topB = 1000;
                 priorValue = data.getDataItem(count-1);
                 postValue = data.getDataItem(count);
                 if ((cardinal - priorValue.getXValue())*inv_card < diffTolerance) {// check if difference is smaller pre-cardinal
-                    error_value = 1.0/errors.getY(count - 1).doubleValue()*inv_card*standardizedScale; // get residual for this q-value
+                    error_value = 1.0/(standardVariance.getY(count-1).doubleValue());
                     diff = residuals.getY(count - 1).doubleValue();
-                    chi += (diff*diff)*(error_value*error_value);
-                    df += 1.0;
-
+                    residuals_sum_squared += diff*diff;
+                    residuals_sum += diff;
+                    chi += (diff*diff)*(error_value);
+                    n_chipoints += 1.0;
+                    values.add(diff);
                 } else if ( Math.abs(postValue.getXValue() - cardinal)*inv_card < diffTolerance) {// check if difference is smaller post-cardinal
-                    error_value = 1.0/errors.getY(count).doubleValue()*inv_card*standardizedScale;
+                    //error_value = 1.0/errors.getY(count).doubleValue()*inv_card*standardizedScale;
+                    error_value = 1.0/(standardVariance.getY(count).doubleValue());
                     diff = residuals.getY(count).doubleValue();
-                    chi += (diff*diff)*(error_value*error_value);
-                    df += 1.0;
-
+                    chi += (diff*diff)*(error_value);
+                    residuals_sum_squared += diff*diff;
+                    residuals_sum += diff;
+                    n_chipoints += 1.0;
+                    values.add(diff);
                 } else { // if difference is greater than 0.1% interpolate and also the cardinal is bounded
+
                     Interpolator tempI = new Interpolator(nonData, errors, cardinal); // interpolate intensity
                     // diff = tempI.interpolatedValue - this.calculateQIQ(cardinal);
                     if (this.getClass().getName().contains("MooreTransform")){
@@ -998,13 +1099,30 @@ double topB = 1000;
                         diff = tempI.interpolatedValue - this.calculateQIQ(cardinal);
                     }
 
-                    chi += (diff*diff)/(tempI.stderror* tempI.stderror);
-                    df += 1.0;
+                    residuals_sum_squared += diff*diff;
+                    residuals_sum += diff;
+                    values.add(diff);
+
+                    chi += (diff*diff)/(tempI.stderror * tempI.stderror*cardinal*cardinal);
+
+                    System.out.println("Interpolated " + cardinal + " diff " + diff + " diff2: " + diff*diff + " sigma " + tempI.stderror + " CHI " + chi);
+                    n_chipoints += 1.0;
                 }
+                System.out.println("          => " + cardinal + " diff " + diff + " diff2: " + diff*diff + " sigma " + error_value + " CHI " + chi + " count " + count + " " + total);
             }
         }
 
-        double delta = ns - df;  // if no missing bin, should equal zero
+
+        double residualsMean = residuals_sum/n_chipoints;
+        double residuals_variance = residuals_sum_squared/n_chipoints - residualsMean*residualsMean;
+        int aic_k = ns + 2;
+        //chi*=1.0/(double)n_chipoints;
+
+        aic = 2.0*aic_k + chi + (2*aic_k*aic_k + 2*aic_k)/(n_chipoints - aic_k - 1);
+//        System.out.println(n_chipoints + " " + ns + " " + n_chipoints/ns + " " + (n_chipoints-2.0)/ns);
+//        System.out.println(dmax + " AIC " + aic + " chi " +chi/(double)(n_chipoints-2.0) + " " + n_chipoints + " " + chi/(double)aic_k + " :: " + chiIndices.size());
+
+        double delta = ns - n_chipoints;  // if no missing bin, should equal zero
 
         // estimate decorellated uncertainties for the cardinal points
 //        int totalerrors = errors.getItemCount();
@@ -1028,11 +1146,22 @@ double topB = 1000;
 //        for(int i=0; i<coeffs_size+2; i++){
 //            System.out.println(i + " SVD " + sing[i]);
 //        }
-        double denominator = (includeBackground) ? (totalCoefficients - delta - 1) : (totalCoefficients - 2.0 - delta);
-        return chi*1.0/delta;
+
+        //System.out.println("CHI ESTIMATE count " + residuals.getItemCount());
+        //degreesOfFreedom = (includeBackground) ? (totalCoefficients - delta - 1) : (totalCoefficients - 1.0 - delta);
+        degreesOfFreedom = n_chipoints - 2;
+        //System.out.println("TC " + totalCoefficients + " delta " + chi);
+        //return aic;
+        return chi*1.0/degreesOfFreedom;
     }
 
 
+    /**
+     * Use Durbin-Watson test for normality (randomness)
+     * Number is reported as the median from random subselection
+     * @param rounds
+     * @return
+     */
     @Override
     public double getKurtosisEstimate(int rounds){  // calculated from the residuals
          /*
@@ -1050,6 +1179,7 @@ double topB = 1000;
          * qmax*dmax/PI
          *
          */
+        double kurtosis_sum = 0;
         double[] kurtosises = new double[rounds];
         // calculate kurtosis
         double qmin = residuals.getMinX();
@@ -1062,12 +1192,6 @@ double topB = 1000;
 
         double numerator=0, value, diff;
         double denominator;// = residuals.getY(0).doubleValue()*residuals.getY(0).doubleValue();
-//        for (int i=1; i<total; i++){
-//            value = residuals.getY(i).doubleValue();
-//            diff = value - residuals.getY(i-1).doubleValue(); // x_(t) - x_(t-1)
-//            numerator += diff*diff;
-//            denominator += value*value; // sum of (x_t)^2
-//        }
 
         for (int i=0; i<rounds; i++){
             // for each round, get a random set of values from ratio
@@ -1100,9 +1224,12 @@ double topB = 1000;
                     test_residuals.add(residuals.getY(randomNumbers[h]).doubleValue());
                 }
             }
-            // calculate kurtosis
-            //kurtosises[i] = StatMethods.kurtosis(test_residuals);
 
+            //kurtosises[i] = StatMethods.kurtosis(test_residuals);
+            /*
+             * Durbin Watson estimate of randomness
+             * d = Sum( e_t - e_[t-1])^2/Sum( e_t^2 )
+             */
             numerator = 0;
             denominator = test_residuals.get(0)*test_residuals.get(0);
             for (int j=1; j<test_residuals.size(); j++){
@@ -1111,14 +1238,19 @@ double topB = 1000;
                 numerator += diff*diff;
                 denominator += value*value; // sum of (x_t)^2
             }
+
             kurtosises[i] = numerator/denominator;
+            kurtosis_sum += kurtosises[i];
             //System.out.println(i + " KURT : " + kurtosises[i] + " SL : " + samplingLimit);
         }
 
         Arrays.sort(kurtosises);
         //return Math.abs(kurtosises[rounds-1]- kurtosises[0]);
-        return Math.abs(2-kurtosises[(rounds-1)/2]);
-        //return Math.abs(2-numerator/denominator);
+        /*
+         * take median from the estimate
+         */
+        return Math.abs(2-kurtosises[(rounds-1)/2]); // subtract 2, should be zero for ideal value
+        //return kurtosis_sum/(double)rounds;
     }
 
 
@@ -1140,31 +1272,132 @@ double topB = 1000;
         List<Double> residualsList = new ArrayList<Double>();
         int dataLimit = dataset.getItemCount();
         double resi;
-//        XYDataItem tempitem;
-//        System.out.println("CalculateMedian Before " + data.getItemCount() + " " + dataset.getItemCount());
-        this.createDesignMatrix(dataset); // this creates a_matrix and y_vector
 
-//        System.out.println("CalculateMedian AFTER " + data.getItemCount() + " " + dataset.getItemCount());
-//        SimpleMatrix temp_y_vector = new SimpleMatrix(dataLimit,1);
-//        for (int i = 0; i < dataLimit; i++){
-//            temp_y_vector.set(i,0, dataset.getY(i).doubleValue());
-//        }
+        this.createDesignMatrix(dataset); // this creates a_matrix and y_vector
 
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector); // this would resize rows and residuals via a_matrix and y_vector
 
         for (int i = 0; i < dataLimit; i++){
-//            tempitem = dataset.getDataItem(i); // in standardized form
-//            resi = this.calculateQIQ(tempitem.getXValue()) - (tempitem.getYValue()*standardizedScale + standardizedMin);
-//            System.out.println(i + " " + tempResiduals.get(i,0) );
-
             resi = tempResiduals.get(i,0);
-            // calculate value
             residualsList.add(resi*resi);
         } //
-
         // need to resetDesignMatrix so that a_matrix and y_vector revert back to the original dataset
-
         return Statistics.calculateMedian(residualsList);
+    }
+
+
+    /**
+     * Dataset must be standardized and transformed as q*Iq
+     * @param tempDataset
+     * @return
+     */
+    @Override
+    public double calculateChiFromDataset(XYSeries tempDataset, XYSeries tempErrors){
+
+        List<Double> residualsList = new ArrayList<Double>();
+        int dataLimit = tempDataset.getItemCount();
+        double resi;
+
+        XYSeries fitme = new XYSeries("FITME");
+        XYSeries errorsInUse = new XYSeries("errors");
+
+        final double delta_q = Math.PI/(dmax*6.0d);
+        //define q-values for calculating chi2
+        int startIndex = 1;
+        double maxQ = tempDataset.getMaxX();
+        ArrayList<Integer> chiIndices = new ArrayList<>();
+        startIndex = (int)Math.floor(tempDataset.getMinX()/delta_q); //check first point
+        if ( (startIndex & 1) == 0){ // if even, starting index is greater than startIndex + 1
+            startIndex += 1;
+        } else { // if odd
+            startIndex += 2;
+        }
+        int degreesOfFreedomcorrection = startIndex-1;
+
+        double shannon_q = startIndex*delta_q;
+        int startAt = 0;
+        chiIndices.add(0);
+        while (startIndex*delta_q < maxQ){
+            if ( (startIndex & 1) != 0){
+                shannon_q = startIndex*delta_q;
+                for(int i = startAt; startAt<dataLimit; i++){
+                    if (tempDataset.getX(i).doubleValue() > shannon_q){ // find first value greater than shannon_q
+                        chiIndices.add(i);
+                        startAt = i;
+                        break;
+                    }
+                }
+            }
+            startIndex++;
+        }
+
+        chiIndices.add(dataLimit-1);
+
+
+        for(int i=0; i<chiIndices.size();i++){
+            fitme.add(tempDataset.getDataItem(chiIndices.get(i)));
+            XYDataItem item = tempErrors.getDataItem(chiIndices.get(i));
+            double value = item.getYValue();
+            errorsInUse.add(item.getX(),value*value);
+        }
+
+
+
+        /*
+         * pick datapoints that surround the Shannon point
+         * n*PI/dmax = q_n
+         */
+//        final double pidmax=Math.PI/dmax;
+//        int startHere =0;
+//
+//        // test if first data point contains first Shannon number
+//        Number firstq = tempDataset.getX(0);
+//        int shannonStart = 1;
+//        for(int n=1; n<=ns; n++){
+//            if (firstq.doubleValue() < n*pidmax){
+//                shannonStart = n;
+//                break;
+//            }
+//        }
+//
+//        fitme.add(tempDataset.getDataItem(0));
+//        for (int n=shannonStart; n <= ns; n++){
+//            double target_q = n*pidmax;
+//
+//            for(; startHere<dataLimit; startHere++){
+//                if (tempDataset.getX(startHere).doubleValue() > target_q){
+//                    fitme.add(tempDataset.getDataItem(startHere-1));
+//                    XYDataItem item = tempErrors.getDataItem(startHere-1);
+//                    double value = item.getYValue();
+//                    errorsInUse.add(item.getX(),value*value);
+//
+//                    if (startHere < dataLimit){
+//                        fitme.add(tempDataset.getDataItem(startHere));
+//
+//                        item = tempErrors.getDataItem(startHere);
+//                        value = item.getYValue();
+//                        errorsInUse.add(item.getX(),value*value);
+//                    }
+//                    startHere +=1;
+//                    break;
+//                }
+//            }
+//        }
+
+
+        this.createDesignMatrix(fitme); // this creates a_matrix and y_vector
+
+        SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector); // this would resize rows and residuals via a_matrix and y_vector
+
+        double sum=0;
+        for (int i = 0; i < fitme.getItemCount(); i++){
+            resi = tempResiduals.get(i,0);
+            sum += resi*resi/errorsInUse.getY(i).doubleValue();
+            //residualsList.add(resi*resi);
+        } //
+        //System.out.println(fitme.getItemCount() + " sum " + sum/(double)fitme.getItemCount() );
+        // need to resetDesignMatrix so that a_matrix and y_vector revert back to the original dataset
+        return sum/((double)fitme.getItemCount() + 2);
     }
 
     @Override
@@ -1181,6 +1414,7 @@ double topB = 1000;
         for (int i=0; i<this.data.getItemCount(); i++){
             XYDataItem item = this.data.getDataItem(i);
             nonData.add(item.getX(), item.getYValue()*standardizedScale+standardizedMin);
+            errors.updateByIndex(i, errors.getY(i).doubleValue()*standardizedScale/item.getXValue());
         }
     }
 
@@ -1320,4 +1554,197 @@ double topB = 1000;
         tempHeader += "# \n";
         return tempHeader;
     }
+
+
+    /**
+     * Pr-distribution series must be calculated first, will through an error
+     *
+     */
+    public void calculateSphericalCalibration(){
+        sphericalDistribution = new XYSeries("Spherical Distribution");
+        sphericalDistributionFine = new XYSeries("FINE");
+
+        double radius = dmax*0.5d;
+        double radiusCubed = radius*radius*radius;
+        double invR3 = 1.0/radiusCubed;
+        double constantA = 3.0*invR3;
+        double constantB = 9.0/4*invR3/radius;
+        double constantC = 3.0/16.0*invR3*invR3;
+
+        sphericalVolume = 4.0/3.0*Math.PI*radiusCubed;
+        sphericalDistribution.add(0,0);
+
+        double delta = prDistribution.getX(2).doubleValue() - prDistribution.getX(1).doubleValue();
+        double increment = delta/2.0d;
+        double rat = 0.25*delta;
+        while(rat < dmax){
+            double rsquared = rat*rat;
+            double rcubed = rsquared*rat;
+            sphericalDistributionFine.add(rat, sphericalVolume*(constantA*rsquared - constantB*rcubed + constantC*rsquared*rcubed));
+            rat += increment;
+        }
+
+        int last = totalInDistribution-1;
+        double sum = 0;
+        for(int i=1; i<last; i++){
+            XYDataItem value = prDistribution.getDataItem(i);
+            double rvalue = value.getXValue(); // trapezoid rule for area calculation
+            double rsquared = rvalue*rvalue;
+            double rcubed = rsquared*rvalue;
+
+            sphericalDistribution.add(value.getX(), sphericalVolume*(constantA*rsquared - constantB*rcubed + constantC*rsquared*rcubed));
+
+            sum +=(constantA*rsquared - constantB*rcubed + constantC*rsquared*rcubed)*delta;
+        }
+
+        sphericalDistribution.add(dmax, 0);
+
+        sphericalRg = Math.sqrt((dmax*dmax*0.25)*3.0/5.0d);
+    }
+
+
+
+
+    /**
+     * Using spherical distribution, scale P(r)-distribution to the smallest value that provides only positive differences
+     * which scale factor produces the largest non-negative difference in areas
+     */
+    public void calibratePrDistribution(){
+
+        double scalefactor=1, keptScalefactor = 1;
+        int last = totalInDistribution-1;
+        double keptsum = Double.POSITIVE_INFINITY;
+        double delta = sphericalDistribution.getX(2).doubleValue() - sphericalDistribution.getX(1).doubleValue();
+
+        int lastIn = sphericalDistributionFine.getItemCount()-1;
+
+        for(int i=0; i<0*lastIn; i++){
+            XYDataItem item = sphericalDistributionFine.getDataItem(i);
+            scalefactor = item.getYValue()/calculatePofRAtR(item.getXValue(), 1);
+            boolean pleaseCOntinue = true;
+            double diffsum = 0;
+
+            for(int j=0; j<last; j++){ // go through each trapezoid and calculate area
+                XYDataItem inItem = sphericalDistributionFine.getDataItem(j);
+                double diff = inItem.getYValue() - scalefactor*calculatePofRAtR(inItem.getXValue(), 1);
+
+                if (diff < 0){
+                    pleaseCOntinue = false;
+                    break;
+                }
+                diffsum+=diff;
+            }
+
+            if(pleaseCOntinue && diffsum < keptsum){
+                keptsum = diffsum;
+                keptScalefactor = scalefactor;
+                //System.out.println("kept factor " + i + " " + scalefactor + " => " + keptsum);
+            }
+        }
+
+
+        for(int i=1; i<last; i++){
+
+            scalefactor = sphericalDistribution.getY(i).doubleValue()/prDistribution.getY(i).doubleValue();
+            boolean pleaseCOntinue = true;
+            double diffsum = 0;
+
+            for(int j=1; j<last; j++){ // go through each trapezoid and calculate area
+
+                double diff = sphericalDistribution.getY(j).doubleValue() - scalefactor*prDistribution.getY(j).doubleValue();
+
+                if (diff < 0){
+                    pleaseCOntinue = false;
+                    break;
+                }
+                diffsum+=diff;
+            }
+
+            if(pleaseCOntinue && diffsum < keptsum){
+                keptsum = diffsum;
+                keptScalefactor = scalefactor;
+                //System.out.println("kept factor " + i + " " + scalefactor + " => " + keptsum);
+            }
+        }
+
+        // need two corrections, one is rescaling based on size and the other is shape
+        double correctedVolume = sphericalVolume - keptsum*delta;
+//        System.out.println(sphericalVolume +  " => Corrected Volume : " + correctedVolume*this.rg/sphericalRg);
+
+//        for(int i=0; i<totalInDistribution; i++){
+//            System.out.println(sphericalDistribution.getX(i) + " " + sphericalDistribution.getY(i).doubleValue() + " " + keptScalefactor*prDistribution.getY(i).doubleValue());
+//        }
+    }
+
+    /**
+     * provide a quality score of the Pr-distribution using second derivative and tangent at dmax
+     * @param del_r
+     * @return
+     */
+    public double scoreDistribution(double del_r){
+        totalInDistribution = prDistribution.getItemCount();
+
+        /*
+         * assess smoothness
+         */
+        double diff, diff_sum=0;
+        int negativity = 0;
+        for(int r=1; r<(totalInDistribution-1); r++){
+            double value = prDistribution.getY(r).doubleValue();
+            if (value < 0){
+                negativity += 1;
+            }
+            diff = (prDistribution.getY(r+1).doubleValue() - 2.0*value + prDistribution.getY(r-1).doubleValue())/(del_r*del_r);
+            diff_sum += diff*diff;
+        }
+        diff_sum *= 1.0/(double)(totalInDistribution-2)*1100;
+
+        /*
+         * assess finish
+         */
+        double slope = (-8.0*prDistribution.getY(totalInDistribution-2).doubleValue() + prDistribution.getY(totalInDistribution-3).doubleValue())/(12.0*del_r);
+        double intercept = -slope*dmax;
+
+        double firstGap = prDistribution.getY(totalInDistribution-3).doubleValue() - slope*prDistribution.getX(totalInDistribution-3).doubleValue() + intercept;
+        double secondGap = -slope*(dmax + 2*del_r) + intercept;
+
+        distribution_score = (slope > 0) ? (ns*Math.abs(Math.abs(firstGap) + Math.abs(secondGap))) : (Math.abs(firstGap) + Math.abs(secondGap));
+
+        double pointn2 = prDistribution.getY(totalInDistribution-2).doubleValue();
+        double pointn3 = prDistribution.getY(totalInDistribution-3).doubleValue();
+        double pointn4 = prDistribution.getY(totalInDistribution-4).doubleValue();
+
+
+        if (pointn2 > pointn3){
+            distribution_score += 2.0*distribution_score;
+        }
+
+        if (pointn2 > pointn4){
+//            if (pointn4 < 0.5*pointn2){
+                distribution_score += 1.5*distribution_score;
+//            } else {
+//                diff = pointn2 - pointn4;
+//                distribution_score += diff/(0.5*pointn2);
+//            }
+        }
+
+        if (pointn3 > pointn4){
+//            if (pointn4 < 0.5*pointn3){
+                distribution_score += 1.5*distribution_score;
+//            } else {
+//                diff = pointn3 - pointn4;
+//                distribution_score += diff/(0.5*pointn3);
+//            }
+        }
+
+        distribution_score += 10*negativity*distribution_score;
+
+        prScore = (distribution_score + diff_sum);
+
+        //System.out.println("PR SCORE " + prScore);
+        return prScore;
+    }
+
+    public double getPrScore() { return prScore;}
+    public double getFinalScore(){ return finalScore;}
 }

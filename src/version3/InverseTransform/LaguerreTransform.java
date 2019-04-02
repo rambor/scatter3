@@ -57,8 +57,8 @@ public class LaguerreTransform extends IndirectFT {
      * @param lambda
      * @param cBoxValue
      */
-    public LaguerreTransform(double r_ave_estimate, double rg_estimate, XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, int cBoxValue) {
-        super(dataset, errors, dmax, qmax, lambda, false, cBoxValue, false);
+    public LaguerreTransform(double r_ave_estimate, double rg_estimate, XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda) {
+        super(dataset, errors, dmax, qmax, lambda, false, false);
 
         this.initial_2nd_moment = rg_estimate*rg_estimate*2;
 
@@ -82,7 +82,7 @@ public class LaguerreTransform extends IndirectFT {
             double lambda,
             double stdscale){
 
-        super(dataset, errors, dmax, qmax, lambda, 1, false, false, 0, stdscale);
+        super(dataset, errors, dmax, qmax, lambda, false, false, 0, stdscale);
         // data is standardized along with errors (standard variance)
         this.invDmax = 1.0/dmax;
 
@@ -96,11 +96,10 @@ public class LaguerreTransform extends IndirectFT {
 
 
     public void createDesignMatrix(XYSeries datasetInuse){
-
         //
         //
-        //ns = ((int) (Math.ceil(qmax*dmax*INV_PI) + 1 )) ;  //
-        ns = ((int) (Math.round(qmax*dmax*INV_PI) + 2 )) ;  //
+        ns = ((int) (Math.ceil(qmax*dmax*INV_PI) + 1 )) ;  //
+        //ns = ((int) (Math.round(qmax*dmax*INV_PI) + 3 )) ;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
 
         rows = datasetInuse.getItemCount();    // rows
@@ -321,7 +320,7 @@ public class LaguerreTransform extends IndirectFT {
             sum += am_vector.get(j);
         }
 
-        izero = tempRgSum*standardizedScale+standardizedMin;
+        izero = tempRgSum*standardizedScale/del_r+standardizedMin;
         //System.out.println("TrapeSum " + trapesum*standardizedScale + " izero " + izero);
         rAverage = xaverage/tempRgSum;
         area = tempRgSum;
@@ -821,6 +820,24 @@ public class LaguerreTransform extends IndirectFT {
                 return sum;
         }
     }
+
+    @Override
+    public void normalizeDistribution(){
+        double sum=0;
+        for(int i=0; i < totalInDistribution; i++){
+            XYDataItem item = prDistribution.getDataItem(i);
+            sum += item.getYValue();
+        }
+
+        sum *= del_r; //area
+        double invSum = 1.0/sum;
+
+        for(int i=0; i < totalInDistribution; i++){
+            XYDataItem item = prDistribution.getDataItem(i);
+            prDistribution.updateByIndex(i, item.getYValue()*invSum);
+        }
+    }
+
 
 
     private double binomialCoefficient(double real, int k_integer){

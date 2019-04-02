@@ -5,6 +5,7 @@ import version3.*;
 import version3.Collection;
 import version3.InverseTransform.RefinePrManager;
 import version3.PowerLawFit.PowerLaw;
+import version3.Projection.Projection;
 import version3.ReportPDF.MergeReport;
 import version3.ReportPDF.Report;
 import version3.formfactors.FormFactorEngine;
@@ -332,6 +333,11 @@ public class Scatter {
     private JCheckBox laguerreCheckBox;
     private JPanel additionalInfoPrPanel;
     private JTextField laguerreRatioTextField;
+    private JButton viewGNOMOutFileButton;
+
+    private JButton calculateButton;
+    private JLabel projectionLabel;
+    private JButton loadPDBProjectionButton;
     //private JCheckBox volumeScalingCheckBox;
     private JButton diffButton;
     private JPanel plotPanel3Body;
@@ -412,6 +418,7 @@ public class Scatter {
     private static int cpuCores;
     private SignalPlot signalPlotThread;
     private SimilarityPlot similarityPlotObject;
+    private Projection projectionObject;
 
     public Scatter() { // constructor
 
@@ -879,6 +886,26 @@ public class Scatter {
             }
         }));
 
+        popupMenu.add(new JMenuItem(new AbstractAction("FIND DMAX"){@Override
+        public void actionPerformed(ActionEvent e) {
+            //To change body of implemented methods use File | Settings | File Templates.
+
+            int index = analysisTable.getSelectedRow();
+
+            if (index > -1){
+                // set qmax from spinner
+                double qmax = collectionSelected.getDataset(index).getAllData().getX(collectionSelected.getDataset(index).getEnd()-1).doubleValue();
+                FindDmax tt = new FindDmax(collectionSelected.getDataset(index).getRealSpaceModel(), qmax, WORKING_DIRECTORY);
+//                // select dataset with form factor
+//                StructureFactorTest temp = new StructureFactorTest(collectionSelected, collectionSelected.getDataset(index), WORKING_DIRECTORY);
+//                temp.pack();
+//                temp.setVisible(true);
+            }
+        }
+
+
+        }));
+
 
         popupMenu.add(new JMenuItem(new AbstractAction("Similarity Test") {
             @Override
@@ -1038,6 +1065,29 @@ public class Scatter {
                     temp.pack();
                     temp.setVisible(true);
                 }
+            }
+        }));
+
+
+
+        popupMenu.add(new JMenuItem(new AbstractAction("Edit Details") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+
+                int total = 0;
+                for(int i=0; i<collectionSelected.getDatasetCount(); i++){
+                    if (collectionSelected.getDataset(i).getInUse()){
+                        total+=1;
+                    }
+                }
+
+                if (total > 1){
+                    // get details from first one to edit
+                } else if (total == 1){
+
+                }
+
             }
         }));
 
@@ -2873,6 +2923,7 @@ public class Scatter {
             }
         });
 
+
         qIQCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -4340,13 +4391,13 @@ public class Scatter {
                     useDirectFourierTransformCheckBox.setSelected(false);
                     checkBoxDirect.setSelected(false);
 
-                    lambdaBox.setSelectedIndex(1);
-                    methodInUseLabel.setText("Laguerre Distribution Estimation");
-                    prStatusLabel.setText("Laguerre Distribution Estimation");
+                    lambdaBox.setSelectedIndex(14);
+                    methodInUseLabel.setText("Total Differences Estimation");
+                    prStatusLabel.setText("Total Differences Estimation");
 
                     laguerreParamsSingleton.setIsSelected(true);
                     additionalInfoPrPanel.setBorder(BorderFactory.createEmptyBorder());
-                    additionalInfoPrPanel.add(laguerreParamsSingleton.getPanel());
+//                    additionalInfoPrPanel.add(laguerreParamsSingleton.getPanel());
                 } else {
                     laguerreParamsSingleton.setIsSelected(false);
 
@@ -4361,6 +4412,38 @@ public class Scatter {
 
                 additionalInfoPrPanel.revalidate();
                 additionalInfoPrPanel.repaint();
+            }
+        });
+
+
+        loadPDBProjectionButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                File theCWD = new File(WORKING_DIRECTORY.getWorkingDirectory());
+                JFileChooser chooser = new JFileChooser(theCWD);
+                chooser.setDialogTitle("Select File");
+
+                chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+                chooser.setAcceptAllFileFilterUsed(false);
+
+
+                if (chooser.showOpenDialog(panel1) == JFileChooser.APPROVE_OPTION){
+
+                        if (chooser.getSelectedFile().exists() ){
+                            projectionLabel.setText(chooser.getSelectedFile().toString());
+                            projectionObject = new Projection(chooser.getSelectedFile());
+                        } else {
+                            projectionLabel.setText("file does not exist");
+                        }
+                }
+            }
+        });
+
+
+        showBinsCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                PofRHistogram plot = new PofRHistogram(collectionSelected, WORKING_DIRECTORY);
             }
         });
     }

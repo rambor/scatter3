@@ -66,28 +66,33 @@ public class IFTObject implements Runnable {
 
         if (useDirectFT && !useLaguerre && !useLegendre){
 
-            tempIFT = new SineIntegralTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, cBoxValue, includeBackground, positiveOnly);
+            tempIFT = new SineIntegralTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, includeBackground, positiveOnly);
 
         } else if (useLegendre && !useLaguerre && !useDirectFT) {
 
-            tempIFT = new LegendreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, 1, includeBackground);
-            //tempIFT = new LaguerreTransform(37 , 29, dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, 1, includeBackground);
+            tempIFT = new LegendreTransform(
+                    dataset.getfittedqIq(),
+                    dataset.getfittedError(),
+                    dmax,
+                    qmax,
+                    lambda,
+                    includeBackground);
 
         } else if (useLaguerre && !useLegendre && !useDirectFT) {  // use Laguerre
-            double rg = laguerreParamsSingleton.getDefaultRg();
-            double rave = laguerreParamsSingleton.getR_ave();
 
-            if (dataset.getRg() > laguerreParamsSingleton.getRgLimit() && !laguerreParamsSingleton.getIsFixed()){
-                rg = dataset.getRg();
-                rave = dataset.getRaverage();
-                System.out.println("not fixed ");
-            }
+            tempIFT = new DirectSineIntegralTransform(dataset.getfittedqIq(),
+                    dataset.getfittedError(),
+                    dmax,
+                    qmax,
+                    lambda,
+                    includeBackground);
 
-            tempIFT = new LaguerreTransform(rave , rg, dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, 1);
+            //tempIFT = new LaguerreTransform(rave , rg, dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, 1);
 
         } else  {  // use Moore Method
 
-            tempIFT = new MooreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, cBoxValue, includeBackground);
+            tempIFT = new MooreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, includeBackground);
+
         }
 
         this.dataset.setStandardizationMean(tempIFT.getStandardizedLocation(), tempIFT.getStandardizedScale());

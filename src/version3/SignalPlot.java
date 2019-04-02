@@ -779,7 +779,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
             for(int j=(i+1); j<windowSize; j++){
                 targetDataset = collection.getDataset(j);
                 tempData = targetDataset.getAllData();
-
+//                System.out.println(i + " " + j + " " + targetDataset.getFileName() + " " + refDataset.getFileName() );
                 ratio.clear();
                 // go through each q-value in reference
                 for (int q = lowerIndex; q < (upperIndex+1); q++) {

@@ -47,33 +47,61 @@ public class LegendreTransform extends IndirectFT {
     private RealMatrix designMatrix; // assume this is the design matrix
     PolynomialFunction[] functions;
 
-    // Dataset should not be standardized but in the form  of [q, q*I(q)]
-    public LegendreTransform(XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, int cBoxValue, boolean includeBackground) {
-        super(dataset, errors, dmax, qmax, lambda, false, cBoxValue, includeBackground);
+
+    /**
+     *
+     * @param dataset [q, q*I(q)]
+     * @param errors // errors are assumed to be non-standard
+     * @param dmax
+     * @param qmax
+     * @param lambda
+     * @param cBoxValue
+     * @param includeBackground
+     */
+    public LegendreTransform(
+            XYSeries dataset,
+            XYSeries untransformedErrors,
+            double dmax,
+            double qmax,
+            double lambda,
+            boolean includeBackground) {
+        super(dataset, untransformedErrors, dmax, qmax, lambda, false, includeBackground);
 
         this.invDmax = 1.0/dmax;
         this.invertStandardVariance();
         this.createDesignMatrix(this.data);
-
         this.rambo_coeffs_L2();
         this.setModelUsed("Legendre L2-NORM");
     }
 
 
     public LegendreTransform(
-            XYSeries dataset,
-            XYSeries errors,
+            XYSeries scaledqIqData,
+            XYSeries scaledqIqErrors,
             double dmax,
             double qmax,
             double lambda,
+            double stdmin,
             double stdscale){
 
-        super(dataset, errors, dmax, qmax, lambda, 1, false, false, 0, stdscale);
+        super(scaledqIqData, scaledqIqErrors, dmax, qmax, lambda, false, false, stdmin, stdscale);
         // data is standardized along with errors (standard variance)
         this.invDmax = 1.0/dmax;
 
-        this.standardizeErrors();
-        this.createDesignMatrix(dataset);
+//        this.standardizeErrors(); // extract variances from errors
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = scaledqIqData.getItemCount();
+        invVariance = new double[totalItems];
+        double temperrorvalue;
+
+        for(int r=0; r<totalItems; r++){
+            XYDataItem tempData = scaledqIqData.getDataItem(r);
+            temperrorvalue = scaledqIqErrors.getY(r).doubleValue();//q*timeserror/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // variance q_times_Iq_scaled
+            invVariance[r] = 1.0/(temperrorvalue*temperrorvalue);
+        }
+
+        this.createDesignMatrix(scaledqIqData);
         this.rambo_coeffs_L2();
 
         this.setModelUsed("Legendre L2-NORM");
@@ -81,6 +109,9 @@ public class LegendreTransform extends IndirectFT {
 
 
 
+    /*
+     * datasetInUse does not have to be standardized
+     */
     public void createDesignMatrix(XYSeries datasetInuse){
 
         //ns = ((int) (Math.ceil(qmax*dmax*INV_PI) + 1 )) ;  //
@@ -98,6 +129,7 @@ public class LegendreTransform extends IndirectFT {
          * effective bin width of the Pr-distribution
          */
         del_r = dmax/(double)(r_vector_size);
+        bin_width = del_r;
         // if I think I can squeeze out one more Shannon Number, then I need to define del_r by dmax/ns+1
         r_vector = new double[r_vector_size];
 
@@ -162,12 +194,11 @@ public class LegendreTransform extends IndirectFT {
                         sumSinc += sinc[i]*functions[col].value((2*r_value-dmax)*invDmax);
                     }
 
-                    //sumSinc *= 2.0*invDmax;
                     a_matrix.set(row, col, sumSinc);
                     designMatrix.setEntry(row, col, sumSinc);
                 }
 
-                y_vector.set(row,0,tempData.getYValue()); //set data vector
+                y_vector.set(row,0, tempData.getYValue()); //set data vector
                 target[row] = tempData.getYValue();
                 qvalues[row] = tempData.getXValue();
             }
@@ -218,7 +249,7 @@ public class LegendreTransform extends IndirectFT {
         try{
             NonLinearConjugateGradientOptimizer optimizer = new NonLinearConjugateGradientOptimizer(
                     NonLinearConjugateGradientOptimizer.Formula.FLETCHER_REEVES,
-                    new SimpleValueChecker(1e-5, 1e-5)
+                    new SimpleValueChecker(1e-6, 1e-6)
             );
 
             double[] guess = new double[coeffs_size]; // approximate using Gaussian
@@ -238,19 +269,25 @@ public class LegendreTransform extends IndirectFT {
             } else {
                 for(int i=0; i < coeffs_size; i++){
                     double diff = (r_vector[i] - midpoint);
-                    guess[i] = 100*prefactor*Math.exp( -(diff*diff)*invTwoVar);
+//                    guess[i] = prefactor*Math.exp( -(diff*diff)*invTwoVar);
 //                    System.out.println(i + " guess " + guess[i] );
-//                    guess[i] = 0.3;
+                    guess[i] = 0.13;
                 }
             }
 
-            PointValuePair optimum = optimizer.optimize(new MaxEval(10000),
+            PointValuePair optimum = optimizer.optimize(new MaxEval(20000),
                     problem.getObjectiveFunction(),
                     problem.getObjectiveFunctionGradient(),
                     GoalType.MINIMIZE,
                     new InitialGuess(guess));
 
             // initialize coefficient vector
+
+            /*
+             * standardize to number of datapoints
+             */
+            finalScore = optimum.getValue()/(double)rows;
+
             int totalCoeffs = includeBackground ? coeffs_size: coeffs_size+1;
             coefficients = new double[totalCoeffs];
             am_vector = new SimpleMatrix(coeffs_size,1);  // am is 0 column
@@ -271,7 +308,7 @@ public class LegendreTransform extends IndirectFT {
             totalCoefficients = coefficients.length;
             this.setPrDistribution();
             this.calculateIzeroRg();
-
+            this.calibratePrDistribution();
         } catch (TooManyEvaluationsException ex) {
             System.out.println("TOO Few Evaluations");
         } catch (Exception e) {
@@ -287,37 +324,30 @@ public class LegendreTransform extends IndirectFT {
 
     @Override
     void calculateIzeroRg() {
-        double tempRgSum = 0, tempRg2Sum=0, xaverage=0;
+        double tempRgSum = 0, tempRg2Sum=0, xaverage=0, izeroSum=0;
 
         XYDataItem item;
         for(int i=1; i<totalInDistribution-1; i++){ // exclude last point
             item = prDistribution.getDataItem(i);
             double rvalue = item.getXValue();
+            izeroSum += item.getYValue();
             tempRg2Sum += rvalue*rvalue*item.getYValue()*del_r;
             tempRgSum += item.getYValue()*del_r; // width x height => area
             xaverage += rvalue*item.getYValue()*del_r;
         }
 
-        // trapezoid rule
-        double trapesum=0;
-        for(int i=0; i<totalInDistribution; i++){ // exclude last point
-            trapesum += 2*prDistribution.getDataItem(i).getYValue();
-        }
-
-        trapesum *= dmax/(double)ns*0.5;
-
-
         rg = Math.sqrt(0.5*tempRg2Sum/tempRgSum);
 //        for(int j=0; j< totalCoefficients; j++){
 //            sum +=  coefficients[j+1];
 //        }
-        double sum=0;
-        for (int j=0; j < coeffs_size; j++){
-            sum += am_vector.get(j);
-        }
 
-        izero = tempRgSum*standardizedScale+standardizedMin;
-        //System.out.println("TrapeSum " + trapesum*standardizedScale + " izero " + izero);
+//        double sum=0;
+//        for (int j=0; j < coeffs_size; j++){
+//            sum += am_vector.get(j);
+//        }
+
+        izero = tempRgSum*standardizedScale/del_r + standardizedMin;
+//        System.out.println("izero " + izero + " scale " + standardizedScale + " raw " + tempRgSum + " min " + standardizedMin);
         rAverage = xaverage/tempRgSum;
         area = tempRgSum;
     }
@@ -359,7 +389,7 @@ public class LegendreTransform extends IndirectFT {
                 for (int a=1; a<coeffs_size; a++){
                     pr += am_vector.get(a)*functions[a].value((2*temp_r_vector[index]-dmax)*invDmax);
                 }
-                //pr *= 2.0*invDmax;
+
                 prDistribution.add(temp_r_vector[index], pr);
                 prDistributionForFitting.add(temp_r_vector[index], pr);
             }
@@ -367,11 +397,18 @@ public class LegendreTransform extends IndirectFT {
 
         totalInDistribution = prDistribution.getItemCount();
 
+        scoreDistribution(del_r);
+
+        this.calculateSphericalCalibration(); // sets the distribution for calibration
+        setSplineFunction();
+
         this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS DIRECT INVERSE FOURIER TRANSFORM OF I(q) %n");
         this.description += String.format("REMARK 265  COEFFICIENTS ARE THE HISTOGRAM HEIGHTS WITH EQUAL BIN WIDTHS %n");
         this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.4f %n", del_r);
-        setSplineFunction();
+        this.description += String.format("REMARK 265            DISTRIBUTION SCORE : %.4f %n", prScore);
+        //setSplineFunction();
     }
+
 
 
     /**
@@ -394,10 +431,15 @@ public class LegendreTransform extends IndirectFT {
         splineFunction = spline.interpolate(totalrvalues, totalPrvalues);
     }
 
+    /**
+     * returns unscaled Intensity data where scaled refers to standardized data
+     * @param qvalue
+     * @return
+     */
     @Override
     public double calculateQIQ(double qvalue) {
 
-        double sum = coefficients[0]*qvalue;
+        double sum = coefficients[0]*qvalue; // background term
 
         double[] sinc = new double[r_vector_size];
         for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
@@ -612,7 +654,7 @@ public class LegendreTransform extends IndirectFT {
         final double weight;
         final boolean useBackground;
         final PolynomialFunction[] functions;
-        final double invP, invN;
+        final double invP;
         final int totalP, totalRvalues, lastP;
         final int lastRvalue;
 
@@ -633,7 +675,6 @@ public class LegendreTransform extends IndirectFT {
 
             this.lastP = totalP-1;
             this.totalqvalues = qvalues.length;
-            this.invN = 1.0/(double)this.totalqvalues;
 
             this.dmax = dmax;
             this.invDmax = 1.0/dmax;
@@ -670,14 +711,6 @@ public class LegendreTransform extends IndirectFT {
 
                     } else {
                         /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |x|^2
-                         */
-//                        for(int p=0; p < point.length; p++){
-//                            seconddiff = point[p];
-//                            sum += seconddiff*seconddiff;
-//                        }
-
-                        /*
                          * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i+1) - P_(i)|^2
                          */
 //                        double diff;
@@ -706,7 +739,7 @@ public class LegendreTransform extends IndirectFT {
                     }
                     // add last term to sum
                     //System.out.println("chi " + (invN*chi2) + " " + sum + " " + ((invN*chi2) + weight*invP*sum));
-                    return invN*chi2 + weight*sum;
+                    return chi2 + weight*sum;
                 }
             });
         }
@@ -728,6 +761,9 @@ public class LegendreTransform extends IndirectFT {
                     int calcLength = calc.length;
                     double[] residualsInvVar = new double[calcLength];
 
+                    /*
+                     * Calculate Residuals as (qI_obs - qI_calc)/invVariance[q]
+                     */
                     for (int q = 0; q < calcLength; ++q) {
                         residualsInvVar[q] = (obs[q]-calc[q])*invVariance[q];
                     }
@@ -759,7 +795,7 @@ public class LegendreTransform extends IndirectFT {
                             for (int q = 0; q < calcLength; ++q) {
                                 sum += residualsInvVar[q]*factors.getEntry(q,p);
                             }
-                            del_p[p] = -2*sum*invN;
+                            del_p[p] = -2*sum;
                         }
 
                         // add second term to each del_p
@@ -773,8 +809,7 @@ public class LegendreTransform extends IndirectFT {
                             currentDistribution[r] = value;
                         }
 
-                        int stopat = lastRvalue-1;
-
+//                        int stopat = lastRvalue-1;
 //                        for(int index=1; index<totalP; index++){ // for a given coefficient, must sum over each difference
 //
 //                            double diff = 0;
@@ -803,24 +838,23 @@ public class LegendreTransform extends IndirectFT {
     }
 
 
-    private void standardizeErrors(){
-        XYDataItem tempData;
-        standardVariance = new XYSeries("standardized error");
-        int totalItems = data.getItemCount();
+    @Override
+    public void normalizeDistribution(){
+        double sum=0;
+        for(int i=0; i < totalInDistribution; i++){
+            XYDataItem item = prDistribution.getDataItem(i);
+            sum += item.getYValue();
+        }
 
-        invVariance = new double[totalItems];
+        sum *= del_r; //area
+        double invSum = 1.0/sum;
 
-        double invstdev = 1.0/standardizedScale;
-        double temperrorvalue;
-
-        for(int r=0; r<totalItems; r++){
-            tempData = data.getDataItem(r);
-            temperrorvalue = errors.getY(r).doubleValue()*invstdev;
-
-            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // get residual for this q-value
-            invVariance[r] = 1.0/standardVariance.getY(r).doubleValue();
+        for(int i=0; i < totalInDistribution; i++){
+            XYDataItem item = prDistribution.getDataItem(i);
+            prDistribution.updateByIndex(i, item.getYValue()*invSum);
         }
     }
+
 
     /*
      * precalculate standardVariance
@@ -835,4 +869,5 @@ public class LegendreTransform extends IndirectFT {
             invVariance[r] = 1.0/standardVariance.getY(r).doubleValue();
         }
     }
+
 }

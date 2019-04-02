@@ -21,10 +21,11 @@ public class MooreTransform extends IndirectFT {
     double[] r_vector;
     double[] r_vector_size_for_fitting;
     int r_vector_size;
+    int multiplesOfShannonNumber = 1;
 
     // Dataset should be standardized and in form of [q, q*I(q)]
-    public MooreTransform(XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, int cBoxValue, boolean includeBackground) {
-        super(dataset, errors, dmax, qmax, lambda, useL1, cBoxValue, includeBackground);
+    public MooreTransform(XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, boolean includeBackground) {
+        super(dataset, errors, dmax, qmax, lambda, useL1, includeBackground);
 
         this.createDesignMatrix(this.data);
 
@@ -58,12 +59,11 @@ public class MooreTransform extends IndirectFT {
             double qmax,
             double lambda,
             boolean useL1,
-            int cBoxValue,
             boolean includeBackground,
             double stdmin,
             double stdscale){
 
-        super(dataset, errors, dmax, qmax, lambda, cBoxValue, useL1, includeBackground, stdmin, stdscale);
+        super(dataset, errors, dmax, qmax, lambda, useL1, includeBackground, stdmin, stdscale);
 
         this.createDesignMatrix(dataset);
 
@@ -1151,6 +1151,23 @@ public class MooreTransform extends IndirectFT {
             prDistributionForFitting.add(tempPrFit.getDataItem(i));
         }
 
+    }
+
+    @Override
+    public void normalizeDistribution(){
+        double sum=0;
+        for(int i=0; i < totalInDistribution; i++){
+            XYDataItem item = prDistribution.getDataItem(i);
+            sum += item.getYValue();
+        }
+
+        sum *= del_r; //area
+        double invSum = 1.0/sum;
+
+        for(int i=0; i < totalInDistribution; i++){
+            XYDataItem item = prDistribution.getDataItem(i);
+            prDistribution.updateByIndex(i, item.getYValue()*invSum);
+        }
     }
 
 

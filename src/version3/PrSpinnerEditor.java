@@ -86,6 +86,7 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
             if (((Integer)this.spinner.getValue() < prDataset.getLowerQIndexLimit()) || (valueOfSpinner > oldStop)){
                 this.spinner.setValue(prDataset.getLowerQIndexLimit());
                 this.priorValue = prDataset.getLowerQIndexLimit();
+                System.out.println("top");
             } else {
                 //moving up or down?
                 int direction = valueOfSpinner - oldStart;

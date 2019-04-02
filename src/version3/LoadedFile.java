@@ -31,6 +31,7 @@ public class LoadedFile {
     //private Pattern nonDataFormat = Pattern.compile("[A-Z]+");
     private Locale loc = Locale.getDefault(Locale.Category.FORMAT);
     private boolean isUSUK = false;
+    private boolean validFile = true;
     private DecimalFormat df = new DecimalFormat("#.#", new DecimalFormatSymbols(Locale.US));
     // add parameters for reading header from txt file
     // REMARK   INFO
@@ -80,7 +81,6 @@ public class LoadedFile {
                                 tempQValue = (convert) ? dataPoints.getq()/10 : dataPoints.getq();
                                 allData.add(tempQValue, dataPoints.getI() );
                                 allDataError.add(tempQValue, dataPoints.getE() );
-
                             }
 
                         } else if (checkRemark(strLine)){ // check if header without BUFFER LINE
@@ -232,6 +232,7 @@ public class LoadedFile {
         newString = line.replaceAll( "[\\s\\t]+", " " );
         trimmed = newString.trim();
         row = trimmed.split("\\s|;|,\\s"); // CSV files could have a ", "
+
         // if row[0] and row[1] contain commas, then we are assuming comma is a decimal delimiter
         // Denmark, Sweden, Finland, Netherlands, Spain, Germany, France use comma
 
@@ -240,15 +241,29 @@ public class LoadedFile {
         //df.applyPattern("#.##");
         // df.format() returns a string
         // System.out.println("LOCALE " + loc); // en_GB, en_US
-
+if (!dataFormat.matcher(row[1]).matches()){
+    tooManyDecimals(row[1]);
+    data = new DataLine(0,0,0,false);
+    return data;
+}
         if ( (!trimmed.contains("#") && (row.length >= 2 && row.length <= 5) &&
-                !row[0].matches("^[A-Za-z#:_\\/$%*!\\'-].+") &&  // checks for header or footer stuff
+
+                (row[0].length() > 2) &&
+
+                !row[0].matches("^[()\"#:_\\/\\'a-zA-Z$%*!]+$") &&
+
+                dataFormat.matcher(row[0]).matches() &&
+//                !row[0].matches("^[A-Za-z#:_\\/$%*!\\'-].+") &&  // checks for header or footer stuff
+                dataFormat.matcher(row[1]).matches() &&
+
                 !isZero(row[0]) &&                               // no zero q values
                 !isZero(row[1]) &&                               // no zero I(q) values
+
                 isNumeric(row[0]) &&                             // check that value can be parsed as Double
-                isNumeric(row[1]) &&                             // check that value can be parsed as Double
-                dataFormat.matcher(row[0]).matches() &&          // format must be either scientific with E or decimal
-                dataFormat.matcher(row[1]).matches() ))          // format must be either scientific with E or decimal
+                isNumeric(row[1])                             // check that value can be parsed as Double
+
+                             // format must be either scientific with E or decimal
+                ))          // format must be either scientific with E or decimal
         {
 
             //Double iofQValue = Double.valueOf(df.format(Double.parseDouble(row[1])));
@@ -269,6 +284,7 @@ public class LoadedFile {
                 }
 
             } else {
+
                 // default error is 1.0
                 // if 2nd row present, we set to value in row[2]
                 data = new DataLine(Double.parseDouble(row[0]), Double.parseDouble(row[1]), 1.0, true);
@@ -300,6 +316,7 @@ public class LoadedFile {
             try {
                 double d = Double.parseDouble(str);
             } catch(NumberFormatException nfe) {
+                System.out.println("FAILED " + str);
                 return false;
             }
         }
@@ -321,16 +338,28 @@ public class LoadedFile {
         if (hasOnlyComma(str) && !isUSUK){
 
             if (convertToUS(str) <= 0){
+
                 return true;
             }
         } else if (isUSUK) {
 
             if (Float.parseFloat(str) == 0) {
+                validFile = false;
                 return true;
             }
         }
 
         return false;
+    }
+
+    private boolean tooManyDecimals(String str){
+        String[] row = str.split("\\."); // CSV files could have a ", "
+        //System.out.println(str + " " + row.length);
+        if (row.length > 2){
+            validFile = false;
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -361,5 +390,6 @@ public class LoadedFile {
         }
     }
 
+    public boolean isValid(){ return validFile;}
 
 }

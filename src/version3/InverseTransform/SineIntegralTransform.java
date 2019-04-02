@@ -22,8 +22,8 @@ public class SineIntegralTransform extends IndirectFT {
     boolean positiveOnly;
 
     // Dataset should be standardized and in form of [q, q*I(q)]
-    public SineIntegralTransform(XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, int cBoxValue, boolean includeBackground, boolean positiveOnly) {
-        super(dataset, errors, dmax, qmax, lambda, useL1, cBoxValue, includeBackground);
+    public SineIntegralTransform(XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, boolean includeBackground, boolean positiveOnly) {
+        super(dataset, errors, dmax, qmax, lambda, useL1, includeBackground);
 
         this.createDesignMatrix(this.data);
         this.positiveOnly = positiveOnly;
@@ -37,10 +37,63 @@ public class SineIntegralTransform extends IndirectFT {
             this.setModelUsed("DIRECT L1-NORM");
            // System.out.println(this.getModelUsed() + " BKG " + includeBackground);
         }
-
     }
 
     /**
+     * Dataset and errors are already standardized
+     *
+     * @param scaledqIqdataset standardized data
+     * @param scaledqIqErrors
+     * @param dmax
+     * @param qmax
+     * @param lambda
+     * @param useL1
+     * @param cBoxValue
+     * @param includeBackground
+     * @param stdmin
+     * @param stdscale
+     */
+    public SineIntegralTransform(
+            XYSeries scaledqIqdataset,
+            XYSeries scaledqIqErrors,
+            double dmax,
+            double qmax,
+            double lambda,
+            boolean useL1,
+            boolean includeBackground,
+            boolean positiveOnly,
+            double stdmin,
+            double stdscale){
+
+        super(scaledqIqdataset, scaledqIqErrors, dmax, qmax, lambda, useL1, includeBackground, stdmin, stdscale);
+
+        //this.standardizeErrors(); // extract variances from errors
+        XYDataItem tempData;
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = scaledqIqdataset.getItemCount();
+        double temperrorvalue;
+
+        for(int r=0; r<totalItems; r++){
+            tempData = scaledqIqdataset.getDataItem(r);
+            temperrorvalue = scaledqIqErrors.getY(r).doubleValue(); // already in form of q*I(q)/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // q_times_Iq_scaled
+        }
+
+
+        this.createDesignMatrix(scaledqIqdataset);
+        this.positiveOnly = positiveOnly;
+        if (positiveOnly){
+            rambo_coeffs_L1_positive_only();
+            this.setModelUsed("DIRECT L1-NORM POSITIVE ONLY");
+        } else {
+            this.rambo_coeffs_L1();
+            this.setModelUsed("DIRECT L1-NORM");
+           // System.out.println(this.getModelUsed() + " " + includeBackground);
+        }
+    }
+
+    /**
+     * Dataset and errors are already standardized
      *
      * @param dataset standardized data
      * @param errors
@@ -59,14 +112,20 @@ public class SineIntegralTransform extends IndirectFT {
             double dmax,
             double qmax,
             double lambda,
-            boolean useL1,
-            int cBoxValue,
-            boolean includeBackground,
-            boolean positiveOnly,
             double stdmin,
             double stdscale){
 
-        super(dataset, errors, dmax, qmax, lambda, cBoxValue, useL1, includeBackground, stdmin, stdscale);
+        super(dataset, errors, dmax, qmax, lambda, false, false, stdmin, stdscale);
+
+        //this.standardizeErrors(); // extract variances from errors
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = data.getItemCount();
+        for(int r=0; r<totalItems; r++){
+            XYDataItem tempData = data.getDataItem(r);
+            double temperrorvalue = errors.getY(r).doubleValue(); // already in form of q*I(q)/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // q_times_Iq_scaled
+        }
+
 
         this.createDesignMatrix(dataset);
         this.positiveOnly = positiveOnly;
@@ -76,8 +135,9 @@ public class SineIntegralTransform extends IndirectFT {
         } else {
             this.rambo_coeffs_L1();
             this.setModelUsed("DIRECT L1-NORM");
-           // System.out.println(this.getModelUsed() + " " + includeBackground);
+            // System.out.println(this.getModelUsed() + " " + includeBackground);
         }
+
     }
 
 
@@ -85,7 +145,7 @@ public class SineIntegralTransform extends IndirectFT {
      * Copy constructor.
      */
     public SineIntegralTransform(SineIntegralTransform toCopy) {
-        this(toCopy.data, toCopy.errors, toCopy.dmax, toCopy.qmax, toCopy.lambda, toCopy.useL1, toCopy.multiplesOfShannonNumber, toCopy.includeBackground, toCopy.positiveOnly, toCopy.standardizedMin, toCopy.standardizedScale);
+        this(toCopy.data, toCopy.errors, toCopy.dmax, toCopy.qmax, toCopy.lambda, toCopy.useL1, toCopy.includeBackground, toCopy.positiveOnly, toCopy.standardizedMin, toCopy.standardizedScale);
         nonData = new XYSeries("nonstandard");
 
         for (int i=0; i<this.data.getItemCount(); i++){
@@ -106,6 +166,7 @@ public class SineIntegralTransform extends IndirectFT {
 
         //del_r = Math.PI/qmax; // dmax is based del_r*ns
         del_r = dmax/(double)ns;
+        bin_width = del_r;
 
         // if I think I can squeeze out one more Shannon Number, then I need to define del_r by dmax/ns+1
         //double del_r = dmax/(double)ns;
@@ -116,7 +177,6 @@ public class SineIntegralTransform extends IndirectFT {
             r_vector[i] = (0.5 + i)*del_r; // dmax is not represented in this set
         }
         // what happens if the last bin is midpoint is less than dmax?
-
         /*
          * create A matrix (design Matrix)
          */
@@ -406,7 +466,7 @@ public class SineIntegralTransform extends IndirectFT {
                     new_phi = (new_z.transpose().mult(new_z)).get(0,0) + lambda*new_u.elementSum()-logfSum*inv_t;
 
                     if (new_phi-phi <= alpha*s*gdx){
-                        //System.out.println("Breaking BackTrackLoop");
+//                        System.out.println("Breaking BackTrackLoop");
                         break backtrackLoop;
                     }
                 }
@@ -414,7 +474,7 @@ public class SineIntegralTransform extends IndirectFT {
             } // end backtrack loop
 
             if (lsiter == max_ls_iter){
-               // System.out.println("Max LS iteration: Failed");
+//                System.out.println("Max LS iteration: Failed");
                 break calculationLoop;
             }
 
@@ -451,6 +511,16 @@ public class SineIntegralTransform extends IndirectFT {
 
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         coeffs_size = coefficients.length; // this resets the coefficients to possibly include background term as first element
+
+
+        finalScore = 0;
+        for(int i=0; i < rows; i++){
+            double diff = tempResiduals.get(i,0);
+            finalScore += diff*diff;
+        }
+//        finalScore *= 1.0/(double)rows;
+//        finalScore = pobj;
+//        System.out.println("FINAL SCORE " + finalScore + " pobj " + pobj);
 
         // calculate residuals
 //        residuals = new XYSeries("residuals");
@@ -971,7 +1041,6 @@ public class SineIntegralTransform extends IndirectFT {
         }
 
 
-
         // P(dmax) should be zero.  So, we introduce a mid point between second to Last value and dmax to hold value of the last bin
 
         this.setPrDistribution();
@@ -980,6 +1049,14 @@ public class SineIntegralTransform extends IndirectFT {
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         coeffs_size = coefficients.length; // this resets the coefficients to possibly include background term as first element
 
+        // calculate residuals MLE (maximum likelihood estimator)
+        finalScore = 0;
+        for(int i=0; i < rows; i++){
+            double diff = tempResiduals.get(i,0);
+            finalScore += diff*diff;
+        }
+        finalScore *= 1.0/(double)rows;
+//        System.out.println("FINAL SCORE " + finalScore);
         // calculate residuals
 //        residuals = new XYSeries("residuals");
 //        for(int i=0; i < rows; i++){
@@ -1014,6 +1091,7 @@ public class SineIntegralTransform extends IndirectFT {
         for(int j=0; j< r_vector_size; j++){
             sum +=  coefficients[j+1];
         }
+        //System.out.println("SUM " + sum + " tempRgSum " + tempRgSum);
         //izero = tempRgSum*standardizedScale+standardizedMin;
         izero = sum*standardizedScale+standardizedMin;
         rAverage = xaverage/tempRgSum;
@@ -1054,33 +1132,12 @@ public class SineIntegralTransform extends IndirectFT {
             //System.out.println(i + " " + prDistribution.getX(i) + " => " + prDistribution.getY(i));
         }
 
-//        prDistribution.add(0, 0);
-//        for(int i=0; i<r_vector_size; i++){ // values in r_vector represent the midpoint or increments of (i+0.5)*del_r
-//                prDistribution.add(r_vector[i], coefficients[i+1]);
-//                prDistributionForFitting.add(r_vector[i], coefficients[i+1]);
-//        }
-//
-//        if (r_vector[r_vector_size-1] >= dmax){
-//            double value = dmax+r_vector[r_vector_size-1]
-//            prDistributionForFitting.updateByIndex(prDistributionForFitting.getItemCount()-1, );
-//        }
-
-        // add an extra point for the spline interpolation at end, purely for rendering reasons
-//        XYDataItem secondToLastItem = prDistribution.getDataItem(totalInDistribution-2);
-//        double delta = dmax - secondToLastItem.getXValue();
-//        // adding new dataItem sorts the XYSeries
-//        prDistribution.add(secondToLastItem.getXValue() + 0.5*delta, secondToLastItem.getYValue()*0.5);
-
-//        for(int i=0; i < totalInDistribution; i++){
-//            System.out.println(prDistribution.getX(i) + " " +  prDistribution.getY(i));
-//        }
-
-
-        totalInDistribution = prDistribution.getItemCount();
-
+        // calculate total Diff
+        scoreDistribution(del_r);
         this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS DIRECT INVERSE FOURIER TRANSFORM OF I(q) %n");
         this.description += String.format("REMARK 265  COEFFICIENTS ARE THE HISTOGRAM HEIGHTS WITH EQUAL BIN WIDTHS %n");
         this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.4f %n", del_r);
+        this.description += String.format("REMARK 265            DISTRIBUTION SCORE : %.4f %n", prScore);
         setSplineFunction();
     }
 
@@ -1122,6 +1179,26 @@ public class SineIntegralTransform extends IndirectFT {
     public double calculateIQ(double qvalue) {
         return (this.calculateQIQ(qvalue))/qvalue;
     }
+
+
+    @Override
+    public void normalizeDistribution(){
+        double sum=0;
+        for(int i=0; i < totalInDistribution; i++){
+            XYDataItem item = prDistribution.getDataItem(i);
+            sum += item.getYValue();
+        }
+
+        sum *= del_r; //area
+        double invSum = 1.0/sum;
+
+        for(int i=0; i < totalInDistribution; i++){
+            XYDataItem item = prDistribution.getDataItem(i);
+            prDistribution.updateByIndex(i, item.getYValue()*invSum);
+        }
+    }
+
+
 
     @Override
     public void estimateErrors(XYSeries fittedqIq){
@@ -1294,4 +1371,6 @@ public class SineIntegralTransform extends IndirectFT {
         totalInDistribution = prDistribution.getItemCount();
         setSplineFunction();
     }
+
+
 }

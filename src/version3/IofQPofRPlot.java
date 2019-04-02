@@ -237,6 +237,7 @@ public class IofQPofRPlot {
     public void changeToQIQ(){
 
         // replace scatterCollection and spline collection series
+        chart.getXYPlot().getRangeAxis().setLabel("q × I(q)");
         int totalC = collectionInUse.getDatasetCount();
 
         scatterCollection.removeAllSeries();
@@ -257,7 +258,7 @@ public class IofQPofRPlot {
 
         // replace scatterCollection and spline collection series
         int totalC = collectionInUse.getDatasetCount();
-
+        chart.getXYPlot().getRangeAxis().setLabel("log [I(q)]");
         scatterCollection.removeAllSeries();
         splineCollection.removeAllSeries();
 

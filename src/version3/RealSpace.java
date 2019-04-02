@@ -1,6 +1,7 @@
 package version3;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.analysis.interpolation.LoessInterpolator;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
@@ -74,7 +75,25 @@ public class RealSpace {
         analysisToPrScaleFactor = 1;
         int totalAllData = dataset.getAllData().getItemCount();
 
-        //allData = new XYSeries("rescale data");
+//        LoessInterpolator loessInterpolator=new LoessInterpolator(
+//                7.0/totalAllData,//bandwidth,
+//                2//robustnessIters
+//        );
+//
+//        double x[]=new double[totalAllData];
+//        double y[]=new double[totalAllData];
+//        for(int i=0; i<totalAllData; i++){
+//            XYDataItem tempItem = dataset.getAllData().getDataItem(i);
+//            x[i] = tempItem.getXValue();
+//            y[i] = tempItem.getYValue();
+//        }
+//
+//        double y2[]=loessInterpolator.smooth(x, y);
+//        allData = new XYSeries("All Data");
+//        for(int i=0; i<totalAllData; i++){
+//            allData.add(x[i], y2[i]);
+//        }
+
         try {
             allData = dataset.getAllData().createCopy(0, totalAllData-1);
         } catch (CloneNotSupportedException e) {
@@ -611,7 +630,9 @@ public class RealSpace {
     }
 
 
-
+    /**
+     * use this to sync the start and stop points of fittedqIq to data in Analysis tab
+     */
     public void resetStartStop(){
         // start should be the low-q value
         // spinner in Analysis tab follows non-negative values
@@ -722,6 +743,7 @@ public class RealSpace {
         } else {
 
             int maxFittedqiq = fittedqIq.getItemCount();
+
             int delta = this.stopAt - spinnerValue;
             // spinnerValue is in reference to complete original data
             fittedqIq.delete(maxFittedqiq - delta, maxFittedqiq-1);
@@ -956,7 +978,8 @@ public class RealSpace {
 
     public void setStandardizationMean(double value, double stdev){
         this.standardizationMean = value;
-        this.standardizationStDev = stdev;
+        this.standardizationStDev = Math.abs(stdev);
+//        System.out.println("Standardized Mean " + value + " std scale " + stdev);
     }
 
     public double getStandardizationMean(){
@@ -982,4 +1005,7 @@ public class RealSpace {
     public IndirectFT getIndirectFTModel(){
         return this.indirectFTModel;
     }
+
+
+    public XYSeries getOriginalqIq() { return this.originalqIq;}
 }
