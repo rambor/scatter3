@@ -1121,8 +1121,8 @@ tempDistribution.add(item2);
             splineRend.setBaseShapesVisible(false);
 
             for(int i=0; i<colors.size(); i++){
-                splineRend.setSeriesStroke(i, new BasicStroke(2.0f));
-                splineRend.setSeriesPaint(i, colors.get(i)); // make color slight darker
+                splineRend.setSeriesStroke(i, new BasicStroke(4.0f));
+                splineRend.setSeriesPaint(i, colors.get(i));
             }
 
             int lastLocale = plottedCollection.getSeriesCount()-1;
@@ -1481,7 +1481,7 @@ tempDistribution.add(item2);
         rendereriVc.setSeriesShapesFilled(0, false);
         rendereriVc.setSeriesVisible(0, true);
         rendereriVc.setSeriesPaint(0, dataset.getColor());
-        rendereriVc.setSeriesStroke(0, new BasicStroke(2));
+        rendereriVc.setSeriesStroke(0, new BasicStroke(2.0f));
 
 
         XYLineAndShapeRenderer renderer1 = new XYLineAndShapeRenderer();
