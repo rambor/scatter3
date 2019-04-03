@@ -4443,7 +4443,14 @@ public class Scatter {
         showBinsCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                PofRHistogram plot = new PofRHistogram(collectionSelected, WORKING_DIRECTORY);
+
+                PofRPlot pofRplot = PofRPlot.getInstance();
+
+                if (showBinsCheckBox.isSelected()){
+                    pofRplot.showBins(true);
+                } else {
+                    pofRplot.showBins(false);
+                }
             }
         });
     }

@@ -270,6 +270,9 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
                     bufferIndex = buffer.indexOf(tempXY.getX());
                     if (bufferIndex >= 0){
                         ratio.add(tempXY.getX(), tempXY.getYValue()/buffer.getY(bufferIndex).doubleValue());
+                        if (tempXY.getXValue() > 0.25){
+                            break;
+                        }
                     }
                 }
 
@@ -287,8 +290,6 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
                         plotRg.addSeries(new XYSeries(dataInUse.getFileName()));
                         if (area > threshold){
                             ArrayList<XYSeries> subtraction = subtract(dataInUse.getAllData(), dataInUse.getAllDataError(), buffer, bufferError);
-                            //izeroRg = Functions.autoRgTransformIt(subtraction.get(0), subtraction.get(1), startAtPoint+1);
-                            //plotRg.getSeries(seriesCount).add(i,izeroRg[1]);
                             AutoRg temp = new AutoRg(subtraction.get(0), subtraction.get(1), startAtPoint+1);
                             plotRg.getSeries(seriesCount).add(i, temp.getRg());
                         } else {
@@ -302,6 +303,106 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
                 } else {
                     System.out.println("TOO FEW IN RATIO : Frame => " + i);
                 }
+
+            }
+            publish(i);
+        }
+    }
+
+    /**
+     *
+     * creates XYSeries collections used for plotting
+     * Does not do integrated ratio for signal
+     * calculate signal as a sum of differences at key q-values
+     *
+     */
+    private void makeSamplesAlternate(){
+        Dataset tempDataset;
+        XYSeries tempData;
+        XYDataItem tempXY, tempXYb;
+        int total = samplesCollection.getDatasetCount();
+
+        int totalXY, bufferIndex, qIndex;
+        int seriesCount=0;
+
+        //System.out.println("FIRST FRAME : " + firstFrame + " LAST FRAME : " + lastFrame);
+
+        if (lastFrame <= 0 || lastFrame <= firstFrame){
+            lastFrame = total;
+        }
+
+        /*
+         * pick points to calculate difference from background
+         * 0.01 to 0.02
+         * 0.03 to 0.04
+         * 0.06 to 0.07
+         * 0.1 to 0.12
+         */
+        ArrayList<Double> lowerLimit = new ArrayList<>();
+        ArrayList<Double> upperLimit = new ArrayList<>();
+        lowerLimit.add(0.01);
+        lowerLimit.add(0.03);
+        lowerLimit.add(0.06);
+        lowerLimit.add(0.10);
+
+        upperLimit.add(0.02);
+        upperLimit.add(0.04);
+        upperLimit.add(0.07);
+        upperLimit.add(0.12);
+        /*
+         * assemble buffer points
+         */
+        int bufferSize = buffer.getItemCount();
+
+        for(int i=0; i < total; i++){ // iterate over all frames
+
+            if (i >= firstFrame && i < lastFrame){ // only use those within selected range
+                tempDataset = samplesCollection.getDataset(i);
+                tempData = tempDataset.getAllData();
+                totalXY = tempData.getItemCount();
+
+                // create XY Series using ratio to buffer then integrate
+                double signal = 0.0d;
+                int startIndex = 0;
+                for (int a=0; a<4; a++){
+                    double lower = lowerLimit.get(a);
+                    double upper = upperLimit.get(a);
+
+                    for(int m=startIndex; m<bufferSize; m++){
+                        tempXYb = buffer.getDataItem(m);
+                        if (tempXYb.getXValue() > lower && tempXYb.getXValue() < upper){ // check if found in data
+
+                            qIndex = tempData.indexOf(tempXYb.getX());
+
+                            if (qIndex >= 0){
+                                signal += tempData.getY(qIndex).doubleValue() - tempXYb.getYValue();
+                                startIndex = m+1;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // if number of points is less than 100, skip
+                    // integrate
+                    plotMe.addSeries(new XYSeries(tempDataset.getFileName()));
+                    plotMe.getSeries(seriesCount).add(i, signal);
+
+                    if (useRg){ // make double plot if checked
+                        status.setText("AUTO-Rg FOR : " + tempDataset.getFileName());
+                        plotRg.addSeries(new XYSeries(tempDataset.getFileName()));
+                        if (signal > threshold){
+                            ArrayList<XYSeries> subtraction = subtract(tempDataset.getAllData(), tempDataset.getAllDataError(), buffer, bufferError);
+
+                            AutoRg temp = new AutoRg(subtraction.get(0), subtraction.get(1), startAtPoint+1);
+                            plotRg.getSeries(seriesCount).add(i, temp.getRg());
+                        } else {
+                            plotRg.getSeries(seriesCount).add(i,0);
+                        }
+                    }
+
+                    seriesCount++;
+
 
             }
             publish(i);
@@ -381,7 +482,6 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
         double qValue, yValue, eValue;
 
         tempTotal = sample.getItemCount();
-
 
         subData = new XYSeries("subtracted");
         subError = new XYSeries("errorSubtracted");
@@ -649,6 +749,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
             this.makeSamplesFromSubtractedData();
         } else {
             this.makeSamples();
+            //this.makeSamplesAlternate();
         }
 
         Toolkit.getDefaultToolkit().beep();
@@ -692,9 +793,9 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
 
         int total = samplesCollection.getDatasetCount();
 
-        //if (maxQvalueInCommon.doubleValue() == 0){
+        if (!this.is0p3qmaxPossible()){
             this.findMaximumCommonQvalue();
-        //}
+        }
 
         //if (minQvalueInCommon.doubleValue() == 0){
             this.findLeastCommonQvalue();
@@ -754,6 +855,16 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
     }
 
 
+    /**
+     * estimating background frames by calculating ratio of all datasets in collection
+     * no signal is the integral of a line from qmin-qmax (ideal)
+     *
+     * @param collection
+     * @param ideal
+     * @param lowerIndex
+     * @param upperIndex
+     * @return
+     */
     private boolean calculateAverageAndVarianceOfAllPairWiseRatiosInWindow(Collection collection, double ideal, int lowerIndex, int upperIndex){
 
         boolean keep = false;
@@ -854,6 +965,54 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
     }
 
 
+    private boolean is0p3qmaxPossible(){
+
+        boolean isCommon = false;
+        boolean isYes = false;
+
+        Dataset firstSet = samplesCollection.getDataset(0);
+        Dataset tempDataset;
+        int totalInSampleSet = samplesCollection.getTotalSelected();
+        XYSeries referenceData = firstSet.getAllData(), tempData;
+        XYDataItem refItem;
+        int startAt;
+        maxQvalueInCommon = 0;
+
+        outerloop:
+        for(int j=(referenceData.getItemCount()-1); j > -1; j--){ // start from end
+
+            refItem = referenceData.getDataItem(j); // is refItem found in all sets
+
+            if (refItem.getYValue() > 0 && refItem.getXValue() < 0.3) {
+                maxQvalueInCommon = refItem.getX();
+                isCommon = true;
+
+                startAt = 1;
+                innerloop:
+                for(; startAt < totalInSampleSet; startAt++) { // for each dataset in Collection, check
+
+                    tempDataset = samplesCollection.getDataset(startAt);
+                    tempData = tempDataset.getAllData();
+                    // check if refItem q-value is in tempData
+                    // if true, check next value
+                    // not found returns -1 for indexOf
+                    // startAt in tempData should return non-negative value
+                    if (tempData.indexOf(refItem.getX()) < 0 && tempData.getY(startAt).doubleValue() > 0) {
+                        isCommon = false;
+                        break innerloop;
+                    }
+                }
+
+                if (startAt == totalInSampleSet && isCommon){
+                    break outerloop;
+                }
+            }
+        }
+
+        isYes = isCommon;
+
+        return isYes;
+    }
     /**
      *
      */

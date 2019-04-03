@@ -171,7 +171,7 @@ public class PofRPlot {
 
         renderer1 = new XYSplineRenderer();
 
-        splineRend.setBaseShapesVisible(true);
+        splineRend.setBaseShapesVisible(false);
         renderer1.setBaseShapesVisible(true);
 
         renderer1.setBaseStroke(new BasicStroke(2.0f));
@@ -227,6 +227,10 @@ public class PofRPlot {
         panelForPlot.removeAll();
         panelForPlot.add(outPanel);
 
+    }
+
+    public void showBins(boolean state){
+        this.splineRend.setBaseShapesVisible(state);
     }
 
     public void changeVisible(int index, boolean state){
