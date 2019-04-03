@@ -40,6 +40,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
     private XYLineAndShapeRenderer rightRenderer;
     public JList samplesList;
     private JLabel status;
+    private double noSignal=0.2;
 
     private Collection samplesCollection;
     private Collection buffersCollection;
@@ -55,7 +56,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
     private XYSeries buffer;
     private XYSeries bufferError;
     private boolean useRg = false;
-    private double threshold;
+    private double threshold, earlyUpperQmaxLimit=0.25;
     private int startAtPoint, totalInSamples;
 
     private boolean useqIq = false;
@@ -103,7 +104,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
         this.useRg = false;
         mainStatus = bar;
         this.status = status;
-        this.threshold = 0.39;
+        this.threshold = 0.23;
     }
 
 
@@ -270,7 +271,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
                     bufferIndex = buffer.indexOf(tempXY.getX());
                     if (bufferIndex >= 0){
                         ratio.add(tempXY.getX(), tempXY.getYValue()/buffer.getY(bufferIndex).doubleValue());
-                        if (tempXY.getXValue() > 0.25){
+                        if (tempXY.getXValue() > earlyUpperQmaxLimit){ // qmax is set to 0.25;
                             break;
                         }
                     }
@@ -806,7 +807,8 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
 
         int totalN = upperIndex-lowerIndex+1;
 
-        double noSignal = (maxQvalueInCommon.doubleValue() - minQvalueInCommon.doubleValue())*(totalN+1)/(double)totalN;
+        earlyUpperQmaxLimit =maxQvalueInCommon.doubleValue();
+        noSignal = (maxQvalueInCommon.doubleValue() - minQvalueInCommon.doubleValue())*(totalN+1)/(double)totalN;
 
         // set window
         int window = 7;
@@ -983,7 +985,7 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
 
             refItem = referenceData.getDataItem(j); // is refItem found in all sets
 
-            if (refItem.getYValue() > 0 && refItem.getXValue() < 0.3) {
+            if (refItem.getYValue() > 0 && refItem.getXValue() < 0.29) {
                 maxQvalueInCommon = refItem.getX();
                 isCommon = true;
 
@@ -1187,4 +1189,6 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
     public ChartPanel getChartPanel(){
         return frame.getChartPanel();
     }
+
+    public double getThreshold() { return noSignal;}
 }

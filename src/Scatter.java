@@ -342,7 +342,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.2a";
+    private String version = "3.2b";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -3430,6 +3430,10 @@ public class Scatter {
                             signalPlotThread.get();
                             mergeReport.setSignalPlot(signalPlotThread.getChart("A"));
                             TRACEButton.setEnabled(true);
+
+                            double slimit = signalPlotThread.getThreshold() + signalPlotThread.getThreshold()*0.0737;
+                            thresholdField.setText(String.format("%.2f",slimit));
+
                         } catch (InterruptedException e1) {
                             e1.printStackTrace();
                             TRACEButton.setEnabled(true);
