@@ -50,6 +50,7 @@ public class FindDmax extends JDialog {
     private JTextField trailsTextField;
     private JPanel vcPanel;
     private JCheckBox legendreCheckBox;
+    private JCheckBox useBkgrndCheckBox;
     private JLabel statusLabel;
     private JFreeChart chart;
     private  ChartPanel outPanel;
@@ -407,8 +408,12 @@ public class FindDmax extends JDialog {
             public void actionPerformed(ActionEvent e) {
                 if (legendreCheckBox.isSelected()){
                     useLegendre = true;
+                    lambdaLowerField.setText("0.01");
+                    lambdaUpperField.setText("10");
                 } else {
                     useLegendre = false;
+                    lambdaLowerField.setText("0.00001");
+                    lambdaUpperField.setText("0.001");
                 }
             }
         });
@@ -447,6 +452,32 @@ public class FindDmax extends JDialog {
 
         qbins = 3*(int)(upperDmax/Math.PI*dataset.getfittedqIq().getMaxX());
 
+
+
+//        ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
+//        for (int i=0; i < numberOfCPUs; i++){
+//            Runnable bounder = new RefinePrManager.Refiner(
+//                    this.standardizedSeries,
+//                    this.scaled_q_times_Iq_Errors,
+//                    roundsPerCPU,
+//                    statusLabel);
+//            executor.execute(bounder);
+//        }
+//
+//        executor.shutdown();
+
+//        ScheduledExecutorService executor = Executors.newScheduledThreadPool(4);
+//        for (int i=0; i < 4; i++){
+//            Runnable bounder = new FindDmax.Refiner(
+//                    this.standardizedSeries,
+//                    this.scaled_q_times_Iq_Errors,
+//                    totalTrialsCE,
+//                    topN,
+//                    statusLabel,
+//                    useLegendre);
+//
+//            executor.execute(bounder);
+//        }
 
         FindDmax.Refiner runnable = new FindDmax.Refiner(
                 this.standardizedSeries,
@@ -488,6 +519,7 @@ public class FindDmax extends JDialog {
         private double dw, chi, prscore;
         private double score_sum;
         private int index, increment, disIncrement;
+        private int binCount;
         private XYSeries tempDistribution, averagedDistribution;
 
         public DmaxLambda(double dmax, double lambda, int index){
@@ -526,26 +558,15 @@ public class FindDmax extends JDialog {
             return String.format("dmax %.1f DW %.1E AIC %.2f quality %.3f lambda %.2E", (double)dmax, dw, chi, prscore, lambda); }
 
 
-        public void initializeDistribution(XYSeries dis, int totalBinsInSearch, double binwidth){
-            averagingBinWidth = binwidth;
+        public void initializeDistribution(XYSeries dis, int totalBinsInSearch){
+            binCount = dis.getItemCount();
             tempDistribution = new XYSeries("temp", true, true);
-
-            /*
-             * initialize distributions
-             * first bin => i = 0 is 0.5*binwidth and not 0
-             */
-//            for(int i=0; i<totalBinsInSearch; i++){
-//                tempDistribution.add(i*binwidth + 0.5*binwidth, 0);
-//            }
-
             /*
              * fill
              */
             int total = dis.getItemCount()-1; // ignore dmax
             for(int i=1; i<total; i++){
                 XYDataItem item = dis.getDataItem(i);
-                int bin = (int)Math.floor(item.getXValue()/binwidth);
-//                tempDistribution.updateByIndex(bin, item.getYValue());
                 tempDistribution.add(item);
             }
 
@@ -556,36 +577,38 @@ public class FindDmax extends JDialog {
          * averages tempDistribution into averagedDistribution
          */
         public void updateFinalDistribution(){
-            averagedDistribution = new XYSeries("average");
+            averagedDistribution = new XYSeries("average", true, false);
 
             double sumIt = 0;
-
-            //tempDistribution.add(0,0);
+            /*
+             * tempDistribution contains duplicates
+             */
             int total = tempDistribution.getItemCount();
 
             double firstq = tempDistribution.getX(1).doubleValue();
-            double diff = 0;
-            for(int i=1; i<total; i++){
-                if (tempDistribution.getX(i).doubleValue() > firstq){
-                    diff = 0.5*(tempDistribution.getX(i).doubleValue() - firstq);
-                    break;
-                }
-            }
-
 
             int startIndex = 0;
-            double startq = tempDistribution.getX(startIndex).doubleValue();
-            double upperq = startq + diff;
-            double lowerq = startq - diff;
+
+            binCount -= 2; //remove the first and last counts (r=0 and r=dmax)
+            averagingBinWidth = dmax/(double)binCount;
+            final double diff = 0.5*averagingBinWidth;
+
+
+            double startr = diff;//tempDistribution.getX(startIndex).doubleValue();
+            double upperr = averagingBinWidth;
+            double lowerr = 0;
 
             while(startIndex < total){
 
                 ArrayList<Double> values = new ArrayList<>();
 
+                double sumV = 0, countsum=0.0;
                 for(int i=startIndex; i<total; i++){
                     XYDataItem item1 = tempDistribution.getDataItem(i);
 
-                    if (item1.getXValue() > lowerq && item1.getXValue() < upperq){
+                    if (item1.getXValue() > lowerr && item1.getXValue() <= upperr){
+                        sumV += item1.getYValue();
+                        countsum +=1.0;
                         values.add(item1.getYValue());
                         startIndex = i;
                     } else {
@@ -593,24 +616,30 @@ public class FindDmax extends JDialog {
                         break;
                     }
                 }
+                //System.out.println("VALUES " + values.size() + " " + lowerr + " < " + upperr);
+                double medianv = 0;
+                if (values.size() > 0){
+                    Collections.sort(values);
+                    int medianLocale = (values.size()-1)/2;
+                    medianv = values.get(medianLocale);
 
-                Collections.sort(values);
-                int medianLocale = (values.size()-1)/2;
-                double medianv = values.get(medianLocale);
-
-                if (values.size()%2 == 0){
-                    medianv = (medianv + values.get(medianLocale+1))*0.5;
+                    if (values.size()%2 == 0){
+                        medianv = (medianv + values.get(medianLocale+1))*0.5;
+                    }
                 }
 
-                averagedDistribution.add(startq, medianv);
+                double ave = (countsum > 0) ? sumV/countsum : 0;
+                //System.out.println(startIndex + " " + startr + " " + ave + " u " + upperr + " dx " + dmax + " " + averagingBinWidth);
+                //averagedDistribution.add(startr, ave);
+                averagedDistribution.add(startr, medianv);
 
                 if (startIndex == (total-1)){
                     break;
                 }
 
-                startq = tempDistribution.getX(startIndex).doubleValue();
-                upperq = startq + diff;
-                lowerq = startq - diff;
+                startr += averagingBinWidth;//tempDistribution.getX(startIndex).doubleValue();
+                upperr += averagingBinWidth;
+                lowerr += averagingBinWidth;
             }
 
             averagedDistribution.add(0,0);
@@ -626,20 +655,15 @@ public class FindDmax extends JDialog {
          */
         public void update(double value, XYSeries dis){
 
-            double tempscore = score_sum/(double)increment;
             int total = dis.getItemCount()-1; // exclude model dmax
+
+            if (dis.getItemCount() > binCount){
+                binCount = dis.getItemCount();
+            }
 
             for(int i=1; i<total; i++){ // exclude first point [0] since it is zero
                 XYDataItem item2 = dis.getDataItem(i);
-                int index = (int)Math.floor(item2.getXValue()/averagingBinWidth);
-
-                    double oldvalue = tempDistribution.getY(index).doubleValue();
-
-//                    tempDistribution.updateByIndex(index, tempDistribution.getY(index).doubleValue() + item2.getYValue());
-tempDistribution.add(item2);
-//                    if (oldvalue > item2.getYValue()){ // update by always taking the minimum
-//                        tempDistribution.updateByIndex(index, item2.getYValue());
-//                    }
+                tempDistribution.add(item2);
             }
 
             score_sum += value;
@@ -712,19 +736,18 @@ tempDistribution.add(item2);
 
         @Override
         public Void doInBackground() {
-        //public void run() {
             counter.set(0);
 
             Random randomGenerator = new Random();
 
-            int startbb, upperbb, samplingNumber, locale;
-            double samplingLimit, tempMedian;
+            int startbb, upperbb, samplingNumber, locale, samplingLimit;
+            double tempMedian;
 
             /*
              * prepare the parameter container holding all possible dmax and lambda value combinations
              */
             ArrayList<DmaxLambda> parameters = new ArrayList<>();
-           // ArrayList<DMax> dmaxes = new ArrayList<>();
+
             HashMap<Number, DMax> dmaxes = new HashMap<>();
 
             ArrayList<Integer>  paramIndices = new ArrayList<Integer>();
@@ -793,22 +816,28 @@ tempDistribution.add(item2);
                     ArrayList<Integer> arrayList = new ArrayList<>(binIndices.get(i));
                     samplingNumber = arrayList.size();
                     if (samplingNumber > 0){
+
                         Collections.shuffle(arrayList);
 
                         if (samplingNumber < 10 ){
-                            samplingLimit = (1.0 + randomGenerator.nextInt(arrayList.size()));
+                            samplingLimit = (1 + randomGenerator.nextInt(arrayList.size()));
                         } else {
-                            samplingLimit = (1.0 + randomGenerator.nextInt(10));
+                            samplingLimit = (1 + randomGenerator.nextInt(10));
                         }
 
+                        int swapTo = samplingNumber-1;
                         for(int h=0; h < samplingLimit; h++){
+//                            int getIndex = randomGenerator.nextInt(samplingNumber);
+//                            locale = arrayList.get(getIndex);
                             locale = arrayList.get(h);
                             randomSeries.add(activeSet.getDataItem(locale));
                             randomSeriesError.add(errorActiveSet.getDataItem(locale));
+//                            Collections.swap(arrayList, getIndex, swapTo);
+//                            swapTo -= 1;
+//                            samplingNumber-=1;
                         }
                     }
                 }
-
 
                 // for the randomly chosen set, perform fits over d-max, lambda space
                 for(int p=0; p<totalParameters; p++){
@@ -827,7 +856,8 @@ tempDistribution.add(item2);
                                 randomSeries.getMaxX(),
                                 tempLambda,
                                 standardizedMin,
-                                standardizedScale);
+                                standardizedScale,
+                                useBkgrndCheckBox.isSelected());
 
                     } else {
                         tempIFT = new LegendreTransform(
@@ -837,21 +867,29 @@ tempDistribution.add(item2);
                                 randomSeries.getMaxX(),
                                 tempLambda,
                                 standardizedMin,
-                                standardizedScale);
+                                standardizedScale,
+                                useBkgrndCheckBox.isSelected());
                     }
 
                     double kvalue = tempIFT.ns + 1 + 1 + 1; // lambda, dmax and noise
-                    double chi = tempIFT.getChiEstimate();
+//                    double chi = tempIFT.getChiEstimate();
+                    tempIFT.makeResiduals();
+
 //                    double aic = tempIFT.calculateChiFromDataset(activeSet, errorActiveSet);
                     double aic = 2.0*kvalue + tempIFT.ns*tempIFT.calculateChiFromDataset(activeSet, errorActiveSet) + (2.0*kvalue*kvalue + 2*kvalue)/(randomSeries.getItemCount() - kvalue -1);
-                    double kt = tempIFT.getKurtosisEstimate(51);
+                    double kt = tempIFT.getKurtosisEstimate(0);
 
-                    current_score = 0.1*aic + 100*kt + tempIFT.getPrScore();
+                    current_score = 0.1*aic + 1000*kt + 3*tempIFT.getPrScore();
+                    /*
+                     * aic is a large number, in the 10s to 100s.  KT will be small like less than 1, and PrScore is also around 1
+                     *
+                     */
+
                     param.setDWChi(kt, aic, tempIFT.getPrScore());
 
                     if (trial == 0){ // variations in qmax will lead to variaions in shannon point, so we use Pi/qmax to define binwith
                         param.updateScore(current_score);
-                        param.initializeDistribution(tempIFT.getPrDistribution(), totalBinsInModel, averagingbinWidth);
+                        param.initializeDistribution(tempIFT.getPrDistribution(), totalBinsInModel);
                     } else {
                         param.update(current_score, tempIFT.getPrDistribution());
                     }
@@ -868,10 +906,12 @@ tempDistribution.add(item2);
                 temp.averageScore();
             }
             Collections.sort(parameters);
+
             /*
              * average the score
              * set probability weight
-             * initialize the first model as best
+             * initialize the first model in sorted list as best
+             * models are sorted from lowest score
              */
             double expSum=0;
             double best = parameters.get(0).getScore();
@@ -889,6 +929,7 @@ tempDistribution.add(item2);
                 dmaxes.get(temp.getDmax()).update(temp.getProbability());
                 temp.updateFinalDistribution();
             }
+
             /*
              * Prepare KDE estimate
              * Sum over all values to determine normalization constant
@@ -968,6 +1009,7 @@ tempDistribution.add(item2);
             }
 
             totalBest.addSeries(finalModel);
+            //System.out.println("FINAL MODEL " + finalModel.getItemCount());
             //updatePr(finalModel);
 
             makeLikelihoodPlot();
@@ -1053,7 +1095,6 @@ tempDistribution.add(item2);
             outPanelX.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
             likelihoodPanel.removeAll();
             likelihoodPanel.add(outPanelX);
-
         }
 
 

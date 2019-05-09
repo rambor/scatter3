@@ -241,11 +241,12 @@ public class LoadedFile {
         //df.applyPattern("#.##");
         // df.format() returns a string
         // System.out.println("LOCALE " + loc); // en_GB, en_US
-if (!dataFormat.matcher(row[1]).matches()){
-    tooManyDecimals(row[1]);
-    data = new DataLine(0,0,0,false);
-    return data;
-}
+        if (row.length > 1 && !dataFormat.matcher(row[1]).matches()){
+            tooManyDecimals(row[1]);
+            data = new DataLine(0,0,0,false);
+            return data;
+        }
+
         if ( (!trimmed.contains("#") && (row.length >= 2 && row.length <= 5) &&
 
                 (row[0].length() > 2) &&
@@ -263,7 +264,7 @@ if (!dataFormat.matcher(row[1]).matches()){
                 isNumeric(row[1])                             // check that value can be parsed as Double
 
                              // format must be either scientific with E or decimal
-                ))          // format must be either scientific with E or decimal
+                ))
         {
 
             //Double iofQValue = Double.valueOf(df.format(Double.parseDouble(row[1])));

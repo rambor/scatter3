@@ -39,7 +39,6 @@ public class FileListBuilder {
 
             if (readZipFile(file)){
                 //sort files
-
             } else {
                 throw new Exception("No DAT Files in ZIP Archive");
             }
@@ -62,14 +61,12 @@ public class FileListBuilder {
 
 
             directory = file.getParent();
-            // build a list of files that match
-            // b21-########_00001.dat
-            // splits into 3 parts
-            // match beginning gives me everything in the directory
-            // if I match all three parts, then I get one file, so I want to start from either the front or back
-
-            // 00001_filename.dat  <= that would be stupd
-            // filename_00001.dat <= makes more sense
+            /*
+             * build a list of files that match
+             *
+             * 00001_filename.dat  <= that would be stupd
+             * filename_00001.dat <= makes more sense
+             */
 
             // make sure last part matches a number
             String onlyDigits = "\\d+";

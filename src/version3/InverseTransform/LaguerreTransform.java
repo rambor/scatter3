@@ -58,7 +58,7 @@ public class LaguerreTransform extends IndirectFT {
      * @param cBoxValue
      */
     public LaguerreTransform(double r_ave_estimate, double rg_estimate, XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda) {
-        super(dataset, errors, dmax, qmax, lambda, false, false);
+        super(dataset, errors, dmax, qmax, lambda, false);
 
         this.initial_2nd_moment = rg_estimate*rg_estimate*2;
 
@@ -82,7 +82,7 @@ public class LaguerreTransform extends IndirectFT {
             double lambda,
             double stdscale){
 
-        super(dataset, errors, dmax, qmax, lambda, false, false, 0, stdscale);
+        super(dataset, errors, dmax, qmax, lambda, false, 0, stdscale);
         // data is standardized along with errors (standard variance)
         this.invDmax = 1.0/dmax;
 

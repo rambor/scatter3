@@ -22,17 +22,21 @@ public class MooreTransform extends IndirectFT {
     double[] r_vector_size_for_fitting;
     int r_vector_size;
     int multiplesOfShannonNumber = 1;
+    boolean useL1 = false;
 
     // Dataset should be standardized and in form of [q, q*I(q)]
     public MooreTransform(XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, boolean includeBackground) {
-        super(dataset, errors, dmax, qmax, lambda, useL1, includeBackground);
-
+        super(dataset, errors, dmax, qmax, lambda, includeBackground);
+        this.useL1 = useL1;
         this.createDesignMatrix(this.data);
-
-        if (useL1){
-            this.includeBackground = true;
+        if (this.useL1){
+            //this.includeBackground = true;
+            if (this.includeBackground){
+                this.setModelUsed("MOORE L1-NORM PR SMOOTH with BKGRND");
+            } else {
+                this.setModelUsed("MOORE L1-NORM PR SMOOTH");
+            }
             this.moore_pr_L1();
-            this.setModelUsed("MOORE L1-NORM SMOOTH");
         } else { // must always use background when doing second derivative L1
             this.moore_coeffs_L1();
             this.setModelUsed("MOORE L1-NORM COEFFICIENTS");
@@ -53,8 +57,8 @@ public class MooreTransform extends IndirectFT {
      * @param stdscale
      */
     public MooreTransform(
-            XYSeries dataset,
-            XYSeries errors,
+            XYSeries scaledqIqdataset,
+            XYSeries scaledqIqErrors,
             double dmax,
             double qmax,
             double lambda,
@@ -63,18 +67,38 @@ public class MooreTransform extends IndirectFT {
             double stdmin,
             double stdscale){
 
-        super(dataset, errors, dmax, qmax, lambda, useL1, includeBackground, stdmin, stdscale);
+        super(scaledqIqdataset, scaledqIqErrors, dmax, qmax, lambda, includeBackground, stdmin, stdscale);
 
-        this.createDesignMatrix(dataset);
+        this.useL1 = true;
+
+        XYDataItem tempData;
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = scaledqIqdataset.getItemCount();
+        double temperrorvalue;
+
+        for(int r=0; r<totalItems; r++){
+            tempData = scaledqIqdataset.getDataItem(r);
+            temperrorvalue = scaledqIqErrors.getY(r).doubleValue(); // already in form of q*I(q)/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // q_times_Iq_scaled
+        }
+
+
+        this.createDesignMatrix(scaledqIqdataset);
 
         if (useL1){
-            this.includeBackground = true;
+            //this.includeBackground = true;
+            if (this.includeBackground){
+                this.setModelUsed("MOORE L1-NORM PR SMOOTH with BKGRND");
+            } else {
+                this.setModelUsed("MOORE L1-NORM PR SMOOTH");
+            }
+
             this.moore_pr_L1();
-            this.setModelUsed("MOORE L1-NORM SMOOTH");
         } else { // must always use background when doing second derivative L1
             this.moore_coeffs_L1();
             this.setModelUsed("MOORE L1-NORM COEFFS");
         }
+
     }
 
     /**
@@ -83,7 +107,7 @@ public class MooreTransform extends IndirectFT {
      */
     public void createDesignMatrix(XYSeries datasetInuse){
 
-        ns = (int) Math.floor(qmax*dmax*INV_PI) ;  //
+        ns = (int) Math.ceil(qmax*dmax*INV_PI);  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
         r_vector_size_for_fitting = new double[ns];
 
@@ -142,8 +166,8 @@ public class MooreTransform extends IndirectFT {
 
                 for(int c=0; c < coeffs_size; c++){
                     if (c == 0){
-                        a_matrix.set(r, 0, tempData.getXValue()); // constant background term
-                        //a_matrix.set(r, 0, 1);
+                        //a_matrix.set(r, 0, tempData.getXValue()); // constant background term
+                        a_matrix.set(r, 0, 1);
                     } else {
                         a_matrix.set(r, c, dmax_PI_TWO_INV_PI * c * FastMath.pow(-1.0, c + 1) * FastMath.sin(qd) / (n_pi_squared[c] - qd2));
                     }
@@ -285,7 +309,7 @@ public class MooreTransform extends IndirectFT {
             if (gap/dobj < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
                 //status = "SOLVED : " + " | ratio " + gap/dobj + " < reltol " + reltol + " at " + ntiter;
-                System.out.println(status);
+                //System.out.println(status);
                 break calculationLoop;
             }
 
@@ -451,7 +475,7 @@ public class MooreTransform extends IndirectFT {
 
 
     /**
-     *
+     * performs L1-norm minimization of second derivative of Pr distribution
      *
      */
     public void moore_pr_L1(){
@@ -580,7 +604,7 @@ public class MooreTransform extends IndirectFT {
             //System.out.println(ntiter + " : " + gap +" GAP  ratio " + (gap/dobj ) + " " + pobj + " dobj " + dobj);
             if (gap/dobj < reltol) {
                 status = "SOLVED : " + ntiter + " ratio " + (gap/dobj) +  " < " + reltol + " GAP: " + gap + " step " + s + " PITR " + pitr;
-                System.out.println(status);
+                //System.out.println(status);
                 break calculationLoop;
             }
 
@@ -898,6 +922,7 @@ public class MooreTransform extends IndirectFT {
 
         rg = Math.sqrt(2*dmax4*inv_pi_fourth/izero_temp*partial_rg)*0.7071067811865475; // 1/Math.sqrt(2);
         rAverage = 2*dmax3*inv_pi_fourth/izero_temp*rsum;
+
     }
 
 
@@ -905,7 +930,6 @@ public class MooreTransform extends IndirectFT {
     @Override
     public void setPrDistribution(){
         prDistribution = new XYSeries("PRDistribution");
-
         double totalPrPoints = (Math.ceil(qmax*dmax/Math.PI)*3); // divide dmax in ns*3 bins
         totalInDistribution = (int)totalPrPoints;
         double deltar = dmax/totalPrPoints;
@@ -955,6 +979,29 @@ public class MooreTransform extends IndirectFT {
     }
 
 
+    private void setHeaderDetails(){
+        this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS INDIRECT FOURIER TRANSFORM OF I(q) %n");
+        this.description += String.format("REMARK 265  COEFFICIENTS ARE THE MOORE COEFFICIENTS FROM SINE INTEGRAL TRANSFORM %n");
+        this.description  = String.format("REMARK 265  PERFORMED WITH L1-NORM REGULARIZATION %n");
+        this.description  = String.format("REMARK 265  REGULARIZATION => minimize|ABS_VALUE SECOND DERIVATIVEE PR|  %n");
+        this.description += String.format("REMARK 265 %n");
+        this.description  = String.format("REMARK 265                LAMBDA (WEIGHT) : %.2E %n", lambda);
+        this.description += String.format("REMARK 265            BIN WIDTH (delta r) : %.4f %n", del_r);
+        this.description += String.format("REMARK 265             DISTRIBUTION SCORE : %.4f %n", prScore);
+        this.description += String.format("REMARK 265 %n");
+        if (!includeBackground){
+            this.description += String.format("REMARK 265      CONSTANT BACKGROUND EXCLUDED FROM FIT %n");
+        } else {
+            this.description += String.format("REMARK 265        CONSTANT BACKGROUND m(0) : %.4E %n", coefficients[0]);
+        }
+
+        this.description += String.format("REMARK 265  MOORE COEFFICIENTS (UNSCALED)%n");
+        for (int i=1; i<totalCoefficients;i++){
+            this.description +=  String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefficients[i]);
+        }
+    }
+
+
     /**
      * returns non-standardized q*I(q) calculated at specified q-value
      * @param qvalue
@@ -964,7 +1011,7 @@ public class MooreTransform extends IndirectFT {
     public double calculateQIQ(double qvalue) {
 
         double dmaxq = dmax * qvalue;
-        double resultM = coefficients[0]*qvalue; // if coefficients is 0, means no background
+        double resultM = coefficients[0]; // if coefficients is 0, means no background
 
         for(int i=1; i < totalCoefficients; i++){
             //resultM = resultM + coefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);

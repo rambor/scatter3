@@ -6,6 +6,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -16,6 +17,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.geom.Ellipse2D;
 import java.io.File;
 
@@ -39,25 +41,10 @@ public class PofRPlot {
 
     private static PofRPlot singleton = new PofRPlot( );
 
-    private PofRPlot(){
+    private BasicStroke axisStroke = new BasicStroke(1.5f);
+    private Color axisColor = Color.black;
 
-        JPopupMenu popup = frame.getChartPanel().getPopupMenu();
-        //frame.getChartPanel().getChart().getXYPlot().getRangeAxis().setAxisLineStroke();
-        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //To change body of implemented methods use File | Settings | File Templates.
-                if (crosshair) {
-                    chart.getXYPlot().setDomainCrosshairVisible(false);
-                    chart.getXYPlot().setRangeCrosshairVisible(false);
-                    crosshair = false;
-                } else {
-                    chart.getXYPlot().setDomainCrosshairVisible(true);
-                    chart.getXYPlot().setRangeCrosshairVisible(true);
-                    crosshair = true;
-                }
-            }
-        }));
+    private PofRPlot(){
 
         plottedCollection = new XYSeriesCollection();
         splineCollection = new XYSeriesCollection();
@@ -104,6 +91,17 @@ public class PofRPlot {
         domainAxis.setAutoRange(true);
         rangeAxis.setAutoRange(true);
         rangeAxis.setAxisLineVisible(true);
+
+        rangeAxis.setAxisLineStroke(axisStroke);
+        domainAxis.setAxisLineStroke(axisStroke);
+
+        rangeAxis.setTickMarkStroke(axisStroke);
+        domainAxis.setTickMarkStroke(axisStroke);
+
+        rangeAxis.setAxisLinePaint(axisColor);
+        domainAxis.setAxisLinePaint(axisColor);
+        rangeAxis.setTickMarkPaint(axisColor);
+        domainAxis.setTickMarkPaint(axisColor);
 
         //org.jfree.data.Range domainBounds = dataset.getDomainBounds(true);
         //org.jfree.data.Range rangeBounds = dataset.getRangeBounds(true);
@@ -183,6 +181,9 @@ public class PofRPlot {
             Dataset temp = collection.getDataset(i);
             if (temp.getInUse()) {
                 //splineRend.setSeriesOutlineStroke();
+                double delta = -temp.getPointSize()*0.5;
+                double pointSize = temp.getPointSize();
+                splineRend.setSeriesShape(locale, new Ellipse2D.Double(delta, delta, pointSize, pointSize));
                 splineRend.setSeriesStroke(locale, temp.getStroke());
                 splineRend.setSeriesPaint(locale, temp.getColor().darker()); // make color slight darker
              //   chart.getXYPlot().getRenderer(0).setSeriesVisible(locale, true);
@@ -200,6 +201,12 @@ public class PofRPlot {
 
         plot.setDataset(1, pdbCollection); //PDB data
         plot.setRenderer(1, renderer1);
+
+        ValueMarker mark = new ValueMarker(0, Color.BLACK, new BasicStroke(2));
+        plot.addRangeMarker(mark);
+
+       // plot.addRangeMarker(mark);
+       // plot.addDomainMarker(mark);
 
         //frame.getChartPanel().setBorder(b);
         //frame.getContentPane().add(chartPanel);
@@ -223,7 +230,43 @@ public class PofRPlot {
             }
         }));
 
+
+        popup.add(new JMenuItem(new AbstractAction("Increase Axis stroke") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                XYPlot plot = chart.getXYPlot();
+                BasicStroke temp = (BasicStroke)plot.getDomainAxis().getAxisLineStroke();
+                float value = axisStroke.getLineWidth() + 0.5f;
+                axisStroke = new BasicStroke(value);
+                plot.getDomainAxis().setAxisLineStroke(new BasicStroke(value));
+                plot.getRangeAxis().setAxisLineStroke(new BasicStroke(value));
+                plot.getDomainAxis().setTickMarkStroke(new BasicStroke(value));
+                plot.getRangeAxis().setTickMarkStroke(new BasicStroke(value));
+            }
+        }));
+
+        popup.add(new JMenuItem(new AbstractAction("Decrease Axis stroke") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                XYPlot plot = chart.getXYPlot();
+                BasicStroke temp = (BasicStroke)plot.getDomainAxis().getAxisLineStroke();
+                float value = axisStroke.getLineWidth() + 0.5f;
+                axisStroke = new BasicStroke(value);
+                if (value <=0 )
+                    value = 0.5f;
+                plot.getDomainAxis().setAxisLineStroke(new BasicStroke(value));
+                plot.getRangeAxis().setAxisLineStroke(new BasicStroke(value));
+                plot.getDomainAxis().setTickMarkStroke(new BasicStroke(value));
+                plot.getRangeAxis().setTickMarkStroke(new BasicStroke(value));
+            }
+        }));
+
+
         outPanel.setDefaultDirectoryForSaveAs(new File(workingDirectory.getWorkingDirectory()));
+        //outPanel.getChart().setBorderVisible(false);
+        outPanel.getChart().getXYPlot().setOutlineVisible(false);
         panelForPlot.removeAll();
         panelForPlot.add(outPanel);
 
@@ -262,4 +305,5 @@ public class PofRPlot {
         splineRend.setSeriesPaint(id, newColor);
         chart.getXYPlot().getRenderer(0).setSeriesStroke(id, new BasicStroke(thickness));
     }
+
 }

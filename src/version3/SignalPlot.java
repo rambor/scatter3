@@ -814,9 +814,14 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
         int window = 7;
         //
         TreeSet<Integer> keepers = new TreeSet<Integer>();
-        // multithread this part
+        /*
+         * test if frames in the window are within the background defined by noSignal
+         * might be more accurate to do a first pass, estimate the background using the median
+         * then go back and assign
+         *
+         * could be multi-threaded
+         */
         for (int w=window; w < (total - window); w++){
-
            // calculate average curve in window and do ratio integral
             Collection collectionWindow = new Collection();
 
@@ -830,19 +835,19 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
                 }
             }
         }
-
         //System.out.println("Preliminary baseline set size : " + keepers.size());
 
         Iterator<Integer> iterator = keepers.iterator();
         Collection keptCollection = new Collection();
-//        int totalInKept = keepers.size();
-//        int count=1;
+
+        //int totalInKept = keepers.size();
+        //int count=1;
         // Displaying the Tree set data
         while (iterator.hasNext()) {
             Dataset tempDataset = samplesCollection.getDataset(iterator.next());
             keptCollection.addDataset(tempDataset);
-//            System.out.println(count + "(" + totalInKept + ")" + " => Kept as buffer : " + tempDataset.getFileName());
-//            count++;
+           // System.out.println(count + "(" + totalInKept + ")" + " => Kept as buffer : " + tempDataset.getFileName());
+           // count++;
         }
 
 //        System.out.println(" => Calculating average for baseline ");
@@ -879,7 +884,6 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
         Dataset refDataset, targetDataset;
 
         XYSeries ratio = new XYSeries("ratio"), tempData, refData;
-
         XYDataItem refXY;
 
         int count=0;
@@ -892,7 +896,6 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
             for(int j=(i+1); j<windowSize; j++){
                 targetDataset = collection.getDataset(j);
                 tempData = targetDataset.getAllData();
-//                System.out.println(i + " " + j + " " + targetDataset.getFileName() + " " + refDataset.getFileName() );
                 ratio.clear();
                 // go through each q-value in reference
                 for (int q = lowerIndex; q < (upperIndex+1); q++) {
@@ -911,8 +914,9 @@ public class SignalPlot extends SwingWorker<Void, Integer> {
 
         double average = StatUtils.mean(values);
         double variance = StatUtils.variance(values);
-
-        if (Math.abs(ideal-average)/Math.sqrt(variance) < 1.25){
+        //System.out.println("ideal " + ideal + " " + average + " " + Math.abs(ideal-average)/Math.sqrt(variance));
+        double stat = Math.abs(ideal-average)/Math.sqrt(variance);
+        if (stat < 0.6 ){
             return true;
         }
 

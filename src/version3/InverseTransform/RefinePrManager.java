@@ -32,7 +32,9 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
     private double pi_invDmax;
     private double upperq;
     private final boolean useL1;
-    private final boolean useDirectFT;
+    private final boolean useMoore;
+    private final boolean useSVD;
+    private final boolean useL2;
     private JProgressBar bar;
     private final boolean useBackgroundInFit;
     private final boolean positiveOnly;
@@ -58,10 +60,12 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                            double rejectionCutOff,
                            double lambda,
                            int cBoxValue,
+                           boolean useMoore,
                            boolean useL1,
-                           boolean includeBackground,
-                           boolean useDirect,
                            boolean useLegendre,
+                           boolean useL2,
+                           boolean useSVD,
+                           boolean includeBackground,
                            boolean positiveOnly){
 
         this.numberOfCPUs = numberOfCPUs;
@@ -73,15 +77,18 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
         this.roundsPerCPU = (int)(this.refinementRounds/(double)this.numberOfCPUs);
         this.rejectionCutOff = rejectionCutOff;
-        this.lambda = lambda;
-        this.useL1 = useL1;
-        this.useBackgroundInFit = includeBackground;
-        this.positiveOnly = positiveOnly;
-        this.useDirectFT = useDirect;
-        this.useLegendre = useLegendre;
-
 
         this.cBoxValue = cBoxValue;
+        this.lambda = lambda;
+
+        this.useMoore = useMoore;
+        this.useL1 = useL1;
+        this.useLegendre = useLegendre;
+        this.useL2 = useL2;
+        this.useSVD = useSVD;
+
+        this.useBackgroundInFit = includeBackground;
+        this.positiveOnly = positiveOnly;
 
         this.upperq = dataset.getfittedqIq().getMaxX();
         this.bins = dataset.getTotalFittedCoefficients();
@@ -345,12 +352,19 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                 // calculate PofR using standardized dataset
                 IndirectFT tempIFT;
 
-                if (useDirectFT && !useLegendre){
-                    tempIFT = new SineIntegralTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, useL1, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
-                } else if (useLegendre && !useDirectFT) {
-                    tempIFT = new LegendreTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale);
-                } else  {  // use Moore Method
-                    tempIFT = new MooreTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, useL1, useBackgroundInFit, standardizedMin, standardizedScale);
+                if (useMoore){
+                    tempIFT = new MooreTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, true, useBackgroundInFit, standardizedMin, standardizedScale);
+                    //tempIFT = new MooreTransformApache(randomSeries, randomErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
+                } else if (useL1 && !useLegendre && !useL2 && !useSVD){
+                    tempIFT = new SineIntegralTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+                } else if (useLegendre && !useL2 && !useSVD) {
+                    tempIFT = new LegendreTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
+                } else if (useL2 && !useSVD) {  // use Moore Method
+                    tempIFT = new DirectSineIntegralTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
+                } else if (useSVD) {  // use Moore Method
+                    tempIFT = new SVD(randomSeries, randomErrorSeries, dmax, upperq, lambda, useBackgroundInFit, standardizedMin, standardizedScale);
+                } else {
+                    tempIFT = new SVD(randomSeries, randomErrorSeries, dmax, upperq, lambda, useBackgroundInFit, standardizedMin, standardizedScale);
                 }
 
                 // Calculate Residuals
@@ -514,12 +528,19 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             /*
              * these constructuros asseme already standardized datasets
              */
-            if (useDirectFT && !useLegendre){
-                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
-            } else if (useLegendre && !useDirectFT) {
-                tempIFT = new LegendreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale);
-            } else  {  // use Moore Method
-                tempIFT = new MooreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useL1, useBackgroundInFit, standardizedMin, standardizedScale);
+            if (useMoore){
+                tempIFT = new MooreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, false,useBackgroundInFit, standardizedMin, standardizedScale);
+                //tempIFT = new MooreTransformApache(keptqIq, keptErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
+            } else if (useL1 && !useLegendre && !useL2 && !useSVD){
+                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+            } else if (useLegendre && !useL2 && !useSVD) {
+                tempIFT = new LegendreTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
+            } else if (useL2 && !useSVD) {  // use Moore Method
+                tempIFT = new DirectSineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
+            } else if (useSVD) {  // use Moore Method
+                tempIFT = new SVD(keptqIq, keptErrorSeries, dmax, upperq, lambda, useBackgroundInFit, standardizedMin, standardizedScale);
+            } else {
+                tempIFT = new SVD(keptqIq, keptErrorSeries, dmax, upperq, lambda, useBackgroundInFit, standardizedMin, standardizedScale);
             }
 
             // for chi_estimate calculations, nonStandardized datasets must be specified
@@ -527,13 +548,13 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             //this.dataset.updateIndirectFTModel(tempIFT);
             this.dataset.setPrDistribution(tempIFT.getPrDistribution());
             this.dataset.calculateIntensityFromModel(true);
-
             try {
                 // requires (q, Iq) not (q, q*Iq)
                 // need chi specific to keptSeries
                 int totalKept = keptSeries.getItemCount();
 
                 for(int i=0; i < totalKept;i++){
+
                     tempData = keptSeries.getDataItem(i);
                     //keptSeries.update(tempData.getX(), (tempData.getYValue()));
                     if (tempData.getYValue() > 0) { // only positive values

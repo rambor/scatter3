@@ -28,16 +28,18 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
 
     private JLabel status;
     private JCheckBox qIqFit;
-    private JCheckBox l1NormCheckBox;
     private JCheckBox backgroundCheckBox;
     private JCheckBox positiveOnly;
 
     // Initializes the spinner.
-    public PrSpinnerEditor(PrModel prModel, JLabel status,  JCheckBox qIqCheckBox, JCheckBox l1NormCheckBox, JCheckBox excludeBackground, JCheckBox positiveOnly) {
+    public PrSpinnerEditor(PrModel prModel,
+                           JLabel status,
+                           JCheckBox qIqCheckBox,
+                           JCheckBox excludeBackground,
+                           JCheckBox positiveOnly) {
         super(new JTextField());
         spinner = new JSpinner();
 
-        this.l1NormCheckBox = l1NormCheckBox;
         this.backgroundCheckBox = excludeBackground;
         this.positiveOnly = positiveOnly;
 
@@ -138,14 +140,14 @@ public class PrSpinnerEditor extends DefaultCellEditor implements ChangeListener
         IFTObject tempPr = new IFTObject (
                 prDataset,
                 prModel.getLambdaBoxSelectedItem(),
-                l1NormCheckBox.isSelected(),
+                prModel.getUseMoore(),
                 prModel.getCBoxSelectedItem(),
                 prModel.getUseDirectFT(),
                 prModel.getUseLegendre(),
-                prModel.getLaguerreParamsSingleton(),
+                prModel.getUseL2(),
+                prModel.getUseSVD(),
                 backgroundCheckBox.isSelected(),
                 positiveOnly.isSelected()
-
         );
 
         tempPr.run();

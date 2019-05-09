@@ -267,4 +267,109 @@ public class DoubleXYPlot {
         f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
+    public void makeXYPlot(XYSeries data) {
+        //
+        // previously miniCollection was being plotted
+        // this is really the active datasets,
+        // in the constructor for collection, miniCollection is derived from dataset (same pointer)
+        //
+
+        izerosCollection = new XYSeriesCollection();
+        izerosCollection.addSeries(data);
+
+        chart = ChartFactory.createXYLineChart(
+                "",                // chart title
+                "q-value",                        // domain axis label
+                "relative error",                // range axis label
+                izerosCollection,           // data
+                PlotOrientation.VERTICAL,
+                false,                      // include legend
+                true,
+                false
+        );
+
+        chart.setTitle("SC\u212BTTER \u2263 I/sigma Plot");
+        chart.getTitle().setFont(new java.awt.Font("Times", 1, 20));
+        chart.getTitle().setPaint(Constants.SteelBlue);
+        chart.getTitle().setTextAlignment(HorizontalAlignment.LEFT);
+        chart.getTitle().setHorizontalAlignment(HorizontalAlignment.LEFT);
+        chart.getTitle().setMargin(10, 10, 4, 0);
+        chart.setBorderVisible(false);
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+
+        plot = chart.getXYPlot();
+        final NumberAxis domainAxis = new NumberAxis("File Number");
+        final NumberAxis rangeAxisLeft = new NumberAxis("Left");
+        String quote = "q-values";
+        domainAxis.setLabel(quote);
+        quote = "I/sigma";
+
+        rangeAxisLeft.setLabel(quote);
+        rangeAxisLeft.setLabelFont(new Font("Times", Font.BOLD, 20));
+        rangeAxisLeft.setLabelPaint(new Color(255, 153, 51));
+        rangeAxisLeft.setAutoRange(true);
+        //rangeAxisLeft.setRange(lowerLeft-lowerLeft*0.03, upperLeft+0.1*upperLeft);
+        rangeAxisLeft.setAutoRangeStickyZero(false);
+
+        domainAxis.setAutoRangeStickyZero(false);
+
+        plot.setDomainAxis(0, domainAxis);
+        plot.setRangeAxis(0, rangeAxisLeft);
+
+        plot.configureDomainAxes();
+        plot.configureRangeAxes();
+        plot.setBackgroundAlpha(0.0f);
+        plot.setDomainCrosshairLockedOnData(true);
+        plot.setOutlineVisible(false);
+
+        //make crosshair visible
+        plot.setDomainCrosshairVisible(true);
+        plot.setRangeCrosshairVisible(true);
+
+        leftRenderer = (XYLineAndShapeRenderer) plot.getRenderer();
+
+        plot.setRenderer(0,leftRenderer);
+
+        plot.mapDatasetToRangeAxis(0, 0);//1st dataset to 1st y-axis
+
+        leftRenderer.setBaseShapesVisible(true);
+        leftRenderer.setSeriesShape(0, new Ellipse2D.Double(-4, -4, 8, 8));
+        leftRenderer.setSeriesLinesVisible(0, false);
+        leftRenderer.setSeriesPaint(0, Color.gray);
+        leftRenderer.setSeriesShapesFilled(0, false);
+        leftRenderer.setSeriesVisible(0, true);
+        leftRenderer.setSeriesOutlineStroke(0, new BasicStroke(2));
+        leftRenderer.setSeriesOutlinePaint(0, Color.BLACK);
+
+
+        JPopupMenu popup = chartPanel.getPopupMenu();
+        popup.add(new JMenuItem(new AbstractAction("Toggle Crosshair") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                if (crosshair){
+                    chart.getXYPlot().setDomainCrosshairVisible(false);
+                    chart.getXYPlot().setRangeCrosshairVisible(false);
+                    crosshair = false;
+                } else {
+                    chart.getXYPlot().setDomainCrosshairVisible(true);
+                    chart.getXYPlot().setRangeCrosshairVisible(true);
+                    crosshair = true;
+                }
+            }
+        }));
+
+        plot.setDomainZeroBaselineVisible(false);
+        chartPanel.setDefaultDirectoryForSaveAs(new File(workingDirectoryName));
+        frame.getContentPane().add(chartPanel);
+        frame.getChartPanel().setDisplayToolTips(true);
+        frame.pack();
+
+        f.setSize(688, 455);
+        content.add(frame.getChartPanel());
+        f.setVisible(true);
+        f.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    }
+
 }

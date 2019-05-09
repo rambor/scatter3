@@ -30,8 +30,17 @@ public class DirectSineIntegralTransform extends IndirectFT {
     double[] invVariance; // data
     private RealMatrix designMatrix; // assume this is the design matrix
 
+    /**
+     * Regularized by 2nd derivative of Pr-distribution using L2-NORM
+     * @param dataset
+     * @param errors
+     * @param dmax
+     * @param qmax
+     * @param lambda
+     * @param includeBackground
+     */
     public DirectSineIntegralTransform(XYSeries dataset, XYSeries errors, double dmax, double qmax, double lambda, boolean includeBackground) {
-        super(dataset, errors, dmax, qmax, lambda, false, includeBackground);
+        super(dataset, errors, dmax, qmax, lambda, includeBackground);
 
         this.createDesignMatrix(this.data);
         this.setModelUsed("DirectSineIntegralTransform L2-NORM");
@@ -47,9 +56,10 @@ public class DirectSineIntegralTransform extends IndirectFT {
             double qmax,
             double lambda,
             double stdmin,
-            double stdscale){
+            double stdscale,
+            boolean useBkgrnd){
 
-        super(dataset, scaledqIqErrors, dmax, qmax, lambda, false, false, stdmin, stdscale);
+        super(dataset, scaledqIqErrors, dmax, qmax, lambda, useBkgrnd, stdmin, stdscale);
 
         XYDataItem tempData;
         standardVariance = new XYSeries("standardized error");
@@ -97,24 +107,31 @@ public class DirectSineIntegralTransform extends IndirectFT {
             double prefactor = 1.0/Math.sqrt(Math.PI*twoVar);
             double midpoint = dmax/2.0; // midpoint is mu (average)
 
-
+            int totalSubset = target.length;
             if (includeBackground){
-                guess[0] = 0.0000000001;
+
+                double guessSum = 0;
+                int window = (int)(totalSubset*0.1);
+                for(int n=(totalSubset-window); n<totalSubset; n++){
+                    guessSum += target[n];
+                }
+                guess[0] = guessSum/(double)window;
+
                 for(int i=1; i < coeffs_size; i++){
                     double diff = (r_vector[i-1] - midpoint);
                     guess[i] = prefactor*Math.exp( -(diff*diff)*invTwoVar);
-                    //guess[i] = 1;
+                    //guess[i] = 0.51;
                 }
+
             } else {
                 for(int i=0; i < coeffs_size; i++){
                     double diff = (r_vector[i] - midpoint);
-                    guess[i] = prefactor*Math.exp( -(diff*diff)*invTwoVar);
-//                    guess[i] = 0.01;
+//                    guess[i] = prefactor*Math.exp( -(diff*diff)*invTwoVar);
+                    guess[i] = 0.51;
                 }
             }
 
-
-            PointValuePair optimum = optimizer.optimize(new MaxEval(30000),
+            PointValuePair optimum = optimizer.optimize(new MaxEval(60000),
                     problem.getObjectiveFunction(),
                     problem.getObjectiveFunctionGradient(),
                     GoalType.MINIMIZE,
@@ -141,11 +158,13 @@ public class DirectSineIntegralTransform extends IndirectFT {
             totalCoefficients = coefficients.length;
             this.setPrDistribution();
             this.calculateIzeroRg();
-            this.calibratePrDistribution();
+
+//            this.calibratePrDistribution();
         } catch (TooManyEvaluationsException ex) {
             System.out.println("TOO Few Evaluations");
         } catch (Exception e) {
             System.out.println("Exception occurred " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -183,7 +202,6 @@ public class DirectSineIntegralTransform extends IndirectFT {
         prDistributionForFitting = new XYSeries("OutputPrDistribution");
 
         totalInDistribution = r_vector_size+2;
-
         for(int i=0; i<totalInDistribution; i++){ // values in r_vector represent the midpoint or increments of (i+0.5)*del_r
 
             if ( i == 0 ) { // interleaved r-value (even)
@@ -196,28 +214,59 @@ public class DirectSineIntegralTransform extends IndirectFT {
                 int index = i-1;
                 double value = coefficients[index+1];
                 prDistribution.add(r_vector[index], value);
-                prDistributionForFitting.add(r_vector[index], value);
-
-//                if (value<0){
-//                    System.out.println( " WARNING NEGATIVE BIN r: " + r_vector[index] + " => " + value);
-//                }
-                // if using background, add to each term?
-                if (includeBackground){
-
-                }
+                //System.out.println(r_vector[index] + " " + value);
+               // prDistributionForFitting.add(r_vector[index], value);
             }
         }
 
 
+        // average over all values in the bin-width
+        double rvalue =  0.5*bin_width;
+        int start=0;
+        double binLimit = bin_width;
+        while (rvalue < dmax){
+
+            double sum=0;
+            double count=0;
+            double avg=0.0d;
+            for(int i=start; i<totalInDistribution; i++){ // values in r_vector represent the midpoint or increments of (i+0.5)*del_r
+                XYDataItem item = prDistribution.getDataItem(i);
+                if (item.getXValue() > binLimit){
+                    start = i;
+                    binLimit += bin_width;
+                    avg = sum/count;
+                    break;
+                }
+                sum+=item.getYValue();
+                count += 1.0;
+            }
+
+            prDistributionForFitting.add(rvalue, avg);
+            //System.out.println(rvalue + " " + avg);
+            rvalue += bin_width;
+        }
 
         totalInDistribution = prDistribution.getItemCount();
-
-        this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS DIRECT INVERSE FOURIER TRANSFORM OF I(q) %n");
-        this.description += String.format("REMARK 265  REGULARIZATION CONSTRAINT USES TOTAL DIFFERENCES METHOD %n");
-        this.description += String.format("REMARK 265  COEFFICIENTS ARE THE HISTOGRAM HEIGHTS WITH EQUAL BIN WIDTHS %n");
-        this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.4f %n", del_r);
+        scoreDistribution(del_r);
+        setHeaderDetails();
         setSplineFunction();
     }
+
+
+    private void setHeaderDetails(){
+        this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS DIRECT INVERSE FOURIER TRANSFORM OF I(q) %n");
+        this.description += String.format("REMARK 265  COEFFICIENTS ARE THE HISTOGRAM HEIGHTS WITH EQUAL BIN WIDTHS %n");
+        this.description += String.format("REMARK 265 %n");
+        this.description += String.format("REMARK 265            BIN WIDTH (delta r) : %.4f %n", (dmax/(double)ns));
+        this.description += String.format("REMARK 265             DISTRIBUTION SCORE : %.4f %n", prScore);
+        this.description += String.format("REMARK 265 %n");
+        if (!includeBackground){
+            this.description += String.format("REMARK 265      CONSTANT BACKGROUND EXCLUDED FROM FIT %n");
+        } else {
+            this.description += String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.4E %n", coefficients[0]);
+        }
+    }
+
 
     /**
      * call this function before outputing pr distribution
@@ -240,7 +289,8 @@ public class DirectSineIntegralTransform extends IndirectFT {
 
     @Override
     public double calculateQIQ(double qvalue) {
-        double sum = coefficients[0]*qvalue;
+
+        double sum = coefficients[0];
         double rvalue;
         for(int j=0; j< r_vector_size; j++){
             rvalue = r_vector[j];
@@ -267,9 +317,9 @@ public class DirectSineIntegralTransform extends IndirectFT {
 
     @Override
     void createDesignMatrix(XYSeries datasetInuse) {
-        int divisor = 5;
+        int divisor = 3;
 
-        ns = (int) Math.round(qmax*dmax*INV_PI)  ;  //
+        ns = (int) Math.ceil(qmax*dmax*INV_PI)  ;  //
         r_vector_size = ns*divisor-1; // no background implies coeffs_size == ns
 
         coeffs_size = this.includeBackground ? r_vector_size + 1 : r_vector_size;   //+1 for constant background, +1 to include dmax in r_vector list
@@ -315,14 +365,16 @@ public class DirectSineIntegralTransform extends IndirectFT {
             }
 
         } else {
+
             for(int row=0; row < rows; row++){ //rows, length is size of data
                 XYDataItem tempData = datasetInuse.getDataItem(row);
 
                 for(int col=0; col < coeffs_size; col++){
                     if (col == 0){ // constant background term
-                        a_matrix.set(row, 0, tempData.getXValue());
-                        designMatrix.setEntry(row, 0, tempData.getXValue());
-                        //a_matrix.set(row, 0, 1);
+//                        a_matrix.set(row, 0, tempData.getXValue());
+//                        designMatrix.setEntry(row, 0, tempData.getXValue());
+                        a_matrix.set(row, 0, 1);
+                        designMatrix.setEntry(row, 0, 1);
                     } else { // for col >= 1
                         double r_value = r_vector[col-1];
                         a_matrix.set(row, col, FastMath.sin(r_value*tempData.getXValue()) / r_value);
@@ -348,10 +400,12 @@ public class DirectSineIntegralTransform extends IndirectFT {
         final double[] qvalues;
         final double[] rvalues;
         final double weight;
+        final double lambdaw;
         final boolean useBackground;
         final double invP;
         final int totalP, totalRvalues, lastP;
         final int lastRvalue;
+        final double deltar2;
 
         public LinearProblem(RealMatrix designMatrix, double[] qvalues, double[] target, double[] invVar, double[] regularrvector, double dmax, double weight, boolean useBackGround) {
 
@@ -359,8 +413,13 @@ public class DirectSineIntegralTransform extends IndirectFT {
             this.qvalues = qvalues;
             this.obs  = target;
             this.invVariance = invVar;
-            this.weight = weight;
             this.rvalues = regularrvector;
+            double diff = regularrvector[2] - regularrvector[1];
+            this.deltar2 = 1.0/diff*diff;
+
+            lambdaw = weight;
+            this.weight = weight*deltar2*deltar2;
+
             this.totalRvalues = rvalues.length;
             lastRvalue = totalRvalues-1;
 
@@ -398,45 +457,117 @@ public class DirectSineIntegralTransform extends IndirectFT {
                     }
 
                     double sum=0;
-
+                    double baseP, nextP, diff;
                     // calculate second derivative at each point
                     // background is constant, makes no contribution to smoothness of P(r) distribution
                     if (useBackground){
                         // add first term
+                        int stopAt = totalP-1;
+                        // 1st point in P(r) that is not r=0 - center difference
+                        diff = point[2] -  2*point[1];
+                        sum = 0.1*diff*diff;
 
-                    } else {
-
-                        double baseP, nextP, diff;
-                        /*
-                         * minimize lambda*|total_diff [P_(i) - P(j_next)| for all j != i
-                         */
-                        for(int i=0; i<totalP; i++){
-                            diff = point[i];
+                        for(int i=2; i<stopAt; i++){
+                            diff = point[i+1] - 2*point[i] + point[i-1];
                             sum += diff*diff;
                         }
 
-                        sum *= 2;
+                        diff = -2*point[stopAt] + point[stopAt-1];
 
-                        for(int i=0; i<totalP; i++){
-                            baseP=point[i];
+                        sum += diff*diff;
 
-                            for(int j=(i+1); j<totalP; j++){
-                                nextP=point[j];
-                                diff = baseP - nextP;
-                                sum += diff*diff;
-                            }
-                        }
+                        sum += point[stopAt]*point[stopAt] + point[stopAt-1]*point[stopAt-1] + point[stopAt-2]*point[stopAt-2];;
 
-                        /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i+1) - P_(i)|^2
-                         */
-//                        int stopAt = totalP-1;
-//                        sum = point[0]*point[0] + point[stopAt]*point[stopAt]; // represents the difference between first point and 0 and last point and dmax
+
+                        // forward difference at P[r=0], doesn't exist in point vector
+//                        diff = point[2] - 2*point[1];
+//                        sum = diff*diff;
 //
-//                        for(int i=0; i<stopAt; i++){
-//                            diff = point[i] - point[i+1];
+//                        /*
+//                         * center difference at first point with P(r)=0
+//                         * point[1] - 2*point[0] + 0
+//                         */
+//                        diff = point[2] - 2*point[1]; // center difference
+//                        //diff = point[2] - 2*point[1] + point[0]; // forward difference at r = rvalue[0] or point[0]
+//                        sum += diff*diff;
+//
+//                        for(int i=2; i<stopAt; i++){
+//                            diff = point[i+1] - 2*point[i] + point[i-1];
 //                            sum += diff*diff;
 //                        }
+//                        /*
+//                         * central difference at last point
+//                         * diff => 0 - 2*point[stopAt] + point[stopAt-1]
+//                         */
+//                        //diff = point[stopAt] - 2*point[stopAt-1] + point[stopAt-2]; //backwards
+//                        diff = -2*point[stopAt] + point[stopAt-1]; //central
+//                        sum += diff*diff;
+//
+//                        diff =  -2*point[stopAt] + point[stopAt-1]; //backwards at  r = DMAX
+//                        //diff = point[stopAt];
+//                        sum += diff*diff;
+
+                    } else {
+
+
+
+                        /*
+                         * 2nd derivative regularization
+                         *
+                         * central difference
+                         *
+                         * f_(i+1) - 2*f_(i) + f_(i-1)
+                         *
+                         * At the end points
+                         * r = 0 and dmax
+                         * use forward/backward difference
+                         *
+                         * FORWARD
+                         * f_(i+2) - 2*f_(i+1) + f_(i)
+                         *
+                         * here f_(i) => 0
+                         *
+                         * diff = point[1] - 2*point[0] + 0
+                         *
+                         * BACKWARD
+                         *
+                         * f_(i) - 2*f_(i-1) + f_(i-2)
+                         *
+                         * here f_(i at dmax) => 0
+                         *
+                         * diff = 0 - 2*point[N-1] + point[N-2]
+                         *
+                         */
+                        int stopAt = totalP-1;
+                        // forward difference at P[r=0], doesn't exist in point vector
+                        diff = point[1] - 2*point[0];
+                        sum = diff*diff;
+                        // center difference at P[1]
+                        /*
+                         * center difference at first point with P(r)=0
+                         * point[1] - 2*point[0] + 0
+                         */
+                        diff = point[1] - 2*point[0]; // center difference
+                        //diff = point[2] - 2*point[1] + point[0]; // forward difference at r = rvalue[0] or point[0]
+                        sum += diff*diff;
+
+                        for(int i=1; i<stopAt; i++){
+                            diff = point[i+1] - 2*point[i] + point[i-1];
+                            sum += diff*diff;
+                        }
+
+
+                        /*
+                         * central difference at last point
+                         * diff => 0 - 2*point[stopAt] + point[stopAt-1]
+                         */
+                        //diff = point[stopAt] - 2*point[stopAt-1] + point[stopAt-2]; //backwards
+                        diff = -2*point[stopAt] + point[stopAt-1]; //central
+                        sum += diff*diff;
+
+                        diff =  -2*point[stopAt] + point[stopAt-1]; //backwards at  r = DMAX
+                        //diff = point[stopAt];
+                        sum += diff*diff;
 
                     }
                     // add last term to sum
@@ -465,13 +596,62 @@ public class DirectSineIntegralTransform extends IndirectFT {
                     /*
                      * Calculate Residuals as (qI_obs - qI_calc)/invVariance[q]
                      */
+                    double residualsSum = 0;
                     for (int q = 0; q < calcLength; ++q) {
                         residualsInvVar[q] = (obs[q]-calc[q])*invVariance[q];
+                        residualsSum += residualsInvVar[q];
                     }
 
 
                     if (useBackground){
                         // add first term (background)
+                        del_p[0] = -2*residualsSum;// + 2*point[0]*lambdaw;
+
+                        for(int p=1; p < totalP; p++){
+                            double sum = 0;
+                            for (int q = 0; q < calcLength; ++q) { // over all intensities, constant column position, sum down the row
+                                sum += residualsInvVar[q]*factors.getEntry(q,p);
+                            }
+                            del_p[p] = -2*sum;
+                        }
+
+                        /*
+                         * 2nd derivative exclude P(r) at 0 and dmax
+                         */
+                        del_p[1] += weight*0.1*(10*point[1] - 8*point[2] + 2*point[3]);
+
+                        for(int i=2; i<(totalP-2); i++){
+                            del_p[i] += weight*(12*point[i] - 8*point[i-1] + 2*point[i-2] - 8*point[i+1] + 2*point[i+2]);
+                        }
+
+                        del_p[totalP-3] += weight*(2*point[totalP-3]);
+                        del_p[totalP-2] += weight*(12*point[totalP-2] - 8*point[totalP-3] + 2*point[totalP-4] - 8*point[totalP-1] + 2*point[totalP-2]);
+                        del_p[totalP-1] += weight*(10*point[totalP-1] - 8*point[totalP-2] + 2*point[totalP-3] + 2*point[totalP-1]);
+
+
+                        /*
+                         * 2nd derivative regularization gradient include 0 and dmax
+                         */
+//                        int total_params_pr = total_params-1; // adjust for first term being background
+//                        double[] deriv = new double[total_params_pr];
+//                        deriv[0] = point[2] - 2*point[1];
+//                        deriv[total_params_pr-1] = -2*point[total_params-1] + point[total_params-2];
+//
+//                        for(int i=1; i<(total_params_pr-1); i++){
+//                            deriv[i] = point[i+2] - 2*point[i+1] + point[i]; // central der
+//                        }
+//
+//                        del_p[0] += weight*(18*point[1] - 12*point[2] + 2*point[3]);
+//                        del_p[1] += weight*(-12*point[1] + 14*point[2] - 8*point[3] + 2*point[4]);
+//
+//
+//                        for(int i=2; i<(total_params-2); i++){
+//                            del_p[i] += weight*(2*deriv[i-2] - 4*deriv[i-1] + 2*deriv[i+1]);
+//                        }
+//
+//
+//                        del_p[total_params-1] += weight*(18*point[total_params-1] - 12*point[total_params-2] + 2*point[total_params-3]);
+//                        del_p[total_params-2] += weight*(-12*point[total_params-1] + 14*point[total_params-2] - 8*point[total_params-3] + 2*point[total_params-4]);
 
 
                     } else {
@@ -491,28 +671,39 @@ public class DirectSineIntegralTransform extends IndirectFT {
                          */
                         double innersum;
 
-                        for(int index=0; index < totalP; index++){ // for a given coefficient, must sum over each difference
 
-                            innersum=0;
-                            for(int i=0; i<index; i++){ // for a given coefficient, must sum over each difference
-                                innersum += point[index];
-                            }
-
-                            for(int i=index+1; i<totalP; i++){ // for a given coefficient, must sum over each difference
-                                innersum += point[index];
-                            }
-                            del_p[index] += weight*(4*point[index] + 2*(totalP-1)*point[index] - 2*innersum);
-                        }
 
                         /*
-                         * minimize on neighboring differences SUM (p_i - p_[i+1])^2
+                         * 2nd derivative regularization gradient
                          */
-//                        int stopAt = totalP-1;
-//                        del_p[0] += weight*(4*point[0] - 2*point[1]);
-//                        del_p[stopAt] += weight*(4*point[stopAt] - 2*point[stopAt-1]);
-//                        for(int i=1; i<stopAt; i++){
-//                            del_p[i] += weight*(4*point[i] - 2*point[i-1] - 2*point[i+1]);
+                        double[] deriv = new double[total_params];
+                        deriv[0] = point[1] - 2*point[0];
+                        deriv[total_params-1] = -2*point[total_params-1] + point[total_params-2];
+                        for(int i=1; i<(total_params-1); i++){
+                            deriv[i] = point[i+1] - 2*point[i] + point[i-1]; // central der
+                        }
+
+                        del_p[0] += weight*(18*point[0] - 12*point[1] + 2*point[2]);
+                        del_p[1] += weight*(-12*point[0] + 14*point[1] - 8*point[2] + 2*point[3]);
+
+                        for(int i=2; i<(total_params-2); i++){
+                            del_p[i] += weight*(2*deriv[i-1] - 4*deriv[i] + 2*deriv[i+2]);
+                        }
+
+                        del_p[total_params-1] += weight*(18*point[total_params-1] - 12*point[total_params-2] + 2*point[total_params-3]);
+                        del_p[total_params-2] += weight*(-12*point[total_params-1] + 14*point[total_params-2] - 8*point[total_params-3] + 2*point[total_params-4]);
+
+
+//                        del_p[0] += weight*(12*point[0] - 12*point[1] + 4*point[2]);
+//                        del_p[1] += weight*(-12*point[0] + 20*point[1] - 12*point[2] + 2*point[3]);
+//                        del_p[2] += weight*(4*point[0] - 12*point[1] + 14*point[2] - 8*point[3] + 2*point[4]);
+//                        for(int i=3; i<(total_params-3); i++){
+//                            del_p[i] += weight*(2*deriv[i-1] - 4*deriv[i] + 2*deriv[i+2]);
 //                        }
+//                        del_p[total_params-3] += weight*(4*point[total_params-1] - 12*point[total_params-2] + 14*point[total_params-3] - 8*point[total_params-4] + 2*point[total_params-5]);
+//                        del_p[total_params-2] += weight*(-12*point[total_params-1] + 20*point[total_params-2] - 12*point[total_params-3] + 2*point[total_params-4]);
+//                        del_p[total_params-1] += weight*(12*point[total_params-1] - 12*point[total_params-2] + 4*point[total_params-3]);
+
                     }
 
                     return del_p;

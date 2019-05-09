@@ -18,10 +18,11 @@ import java.util.LinkedList;
 public class PrModel extends AbstractTableModel implements ChangeListener, PropertyChangeListener {
 
     private final LinkedList<RealSpace> datalist;
-    private JCheckBox fitModel;
+    private JCheckBox useMoore;
     private JCheckBox useDirectFT;
     private JCheckBox useLegendre;
-    private LaguerreParamsSingleton laguerreParamsSingleton;
+    private JCheckBox useSVD;
+    private JCheckBox useL2;
     private JCheckBox excludeBackground;
     private JCheckBox postiveOnly;
     private ArrayList<ArrayList<Boolean>> editable_cells;
@@ -47,11 +48,12 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                    DoubleValue dmaxlow,
                    DoubleValue dmaxhigh,
                    JSlider dmaxSlider,
-                   JCheckBox fitModel,
+                   JCheckBox fitModel,    // Moore function
                    JComboBox cBox,
-                   JCheckBox useDirectFT,
-                   JCheckBox useLegendre,
-                   LaguerreParamsSingleton laguerreParamsSingleton,
+                   JCheckBox useL1,       // L1-norm indirect inverse FT
+                   JCheckBox useLegendre, // legendre
+                   JCheckBox useL2,       // L2-norm, second derivatiev
+                   JCheckBox useSVD,      // SVD direct inverse FT
                    JCheckBox excludeBackground,
                    JCheckBox positiveOnly){
         this.status = status;
@@ -63,15 +65,17 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
         datalist = new LinkedList<>();
         editable_cells = new ArrayList<ArrayList<Boolean>>();
 
-        this.fitModel = fitModel;
+        this.useMoore = fitModel;
         dmaxLow = dmaxlow;
         dmaxHigh = dmaxhigh;
         this.dmaxStart = dmaxSlider;
         this.cBox = cBox;
-        this.useDirectFT = useDirectFT;
+        this.useDirectFT = useL1;
         this.useLegendre = useLegendre;
+        this.useL2 = useL2;
+        this.useSVD = useSVD;
+
         this.excludeBackground = excludeBackground;
-        this.laguerreParamsSingleton = laguerreParamsSingleton;
         this.postiveOnly = positiveOnly;
     }
 
@@ -252,11 +256,12 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                     IFTObject tempPr = new IFTObject (
                             temp,
                             Double.parseDouble(lambdaBox.getSelectedItem().toString()),
-                            fitModel.isSelected(),
+                            useMoore.isSelected(), //Moore
                             Integer.parseInt(cBox.getSelectedItem().toString()),
-                            useDirectFT.isSelected(),
-                            useLegendre.isSelected(),
-                            laguerreParamsSingleton,
+                            useDirectFT.isSelected(), // L1-norm indirect FT
+                            useLegendre.isSelected(), // Legendre
+                            useL2.isSelected(),       // L2-norm
+                            useSVD.isSelected(),      // SVD
                             excludeBackground.isSelected(),
                             postiveOnly.isSelected()
                     );
@@ -357,14 +362,14 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     boolean getUseLegendre(){
         return useLegendre.isSelected();
     }
-    boolean getUseLaguerre(){
-        return laguerreParamsSingleton.getIsSelected();
-    }
-    LaguerreParamsSingleton getLaguerreParamsSingleton(){ return laguerreParamsSingleton;}
-
     boolean getUseDirectFT(){
         return useDirectFT.isSelected();
     }
+
+    boolean getUseSVD(){ return useSVD.isSelected();}
+    boolean getUseL2(){ return useL2.isSelected();}
+    boolean getUseMoore() { return useMoore.isSelected();}
+
 
     int getCBoxSelectedItem(){
         return Integer.parseInt(cBox.getSelectedItem().toString());

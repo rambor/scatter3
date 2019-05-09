@@ -251,6 +251,17 @@ public class RealSpace {
         return izero;
     }
 
+
+    public double integrateDistribution(){
+        int sizeof = this.prDistribution.getItemCount()-1;
+        double del_r = this.prDistribution.getX(2).doubleValue() - this.prDistribution.getX(1).doubleValue();
+        double area = 0;
+        for(int i=1; i<sizeof; i++){
+            area += this.getPrDistribution().getX(i).doubleValue()*del_r;
+        }
+        return area;
+    }
+
     public void setIzero(double j){
         izero = j;
     }
@@ -814,131 +825,7 @@ public class RealSpace {
         //this.dataset.updateRealSpaceErrors(rgStat.getStandardDeviation()/rgStat.getMean(), izeroStat.getStandardDeviation()/izeroStat.getMean());
     }
 
-    // auto-Dmax ?
-    // throw exception if no Guiner region
 
-    public void estimateDmax(double lambda, boolean usel1, int cBox, boolean useDirect){
-        // make q*I(q) dataset with extrapolated values from Guinier
-        // perform integral sine transform
-        XYSeries qIq = new XYSeries("qIQ for integral transform");
-
-        double startq = fittedqIq.getMinX();
-        double guinierRg = dataset.getGuinierRg();
-        double guinierIzero = dataset.getGuinierIzero();
-
-        if (startq > 1.5/guinierRg){
-
-        }
-
-        java.util.List delq = new ArrayList();
-        int itemCount = fittedqIq.getItemCount();
-
-        for (int j = 1; j < (itemCount-1); j++){
-            delq.add(Math.abs(fittedqIq.getX(j - 1).doubleValue() - fittedqIq.getX(j).doubleValue()));
-        }
-
-        double averageq = Statistics.calculateMean(delq);
-        //Use deltaq to extrapolate
-        double javerageq, javerageq2;
-        double rg23 = guinierRg*guinierRg/3.0;
-        double scaleFactor = dataset.getScaleFactor();
-
-        // create extrapolation using Guinier estimates
-        for (int j=0; j*averageq < startq; j++){
-            javerageq = j*averageq;
-            javerageq2 = (javerageq)*guinierIzero*Math.exp(-rg23*javerageq*javerageq);
-            qIq.add(javerageq, javerageq2*scaleFactor);
-        }
-
-        // Add rest of the values
-        XYDataItem tempqIqDataItem;
-        double xValue, xyValue;
-        for (int j=0; j < fittedqIq.getItemCount(); j++) {
-            tempqIqDataItem = fittedqIq.getDataItem(j);
-
-            xValue = tempqIqDataItem.getXValue();
-            xyValue = tempqIqDataItem.getYValue();
-            qIq.add(xValue, xyValue * scaleFactor);
-        }
-
-        double lastqvalue = qIq.getMaxX();
-        int totalqIqValues = qIq.getItemCount();
-
-        int startAt=0;
-        if (lastqvalue > 0.1){
-            for (int q=0; q<totalqIqValues; q++){
-                if (qIq.getX(q).doubleValue() > 0.1){
-                    startAt = q;
-                    break;
-                }
-            }
-        }
-
-        double startRvalue, nextRvalue;
-
-        XYSeries tempSeries = new XYSeries("temp");
-
-        for(int qm=0; qm < startAt; qm++){
-            tempSeries.add(qIq.getDataItem(qm));
-        }
-
-        int q = startAt, qlimit;
-        boolean changed;
-
-        ArrayList<String> score = new ArrayList<>();
-        int countOfScore = 1;
-        while(q < totalqIqValues){
-
-            startRvalue = 41;
-            changed = false;
-
-            for (int round=0; round < 1000; round++){
-
-                nextRvalue = startRvalue - integralTransform(startRvalue, tempSeries)/finiteDifferencesDerivative(startRvalue, tempSeries);
-                //System.out.println(round + " " + startRvalue + " <=> " + nextRvalue);
-                if (integralTransform(nextRvalue, tempSeries) < 0.000000001){
-                    startRvalue = nextRvalue;
-                    changed = true;
-                    break;
-                }
-
-                startRvalue = nextRvalue;
-            }
-
-            // fit P(r) using startRvalue and calculate chi and sk2
-            if (changed && startRvalue > 10 && startRvalue < 1000){
-                this.dmax = (int)startRvalue;
-//                PrObject tempPr = new PrObject(this, lambda, usel1, cBox, useDirect, false);
-//                tempPr.run();
-                //this.chi_estimate(allData.createCopy(startAt-1, stopAt-1), errorAllData.createCopy(startAt-1, stopAt-1));
-                //this.kurt_l1_sum = l1_norm_pddr(1) + max_kurtosis_shannon_sampled(0);
-                //this.kurtosis = Math.abs(this.max_kurtosis_shannon_sampled(0));
-                //this.l1_norm = this.l1_norm_pddr(11);
-                //this.kurt_l1_sum = 0.1*this.kurtosis + 0.9*this.l1_norm;
-                //System.out.println(countOfScore + " dmax " + this.dmax + " chi2 => " + this.chi2 + "\t" + tempSeries.getMaxX());
-                if (this.chi2 < 4 && !negativeValuesInModel){
-                    score.add(countOfScore + "\t" + this.dmax  + "\t" + this.chi2 + "\t" + this.kurt_l1_sum + "\t" + tempSeries.getMaxX());
-                    countOfScore++;
-                }
-            }
-
-            //tempSeries.add(qIq.getDataItem(q));
-            // add next 5 values
-            qlimit = q + 7;
-            if (qlimit < totalqIqValues){
-                for(int qi=q; qi < qlimit; qi++){
-                    tempSeries.add(qIq.getDataItem(qi));
-                }
-            }
-            q = qlimit;
-        }
-
-
-        for(int s=0; s<score.size(); s++){
-            System.out.println(score.get(s));
-        }
-
-    }
 
 
     private double integralTransform(double rvalue, XYSeries extrapolatedQIqSeries){
@@ -993,11 +880,10 @@ public class RealSpace {
     public void setIndirectFTModel(IndirectFT model){
         this.indirectFTModel = model;
         this.rg = (model.getRg() > 0) ? model.getRg() : this.rg ;
-
         this.izero = model.getIZero();
         this.raverage = (model.rAverage > 0) ? model.rAverage : this.raverage ;
         this.chi2 = this.indirectFTModel.getChiEstimate();
-        this.kurtosis = this.indirectFTModel.getKurtosisEstimate(51);
+        this.kurtosis = this.indirectFTModel.getKurtosisEstimate(0);
         this.dataset.setRealIzeroRgParameters(izero, 0.1*izero, rg, rg*0.1, raverage);
     }
 

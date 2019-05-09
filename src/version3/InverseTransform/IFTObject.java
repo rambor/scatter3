@@ -8,11 +8,11 @@ public class IFTObject implements Runnable {
 
     private double qmax, dmax, lambda=0.001;
 
-    private boolean useL1;
+    private boolean useMoore;
     private boolean useDirectFT = false;
     private boolean useLegendre = false;
-    private LaguerreParamsSingleton laguerreParamsSingleton;
-    private boolean useLaguerre = false;
+    private boolean useL2 = false;
+    private boolean useSVD = false;
     private RealSpace dataset;
     private int cBoxValue=2;
     private boolean includeBackground = false;
@@ -31,11 +31,12 @@ public class IFTObject implements Runnable {
     public IFTObject(
             RealSpace dataset,
             double lambda,
-            boolean useL1,
+            boolean useMoore,       // Moore function
             int cBoxValue,
-            boolean useDirectFt,
-            boolean useLegendre,
-            LaguerreParamsSingleton laguerreParamsSingleton,
+            boolean useDirectFt, // L1-norm
+            boolean useLegendre, // Legendre
+            boolean useL2,       // L2-norm second derivative
+            boolean useSVD,      // SVD
             boolean includeBackground,
             boolean positiveOnly){
 
@@ -46,15 +47,14 @@ public class IFTObject implements Runnable {
         dataset.setQmax(this.qmax); // need to specify qmax used in IFT determination
         this.dmax = dataset.getDmax();
         this.lambda = lambda;
-        this.useL1 = useL1;
+        this.useMoore = useMoore;
 
         // after mouse click on spinner, this constructor is made => do we do standardization within constructor?
-
         this.cBoxValue = cBoxValue;
         this.useDirectFT = useDirectFt;      // default is true for Scatter => rambo method
         this.useLegendre = useLegendre;
-        this.laguerreParamsSingleton = laguerreParamsSingleton;
-        this.useLaguerre = laguerreParamsSingleton.getIsSelected();
+        this.useL2 = useL2;
+        this.useSVD = useSVD;
         this.includeBackground = includeBackground; //
         this.positiveOnly = positiveOnly;
     }
@@ -64,12 +64,17 @@ public class IFTObject implements Runnable {
     public void run() {
         IndirectFT tempIFT;
 
-        if (useDirectFT && !useLaguerre && !useLegendre){
+        if (useMoore){
+            //tempIFT = new MooreTransformApache(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, includeBackground);
+            tempIFT = new MooreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useMoore, includeBackground);
 
-            tempIFT = new SineIntegralTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, includeBackground, positiveOnly);
+        } else if (useDirectFT && !useLegendre && !useL2 && !useSVD){
+            // L1-norm
+            tempIFT = new SineIntegralTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, includeBackground, positiveOnly);
 
-        } else if (useLegendre && !useLaguerre && !useDirectFT) {
+        } else if (useLegendre && !useL2 && !useSVD) {
 
+            // orthonal basis set with
             tempIFT = new LegendreTransform(
                     dataset.getfittedqIq(),
                     dataset.getfittedError(),
@@ -78,7 +83,7 @@ public class IFTObject implements Runnable {
                     lambda,
                     includeBackground);
 
-        } else if (useLaguerre && !useLegendre && !useDirectFT) {  // use Laguerre
+        } else if (useL2 && !useSVD) {  // use Laguerre
 
             tempIFT = new DirectSineIntegralTransform(dataset.getfittedqIq(),
                     dataset.getfittedError(),
@@ -89,9 +94,17 @@ public class IFTObject implements Runnable {
 
             //tempIFT = new LaguerreTransform(rave , rg, dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, 1);
 
-        } else  {  // use Moore Method
+        } else if (useSVD) {  // use Laguerre
 
-            tempIFT = new MooreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useL1, includeBackground);
+            tempIFT = new SVD(dataset.getfittedqIq(),
+                    dataset.getfittedError(),
+                    dmax,
+                    qmax,
+                    includeBackground);
+
+        } else  {  // use Moore Method
+            tempIFT = new MooreTransformApache(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, includeBackground);
+            //tempIFT = new MooreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useMoore, includeBackground);
 
         }
 

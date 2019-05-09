@@ -1,4 +1,5 @@
 import net.iharder.dnd.FileDrop;
+import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import version3.*;
@@ -159,7 +160,7 @@ public class Scatter {
     private JComboBox rejectionCutOffBox;
     private JLabel defaultDmax;
     private JLabel dmaxLabel;
-    private JCheckBox l1NormCheckBox;
+    private JCheckBox mooreCheckBox;
     private JSlider dmaxSlider;
     private JComboBox lambdaBox;
     private JComboBox cBox;
@@ -323,26 +324,27 @@ public class Scatter {
     private JPanel sphereResultsPanel;
     private JCheckBox volumeScalingBox;
     private JCheckBox buildListFromFileCheckBox;
-    private JCheckBox useDirectFourierTransformCheckBox;
+//    private JCheckBox useDirectFourierTransformCheckBox;
     private JLabel methodInUseLabel;
     private JCheckBox positiveOnlyCheckBox;
     private JButton similarityButton;
     private JCheckBox legendreCheckBox;
     private JCheckBox showBinsCheckBox;
     private JLabel prLambdaLabel;
-    private JCheckBox laguerreCheckBox;
+    private JCheckBox l2norm;
     private JPanel additionalInfoPrPanel;
-    private JTextField laguerreRatioTextField;
     private JButton viewGNOMOutFileButton;
 
     private JButton calculateButton;
     private JLabel projectionLabel;
     private JButton loadPDBProjectionButton;
+    private JCheckBox SVDCheckBox;
+    private JLabel prLabel2;
     //private JCheckBox volumeScalingCheckBox;
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.2b";
+    private String version = "3.2c";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -400,7 +402,6 @@ public class Scatter {
     public PowerLawPlot powerLawPlot;
     public MiniPlots analysisMiniPlots;
     public MergeReport mergeReport;
-    public LaguerreParamsSingleton laguerreParamsSingleton;
 
     private static Similarity similarityObject;
 
@@ -419,11 +420,12 @@ public class Scatter {
     private SignalPlot signalPlotThread;
     private SimilarityPlot similarityPlotObject;
     private Projection projectionObject;
+    private double[] defaultLambdaValues = new double[]{0, 0.000001, 0.000003, 0.000007, 0.00001, 0.00007,  0.0001, 0.0007, 0.001, 0.007, 0.01, 0.07, 0.1, 0.7, 1, 3, 7, 10, 37};
 
     public Scatter() { // constructor
 
         versionLabel.setText("Version : "+ version);
-        prLambdaLabel.setText("\u03bb");
+        prLambdaLabel.setText("  \u03bb");
         MessageConsole mc = new MessageConsole(stdOutText);
         //mc.redirectOut();
         //mc.redirectErr(Color.RED, null);
@@ -896,16 +898,26 @@ public class Scatter {
                 // set qmax from spinner
                 double qmax = collectionSelected.getDataset(index).getAllData().getX(collectionSelected.getDataset(index).getEnd()-1).doubleValue();
                 FindDmax tt = new FindDmax(collectionSelected.getDataset(index).getRealSpaceModel(), qmax, WORKING_DIRECTORY);
-//                // select dataset with form factor
-//                StructureFactorTest temp = new StructureFactorTest(collectionSelected, collectionSelected.getDataset(index), WORKING_DIRECTORY);
-//                temp.pack();
-//                temp.setVisible(true);
+//                RandomMatrix ttt = new RandomMatrix(collectionSelected.getDataset(index).getRealSpaceModel(), WORKING_DIRECTORY);
             }
         }
 
-
         }));
 
+//        popupMenu.add(new JMenuItem(new AbstractAction("Random"){@Override
+//        public void actionPerformed(ActionEvent e) {
+//            //To change body of implemented methods use File | Settings | File Templates.
+//
+//            int index = analysisTable.getSelectedRow();
+//
+//            if (index > -1){
+//                // set qmax from spinner
+//                double qmax = collectionSelected.getDataset(index).getAllData().getX(collectionSelected.getDataset(index).getEnd()-1).doubleValue();
+//                RandomMatrix tt = new RandomMatrix(collectionSelected.getDataset(index).getRealSpaceModel(), WORKING_DIRECTORY);
+//            }
+//        }
+
+//        }));
 
         popupMenu.add(new JMenuItem(new AbstractAction("Similarity Test") {
             @Override
@@ -1068,6 +1080,34 @@ public class Scatter {
             }
         }));
 
+        // add mouse functions, remove, select all, select none
+        popupMenu.add(new JMenuItem(new AbstractAction("Plot Relative Error") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //To change body of implemented methods use File | Settings | File Templates.
+                // get highlighted/moused over
+                // open new object/window for estimating mass using several methods
+                int index = analysisTable.getSelectedRow();
+
+                if (index > -1){
+                    XYSeries tempSeries = new XYSeries("relative error");
+                    Dataset tempData = collectionSelected.getDataset(index);
+                    XYSeries tempAllData = tempData.getAllData();
+                    XYSeries tempAllDataError = tempData.getAllDataError();
+                    for(int i=0; i < tempData.getAllData().getItemCount(); i++){
+                        XYDataItem item = tempAllData.getDataItem(i);
+                        tempSeries.add(item.getX(), item.getYValue()/tempAllDataError.getY(i).doubleValue());
+                    }
+
+                    DoubleXYPlot xyplot = new DoubleXYPlot(WORKING_DIRECTORY.getWorkingDirectory());
+                    xyplot.makeXYPlot(tempSeries);
+
+                } else {
+                    status.setText("Must select the row");
+                }
+            }
+        }));
+
 
 
         popupMenu.add(new JMenuItem(new AbstractAction("Edit Details") {
@@ -1140,9 +1180,6 @@ public class Scatter {
         dmaxHigh = new DoubleValue(157);
         dmaxStart = new DoubleValue(97);
 
-        laguerreParamsSingleton = LaguerreParamsSingleton.getInstance();
-        laguerreParamsSingleton.setJLabel(prStatusLabel);
-
         //Pr Table JLabel status, WorkingDirectory cwd, Double lambda
         prTable = new JTable(new PrModel(status,
                 WORKING_DIRECTORY,
@@ -1150,13 +1187,15 @@ public class Scatter {
                 dmaxLow,
                 dmaxHigh,
                 dmaxSlider,
-                l1NormCheckBox,
+                mooreCheckBox,   // Moore function
                 cBox,
-                useDirectFourierTransformCheckBox,
-                legendreCheckBox,
-                laguerreParamsSingleton,
+                checkBoxDirect,   // L1 norm direct inverse FT
+                legendreCheckBox, // legendre
+                l2norm,           // L2 norm of second derivative
+                SVDCheckBox,      // SVD direct inverse FT
                 excludeBackgroundInFitCheckBox,
                 positiveOnlyCheckBox));
+
 
         prModel = (PrModel) prTable.getModel();
 
@@ -1164,11 +1203,11 @@ public class Scatter {
         TableColumnModel pcm = prTable.getColumnModel();
 
         TableColumn pc = pcm.getColumn(4);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, l1NormCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
         pc = pcm.getColumn(5);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, l1NormCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
         pc = pcm.getColumn(9);
-        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, l1NormCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
+        pc.setCellEditor(new PrSpinnerEditor(prModel, status, qIQCheckBox, excludeBackgroundInFitCheckBox, positiveOnlyCheckBox));
 
         pc = pcm.getColumn(2);
         pc.setCellEditor(new CheckBoxCellEditorRenderer());
@@ -3593,27 +3632,32 @@ public class Scatter {
                 positiveOnlyCheckBox.setSelected(false);
 
                 if (checkBoxDirect.isSelected()){
-                    useDirectFourierTransformCheckBox.setSelected(true);
                     positiveOnlyCheckBox.setSelected(true);
 
-                    l1NormCheckBox.setSelected(false);
+                    mooreCheckBox.setSelected(false);
                     legendreCheckBox.setSelected(false);
-                    laguerreParamsSingleton.setIsSelected(false);
-                    laguerreCheckBox.setSelected(false);
+                    SVDCheckBox.setSelected(false);
+                    l2norm.setSelected(false);
                     additionalInfoPrPanel.removeAll();
 
-                    lambdaBox.setSelectedIndex(1);
                     if (excludeBackgroundInFitCheckBox.isSelected()){
                         methodInUseLabel.setText("Direct Inverse FT Method with constant background");
                     } else {
                         methodInUseLabel.setText("Direct Inverse FT Method no background ");
                     }
 
+                    lambdaBox.removeAllItems();
+                    Double[] finalArray = new Double[defaultLambdaValues.length];
+                    for(int i=0; i<defaultLambdaValues.length; i++){
+                        finalArray[i] = new Double(defaultLambdaValues[i]);
+                    }
+                    lambdaBox.setModel(new DefaultComboBoxModel(finalArray));
+                    lambdaBox.setSelectedIndex(2);
+
                 } else {
 
-                    useDirectFourierTransformCheckBox.setSelected(false);
 
-                    if (l1NormCheckBox.isSelected()){
+                    if (mooreCheckBox.isSelected()){
                         methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
                     } else {
                         if (excludeBackgroundInFitCheckBox.isSelected()){
@@ -3629,36 +3673,78 @@ public class Scatter {
             }
         });
 
-
-        l1NormCheckBox.addActionListener(new ActionListener() {
+        SVDCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+
                 positiveOnlyCheckBox.setSelected(false);
-                useDirectFourierTransformCheckBox.setSelected(false);
-                legendreCheckBox.setSelected(false);
-                laguerreParamsSingleton.setIsSelected(false);
-                laguerreCheckBox.setSelected(false);
+
+                if (SVDCheckBox.isSelected()){
+
+                    checkBoxDirect.setSelected(false);
+                    legendreCheckBox.setSelected(false);
+                    l2norm.setSelected(false);
+//                    SVDCheckBox.setSelected(false);
+                    mooreCheckBox.setSelected(false);
+
+                    positiveOnlyCheckBox.setSelected(false);
+
+                    additionalInfoPrPanel.removeAll();
+                    lambdaBox.setSelectedIndex(0);
+
+                    if (excludeBackgroundInFitCheckBox.isSelected()){
+                        methodInUseLabel.setText("SVD Direct Inv FT with constant background");
+                    } else {
+                        methodInUseLabel.setText("SVD Direct Inv FT no background ");
+                    }
+
+                } else {
+
+                    checkBoxDirect.setSelected(true);
+
+                    for(ActionListener a: checkBoxDirect.getActionListeners()) {
+                        a.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null) {
+                            //Nothing need go here, the actionPerformed method (with the
+                            //above arguments) will trigger the respective listener
+                        });
+                    }
+                }
+                prStatusLabel.setText(methodInUseLabel.getText());
+            }
+        });
+
+
+        mooreCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                positiveOnlyCheckBox.setSelected(false);
                 additionalInfoPrPanel.removeAll();
-                checkBoxDirect.setSelected(false);
 
-                if (l1NormCheckBox.isSelected()){
+                if (mooreCheckBox.isSelected()){
 
-                    useDirectFourierTransformCheckBox.setSelected(false);
+                    checkBoxDirect.setSelected(false);
+                    legendreCheckBox.setSelected(false);
+                    l2norm.setSelected(false);
+                    SVDCheckBox.setSelected(false);
+//                    mooreCheckBox.setSelected(false);
+
                     excludeBackgroundInFitCheckBox.setSelected(true);
 
                     methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
                     lambdaBox.setSelectedIndex(2);
+
                 } else {
-                   // checkBoxDirect.setSelected(false);
-                   // useDirectFourierTransformCheckBox.setSelected(true);
-                   // excludeBackgroundInFitCheckBox.setSelected(true);
-                    if (excludeBackgroundInFitCheckBox.isSelected()){
-                        methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
-                        lambdaBox.setSelectedIndex(2);
-                    } else {
-                        methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
-                        lambdaBox.setSelectedIndex(2);
+
+                    checkBoxDirect.setSelected(true);
+
+                    for(ActionListener a: checkBoxDirect.getActionListeners()) {
+                        a.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null) {
+                            //Nothing need go here, the actionPerformed method (with the
+                            //above arguments) will trigger the respective listener
+                        });
                     }
+
                 }
                 prStatusLabel.setText(methodInUseLabel.getText());
             }
@@ -3774,31 +3860,19 @@ public class Scatter {
 
                     if (excludeBackgroundInFitCheckBox.isSelected()){
 
-                        legendreCheckBox.setSelected(false);
-                        laguerreParamsSingleton.setIsSelected(false);
-                        laguerreCheckBox.setSelected(false);
                         additionalInfoPrPanel.removeAll();
 
-                        if (useDirectFourierTransformCheckBox.isSelected()){
-
-                            methodInUseLabel.setText("Direct Inverse FT with constant background");
-
-                        } else if (l1NormCheckBox.isSelected()) {
-                            methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
+                        if(SVDCheckBox.isSelected()){
+                            SVDCheckBox.setSelected(false);
+                            checkBoxDirect.setSelected(true);
+                            methodInUseLabel.setText("bkgrnd not available with SVD");
                         } else {
-                            methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
+                            methodInUseLabel.setText("Constant Background added");
                         }
-
                     } else { // no background only available on DirectFT and moore coefficient L1
-                        if (useDirectFourierTransformCheckBox.isSelected()){
-                            methodInUseLabel.setText("Direct Inverse FT no background");
-                        } else if (!l1NormCheckBox.isSelected()) {
-                            methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
-                        } else if (l1NormCheckBox.isSelected()){
-                            methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
-                            l1NormCheckBox.setSelected(false);
-                        }
+                        methodInUseLabel.setText("No Constant Background");
                     }
+
                 prStatusLabel.setText(methodInUseLabel.getText());
             }
         });
@@ -3925,7 +3999,7 @@ public class Scatter {
             }
         });
 
-//        l1NormCheckBox.setSelected(true);
+//        mooreCheckBox.setSelected(true);
         checkBoxDirect.setSelected(true);
 
         subtractThresholdField.addFocusListener(new FocusAdapter() {
@@ -4166,6 +4240,7 @@ public class Scatter {
             }
         });
 
+
         testButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -4178,76 +4253,35 @@ public class Scatter {
             }
         });
 
-        useDirectFourierTransformCheckBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (useDirectFourierTransformCheckBox.isSelected()){
-                    l1NormCheckBox.setSelected(false);
-                    legendreCheckBox.setSelected(false);
-                    laguerreParamsSingleton.setIsSelected(false);
-                    laguerreCheckBox.setSelected(false);
-                    additionalInfoPrPanel.removeAll();
-                    checkBoxDirect.setSelected(true);
-                    lambdaBox.setSelectedIndex(1);
-
-                    if (positiveOnlyCheckBox.isSelected()){
-
-                        if(excludeBackgroundInFitCheckBox.isSelected()){
-                            methodInUseLabel.setText("Direct Inverse FT Positive Only with constant background");
-                        } else {
-                            methodInUseLabel.setText("Direct Inverse FT Positive Only no background");
-                        }
-                    } else {
-
-                        if(excludeBackgroundInFitCheckBox.isSelected()){
-                            methodInUseLabel.setText("Direct Inverse FT with constant background");
-                        } else {
-                            methodInUseLabel.setText("Direct Inverse FT no background");
-                        }
-                    }
-
-                } else {
-                    checkBoxDirect.setSelected(false);
-                    if (excludeBackgroundInFitCheckBox.isSelected()){
-                        methodInUseLabel.setText("Moore Method L1-Norm Coefficients with constant background");
-                    } else {
-                        methodInUseLabel.setText("Moore Method L1-Norm Coefficients no background ");
-                    }
-                    lambdaBox.setSelectedIndex(2);
-                }
-
-                prStatusLabel.setText(methodInUseLabel.getText());
-            }
-        });
 
         positiveOnlyCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                l1NormCheckBox.setSelected(false);
+                mooreCheckBox.setSelected(false);
                 legendreCheckBox.setSelected(false);
-                laguerreParamsSingleton.setIsSelected(false);
-                laguerreCheckBox.setSelected(false);
+                l2norm.setSelected(false);
+                SVDCheckBox.setSelected(false);
                 additionalInfoPrPanel.removeAll();
-                useDirectFourierTransformCheckBox.setSelected(true);
                 checkBoxDirect.setSelected(true);
+
                 if (positiveOnlyCheckBox.isSelected()){
 
                     if(excludeBackgroundInFitCheckBox.isSelected()){
-                        methodInUseLabel.setText("Direct Inverse FT Positive Only with constant background");
+                        methodInUseLabel.setText("L1-NORM DIFT Positive Only with Constant Background");
                     } else {
-                        methodInUseLabel.setText("Direct Inverse FT Positive Only no background");
+                        methodInUseLabel.setText("L1-NORM DIFT Positive Only No Background");
                     }
                 } else {
 
                     if(excludeBackgroundInFitCheckBox.isSelected()){
-                        methodInUseLabel.setText("Direct Inverse FT with constant background");
+                        methodInUseLabel.setText("L1-NORM DIFT with Constant Background");
                     } else {
-                        methodInUseLabel.setText("Direct Inverse FT no background");
+                        methodInUseLabel.setText("L1-NORM DIFT No Background");
                     }
                 }
-                prStatusLabel.setText(methodInUseLabel.getText());
 
+                prStatusLabel.setText(methodInUseLabel.getText());
             }
         });
 
@@ -4349,69 +4383,90 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
 
                 excludeBackgroundInFitCheckBox.setSelected(false);
-                l1NormCheckBox.setSelected(false);
+                mooreCheckBox.setSelected(false);
 
                 positiveOnlyCheckBox.setSelected(false);
                 additionalInfoPrPanel.removeAll();
 
-                laguerreParamsSingleton.setIsSelected(false);
-                laguerreCheckBox.setSelected(false);
+                l2norm.setSelected(false);
 
                 if (legendreCheckBox.isSelected()){
 
-                    useDirectFourierTransformCheckBox.setSelected(false);
                     checkBoxDirect.setSelected(false);
+                    SVDCheckBox.setSelected(false);
                     legendreCheckBox.setSelected(true);
 
                     lambdaBox.setSelectedIndex(1);
                     methodInUseLabel.setText("Legendre Distribution Estimation");
                     prStatusLabel.setText("Legendre Distribution Estimation");
+
+                    lambdaBox.removeAllItems();
+                    Double[] finalArray = new Double[defaultLambdaValues.length];
+                    for(int i=0; i<defaultLambdaValues.length; i++){
+                        finalArray[i] = new Double(defaultLambdaValues[i]);
+                    }
+                    lambdaBox.setModel(new DefaultComboBoxModel(finalArray));
+                    lambdaBox.setSelectedIndex(2);
+
                 } else {
-                    useDirectFourierTransformCheckBox.setSelected(true);
+
                     checkBoxDirect.setSelected(true);
                     positiveOnlyCheckBox.setSelected(true);
 
-                    methodInUseLabel.setText("Direct FT L1-Norm Positive Only");
-                    prStatusLabel.setText("Direct FT L1-Norm Positive Only");
-                    lambdaBox.setSelectedIndex(3);
+                    for(ActionListener a: checkBoxDirect.getActionListeners()) {
+                        a.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null) {
+                            //Nothing need go here, the actionPerformed method (with the
+                            //above arguments) will trigger the respective listener
+                        });
+                    }
+
+
                 }
             }
         });
 
 
-        laguerreCheckBox.addActionListener(new ActionListener() {
+        l2norm.addActionListener(new ActionListener() { // L2-norm method
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                excludeBackgroundInFitCheckBox.setSelected(false);
+               // excludeBackgroundInFitCheckBox.setSelected(false);
                 legendreCheckBox.setSelected(false);
-                l1NormCheckBox.setSelected(false);
+                mooreCheckBox.setSelected(false);
+                checkBoxDirect.setSelected(false);
+                SVDCheckBox.setSelected(false);
 
                 additionalInfoPrPanel.removeAll();
                 additionalInfoPrPanel.setBorder(BorderFactory.createEmptyBorder());
 
-                if (laguerreCheckBox.isSelected()){
+                if (l2norm.isSelected()){
 
-                    useDirectFourierTransformCheckBox.setSelected(false);
-                    checkBoxDirect.setSelected(false);
+                    methodInUseLabel.setText("L2-Norm with smoothness");
+                    prStatusLabel.setText("L2-Norm with smoothness");
 
-                    lambdaBox.setSelectedIndex(14);
-                    methodInUseLabel.setText("Total Differences Estimation");
-                    prStatusLabel.setText("Total Differences Estimation");
-
-                    laguerreParamsSingleton.setIsSelected(true);
+                    positiveOnlyCheckBox.setSelected(false);
                     additionalInfoPrPanel.setBorder(BorderFactory.createEmptyBorder());
-//                    additionalInfoPrPanel.add(laguerreParamsSingleton.getPanel());
-                } else {
-                    laguerreParamsSingleton.setIsSelected(false);
 
-                    useDirectFourierTransformCheckBox.setSelected(true);
+                    lambdaBox.removeAllItems();
+                    double[] arrayvalues = new double[]{0, 0.01, 0.1, 0.7, 1, 3, 7, 11, 31, 70, 93, 100, 130, 157, 231, 337, 431, 557, 637, 759, 931, 1017, 1311, 3103};
+                    Double[] finalArray = new Double[arrayvalues.length];
+                    for(int i=0; i<arrayvalues.length; i++){
+                        finalArray[i] = new Double(arrayvalues[i]);
+                    }
+                    lambdaBox.setModel(new DefaultComboBoxModel(finalArray));
+
+                    lambdaBox.setSelectedIndex(11);
+                } else {
+
                     checkBoxDirect.setSelected(true);
                     positiveOnlyCheckBox.setSelected(true);
 
-                    methodInUseLabel.setText("Direct FT L1-Norm Positive Only");
-                    prStatusLabel.setText("Direct FT L1-Norm Positive Only");
-                    lambdaBox.setSelectedIndex(3);
+                    for(ActionListener a: checkBoxDirect.getActionListeners()) {
+                        a.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null) {
+                            //Nothing need go here, the actionPerformed method (with the
+                            //above arguments) will trigger the respective listener
+                        });
+                    }
                 }
 
                 additionalInfoPrPanel.revalidate();
@@ -4457,6 +4512,10 @@ public class Scatter {
                 }
             }
         });
+
+
+
+
     }
 
     private void updateSamplesListSelection(boolean boo) {
@@ -5858,7 +5917,9 @@ public class Scatter {
                 this.button.setBackground(Color.WHITE);
                 this.button.setForeground(Color.GREEN);
                 //normalize - divide P(r) by I-Zero
-                double invIzero = 1.0/prModel.getDataset(rowID).getIzero();
+                //double invIzero = 1.0/prModel.getDataset(rowID).getIzero();
+                double invIzero = 1.0/prModel.getDataset(rowID).integrateDistribution();
+                System.out.println("IZERO " + prModel.getDataset(rowID).getIzero());
                 //
                 // normalize to volume?
                 // integrated area should be volume of particle
@@ -5910,10 +5971,12 @@ public class Scatter {
                                 Double.parseDouble(rejectionCutOffBox.getSelectedItem().toString()),
                                 Double.parseDouble(lambdaBox.getSelectedItem().toString()),
                                 Integer.parseInt(cBox.getSelectedItem().toString()),
-                                l1NormCheckBox.isSelected(),
+                                mooreCheckBox.isSelected(),   //Moore
+                                checkBoxDirect.isSelected(),   // L1-norm indirect SVD
+                                legendreCheckBox.isSelected(), // Legendre
+                                l2norm.isSelected(),           // L2 norm
+                                SVDCheckBox.isSelected(),                   // SVD
                                 excludeBackgroundInFitCheckBox.isSelected(),
-                                useDirectFourierTransformCheckBox.isSelected(),
-                                legendreCheckBox.isSelected(),
                                 positiveOnlyCheckBox.isSelected());
 
                         prStatusLabel.setText("");
@@ -6055,10 +6118,19 @@ public class Scatter {
 
             BufferedReader input = new BufferedReader(new InputStreamReader(ps.getInputStream()));
             String line=null;
+            String gnomdmax = "";
             while((line=input.readLine()) != null) {
                 System.out.println(line);
+                String trimmed = line.trim();
+                String[] row = trimmed.split("[\\s\\t]+"); // CSV files could have a ", "
+                if (row[0].equals("dmax:") || row[0].equals("dmax")){
+                    gnomdmax = row[1];
+                }
             }
             System.out.println("Finished datgnom: file " + base_name[0] + "_dg.out");
+
+            prLabel2.setText(String.format("autoGNOM DMAX :: %.2f", Double.parseDouble(gnomdmax)));
+
             damminLabel.setText(WORKING_DIRECTORY.getWorkingDirectory() + "/"+ base_name[0] + "_dg.out");
 
         } catch (IOException e) {

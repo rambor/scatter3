@@ -278,7 +278,6 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public final double inv2PI2 = 1.0/(2*Math.PI*Math.PI);
     public final double INV_PI = 1.0/Math.PI;
     public final double TWO_INV_PI = 2.0/Math.PI;
-    public boolean useL1;
     public XYSeries nonData; // non-standardized data, not used for fitting
     public XYSeries data, residuals, errors, standardVariance; // should be qI(q) dataset ( non-standardized)
     public double standardizedMin;
@@ -320,14 +319,15 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public final double PI_INV_DMAX;
     public String status;
     public int ns, coeffs_size;
-    public SimpleMatrix a_matrix;
+    public SimpleMatrix a_matrix, prior_am;
     public SimpleMatrix y_vector;
     public SimpleMatrix am_vector;
     private String modelUsed;
     public double area;
-    public double finalScore;
+    public boolean amVectorExists=false;
+//    public double finalScore;
 
-    public IndirectFT(XYSeries nonStandardizedData, XYSeries errors, double dmax, double qmax, double lambda, boolean useL1, boolean includeBackground){
+    public IndirectFT(XYSeries nonStandardizedData, XYSeries errors, double dmax, double qmax, double lambda, boolean includeBackground){
 
         try {
             this.nonData = nonStandardizedData.createCopy(0, nonStandardizedData.getItemCount()-1);
@@ -337,7 +337,6 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
         }
 
         this.lambda = lambda;
-        this.useL1 = useL1;
         this.qmax = qmax;
         this.dmax = dmax;
         this.includeBackground = includeBackground;
@@ -354,12 +353,11 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
      * @param qmax
      * @param lambda
      * @param cBoxValue
-     * @param useL1
      * @param includeBackground
      * @param standardizationMin
      * @param standardizationStDev
      */
-    public IndirectFT(XYSeries standardizedData, XYSeries scaledqIqerrors, double dmax, double qmax, double lambda, boolean useL1, boolean includeBackground, double standardizationMin, double standardizationStDev){
+    public IndirectFT(XYSeries standardizedData, XYSeries scaledqIqerrors, double dmax, double qmax, double lambda, boolean includeBackground, double standardizationMin, double standardizationStDev){
 
         try {
             this.data = standardizedData.createCopy(0, standardizedData.getItemCount()-1);
@@ -371,7 +369,6 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
         this.qmax = qmax;
         this.dmax = dmax;
         this.lambda = lambda;
-        this.useL1 = useL1;
         this.includeBackground = includeBackground;
         this.dmax_PI_TWO_INV_PI = dmax * Math.PI * TWO_INV_PI;
         this.PI_INV_DMAX = Math.PI/dmax;
@@ -926,7 +923,7 @@ double topB = 1000;
         int totalItems = nonData.getItemCount();
 
         double sum = 0, minavg=10000000, tempminavg;
-        int windowSize = 7;
+        int windowSize = (int)(0.07*totalItems);
         double invwindow = 1.0/(double)windowSize;
         for(int r=0; r<(totalItems-windowSize); r++){
             tempminavg = 0;
@@ -953,6 +950,18 @@ double topB = 1000;
         }
     }
 
+
+
+    public void makeResiduals(){
+        SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
+        residuals = new XYSeries("residuals");
+        for(int i=0; i < rows; i++){
+            XYDataItem item = data.getDataItem(i);
+            double diff = tempResiduals.get(i,0);
+            residuals.add(item.getX(), diff);
+        }
+    }
+
     /**
      * estimate chi-squared by evaluating the function at the points of the cardinal series
      * errors must be standardized
@@ -973,14 +982,15 @@ double topB = 1000;
         int bins = ns, count=0, total = data.getItemCount();
         // ns is over-estimated as it includes a q-value that is not actually measured
         // so, how to calculate chi?
-        SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
+        //SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         // calculate residuals
-        residuals = new XYSeries("residuals");
-        for(int i=0; i < rows; i++){
-            XYDataItem item = data.getDataItem(i);
-            double diff = tempResiduals.get(i,0);
-            residuals.add(item.getX(), diff);
-        }
+        makeResiduals();
+//        residuals = new XYSeries("residuals");
+//        for(int i=0; i < rows; i++){
+//            XYDataItem item = data.getDataItem(i);
+//            double diff = tempResiduals.get(i,0);
+//            residuals.add(item.getX(), diff);
+//        }
 
         n_chipoints = 0; //1.0/(double)(bins-1);
         double cardinal, test_q = 0, diff;
@@ -1042,7 +1052,6 @@ double topB = 1000;
             }
             startIndex++;
         }
-
         for(int i=0; i<chiIndices.size();i++){
             error_value = 1.0/(standardVariance.getY(chiIndices.get(i)).doubleValue());
             diff = residuals.getY(chiIndices.get(i)).doubleValue();
@@ -1051,7 +1060,6 @@ double topB = 1000;
             chi += (diff*diff)*(error_value);
             n_chipoints += 1.0;
         }
-
 
         for (int i=1; i <= -bins && i*pi_inv_dmax <= qmax; i++){
 
@@ -1093,11 +1101,11 @@ double topB = 1000;
 
                     Interpolator tempI = new Interpolator(nonData, errors, cardinal); // interpolate intensity
                     // diff = tempI.interpolatedValue - this.calculateQIQ(cardinal);
-                    if (this.getClass().getName().contains("MooreTransform")){
-                        diff = tempI.interpolatedValue - (standardizedScale*(coefficients[0] + coefficients[i]*dmax_inv_pi) + standardizedMin);
-                    } else {
+//                    if (this.getClass().getName().contains("MooreTransform")){
+//                        diff = tempI.interpolatedValue - (standardizedScale*(coefficients[0] + coefficients[i]*dmax_inv_pi) + standardizedMin);
+//                    } else {
                         diff = tempI.interpolatedValue - this.calculateQIQ(cardinal);
-                    }
+//                    }
 
                     residuals_sum_squared += diff*diff;
                     residuals_sum += diff;
@@ -1111,7 +1119,6 @@ double topB = 1000;
                 System.out.println("          => " + cardinal + " diff " + diff + " diff2: " + diff*diff + " sigma " + error_value + " CHI " + chi + " count " + count + " " + total);
             }
         }
-
 
         double residualsMean = residuals_sum/n_chipoints;
         double residuals_variance = residuals_sum_squared/n_chipoints - residualsMean*residualsMean;
@@ -1199,7 +1206,8 @@ double topB = 1000;
             test_residuals.clear();
 
             // same percent out of each bin
-            samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
+            //samplingLimit = (0.5 + randomGenerator.nextInt(12)) / 100.0;  // return a random percent up to 12%
+            samplingLimit = 0.5;  // return a random percent up to 12%
 
             for (int b=1; b < bins; b++) {
                 // find upper q in bin
@@ -1249,7 +1257,21 @@ double topB = 1000;
         /*
          * take median from the estimate
          */
-        return Math.abs(2-kurtosises[(rounds-1)/2]); // subtract 2, should be zero for ideal value
+
+        /*
+         * total kurtosis
+         */
+        numerator = 0;
+        denominator = residuals.getY(0).doubleValue()*residuals.getY(0).doubleValue();
+        for (int j=1; j<residuals.getItemCount(); j++){
+            value = residuals.getY(j).doubleValue();
+            diff = value - residuals.getY(j-1).doubleValue(); // x_(t) - x_(t-1)
+            numerator += diff*diff;
+            denominator += value*value; // sum of (x_t)^2
+        }
+
+        return Math.abs(2-numerator/denominator);
+//        return Math.abs(2-kurtosises[(rounds-1)/2]); // subtract 2, should be zero for ideal value
         //return kurtosis_sum/(double)rounds;
     }
 
@@ -1303,10 +1325,10 @@ double topB = 1000;
 
         final double delta_q = Math.PI/(dmax*6.0d);
         //define q-values for calculating chi2
-        int startIndex = 1;
         double maxQ = tempDataset.getMaxX();
         ArrayList<Integer> chiIndices = new ArrayList<>();
-        startIndex = (int)Math.floor(tempDataset.getMinX()/delta_q); //check first point
+
+        int startIndex = (int)Math.floor(tempDataset.getMinX()/delta_q); //check first point
         if ( (startIndex & 1) == 0){ // if even, starting index is greater than startIndex + 1
             startIndex += 1;
         } else { // if odd
@@ -1342,49 +1364,11 @@ double topB = 1000;
         }
 
 
-
         /*
-         * pick datapoints that surround the Shannon point
-         * n*PI/dmax = q_n
+         * createDesignMatrix with fitme will make:
+         * a_matrix and y_vector
+         * overwwrites any exisiting a_matrix or y_vector
          */
-//        final double pidmax=Math.PI/dmax;
-//        int startHere =0;
-//
-//        // test if first data point contains first Shannon number
-//        Number firstq = tempDataset.getX(0);
-//        int shannonStart = 1;
-//        for(int n=1; n<=ns; n++){
-//            if (firstq.doubleValue() < n*pidmax){
-//                shannonStart = n;
-//                break;
-//            }
-//        }
-//
-//        fitme.add(tempDataset.getDataItem(0));
-//        for (int n=shannonStart; n <= ns; n++){
-//            double target_q = n*pidmax;
-//
-//            for(; startHere<dataLimit; startHere++){
-//                if (tempDataset.getX(startHere).doubleValue() > target_q){
-//                    fitme.add(tempDataset.getDataItem(startHere-1));
-//                    XYDataItem item = tempErrors.getDataItem(startHere-1);
-//                    double value = item.getYValue();
-//                    errorsInUse.add(item.getX(),value*value);
-//
-//                    if (startHere < dataLimit){
-//                        fitme.add(tempDataset.getDataItem(startHere));
-//
-//                        item = tempErrors.getDataItem(startHere);
-//                        value = item.getYValue();
-//                        errorsInUse.add(item.getX(),value*value);
-//                    }
-//                    startHere +=1;
-//                    break;
-//                }
-//            }
-//        }
-
-
         this.createDesignMatrix(fitme); // this creates a_matrix and y_vector
 
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector); // this would resize rows and residuals via a_matrix and y_vector
@@ -1393,7 +1377,6 @@ double topB = 1000;
         for (int i = 0; i < fitme.getItemCount(); i++){
             resi = tempResiduals.get(i,0);
             sum += resi*resi/errorsInUse.getY(i).doubleValue();
-            //residualsList.add(resi*resi);
         } //
         //System.out.println(fitme.getItemCount() + " sum " + sum/(double)fitme.getItemCount() );
         // need to resetDesignMatrix so that a_matrix and y_vector revert back to the original dataset
@@ -1429,27 +1412,8 @@ double topB = 1000;
         output += String.format("REMARK 265 %n");
         output += String.format("REMARK 265  BIN COEFFICIENTS (UNSCALED)%n");
         output += String.format("REMARK 265 %n");
-        if (!includeBackground){
-            output += String.format("REMARK 265      CONSTANT BACKGROUND EXCLUDED FROM FIT %n");
-        }
-        output += String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.3E %n", coefficients[0]);
-        output += String.format("REMARK 265 %n");
-        output += getPrDistributionForFitting();
 
-        output += String.format("REMARK 265 %n");
-        if (this.getClass().getName().contains("MooreTransform")){
-            output += String.format("REMARK 265 %n");
-            output += String.format("REMARK 265  MOORE COEFFICIENTS (UNSCALED)%n");
-            for (int i=1; i<totalCoefficients;i++){
-                output +=  String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefficients[i]);
-            }
-        } else if (this.getClass().getName().contains("LegendreTransform")){
-            output += String.format("REMARK 265 %n");
-            output += String.format("REMARK 265  LEGENDRE COEFFICIENTS (UNSCALED)%n");
-            for (int i=1; i<totalCoefficients;i++){
-                output +=  String.format("REMARK 265                        l_(%2d) : %.3E %n", i-1, coefficients[i]);
-            }
-        }
+        output += getPrDistributionForFitting();
 
         output += String.format("REMARK 265 %n");
         output += String.format("REMARK 265  SCALED P(r) DISTRIBUTION %n");
@@ -1467,7 +1431,6 @@ double topB = 1000;
         }
         output += String.format( Constants.Scientific1dot4e2.format(dmax) + "\t" + Constants.Scientific1dot2e1.format(0) + "\t 0.00 "+ "\n");
 
-
         return output;
     }
 
@@ -1475,7 +1438,10 @@ double topB = 1000;
         this.modelUsed = text;
     }
 
-
+    /**
+     * Required for structural modeling using Iketama
+     * @return
+     */
     private String getPrDistributionForFitting(){
 
         String temp = String.format("REMARK 265 P(R) DISTRIBUTION BINNED USING SHANNON NUMBER %n");
@@ -1491,6 +1457,7 @@ double topB = 1000;
             int index = i+1;
             temp +=  String.format("REMARK 265       BIN_%-2d          %9.3f : %.5E %n", index, item.getXValue(), item.getYValue());
         }
+
         temp += String.format("REMARK 265 %n");
         temp += String.format("REMARK 265            TOTAL SHANNON BINS : %d %n", total);
         return temp;
@@ -1606,8 +1573,10 @@ double topB = 1000;
 
 
     /**
+     *
      * Using spherical distribution, scale P(r)-distribution to the smallest value that provides only positive differences
      * which scale factor produces the largest non-negative difference in areas
+     *
      */
     public void calibratePrDistribution(){
 
@@ -1689,30 +1658,100 @@ double topB = 1000;
          */
         double diff, diff_sum=0;
         int negativity = 0;
+        double max = 0;
+        int indexOfMax = 0;
+
         for(int r=1; r<(totalInDistribution-1); r++){
             double value = prDistribution.getY(r).doubleValue();
-            if (value < 0){
-                negativity += 1;
+            if (value > max){
+                max = value;
+                indexOfMax=r;
             }
-            diff = (prDistribution.getY(r+1).doubleValue() - 2.0*value + prDistribution.getY(r-1).doubleValue())/(del_r*del_r);
+            if (value < 0){
+                diff_sum = 314.159265358979;
+                negativity += 1;
+                break;
+            }
+            diff = (prDistribution.getY(r+1).doubleValue() - 2.0*value + prDistribution.getY(r-1).doubleValue());
             diff_sum += diff*diff;
         }
-        diff_sum *= 1.0/(double)(totalInDistribution-2)*1100;
+
+        diff_sum *= 1.0/(double)(totalInDistribution-2)/(del_r*del_r*del_r*del_r)*1100;
+
+//        double deltaHeight =0;
+//        for(int r=1; r<(totalInDistribution-1); r++){
+//            deltaHeight += Math.abs(prDistribution.getY(r+1).doubleValue() - prDistribution.getY(r).doubleValue());
+//        }
+//        deltaHeight *= 1.0/(double)(totalInDistribution-2);
+        //System.out.println("diff sum " + diff_sum + " " + deltaHeight);
+        //diff_sum += deltaHeight;
 
         /*
-         * assess finish
+         * assess finish (slope area near dmax)
          */
-        double slope = (-8.0*prDistribution.getY(totalInDistribution-2).doubleValue() + prDistribution.getY(totalInDistribution-3).doubleValue())/(12.0*del_r);
-        double intercept = -slope*dmax;
+        // calcualte slope at last 3 points
+//        double slope1 = prDistribution.getY(totalInDistribution-4).doubleValue()-2*prDistribution.getY(totalInDistribution-3).doubleValue() + prDistribution.getY(totalInDistribution-2).doubleValue();
+//        double slope2 = prDistribution.getY(totalInDistribution-3).doubleValue()-2*prDistribution.getY(totalInDistribution-2).doubleValue() + prDistribution.getY(totalInDistribution-1).doubleValue();
+//        double slope3 = prDistribution.getY(totalInDistribution-2).doubleValue()-2*prDistribution.getY(totalInDistribution-1).doubleValue();
 
-        double firstGap = prDistribution.getY(totalInDistribution-3).doubleValue() - slope*prDistribution.getX(totalInDistribution-3).doubleValue() + intercept;
-        double secondGap = -slope*(dmax + 2*del_r) + intercept;
+        // first derivative slopes 5-point formula
+        double slope1 = (prDistribution.getY(totalInDistribution-3).doubleValue()-prDistribution.getY(totalInDistribution-4).doubleValue())/del_r;
+        double slope2 = (prDistribution.getY(totalInDistribution-2).doubleValue()-prDistribution.getY(totalInDistribution-3).doubleValue())/del_r;
+        double slope3 = (prDistribution.getY(totalInDistribution-1).doubleValue()-prDistribution.getY(totalInDistribution-2).doubleValue())/del_r;
 
-        distribution_score = (slope > 0) ? (ns*Math.abs(Math.abs(firstGap) + Math.abs(secondGap))) : (Math.abs(firstGap) + Math.abs(secondGap));
+        double finishPenalty = 0;
 
+        if (slope2 < slope1 && slope3 < slope2){
+                finishPenalty = 100*diff_sum;
+        }
+
+        if (slope3 < slope2){
+            finishPenalty = (finishPenalty == 0) ? 100*diff_sum : finishPenalty + 21*diff_sum;
+        }
+
+        if (slope1 > 0 || slope2 > 0 || slope3 > 0){
+            finishPenalty = (finishPenalty == 0) ? 100*diff_sum : finishPenalty + 2*diff_sum;
+        }
+
+
+//        double slope = (-8.0*prDistribution.getY(totalInDistribution-2).doubleValue() + prDistribution.getY(totalInDistribution-3).doubleValue())/(12.0*del_r);
+//        double intercept = -slope*dmax;
+//
+//        double firstGap = prDistribution.getY(totalInDistribution-3).doubleValue() - (slope*prDistribution.getX(totalInDistribution-3).doubleValue() + intercept);
+//        double secondGap = slope*(dmax + 2*del_r) + intercept;
+//        // can not have a positive slope
+//       // distribution_score = (slope > 0) ? (ns*Math.abs(Math.abs(firstGap) + Math.abs(secondGap))) : (Math.abs(firstGap) + Math.abs(secondGap));
+//        distribution_score = (slope > 0) ? (ns*Math.abs(Math.abs(firstGap) + Math.abs(secondGap))) : (Math.min(Math.abs(firstGap), Math.abs(secondGap))/(2*del_r));
+
+        distribution_score = finishPenalty;
+        // check for undulations in the last 3 points?
         double pointn2 = prDistribution.getY(totalInDistribution-2).doubleValue();
         double pointn3 = prDistribution.getY(totalInDistribution-3).doubleValue();
         double pointn4 = prDistribution.getY(totalInDistribution-4).doubleValue();
+
+        int totalAfterPeak = totalInDistribution - indexOfMax -1;
+        if (totalAfterPeak == 4){ // check for undulations
+
+            double pointn5 = prDistribution.getY(totalInDistribution-5).doubleValue();
+            if (pointn5 < pointn4){
+                double angle = Math.atan((pointn4-pointn5)/del_r);
+                if (angle > 20){
+                    distribution_score += 20.0*distribution_score;
+                } else {
+                    distribution_score += 2.0*distribution_score;
+                }
+            }
+        } else if  (totalAfterPeak > 4) {
+            double pointn5 = prDistribution.getY(totalInDistribution-5).doubleValue();
+            if (pointn5 < pointn4 && pointn5 < prDistribution.getY(totalInDistribution-6).doubleValue()){
+                double angle = Math.atan((pointn4-pointn5)/del_r);
+                if (angle > 20){
+                    distribution_score += 20.0*distribution_score;
+                } else {
+                    distribution_score += 2.0*distribution_score;
+                }
+            }
+        }
 
 
         if (pointn2 > pointn3){
@@ -1720,31 +1759,21 @@ double topB = 1000;
         }
 
         if (pointn2 > pointn4){
-//            if (pointn4 < 0.5*pointn2){
                 distribution_score += 1.5*distribution_score;
-//            } else {
-//                diff = pointn2 - pointn4;
-//                distribution_score += diff/(0.5*pointn2);
-//            }
         }
 
         if (pointn3 > pointn4){
-//            if (pointn4 < 0.5*pointn3){
                 distribution_score += 1.5*distribution_score;
-//            } else {
-//                diff = pointn3 - pointn4;
-//                distribution_score += diff/(0.5*pointn3);
-//            }
         }
 
+       // distribution_score = finishPenalty;
         distribution_score += 10*negativity*distribution_score;
 
         prScore = (distribution_score + diff_sum);
 
-        //System.out.println("PR SCORE " + prScore);
         return prScore;
     }
 
     public double getPrScore() { return prScore;}
-    public double getFinalScore(){ return finalScore;}
+ //   public double getFinalScore(){ return finalScore;}
 }
