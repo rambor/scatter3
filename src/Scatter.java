@@ -344,7 +344,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.2c";
+    private String version = "3.2d";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -6120,16 +6120,20 @@ public class Scatter {
             String line=null;
             String gnomdmax = "";
             while((line=input.readLine()) != null) {
+
                 System.out.println(line);
                 String trimmed = line.trim();
                 String[] row = trimmed.split("[\\s\\t]+"); // CSV files could have a ", "
                 if (row[0].equals("dmax:") || row[0].equals("dmax")){
                     gnomdmax = row[1];
                 }
+
             }
+
+            String outlabel = (gnomdmax.length() > 1) ? String.format("=> autoGNOM DMAX :: %.2f", Double.parseDouble(gnomdmax)) :  "autoGNOM did not run :: check settings";
             System.out.println("Finished datgnom: file " + base_name[0] + "_dg.out");
 
-            prLabel2.setText(String.format("autoGNOM DMAX :: %.2f", Double.parseDouble(gnomdmax)));
+            prLabel2.setText(outlabel);
 
             damminLabel.setText(WORKING_DIRECTORY.getWorkingDirectory() + "/"+ base_name[0] + "_dg.out");
 

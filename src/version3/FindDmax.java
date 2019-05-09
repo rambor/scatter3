@@ -786,6 +786,7 @@ public class FindDmax extends JDialog {
             ArrayList<ArrayList<Integer>> binIndices = new ArrayList<>();
 
             startbb = 0;
+
             for(int i=0; i<qbins; i++){
                 binIndices.add(new ArrayList<>());
 
@@ -799,6 +800,13 @@ public class FindDmax extends JDialog {
                     }
                 }
             }
+
+            int maxElementsInLastBins = (int)(0.25*(binIndices.get(qbins-1).size() + binIndices.get(qbins-2).size() + binIndices.get(qbins-3).size() + binIndices.get(qbins-4).size()));
+
+            double slopeN = (2 + 0.55*maxElementsInLastBins)/(double)qbins;
+            double interceptN = 2.0;
+
+
 
             /*
              * perform CE optimization
@@ -815,15 +823,23 @@ public class FindDmax extends JDialog {
                 for(int i=0; i<qbins; i++){ // grab random indices from each q-bin
                     ArrayList<Integer> arrayList = new ArrayList<>(binIndices.get(i));
                     samplingNumber = arrayList.size();
+                    // use increasing number of points as we go to higher q
+
                     if (samplingNumber > 0){
 
                         Collections.shuffle(arrayList);
-
-                        if (samplingNumber < 10 ){
-                            samplingLimit = (1 + randomGenerator.nextInt(arrayList.size()));
+                        int getThis = (int)(i*slopeN + interceptN);
+                        if (getThis > samplingNumber){
+                            samplingLimit = (int)(samplingNumber*0.7);
                         } else {
-                            samplingLimit = (1 + randomGenerator.nextInt(10));
+                            samplingLimit = getThis;
                         }
+
+//                        if (samplingNumber < 10 ){
+//                            samplingLimit = (1 + randomGenerator.nextInt(arrayList.size()));
+//                        } else {
+//                            samplingLimit = (1 + randomGenerator.nextInt(10));
+//                        }
 
                         int swapTo = samplingNumber-1;
                         for(int h=0; h < samplingLimit; h++){
@@ -853,7 +869,8 @@ public class FindDmax extends JDialog {
                                 randomSeries,
                                 randomSeriesError,
                                 tempDmax,
-                                randomSeries.getMaxX(),
+                                //randomSeries.getMaxX(),
+                                activeSet.getMaxX(),
                                 tempLambda,
                                 standardizedMin,
                                 standardizedScale,
@@ -864,7 +881,8 @@ public class FindDmax extends JDialog {
                                 randomSeries,
                                 randomSeriesError,
                                 tempDmax,
-                                randomSeries.getMaxX(),
+                                //randomSeries.getMaxX(),
+                                activeSet.getMaxX(),
                                 tempLambda,
                                 standardizedMin,
                                 standardizedScale,
@@ -1008,7 +1026,34 @@ public class FindDmax extends JDialog {
                 }
             }
 
+            // do final fit with all data
+//            IndirectFT tempIFT;
+//            if (!useLegendreFunction){
+//                tempIFT = new SineIntegralTransform(
+//                        activeSet,
+//                        errorActiveSet,
+//                        parameters.get(0).getDmax(),
+//                        activeSet.getMaxX(),
+//                        parameters.get(0).getLambda(),
+//                        standardizedMin,
+//                        standardizedScale,
+//                        useBkgrndCheckBox.isSelected());
+//
+//            } else {
+//                tempIFT = new LegendreTransform(
+//                        activeSet,
+//                        errorActiveSet,
+//                        parameters.get(0).getDmax(),
+//                        activeSet.getMaxX(),
+//                        parameters.get(0).getLambda(),
+//                        standardizedMin,
+//                        standardizedScale,
+//                        useBkgrndCheckBox.isSelected());
+//            }
+
+
             totalBest.addSeries(finalModel);
+//            totalBest.addSeries(tempIFT.getPrDistribution());
             //System.out.println("FINAL MODEL " + finalModel.getItemCount());
             //updatePr(finalModel);
 
@@ -1166,16 +1211,21 @@ public class FindDmax extends JDialog {
                 splineRend.setSeriesPaint(i, colors.get(i));
             }
 
-            int lastLocale = plottedCollection.getSeriesCount()-1;
-
-            int locale = 0;
-
+            int lastLocale = plottedCollection.getSeriesCount()-1; // color all the data
             splineRend.setSeriesOutlineStroke(lastLocale, dataset.getStroke());
             splineRend.setSeriesPaint(lastLocale, dataset.getColor().darker()); // make color slight darker
             splineRend.setSeriesShapesVisible(lastLocale, true);
             splineRend.setSeriesStroke(lastLocale, new BasicStroke(5.0f));
             splineRend.setSeriesShape(lastLocale,new Ellipse2D.Double(-4.0, -4.0, 8.0, 8.0));
             splineRend.setSeriesShapesFilled(lastLocale, true);
+
+//            lastLocale -= 1; // color the compositive "averaged" dataset
+//            splineRend.setSeriesOutlineStroke(lastLocale, dataset.getStroke());
+//            splineRend.setSeriesPaint(lastLocale, Color.cyan); // make color slight darker
+//            splineRend.setSeriesShapesVisible(lastLocale, true);
+//            splineRend.setSeriesStroke(lastLocale, new BasicStroke(5.0f));
+//            splineRend.setSeriesShape(lastLocale,new Ellipse2D.Double(-4.0, -4.0, 8.0, 8.0));
+//            splineRend.setSeriesShapesFilled(lastLocale, true);
 
 
             plot.setRenderer(0, splineRend);       //render as a line

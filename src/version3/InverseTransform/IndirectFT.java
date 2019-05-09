@@ -1678,50 +1678,29 @@ double topB = 1000;
 
         diff_sum *= 1.0/(double)(totalInDistribution-2)/(del_r*del_r*del_r*del_r)*1100;
 
-//        double deltaHeight =0;
-//        for(int r=1; r<(totalInDistribution-1); r++){
-//            deltaHeight += Math.abs(prDistribution.getY(r+1).doubleValue() - prDistribution.getY(r).doubleValue());
-//        }
-//        deltaHeight *= 1.0/(double)(totalInDistribution-2);
-        //System.out.println("diff sum " + diff_sum + " " + deltaHeight);
-        //diff_sum += deltaHeight;
 
         /*
          * assess finish (slope area near dmax)
          */
         // calcualte slope at last 3 points
-//        double slope1 = prDistribution.getY(totalInDistribution-4).doubleValue()-2*prDistribution.getY(totalInDistribution-3).doubleValue() + prDistribution.getY(totalInDistribution-2).doubleValue();
-//        double slope2 = prDistribution.getY(totalInDistribution-3).doubleValue()-2*prDistribution.getY(totalInDistribution-2).doubleValue() + prDistribution.getY(totalInDistribution-1).doubleValue();
-//        double slope3 = prDistribution.getY(totalInDistribution-2).doubleValue()-2*prDistribution.getY(totalInDistribution-1).doubleValue();
-
-        // first derivative slopes 5-point formula
         double slope1 = (prDistribution.getY(totalInDistribution-3).doubleValue()-prDistribution.getY(totalInDistribution-4).doubleValue())/del_r;
         double slope2 = (prDistribution.getY(totalInDistribution-2).doubleValue()-prDistribution.getY(totalInDistribution-3).doubleValue())/del_r;
         double slope3 = (prDistribution.getY(totalInDistribution-1).doubleValue()-prDistribution.getY(totalInDistribution-2).doubleValue())/del_r;
 
         double finishPenalty = 0;
 
-        if (slope2 < slope1 && slope3 < slope2){
-                finishPenalty = 100*diff_sum;
+        if (slope2 < slope1 && slope3 < slope2){ // very abrupt finish
+                finishPenalty = 10000*diff_sum;
         }
 
-        if (slope3 < slope2){
+        if (slope3 < slope2){ // abrupt finish
             finishPenalty = (finishPenalty == 0) ? 100*diff_sum : finishPenalty + 21*diff_sum;
         }
 
-        if (slope1 > 0 || slope2 > 0 || slope3 > 0){
+        if (slope1 > 0 || slope2 > 0 || slope3 > 0){ // penalize for positive slopes
             finishPenalty = (finishPenalty == 0) ? 100*diff_sum : finishPenalty + 2*diff_sum;
         }
 
-
-//        double slope = (-8.0*prDistribution.getY(totalInDistribution-2).doubleValue() + prDistribution.getY(totalInDistribution-3).doubleValue())/(12.0*del_r);
-//        double intercept = -slope*dmax;
-//
-//        double firstGap = prDistribution.getY(totalInDistribution-3).doubleValue() - (slope*prDistribution.getX(totalInDistribution-3).doubleValue() + intercept);
-//        double secondGap = slope*(dmax + 2*del_r) + intercept;
-//        // can not have a positive slope
-//       // distribution_score = (slope > 0) ? (ns*Math.abs(Math.abs(firstGap) + Math.abs(secondGap))) : (Math.abs(firstGap) + Math.abs(secondGap));
-//        distribution_score = (slope > 0) ? (ns*Math.abs(Math.abs(firstGap) + Math.abs(secondGap))) : (Math.min(Math.abs(firstGap), Math.abs(secondGap))/(2*del_r));
 
         distribution_score = finishPenalty;
         // check for undulations in the last 3 points?
