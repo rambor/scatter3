@@ -5,6 +5,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYSplineRenderer;
@@ -24,7 +25,7 @@ public class IofQPofRPlot {
 
     private JFreeChart chart;
     private ChartPanel outPanel;
-
+    private ValueMarker yMarker = new ValueMarker(0.0);
     private boolean crosshair = true;
     private BasicStroke strokeAt2 = new BasicStroke(2.5f);
     private XYSeriesCollection splineCollection;
@@ -91,6 +92,15 @@ public class IofQPofRPlot {
             rangeAxis.setLabel("log [I(q)]");
         }
 
+
+        yMarker.setPaint(Color.black);
+        yMarker.setStroke(new BasicStroke(
+                2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                1.0f, new float[] {6.0f, 6.0f}, 0.0f
+        ));
+        chart.getXYPlot().addRangeMarker(yMarker);
+
+        yMarker.setAlpha(0.0f);
 
         rangeAxis.setAutoRange(true);
         rangeAxis.setAutoRangeStickyZero(false);
@@ -238,6 +248,7 @@ public class IofQPofRPlot {
 
         // replace scatterCollection and spline collection series
         chart.getXYPlot().getRangeAxis().setLabel("q × I(q)");
+        yMarker.setAlpha(1.0f);
         int totalC = collectionInUse.getDatasetCount();
 
         scatterCollection.removeAllSeries();
@@ -261,6 +272,8 @@ public class IofQPofRPlot {
         chart.getXYPlot().getRangeAxis().setLabel("log [I(q)]");
         scatterCollection.removeAllSeries();
         splineCollection.removeAllSeries();
+
+        yMarker.setAlpha(0.0f);
 
         for(int i=0;i<totalC; i++){
             if (collectionInUse.getDataset(i).getInUse()){
