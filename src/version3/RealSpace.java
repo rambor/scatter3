@@ -257,7 +257,7 @@ public class RealSpace {
         double del_r = this.prDistribution.getX(2).doubleValue() - this.prDistribution.getX(1).doubleValue();
         double area = 0;
         for(int i=1; i<sizeof; i++){
-            area += this.getPrDistribution().getX(i).doubleValue()*del_r;
+            area += this.getPrDistribution().getY(i).doubleValue()*del_r;
         }
         return area;
     }
@@ -300,7 +300,7 @@ public class RealSpace {
         XYDataItem tempData;
         for(int i=0; i<sizeof; i++){
             tempData = this.getPrDistribution().getDataItem(i);
-            this.prDistribution.updateByIndex(i, tempData.getYValue()*oldscale*this.scale);
+           this.prDistribution.updateByIndex(i, tempData.getYValue()*this.scale);
         }
     }
 
@@ -361,7 +361,9 @@ public class RealSpace {
         prDistribution.clear();
         int totalToSet = data.getItemCount();
         for (int i=0; i<totalToSet; i++){
-            prDistribution.add(data.getDataItem(i));
+            XYDataItem item = data.getDataItem(i);
+            prDistribution.add(item.getX(), item.getYValue()*scale);
+            //prDistribution.add(data.getDataItem(i));
         }
     }
 
