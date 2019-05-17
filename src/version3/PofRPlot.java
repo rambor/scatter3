@@ -116,7 +116,7 @@ public class PofRPlot {
                 int seriesCount = super.getChart().getXYPlot().getDataset(0).getSeriesCount();
 
                 int size;
-                double min = -0.00001;
+                double min = 1000;
                 double max = -10;
                 double dmax = 0;
                 double tempMax;
@@ -139,12 +139,15 @@ public class PofRPlot {
                             if (tempdMax > dmax){
                                 dmax = tempdMax;
                             }
+
+                            if (tempMax<min){
+                                min=tempMax;
+                            }
                         }
-                        //System.out.println(i + " SIZE " + size + " " + dmax + " maxI " + max);
                     }
                 }
 
-                super.getChart().getXYPlot().getRangeAxis().setRange(min, max+0.1*max);
+                super.getChart().getXYPlot().getRangeAxis().setRange(-0.1*min, max+0.1*max);
                 super.getChart().getXYPlot().getDomainAxis().setRange(0, dmax+2);
             }
         };
