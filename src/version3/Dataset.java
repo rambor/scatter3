@@ -126,7 +126,7 @@ public class Dataset {
     private double prScaleFactor;
     private RealSpace realSpace;
 
-    private String experimentalNotes;
+    private String experimentalNotes, experimentalNoteTitle;
     private String bufferComposition;
 
     private boolean isPDB = false;
@@ -158,6 +158,7 @@ public class Dataset {
         inUse = true;
 
         experimentalNotes ="";
+        experimentalNoteTitle="";
         bufferComposition ="";
 
         allData = new XYSeries(tempName);
@@ -225,6 +226,7 @@ public class Dataset {
 
         String tempName = fileName + "-" + id;
         experimentalNotes ="";
+        experimentalNoteTitle="";
         bufferComposition ="";
 
         allData = new XYSeries(tempName);
@@ -402,6 +404,7 @@ public class Dataset {
         dMax = aDataset.dMax;
 
         experimentalNotes = aDataset.experimentalNotes;
+        experimentalNoteTitle = aDataset.experimentalNoteTitle;
         bufferComposition = aDataset.bufferComposition;
 
         baseShapeFilled = false;
@@ -1387,6 +1390,10 @@ public void lowBoundPlottedLog10IntensityData(int newStart){
         this.experimentalNotes = text;
     }
 
+    public void setNoteTitle(String text){
+        this.experimentalNoteTitle = text;
+    }
+
     public void appendExperimentalNotes(String text) {
         this.experimentalNotes = this.experimentalNotes + "\n"  + text;
     }
@@ -1394,6 +1401,7 @@ public void lowBoundPlottedLog10IntensityData(int newStart){
     public String getExperimentalNotes(){
         return this.experimentalNotes;
     }
+    public String getExperimentalNoteTitle() { return this.experimentalNoteTitle;}
 
     public void setBufferComposition(String text){
         this.bufferComposition = text;
