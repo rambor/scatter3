@@ -50,6 +50,7 @@ public class Report {
     private PDFont pdfont = PDType1Font.COURIER;
     private String legendB;
     private String legendNote;
+    private String legendTitle="";
     private boolean includeIzeroRgPlot;
     /**
      * create report using selected files in Collection
@@ -113,7 +114,19 @@ public class Report {
 
         this.setLegendNote(dataset.getExperimentalNotes());
 
-        Document document = buildBasePlotsFromCollection(dataset.getFileName(), false);
+        boolean useIt = false;
+        Document document;
+        if (dataset.getExperimentalNoteTitle().length() > 1){
+            legendTitle = escape(dataset.getExperimentalNoteTitle());
+            useIt=true;
+        }
+
+        if (useIt){ // set the title of the page at top
+            document = buildBasePlotsFromCollection(legendTitle, false);
+        } else {
+            document = buildBasePlotsFromCollection(dataset.getFileName(), false);
+        }
+
 
         document.add(ControlElement.NEWPAGE);
         document.add(new VerticalSpacer(40));
@@ -1445,6 +1458,11 @@ public class Report {
     private String getLegendDataset(Boolean includePr){
 
         String startLegend = "*Figure | *" + escape(legendNote);
+
+        if (legendTitle.length() > 1){
+            startLegend = "* " + legendTitle + " | *" + escape(legendNote);
+        }
+
         String legendA = "*A.* Log{_}10{_} SAXS intensity versus scattering vector, _q_. Plotted range represents the positive only data within the specified _q_-range.";
         String legendC = "*C.* Total scattered intensity plot. Plot readily demonstrates negative intensities at high-_q_. Over-subtraction of background leads to significant negative intensities. Likewise, under-subtraction can be observed as an elevated baseline at high-_q_. Horizontal line is drawn at y=0. ";
         String legend = startLegend + " " + legendA + " " + legendB + " " + legendC;

@@ -13,6 +13,7 @@ public class Notes extends JDialog {
     private JTextField filenameField;
     private String filename;
     private JLabel saveToDirectoryLabel;
+    private JTextField titleField;
     private Dataset dataset;
 
     public Notes(Dataset data, WorkingDirectory workingDirectory) {
@@ -102,12 +103,14 @@ public class Notes extends JDialog {
 
     private void onOK() {
         dataset.setExperimentalNotes(this.notesArea.getText());
+        dataset.setNoteTitle(this.titleField.getText());
         dispose();
     }
 
     public String getText(){
         return notesArea.getText();
     }
+
 
     public String getFilename(){
         filename = filenameField.getText();
