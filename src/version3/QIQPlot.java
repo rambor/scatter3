@@ -6,6 +6,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYDataItem;
@@ -149,6 +150,12 @@ public class QIQPlot {
         rangeAxis.setAutoRangeStickyZero(true);
         rangeAxis.setLabelFont(Constants.BOLD_16);
         rangeAxis.setTickLabelFont(Constants.FONT_12);
+
+        final ValueMarker yMarker = new ValueMarker(0.0);
+        yMarker.setPaint(Color.black);
+        plot.addRangeMarker(yMarker);
+
+
         //rangeAxis.setAxisLineVisible(false);
         //rangeAxis.setRange(0, dataset.getRangeUpperBound(true) + 0.1*dataset.getRangeUpperBound(true));
         chart.getLegend().setVisible(false);
