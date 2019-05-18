@@ -51,10 +51,12 @@ public class FindDmax extends JDialog {
     private JPanel vcPanel;
     private JCheckBox legendreCheckBox;
     private JCheckBox useBkgrndCheckBox;
+    private JCheckBox l1NormCheckBox;
+    private JCheckBox mooreCheckBox;
     private JLabel statusLabel;
     private JFreeChart chart;
     private  ChartPanel outPanel;
-    private  boolean crosshair = true, useLegendre = false;
+    private  boolean crosshair = true, useLegendre = false, useMoore = true, useL1Norm = false;
     private  WorkingDirectory workingDirectory;
     private double maximumMaximumLikelihood=0;
 
@@ -407,16 +409,61 @@ public class FindDmax extends JDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (legendreCheckBox.isSelected()){
-                    useLegendre = true;
-                    lambdaLowerField.setText("0.01");
-                    lambdaUpperField.setText("10");
+
                 } else {
-                    useLegendre = false;
-                    lambdaLowerField.setText("0.00001");
-                    lambdaUpperField.setText("0.001");
+                    legendreCheckBox.setSelected(true);
                 }
+                mooreCheckBox.setSelected(false);
+                l1NormCheckBox.setSelected(false);
+                useLegendre = true;
+                useMoore = false;
+                useL1Norm = false;
+                lambdaLowerField.setText("1");
+                lambdaUpperField.setText("331");
             }
         });
+
+
+        l1NormCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (l1NormCheckBox.isSelected()){
+
+                } else {
+                    l1NormCheckBox.setSelected(true);
+                }
+                mooreCheckBox.setSelected(false);
+                legendreCheckBox.setSelected(false);
+                useLegendre = true;
+                useMoore = false;
+                useL1Norm = true;
+                lambdaLowerField.setText("0.01");
+                lambdaUpperField.setText("10");
+            }
+        });
+
+        mooreCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (mooreCheckBox.isSelected()){
+
+                } else {
+                    mooreCheckBox.setSelected(true);
+                }
+                legendreCheckBox.setSelected(false);
+                l1NormCheckBox.setSelected(false);
+                useBkgrndCheckBox.setSelected(true);
+                useLegendre = false;
+                useMoore = true;
+                useL1Norm = false;
+                lambdaLowerField.setText("1");
+                lambdaUpperField.setText("100");
+            }
+        });
+
+        l1NormCheckBox.setSelected(false);
+        legendreCheckBox.setSelected(false);
+        mooreCheckBox.setSelected(true);
     }
 
     private void onOK() {
@@ -453,7 +500,6 @@ public class FindDmax extends JDialog {
         qbins = 3*(int)(upperDmax/Math.PI*dataset.getfittedqIq().getMaxX());
 
 
-
 //        ScheduledExecutorService executor = Executors.newScheduledThreadPool(numberOfCPUs);
 //        for (int i=0; i < numberOfCPUs; i++){
 //            Runnable bounder = new RefinePrManager.Refiner(
@@ -485,7 +531,10 @@ public class FindDmax extends JDialog {
                 totalTrialsCE,
                 topN,
                 statusLabel,
-                useLegendre);
+                useLegendre,
+                useL1Norm,
+                useMoore
+                );
 
 
         runnable.execute();
@@ -697,7 +746,7 @@ public class FindDmax extends JDialog {
         private int totalTrials, totalRuns, topN, last;
         private double qBinWidth, qmin, topNpercent;
         private double llambda, ulambda;
-        private boolean useLegendreFunction=false;
+        private boolean useLegendreFunction=false, useL1=false, useMoore=false;
 
         private JLabel status;
 
@@ -709,12 +758,14 @@ public class FindDmax extends JDialog {
          * @param topNPercent
          * @param status
          */
-        public Refiner(XYSeries qIq, XYSeries allError, int totalTrials, double topNPercent, JLabel status, boolean useLegendre){
+        public Refiner(XYSeries qIq, XYSeries allError, int totalTrials, double topNPercent, JLabel status, boolean useLegendre, boolean useL1, boolean useMoore){
 
             int totalItems = qIq.getItemCount() ;
             this.topNpercent = topNPercent;
             this.totalTrials = totalTrials;
             this.useLegendreFunction = useLegendre;
+            this.useL1 = useL1;
+            this.useMoore = useMoore;
             // create standardized dataset
             try {
                 activeSet = qIq.createCopy(0, totalItems-1); // possibly scaled by rescaleFactor
@@ -761,7 +812,7 @@ public class FindDmax extends JDialog {
 
                 while(lambda < upperLambda){
                     parameters.add(new DmaxLambda(startDmax, lambda, indexTracker));
-                    lambda *= 3;
+                    lambda *= 1.7;
                     paramIndices.add(indexTracker);
                     indexTracker++;
                 }
@@ -864,7 +915,7 @@ public class FindDmax extends JDialog {
 
                     IndirectFT tempIFT;
 
-                    if (!useLegendreFunction){
+                    if (useL1){
                         tempIFT = new SineIntegralTransform(
                                 randomSeries,
                                 randomSeriesError,
@@ -876,7 +927,7 @@ public class FindDmax extends JDialog {
                                 standardizedScale,
                                 useBkgrndCheckBox.isSelected());
 
-                    } else {
+                    } else if (useLegendre) {
                         tempIFT = new LegendreTransform(
                                 randomSeries,
                                 randomSeriesError,
@@ -887,6 +938,17 @@ public class FindDmax extends JDialog {
                                 standardizedMin,
                                 standardizedScale,
                                 useBkgrndCheckBox.isSelected());
+                    } else {
+                        tempIFT = new MooreTransformApache(
+                                randomSeries,
+                                randomSeriesError,
+                                tempDmax,
+                                //randomSeries.getMaxX(),
+                                activeSet.getMaxX(),
+                                tempLambda,
+                                standardizedMin,
+                                standardizedScale,
+                                true);
                     }
 
                     double kvalue = tempIFT.ns + 1 + 1 + 1; // lambda, dmax and noise
