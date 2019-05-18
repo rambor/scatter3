@@ -85,6 +85,44 @@ public class MooreTransformApache extends IndirectFT {
         this.setModelUsed("Moore L2-NORM");
     }
 
+
+    public MooreTransformApache(
+            XYSeries scaledqIqData,
+            XYSeries scaledqIqErrors,
+            double[] priors,
+            double dmax,
+            double qmax,
+            double lambda,
+            double stdmin,
+            double stdscale,
+            boolean useBackground){
+
+        super(scaledqIqData, scaledqIqErrors, dmax, qmax, lambda, useBackground, stdmin, stdscale);
+        // data is standardized along with errors (standard variance)
+        this.invDmax = 1.0/dmax;
+        this.prior_coefficients = priors.clone();
+        priorExists = true;
+
+//        this.standardizeErrors(); // extract variances from errors
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = scaledqIqData.getItemCount();
+        invVariance = new double[totalItems];
+        double temperrorvalue;
+
+        for(int r=0; r<totalItems; r++){
+            XYDataItem tempData = scaledqIqData.getDataItem(r);
+            temperrorvalue = scaledqIqErrors.getY(r).doubleValue();//q*timeserror/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // variance q_times_Iq_scaled
+            invVariance[r] = 1.0/(temperrorvalue*temperrorvalue);
+        }
+
+        this.createDesignMatrix(scaledqIqData);
+        this.solve();
+
+        this.setModelUsed("Moore L2-NORM");
+    }
+
+
     /*
      * precalculate standardVariance
      * used in the Apache Solver
@@ -127,7 +165,7 @@ public class MooreTransformApache extends IndirectFT {
 //        double inv_pi_fourth = inv_pi_cube/Math.PI;
         double inv_pi_fourth = 1.0/(n_pi_squared[1]*n_pi_squared[1]);
 
-        izero = standardizedScale *(TWO_INV_PI*i_zero*dmax2/Math.PI + coefficients[0] + standardizedMin);
+        izero = standardizedScale*(TWO_INV_PI*i_zero*dmax2/Math.PI + coefficients[0]) + standardizedMin;
 
         double izero_temp = (TWO_INV_PI*i_zero*dmax2/Math.PI + coefficients[0]);
         //double izero_temp = (twodivPi*i_zero*dmax2/Math.PI + mooreCoefficients[0]);
@@ -139,10 +177,17 @@ public class MooreTransformApache extends IndirectFT {
     @Override
     void setPrDistribution() {
         prDistribution = new XYSeries("PRDistribution");
-        double totalPrPoints = (Math.ceil(qmax*dmax/Math.PI)*3); // divide dmax in ns*3 bins
-        System.out.println("total pts in interpolation " + totalPrPoints);
-        totalInDistribution = (int)totalPrPoints;
-        double deltar = dmax/totalPrPoints;
+
+        int divisor = 3;
+        r_vector_size = ns*divisor-1; // no background implies coeffs_size == ns
+        del_r = dmax/(double)(ns*divisor);
+
+
+//        double totalPrPoints = (Math.ceil(qmax*dmax/Math.PI)*3); // divide dmax in ns*3 bins
+        //System.out.println("total pts in interpolation " + totalPrPoints);
+//        totalInDistribution = (int)totalPrPoints;
+//        double deltar = dmax/totalPrPoints;
+        totalInDistribution = r_vector_size;
 
         double resultM;
         double invtwopi2 = standardizedScale/(2.0*n_pi_squared[1]);
@@ -151,9 +196,9 @@ public class MooreTransformApache extends IndirectFT {
         negativeValuesInModel = false;
         prDistribution.add(0.0d, 0.0d);
 
-        for (int j=1; j < totalInDistribution; j++){
+        for (int j=0; j < totalInDistribution; j++){
 
-            r_value = j*deltar;
+            r_value = (j+1)*del_r;
             pi_dmax_r = PI_INV_DMAX*r_value;
             resultM = 0;
 
@@ -161,7 +206,7 @@ public class MooreTransformApache extends IndirectFT {
                 resultM += coefficients[i]*FastMath.sin(pi_dmax_r*i);
             }
 
-            prDistribution.add(r_value, invtwopi2 * r_value * resultM);
+            prDistribution.add(r_value, invtwopi2 * r_value * resultM*standardizedScale);
 
             if (resultM < 0){
                 negativeValuesInModel = true;
@@ -174,9 +219,11 @@ public class MooreTransformApache extends IndirectFT {
         int size = r_vector.length;
         prDistributionForFitting = new XYSeries("output");
 
-        for(int i=0; i < size; i++){ // last bin should be dmax
+        double temp_del_r = dmax/(double)ns;
+        double startAt = temp_del_r*0.5;
+        while (startAt < dmax){
 
-            r_value = r_vector[i];
+            r_value = startAt;
             pi_dmax_r = PI_INV_DMAX*r_value;
             resultM = 0;
 
@@ -185,8 +232,47 @@ public class MooreTransformApache extends IndirectFT {
             }
 
             prDistributionForFitting.add(r_value, invtwopi2 * r_value * resultM);
+            startAt += temp_del_r;
+        }
+
+//        for(int i=0; i < size; i++){ // last bin should be dmax
+//
+//            r_value = r_vector[i];
+//            pi_dmax_r = PI_INV_DMAX*r_value;
+//            resultM = 0;
+//
+//            for(int k=1; k < totalCoefficients; k++){
+//                resultM += coefficients[k]*FastMath.sin(pi_dmax_r*k);
+//            }
+//
+//            prDistributionForFitting.add(r_value, invtwopi2 * r_value * resultM);
+//        }
+
+        scoreDistribution(del_r);
+        prScore *= 1000000;
+        setHeaderDetails();
+    }
+
+    private void setHeaderDetails(){
+        this.description  = String.format("REMARK 265  P(r) DISTRIBUTION OBTAINED AS INDIRECT INVERSE FOURIER TRANSFORM OF I(q) %n");
+        this.description  = String.format("REMARK 265  P(r) APPROXIMATED USING FOURIER SINE SERIES %n");
+        this.description += String.format("REMARK 265  COEFFICIENTS ARE MOORE WEIGHTS FOR EACH SINE FUNCTION %n");
+        this.description += String.format("REMARK 265 %n");
+        this.description += String.format("REMARK 265           BIN WIDTH (delta r) : %.4f %n", (dmax/(double)ns));
+        this.description += String.format("REMARK 265            DISTRIBUTION SCORE : %.4f %n", prScore);
+        this.description += String.format("REMARK 265 %n");
+        if (!includeBackground){
+            this.description += String.format("REMARK 265      CONSTANT BACKGROUND EXCLUDED FROM FIT %n");
+        } else {
+            this.description += String.format("REMARK 265      CONSTANT BACKGROUND m(0) : %.4E %n", coefficients[0]);
+            this.description += String.format("REMARK 265          SCALED  s*m(0) + min : %.4E %n", (coefficients[0]*standardizedScale + standardizedMin));
+        }
+        this.description += String.format("REMARK 265  MOORE COEFFICIENTS (UNSCALED)%n");
+        for (int i=1; i<totalCoefficients;i++){
+            this.description +=  String.format("REMARK 265                        m_(%2d) : %.3E %n", i, coefficients[i]);
         }
     }
+
 
     @Override
     public double calculateQIQ(double qvalue) {
@@ -246,7 +332,7 @@ public class MooreTransformApache extends IndirectFT {
         ns = (int) Math.ceil(qmax*dmax*INV_PI) ;  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
 
-        System.out.println("total coefficients " + coeffs_size);
+        //System.out.println("total coefficients " + coeffs_size);
 
         int divisor = 3;
         r_vector_size = ns*divisor-1; // no background implies coeffs_size == ns
@@ -363,20 +449,27 @@ public class MooreTransformApache extends IndirectFT {
             int totalSubset = target.length;
             if (includeBackground){
 
-                double guessSum = 0;
-                int window = (int)(totalSubset*0.1);
-                for(int n=(totalSubset-window); n<totalSubset; n++){
-                    guessSum += target[n];
-                }
+                if (priorExists){
+                    guess = prior_coefficients.clone();
+                    if (coeffs_size != prior_coefficients.length){
+                        System.out.println("SIZES do not match " + coeffs_size + " != " + prior_coefficients.length);
+                    }
+                } else {
+                    double guessSum = 0;
+                    int window = (int)(totalSubset*0.1);
+                    for(int n=(totalSubset-window); n<totalSubset; n++){
+                        guessSum += target[n];
+                    }
 
-                guess[0] = guessSum/(double)window;
-                double tempinv = 1.0/(Math.PI*dmax);
+                    guess[0] = guessSum/(double)window;
+                    double tempinv = 1.0/(Math.PI*dmax);
 
-                int width = totalSubset/(coeffs_size-1);
-                int half = width/2;
+                    int width = totalSubset/(coeffs_size-1);
+                    int half = width/2;
 
-                for(int i=1; i < coeffs_size; i++){
-                    guess[i] = invDmax*Math.pow(-1, i+1)*target[width*(i-1) + half]/(double)i;
+                    for(int i=1; i < coeffs_size; i++){
+                        guess[i] = invDmax*Math.pow(-1, i+1)*target[width*(i-1) + half]/(double)i;
+                    }
                 }
             } else {
 
@@ -400,7 +493,7 @@ public class MooreTransformApache extends IndirectFT {
              */
             //finalScore = optimum.getValue()/(double)rows;
 
-            int totalCoeffs = includeBackground ? coeffs_size: coeffs_size+1;
+            int totalCoeffs = includeBackground ? coeffs_size : coeffs_size+1;
             coefficients = new double[totalCoeffs];
             am_vector = new SimpleMatrix(coeffs_size,1);  // am is 0 column
 
@@ -501,7 +594,7 @@ public class MooreTransformApache extends IndirectFT {
                                 doublePrimeSine += an_n*n*FastMath.sin(npird);
                                 doublePrimeCosine += an_n*FastMath.cos(npird);
                             }
-                            tempsum = 2*invPID*doublePrimeCosine + invPID*invPID*rvalue*doublePrimeSine;
+                            tempsum = 2*invPID*doublePrimeCosine - invPID*invPID*rvalue*doublePrimeSine;
                             doublePrime += tempsum*tempsum;
                         }
 
@@ -509,48 +602,48 @@ public class MooreTransformApache extends IndirectFT {
                         /*
                          * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i+1) - P_(i)|^2
                          */
-                        double[] pr = new double[totalRvalues];
-                        double eightPI = 8*Math.PI, rvalue, rpi, sumIt;
-                        for(int r=0; r<totalRvalues; r++){
-                            rvalue = rvalues[r];
-                            rpi = rvalue*Math.PI*invDmax;
-                            sumIt = 0;
-                            for(int n=0; n<totalP; n++){
-                                sumIt += point[n]*Math.sin((n+1)*rpi);
-                            }
-                            pr[r] = eightPI*sumIt*rvalue;
-                        }
-
-
-                        doublePrime = pr[0]*pr[0] + pr[totalRvalues-1]*pr[totalRvalues-1];
-
-                        for(int r=1; r<totalRvalues; r++){
-                            sumIt = pr[r] - pr[r-1];
-                            doublePrime += sumIt*sumIt;
-                        }
+//                        double[] pr = new double[totalRvalues];
+//                        double eightPI = 8*Math.PI, rvalue, rpi, sumIt;
+//                        for(int r=0; r<totalRvalues; r++){
+//                            rvalue = rvalues[r];
+//                            rpi = rvalue*Math.PI*invDmax;
+//                            sumIt = 0;
+//                            for(int n=0; n<totalP; n++){
+//                                sumIt += point[n]*Math.sin((n+1)*rpi);
+//                            }
+//                            pr[r] = eightPI*sumIt*rvalue;
+//                        }
+//
+//                        doublePrime = pr[0]*pr[0] + pr[totalRvalues-1]*pr[totalRvalues-1];
+//
+//                        for(int r=1; r<totalRvalues; r++){
+//                            sumIt = pr[r] - pr[r-1];
+//                            doublePrime += sumIt*sumIt;
+//                        }
 
 
                         /*
                          * minimize second derivative
                          */
-//                        for(int r=0; r<totalRvalues; r++){
-//                            double rvalue = rvalues[r];
-//                            doublePrimeSine=0;
-//                            doublePrimeCosine=0;
-//
-//                            for(int n=0; n<totalP; n++){
-//                                npird = invPID*(n+1)*rvalue;
-//                                an_n = point[n]*(n+1);
-//                                doublePrimeSine += an_n*(n+1)*FastMath.sin(npird);
-//                                doublePrimeCosine += an_n*FastMath.cos(npird);
-//                            }
-//                            tempsum = 2*invPID*doublePrimeCosine + invPID*invPID*rvalue*doublePrimeSine;
-//                            doublePrime += tempsum*tempsum;
-//                        }
+                        for(int r=0; r<totalRvalues; r++){
+                            double rvalue = rvalues[r];
+                            doublePrimeSine=0;
+                            doublePrimeCosine=0;
+
+                            for(int n=0; n<totalP; n++){
+                                npird = invPID*(n+1)*rvalue;
+                                an_n = point[n]*(n+1);
+                                doublePrimeSine += an_n*(n+1)*FastMath.sin(npird);
+                                doublePrimeCosine += an_n*FastMath.cos(npird);
+                            }
+                            tempsum = 2*invPID*doublePrimeCosine - invPID*invPID*rvalue*doublePrimeSine;
+                            doublePrime += tempsum*tempsum;
+                        }
+
 
                     }
                     // add last term to sum
-                    //System.out.println("chi " + chi2 + " " + doublePrime + " w " + (weight*doublePrime));
+                    // System.out.println("chi " + chi2 + " " + doublePrime + " w " + (weight*doublePrime));
                     return chi2 + weight*doublePrime;
                 }
             });
@@ -601,7 +694,7 @@ public class MooreTransformApache extends IndirectFT {
                                 doublePrimeSine += an_n*n*FastMath.sin(npird);
                                 doublePrimeCosine += an_n*FastMath.cos(npird);
                             }
-                            doublePrimeR[r] = 2*invPID*doublePrimeCosine + invPID*invPID*rvalue*doublePrimeSine;
+                            doublePrimeR[r] = 2*invPID*doublePrimeCosine - invPID*invPID*rvalue*doublePrimeSine;
                         }
 
                         // set gradient for each coefficient
@@ -614,6 +707,7 @@ public class MooreTransformApache extends IndirectFT {
                             del_p[p] = -2*sum;
                         }
 
+                        double doubleprimer;
                         for(int n=1; n<totalP; n++){
 
                             doublePrimeSine=0;
@@ -622,10 +716,11 @@ public class MooreTransformApache extends IndirectFT {
                             for(int r=0; r<totalRvalues; r++){
                                 double rvalue = rvalues[r];
                                 npird = npid*rvalue;
-                                doublePrimeCosine += doublePrimeR[r]*FastMath.cos(npird);
-                                doublePrimeSine += doublePrimeR[r]*rvalue*FastMath.sin(npird);
+                                doubleprimer = 2*doublePrimeR[r];
+                                doublePrimeCosine += doubleprimer*FastMath.cos(npird);
+                                doublePrimeSine += doubleprimer*rvalue*FastMath.sin(npird);
                             }
-                            del_p[n] += weight*(4*invPID*n*doublePrimeCosine - invPID*invPID*n*n*doublePrimeSine);
+                            del_p[n] += weight*(2*npid*doublePrimeCosine - npid*npid*doublePrimeSine);
                         }
 
                     } else { // no Background term
@@ -638,79 +733,42 @@ public class MooreTransformApache extends IndirectFT {
                             del_p[p] = -2*sum;
                         }
 
-                        /*
-                         * minimize on relative difference as [P_(i+1) - P_(i)]^2
-                         * calculate P(r) at each r-value
-                         *
-                         */
-                        double[] pr = new double[totalRvalues];
-                        double eightPI = 8*Math.PI, rvalue, rpi, sumIt;
+
+                        double[] doublePrimeR = new double[totalRvalues];
                         for(int r=0; r<totalRvalues; r++){
-                            rvalue = rvalues[r];
-                            rpi = Math.PI*rvalue*invDmax;
-                            sumIt = 0;
+                            double rvalue = rvalues[r];
+                            doublePrimeSine=0;
+                            doublePrimeCosine=0;
+
                             for(int n=0; n<totalP; n++){
-                                sumIt += point[n]*Math.sin((n+1)*rpi);
+                                npird = invPID*(n+1)*rvalue;
+                                an_n = point[n]*(n+1);
+                                doublePrimeSine += an_n*(n+1)*FastMath.sin(npird);
+                                doublePrimeCosine += an_n*FastMath.cos(npird);
                             }
-                            pr[r] = eightPI*sumIt*rvalue;
+                            doublePrimeR[r] = 2*invPID*doublePrimeCosine - invPID*invPID*rvalue*doublePrimeSine;
                         }
-
-                        // update each term for gradient
-                        double r2, r1;
-                        for(int p=0; p < totalP; p++){
-
-                            double mpi = (p+1)*Math.PI*invDmax;
-                            sumIt = 0;
-                            for(int r=1; r<totalRvalues; r++){
-                                r2 = rvalues[r];
-                                r1 = rvalues[r-1];
-                                sumIt += 2*eightPI*(pr[r]-pr[r-1])*(r2*FastMath.sin(mpi*r2) - r1*FastMath.sin(mpi*r1));
-                            }
-                            r1 = rvalues[0];
-                            r2 = rvalues[totalRvalues-1];
-                            del_p[p] += weight*(sumIt + 2*eightPI*pr[0]*r1*FastMath.sin(mpi*r1) + 2*eightPI*pr[totalRvalues-1]*r2*FastMath.sin(mpi*r2));
-                        }
-
-
-
-                        /*
-                         * d/d_a_i => 2*SUM p"(r_i)*[cos-term - r*sin-term]
-                         *
-                         * calculate second derivative sum at each r-value
-                         */
-//                        double[] doublePrimeR = new double[totalRvalues];
-//                        for(int r=0; r<totalRvalues; r++){
-//                            double rvalue = rvalues[r];
-//                            doublePrimeSine=0;
-//                            doublePrimeCosine=0;
-//
-//                            for(int n=0; n<totalP; n++){
-//                                npird = invPID*(n+1)*rvalue;
-//                                an_n = point[n]*(n+1);
-//                                doublePrimeSine += an_n*(n+1)*FastMath.sin(npird);
-//                                doublePrimeCosine += an_n*FastMath.cos(npird);
-//                            }
-//                            doublePrimeR[r] = 2*invPID*doublePrimeCosine + invPID*invPID*rvalue*doublePrimeSine;
-//                        }
                         // set gradient for each coefficient
                         /*
                          * minimize gradient of Sum (qI_obs - qI_calc)^2 + |p"(r)|^2
                          *
                          * add the regularization part
                          */
-//                        for(int n=0; n<totalP; n++){
-//
-//                            doublePrimeSine=0;
-//                            doublePrimeCosine=0;
-//                            npid = (n+1)*invPID;
-//                            for(int r=0; r<totalRvalues; r++){
-//                                double rvalue = rvalues[r];
-//                                npird = npid*rvalue;
-//                                doublePrimeCosine += doublePrimeR[r]*FastMath.cos(npird);
-//                                doublePrimeSine += doublePrimeR[r]*rvalue*FastMath.sin(npird);
-//                            }
-//                            del_p[n] += weight*(4*invPID*(n+1)*doublePrimeCosine - invPID*invPID*(n+1)*(n+1)*doublePrimeSine);
-//                        }
+                        double doubleprimer;
+                        for(int n=0; n<totalP; n++){
+
+                            doublePrimeSine=0;
+                            doublePrimeCosine=0;
+                            npid = (n+1)*invPID;
+                            for(int r=0; r<totalRvalues; r++){
+                                double rvalue = rvalues[r];
+                                npird = npid*rvalue;
+                                doubleprimer = 2*doublePrimeR[r];
+                                doublePrimeCosine += doubleprimer*FastMath.cos(npird);
+                                doublePrimeSine += doubleprimer*rvalue*FastMath.sin(npird);
+                            }
+                            del_p[n] += weight*(2*npid*doublePrimeCosine - npid*npid*doublePrimeSine);
+                        }
 
                     }
 
