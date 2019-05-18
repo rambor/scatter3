@@ -33,6 +33,7 @@ public class MooreTransform extends IndirectFT {
             //this.includeBackground = true;
             if (this.includeBackground){
                 this.setModelUsed("MOORE L1-NORM PR SMOOTH with BKGRND");
+                System.out.println(this.getModelUsed());
             } else {
                 this.setModelUsed("MOORE L1-NORM PR SMOOTH");
             }
@@ -98,8 +99,70 @@ public class MooreTransform extends IndirectFT {
             this.moore_coeffs_L1();
             this.setModelUsed("MOORE L1-NORM COEFFS");
         }
+    }
+
+
+    /**
+     * Use if priors are available
+     *
+     * @param scaledqIqdataset
+     * @param scaledqIqErrors
+     * @param priors
+     * @param dmax
+     * @param qmax
+     * @param lambda
+     * @param useL1
+     * @param includeBackground
+     * @param stdmin
+     * @param stdscale
+     */
+    public MooreTransform(
+            XYSeries scaledqIqdataset,
+            XYSeries scaledqIqErrors,
+            double[] priors,
+            double dmax,
+            double qmax,
+            double lambda,
+            boolean useL1,
+            boolean includeBackground,
+            double stdmin,
+            double stdscale){
+
+        super(scaledqIqdataset, scaledqIqErrors, dmax, qmax, lambda, includeBackground, stdmin, stdscale);
+
+        this.useL1 = true;
+        this.prior_coefficients = priors.clone();
+        priorExists = true;
+
+        XYDataItem tempData;
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = scaledqIqdataset.getItemCount();
+        double temperrorvalue;
+
+        for(int r=0; r<totalItems; r++){
+            tempData = scaledqIqdataset.getDataItem(r);
+            temperrorvalue = scaledqIqErrors.getY(r).doubleValue(); // already in form of q*I(q)/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // q_times_Iq_scaled
+        }
+
+
+        this.createDesignMatrix(scaledqIqdataset);
+
+        if (useL1){
+            //this.includeBackground = true;
+            if (this.includeBackground){
+                this.setModelUsed("MOORE L1-NORM PR SMOOTH with BKGRND");
+            } else {
+                this.setModelUsed("MOORE L1-NORM PR SMOOTH");
+            }
+            this.moore_pr_L1();
+        } else { // must always use background when doing second derivative L1
+            this.moore_coeffs_L1();
+            this.setModelUsed("MOORE L1-NORM COEFFS");
+        }
 
     }
+
 
     /**
      *
@@ -107,7 +170,7 @@ public class MooreTransform extends IndirectFT {
      */
     public void createDesignMatrix(XYSeries datasetInuse){
 
-        ns = (int) Math.ceil(qmax*dmax*INV_PI);  //
+        ns = (int) Math.floor(qmax*dmax*INV_PI);  //
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
         r_vector_size_for_fitting = new double[ns];
 
@@ -183,17 +246,42 @@ public class MooreTransform extends IndirectFT {
      *
      */
     private void initializeCoefficientVector(){
+
+
+
         am_vector = new SimpleMatrix(coeffs_size,1);  // am is 0 column
-        if (!includeBackground){ // no constant background
-            for (int i=0; i < coeffs_size; i++){
-                am_vector.set(i, 0, 0);
+
+        if (priorExists){
+
+            System.out.println("PRIORS " + coeffs_size + " = " + prior_coefficients.length);
+            // if no background, coefficients is always +1 to am_vector
+            if (includeBackground){
+                //System.out.println("Has background");
+                for (int i=0; i < prior_coefficients.length; i++){
+                    am_vector.set(i, 0, prior_coefficients[i]);
+                    System.out.println(i + " " + prior_coefficients[i]);
+                }
+            } else { // no background
+                for (int i=1; i < prior_coefficients.length; i++){
+                    am_vector.set(i-1, 0, prior_coefficients[i]);
+                    System.out.println(i + " " + prior_coefficients[i]);
+                }
             }
-        } else { // constant background
-            am_vector.set(0,0,0); // set background constant, initial guess could be Gaussian
-            for (int i=1; i < coeffs_size; i++){
-                am_vector.set(i, 0, 0.0000000000001);
+
+
+        } else {
+            if (!includeBackground){ // no constant background
+                for (int i=0; i < coeffs_size; i++){
+                    am_vector.set(i, 0, 0);
+                }
+            } else { // constant background
+                am_vector.set(0,0,0); // set background constant, initial guess could be Gaussian
+                for (int i=1; i < coeffs_size; i++){
+                    am_vector.set(i, 0, 0.0000000000001);
+                }
             }
         }
+
     }
 
 
@@ -812,6 +900,10 @@ public class MooreTransform extends IndirectFT {
             s=1.0;
             gdx = gradux.transpose().mult(dxu).get(0,0);
 
+
+            System.out.println(am_vector.getNumElements() + " " + coeffs_size);
+
+
             backtrackLoop:
             for (lsiter=0; lsiter < max_ls_iter; lsiter++){
                 /*
@@ -821,18 +913,25 @@ public class MooreTransform extends IndirectFT {
                 p_dd_r_new = p_dd_r(new_x, r_vector, inv_d);
                 new_u = u.plus(du.scale(s));
 
-                for(int ff=0; ff<u_size; ff++){
-                    if (ff<1){ // background term
-                        am_value = new_x.get(0,0);
-                        u_value = new_u.get(0,0);
-                        new_f.set(0,0, am_value - u_value);
-                        new_f.set(u_size,0, -am_value - u_value);
-                    } else {
+                // set background term, ff=0
+                am_value = new_x.get(0,0);
+                u_value = new_u.get(0,0);
+                new_f.set(0,0, am_value - u_value);
+                new_f.set(u_size,0, -am_value - u_value);
+
+
+                for(int ff=1; ff<u_size; ff++){
+//                    if (ff<1){ // background term
+//                        am_value = new_x.get(0,0);
+//                        u_value = new_u.get(0,0);
+//                        new_f.set(0,0, am_value - u_value);
+//                        new_f.set(u_size,0, -am_value - u_value);
+//                    } else {
                         am_value = p_dd_r_new.get(ff-1,0);
                         u_value = new_u.get(ff,0);
                         new_f.set(ff,0, am_value - u_value);
                         new_f.set(u_size+ff,0, -am_value - u_value);
-                    }
+//                    }
                 }
 
                 if (max(new_f) < 0){
@@ -976,6 +1075,13 @@ public class MooreTransform extends IndirectFT {
 
             prDistributionForFitting.add(r_value, invtwopi2 * r_value * resultM);
         }
+
+        System.out.println("FINAL ");
+        for(int k=0; k < totalCoefficients; k++){
+            System.out.println(k + " " + coefficients[k]);
+        }
+
+
     }
 
 
