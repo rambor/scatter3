@@ -82,6 +82,42 @@ public class DirectSineIntegralTransform extends IndirectFT {
     }
 
 
+    public DirectSineIntegralTransform(
+            XYSeries dataset,
+            XYSeries scaledqIqErrors,
+            double[] priors,
+            double dmax,
+            double qmax,
+            double lambda,
+            double stdmin,
+            double stdscale,
+            boolean useBkgrnd){
+
+        super(dataset, scaledqIqErrors, dmax, qmax, lambda, useBkgrnd, stdmin, stdscale);
+
+        XYDataItem tempData;
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = data.getItemCount();
+        this.prior_coefficients = priors.clone();
+        priorExists = true;
+
+        double temperrorvalue;
+        double invstdev = 1.0/standardizedScale;
+
+        for(int r=0; r<totalItems; r++){
+            tempData = data.getDataItem(r);
+            temperrorvalue = scaledqIqErrors.getY(r).doubleValue(); // already in form of q*I(q)/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // q_times_Iq_scaled
+        }
+
+        this.createDesignMatrix(dataset);
+
+        this.setModelUsed("DirectSineIntegralTransform L2-NORM");
+        this.invertStandardVariance();
+        this.solve();
+    }
+
+
     void solve(){
 
         LinearProblem problem = new LinearProblem(
@@ -290,7 +326,7 @@ public class DirectSineIntegralTransform extends IndirectFT {
     @Override
     public double calculateQIQ(double qvalue) {
 
-        double sum = coefficients[0];
+        double sum = coefficients[0];//*qvalue;
         double rvalue;
         for(int j=0; j< r_vector_size; j++){
             rvalue = r_vector[j];
@@ -320,7 +356,7 @@ public class DirectSineIntegralTransform extends IndirectFT {
         int divisor = 3;
 
         ns = (int) Math.ceil(qmax*dmax*INV_PI)  ;  //
-        r_vector_size = ns*divisor-1; // no background implies coeffs_size == ns
+        r_vector_size = ns*divisor-1; // subtract 1 to exclude dmax from r-vector array
 
         coeffs_size = this.includeBackground ? r_vector_size + 1 : r_vector_size;   //+1 for constant background, +1 to include dmax in r_vector list
 
@@ -597,15 +633,18 @@ public class DirectSineIntegralTransform extends IndirectFT {
                      * Calculate Residuals as (qI_obs - qI_calc)/invVariance[q]
                      */
                     double residualsSum = 0;
+                    double qsum = 0;
                     for (int q = 0; q < calcLength; ++q) {
                         residualsInvVar[q] = (obs[q]-calc[q])*invVariance[q];
                         residualsSum += residualsInvVar[q];
+                        qsum += factors.getEntry(q,0)*residualsInvVar[q];
                     }
 
 
                     if (useBackground){
                         // add first term (background)
                         del_p[0] = -2*residualsSum;// + 2*point[0]*lambdaw;
+                        //del_p[0] = -2*qsum;
 
                         for(int p=1; p < totalP; p++){
                             double sum = 0;
