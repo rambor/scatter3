@@ -65,8 +65,8 @@ public class IFTObject implements Runnable {
         IndirectFT tempIFT;
 
         if (useMoore){
-            //tempIFT = new MooreTransformApache(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, includeBackground);
-            tempIFT = new MooreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useMoore, includeBackground);
+            tempIFT = new MooreTransformApache(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, includeBackground);
+            //tempIFT = new MooreTransform(dataset.getfittedqIq(), dataset.getfittedError(), dmax, qmax, lambda, useMoore, includeBackground);
 
         } else if (useDirectFT && !useLegendre && !useL2 && !useSVD){
             // L1-norm
