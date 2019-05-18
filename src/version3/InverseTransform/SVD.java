@@ -20,7 +20,6 @@ public class SVD extends IndirectFT {
     // Dataset should be standardized and in form of [q, q*I(q)]
     public SVD(XYSeries dataset, XYSeries errors, double dmax, double qmax, boolean includeBackground) {
         super(dataset, errors, dmax, qmax, 0, includeBackground);
-        System.out.println("SVD Lambda " + lambda);
         this.createDesignMatrix(this.data);
         this.solve();
     }
@@ -207,7 +206,7 @@ public class SVD extends IndirectFT {
     public void createDesignMatrix(XYSeries datasetInuse){
 
         ns = (int) Math.ceil(qmax*dmax*INV_PI);  //
-        System.out.println("NS " + ns);
+
         coeffs_size = this.includeBackground ? ns + 1 : ns;   //+1 for constant background, +1 to include dmax in r_vector list
         rows = datasetInuse.getItemCount();    // rows
 
@@ -293,8 +292,6 @@ public class SVD extends IndirectFT {
 //                double deriv  = cond.get(i+1) -2*cond.get(i) + cond.get(i-1);
 //                System.out.println((i+1) + "  " + deriv);
 //            }
-
-            System.out.println("PSEUDO INV DIMENSIONS " + m.numCols() + " ROWS " + m.numRows());
 
 
         } catch ( SingularMatrixException e ) {
