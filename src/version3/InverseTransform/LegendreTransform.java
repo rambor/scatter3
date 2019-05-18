@@ -108,6 +108,42 @@ public class LegendreTransform extends IndirectFT {
         this.setModelUsed("Legendre L2-NORM");
     }
 
+    public LegendreTransform(
+            XYSeries scaledqIqData,
+            XYSeries scaledqIqErrors,
+            double[] priors,
+            double dmax,
+            double qmax,
+            double lambda,
+            double stdmin,
+            double stdscale,
+            boolean background){
+
+        super(scaledqIqData, scaledqIqErrors, dmax, qmax, lambda, background, stdmin, stdscale);
+        // data is standardized along with errors (standard variance)
+        this.invDmax = 1.0/dmax;
+        this.prior_coefficients = priors.clone();
+        priorExists = true;
+
+//        this.standardizeErrors(); // extract variances from errors
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = scaledqIqData.getItemCount();
+        invVariance = new double[totalItems];
+        double temperrorvalue;
+
+        for(int r=0; r<totalItems; r++){
+            XYDataItem tempData = scaledqIqData.getDataItem(r);
+            temperrorvalue = scaledqIqErrors.getY(r).doubleValue();//q*timeserror/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // variance q_times_Iq_scaled
+            invVariance[r] = 1.0/(temperrorvalue*temperrorvalue);
+        }
+
+        this.createDesignMatrix(scaledqIqData);
+        this.solve();
+
+        this.setModelUsed("Legendre L2-NORM");
+    }
+
 
 
     /*
@@ -224,6 +260,8 @@ public class LegendreTransform extends IndirectFT {
                 // set background term in matrix
                 a_matrix.set(row, 0, 1);
                 designMatrix.setEntry(row, 0, 1);
+//                a_matrix.set(row, 0, tempData.getXValue());
+//                designMatrix.setEntry(row, 0, tempData.getXValue());
 
                 // start of the Legendre terms
                 a_matrix.set(row, 1, sumSinc);
@@ -284,26 +322,41 @@ public class LegendreTransform extends IndirectFT {
             int totalSubset = target.length;
 
             if (includeBackground){
-                double guessSum = 0;
-                int window = (int)(totalSubset*0.1);
-                for(int n=(totalSubset-window); n<totalSubset; n++){
-                    guessSum += target[n];
+
+                if (priorExists){
+                    guess = prior_coefficients.clone();
+                    if (coeffs_size != prior_coefficients.length){
+                        System.out.println("SIZES do not match " + coeffs_size + " != " + prior_coefficients.length);
+                    }
+                    //guess[0] *= 0.1;
+                } else {
+                    double guessSum = 0;
+                    int window = (int)(totalSubset*0.1);
+                    for(int n=(totalSubset-window); n<totalSubset; n++){
+                        guessSum += target[n];
+                    }
+
+                    guess[0] = guessSum/(double)window*0.1;
+
+                    for(int i=1; i < coeffs_size; i++){
+                        double diff = (r_vector[i-1] - midpoint);
+                        //guess[i] = prefactor*Math.exp( -(diff*diff)*invTwoVar);
+                        guess[i] = 0.71;
+                    }
+                    guess[1] = 0.9;
                 }
 
-                guess[0] = guessSum/(double)window*0.1;
-
-                for(int i=1; i < coeffs_size; i++){
-                    double diff = (r_vector[i-1] - midpoint);
-                    //guess[i] = prefactor*Math.exp( -(diff*diff)*invTwoVar);
-                    guess[i] = 0.71;
-                }
-                guess[1] = 0.9;
             } else {
-                for(int i=0; i < coeffs_size; i++){
-                    double diff = (r_vector[i] - midpoint);
-//                    guess[i] = prefactor*Math.exp( -(diff*diff)*invTwoVar);
-//                    System.out.println(i + " guess " + guess[i] );
-                    guess[i] = 0.13;
+
+                if (priorExists){
+                    for(int i=0; i < coeffs_size; i++){
+                        guess[i] = prior_coefficients[i+1];
+                    }
+                } else {
+                    for(int i=0; i < coeffs_size; i++){
+                        double diff = (r_vector[i] - midpoint);
+                        guess[i] = 0.13;
+                    }
                 }
             }
 
@@ -314,7 +367,6 @@ public class LegendreTransform extends IndirectFT {
                     new InitialGuess(guess));
 
             // initialize coefficient vector
-
             /*
              * standardize to number of datapoints
              */
@@ -337,13 +389,12 @@ public class LegendreTransform extends IndirectFT {
                 }
             }
 
-            amVectorExists = true;
-
+            //System.out.println("Scaled Backgnd " +  (coefficients[0]*standardizedScale + standardizedMin));
             totalCoefficients = coefficients.length;
             this.setPrDistribution();
             this.calculateIzeroRg();
             //this.calibratePrDistribution();
-
+            //System.out.println("SCORE " + this.scoreDistribution(this.del_r));
         } catch (TooManyEvaluationsException ex) {
             System.out.println("TOO Few Evaluations");
         } catch (Exception e) {
@@ -352,18 +403,6 @@ public class LegendreTransform extends IndirectFT {
     }
 
 
-    /*
-     * use in refining since dmax is fixed
-     *
-     */
-    public void setPrior(SimpleMatrix prior){
-        int totalrows = prior.numRows();
-        prior_am = prior.copy();
-    }
-
-    public boolean amVectorExists(){
-        return amVectorExists;
-    }
 
 
 
@@ -478,6 +517,7 @@ public class LegendreTransform extends IndirectFT {
             this.description += String.format("REMARK 265      CONSTANT BACKGROUND EXCLUDED FROM FIT %n");
         } else {
             this.description += String.format("REMARK 265        CONSTANT BACKGROUND m(0) : %.4E %n", coefficients[0]);
+            this.description += String.format("REMARK 265            SCALED  s*m(0) + min : %.4E %n", (coefficients[0]*standardizedScale + standardizedMin));
         }
         this.description += String.format("REMARK 265  LEGENDRE COEFFICIENTS (UNSCALED)%n");
         for (int i=1; i<totalCoefficients;i++){
@@ -515,7 +555,7 @@ public class LegendreTransform extends IndirectFT {
     @Override
     public double calculateQIQ(double qvalue) {
 
-        double sum = coefficients[0]; // background term
+        double sum = coefficients[0];//*qvalue; // background term
 
         double[] sinc = new double[r_vector_size];
         for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
@@ -527,7 +567,6 @@ public class LegendreTransform extends IndirectFT {
         for(int i=0; i < r_vector_size; i++){ // Legendre at k=0 is 1 (so sum th
             sumSinc += sinc[i];
         }
-
 
 
         //sum += am_vector.get(0)*sumSinc;
@@ -746,7 +785,9 @@ public class LegendreTransform extends IndirectFT {
             this.qvalues = qvalues;
             this.obs  = target;
             this.invVariance = invVar;
-            this.weight = weight;
+
+            //double val = regularrvector[2] - regularrvector[1]; // delta_r
+            this.weight = weight;///(val*val);
             this.rvalues = regularrvector;
             this.totalRvalues = rvalues.length;
             lastRvalue = totalRvalues-1;
@@ -760,24 +801,25 @@ public class LegendreTransform extends IndirectFT {
 
             this.useBackground = useBackGround;
 
-            this.legendreTable = new double[totalP*totalRvalues]; // with background this will be too large first value in totalP is background
+             // with background this will be too large first value in totalP is background
             int count=0;
 
             /*
              * create lookup table
              */
             if (this.useBackground){
+                this.legendreTable = new double[(totalP-1)*totalRvalues]; // remove count due to background term
                 for (int r=0; r<totalRvalues; r++){
-                    legendreTable[count] = 0;
-                    count+=1;
                     legendreTable[count] = 1;
                     count+=1;
-                    for(int index=2; index<totalP; index++){
-                        legendreTable[count] = (functions[index-1].value((2*rvalues[r]-dmax)*invDmax)) ;
+                    for(int index=1; index<(totalP-1); index++){
+                        legendreTable[count] = (functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
                         count+=1;
                     }
                 }
+
             } else {
+                this.legendreTable = new double[totalP*totalRvalues];
                 for (int r=0; r<totalRvalues; r++){
                     legendreTable[count] = 1;
                     count+=1;
@@ -817,54 +859,125 @@ public class LegendreTransform extends IndirectFT {
                         /*
                          * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i)|^2
                          */
-                        double diff;
-                        sum=0;
-                        int tableCount=0;
-                        for (int r=0; r<totalRvalues; r++){
-                            diff = point[1];
-                            tableCount+=2;
-                            for(int index=2; index<totalP; index++){
-//                                diff += point[index]*(functions[index-1].value((2*rvalues[r]-dmax)*invDmax)) ;
-                                diff += point[index]*(legendreTable[tableCount]);
-//                                System.out.println(index + " tablecount bkg " + legendreTable[tableCount] + " " + functions[index-1].value((2*rvalues[r]-dmax)*invDmax));
-                                tableCount+=1;
-                            }
-                            sum+= diff*diff;
-                        }
-
-
-                    } else {
-                        /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i+1) - P_(i)|^2
-                         */
 //                        double diff;
 //                        sum=0;
-//                        int stop = totalRvalues-1;
-//                        for (int r=0; r<stop; r++){
-//                            diff = 0;
-//                            for(int index=1; index<totalP; index++){
-//                                diff += point[index]*(functions[index].value((2*rvalues[r+1]-dmax)*invDmax) - functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
+//                        int tableCount=0;
+//                        for (int r=0; r<totalRvalues; r++){
+//                            diff = point[1];
+//                            tableCount+=2;
+//                            for(int index=2; index<totalP; index++){
+////                                diff += point[index]*(functions[index-1].value((2*rvalues[r]-dmax)*invDmax)) ;
+//                                diff += point[index]*(legendreTable[tableCount]);
+//                                tableCount+=1;
 //                            }
 //                            sum+= diff*diff;
 //                        }
 
                         /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i)|^2
+                         * minimize gradietn of SUM + |P_(i+1) - P_(i)|^2
                          */
                         double diff;
                         sum=0;
-                        int tableCount = 0;
+                        int stop = totalRvalues-1;
+//                        int counter = 0;
+//                        for (int r=0; r<stop; r++){
+//                            diff = 0;
+//                            for(int index=1; index<(totalP-1); index++){
+//                               // System.out.println(index + " -> " + functions[index].value((2*rvalues[r+1]-dmax)*invDmax) + " " + legendreTable[(totalP-1)*(r+1)+index]);
+//                                diff += point[index+1]*(legendreTable[(totalP-1)*(r+1)+index] - legendreTable[(totalP-1)*r+index]) ;
+//                               // diff += point[index]*(functions[index].value((2*rvalues[r+1]-dmax)*invDmax) - functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
+//                                counter+=1;
+//                            }
+//                            sum+= diff*diff;
+//                        }
 
-                        for (int r=0; r<totalRvalues; r++){
-                            diff = point[0]; // 1st element constant value
-                            tableCount+=1;
-                            for(int index=1; index<totalP; index++){
-//                                diff += point[index]*(functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
-                                diff += point[index]*legendreTable[tableCount];
-                                tableCount +=1;
+                        /*
+                         * minimize gradietn of SUM |P_i - 0.5*( P_(i-1)+P_(i+1) )|^2 + 0.5*P_i^2 + 0.5*P_N^2
+                         */
+                        //int stop = totalRvalues-1
+                        for (int r=1; r<stop; r++){
+                            diff = 0;
+                            for(int index=2; index<(totalP-1); index++){
+                                diff += point[index+1]*(legendreTable[(totalP-1)*r+index] - 0.5*(legendreTable[(totalP-1)*(r-1)+index] +  legendreTable[(totalP-1)*(r+1)+index])) ;
                             }
                             sum+= diff*diff;
                         }
+                        // add the last two terms
+                        //diff = 0;
+                        diff = point[1];
+                        for(int index=1; index<(totalP-1); index++){
+                            diff += point[index+1]*(legendreTable[index]) ;
+                        }
+                        sum += 0.5*diff*diff;
+
+                        //diff = 0;
+                        diff = point[1];
+                        for(int index=1; index<(totalP-1); index++){
+                            diff += point[index+1]*(legendreTable[(totalP-1)*stop+index]) ;
+                        }
+                        sum += 0.5*diff*diff;
+
+                    } else {
+                        /*
+                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i+1) - P_(i)|^2
+                         */
+                        double diff;
+                        sum=0;
+                        int stop = totalRvalues-1;
+//                        int tableCount=0;
+//                        for (int r=0; r<stop; r++){
+//                            diff = 0;
+//                            for(int index=1; index<totalP; index++){
+//                                // totalRvalues*(r+1)+index
+//                                diff += point[index]*(legendreTable[totalRvalues*(r+1)+index] - legendreTable[totalRvalues*r+index]);
+//                                //diff += point[index]*(functions[index].value((2*rvalues[r+1]-dmax)*invDmax) - functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
+//                                tableCount +=1;
+//                            }
+//                            sum+= diff*diff;
+//                        }
+
+
+                        /*
+                         * minimize gradietn of SUM |P_i - 0.5*( P_(i-1)+P_(i+1) )|^2 + 0.5*P_i^2 + 0.5*P_N^2
+                         */
+                        //int stop = totalRvalues-1
+                        for (int r=1; r<stop; r++){
+                            diff = 0;
+                            for(int index=1; index< totalP; index++){
+                                diff += point[index]*(legendreTable[totalP*r+index] - 0.5*(legendreTable[totalP*(r-1)+index] +  legendreTable[totalP*(r+1)+index])) ;
+                            }
+                            sum+= diff*diff;
+                        }
+                        // add the last two terms, r => r[0]
+                        diff = point[0];
+                        for(int index=1; index < totalP; index++){
+                            diff += point[index]*legendreTable[index];
+                        }
+                        sum += 0.5*diff*diff;
+
+                        diff = point[0]; // r => r[last]
+                        for(int index=1; index < totalP; index++){
+                            diff += point[index]*legendreTable[totalP*stop+index];
+                        }
+                        sum += 0.5*diff*diff;
+
+
+                        /*
+                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P_(i)|^2
+                         */
+//                        double diff;
+//                        sum=0;
+//                        int tableCount = 0;
+//
+//                        for (int r=0; r<totalRvalues; r++){
+//                            diff = point[0]; // 1st element constant value
+//                            tableCount+=1;
+//                            for(int index=1; index<totalP; index++){
+//                                diff += point[index]*legendreTable[tableCount];
+//                                tableCount +=1;
+//                            }
+//                            sum+= diff*diff;
+//                        }
 
                     }
                     // add last term to sum
@@ -895,15 +1008,18 @@ public class LegendreTransform extends IndirectFT {
                      * Calculate Residuals as (qI_obs - qI_calc)/invVariance[q]
                      */
                     double residualSum = 0;
+                    //double qsum = 0;
                     for (int q = 0; q < calcLength; ++q) {
                         residualsInvVar[q] = (obs[q]-calc[q])*invVariance[q];
                         residualSum += residualsInvVar[q];
+                       // qsum+=factors.getEntry(q,0)*residualsInvVar[q];
                     }
 
 
                     if (useBackground){
                         // add first term (background)
                         del_p[0] = -2*residualSum; // background term
+//                        del_p[0] = -2*qsum; // background term
 
                         for(int p=1; p < totalP; p++){
                             double sum = 0;
@@ -918,44 +1034,63 @@ public class LegendreTransform extends IndirectFT {
                         int tablCount=0;
                         for(int r=0; r<totalRvalues; r++){
                             double value = point[1];
-                            tablCount+=2;
-                            for(int index=2; index<totalP; index++){
+                            tablCount+=1;
+                            for(int index=1; index<(totalP-1); index++){
 //                                value += point[index]*(functions[index-1].value((2*rvalues[r]-dmax)*invDmax)) ;
-                                value += point[index]*legendreTable[tablCount];
+                                value += point[index+1]*legendreTable[tablCount];
+                                //System.out.println(functions[index].value((2*rvalues[r]-dmax)*invDmax) + " " + (legendreTable[tablCount]));
                                 tablCount+=1;
                             }
                             currentDistribution[r] = value;
                         }
 
+                        double val;
 
-                        for(int index=1; index<totalP; index++){ // for a given coefficient, must sum over each difference
+                        /*
+                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P[r]|^2
+                         * index = 0 is background in P
+                         */
+//                        for(int index=1; index<totalP; index++){ // for a given coefficient, must sum over each difference
+//
+//                            double diff = 0;
+//                            for (int r=0; r<totalRvalues; r++){
+//                                diff += (currentDistribution[r])*(functions[index-1].value((2*rvalues[r]-dmax)*invDmax)) ;
+//                            }
+//                            // add first and last term
+//                            del_p[index] += 2*weight*diff;
+//                        }
 
-                            double diff = 0;
-                            for (int r=0; r<totalRvalues; r++){
-                                diff += (currentDistribution[r])*(functions[index-1].value((2*rvalues[r]-dmax)*invDmax)) ;
+
+                        /*
+                         * minimizine on Sum of |P[r_i+1] - P[r]|^2
+                         */
+//                        for(int index=1; index<(totalP-1); index++){ // for a given coefficient, must sum over each difference
+//                            val = 0;
+//                            for(int r=0; r<(totalRvalues-1); r++){
+//                                //val += 2*(currentDistribution[r+1] - currentDistribution[r])*(legendreTable[totalRvalues*(r+1)+index] - legendreTable[totalRvalues*r+index]);
+//                                val += 2*(currentDistribution[r+1] - currentDistribution[r])*(legendreTable[(totalP-1)*(r+1)+index] - legendreTable[(totalP-1)*r+index]);
+//                            }
+//                            del_p[index] += weight*val;
+//                        }
+
+
+                        val = 0;
+                        del_p[1] += weight*(currentDistribution[0] + currentDistribution[totalRvalues-1]);
+
+
+                        for(int index=2; index<(totalP-1); index++){ // for a given coefficient, must sum over each difference
+                            val = 0;
+                            for(int r=1; r<(totalRvalues-1); r++){
+                                val += (currentDistribution[r] - 0.5*(currentDistribution[r+1] + currentDistribution[r-1]))*(legendreTable[(totalP-1)*r+index] - 0.5*(legendreTable[(totalP-1)*(r+1)+index] + legendreTable[(totalP-1)*(r-1)+index]));
                             }
-                            // add first and last term
-                            del_p[index] += 2*weight*diff;
+                            del_p[index] += weight*(2*val + currentDistribution[0]*legendreTable[index] + currentDistribution[totalRvalues-1]*(legendreTable[(totalP-1)*(totalRvalues-1)+index]));
                         }
 
 
 
                     } else {
-
                         /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |x|^2
-                         */
-//                        for(int p=0; p < totalP; p++){
-//                            double sum = 0;
-//                            for (int q = 0; q < calcLength; ++q) {
-//                                sum += residualsInvVar[q]*factors.getEntry(q,p);
-//                            }
-//                            del_p[p] = -2*sum*invN + weight*2*point[p];
-//                        }
-
-
-                        /*
-                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P[r_(i+1)] - P_r(i)]|^2
+                         * minimize gradient of Sum (qI_obs - qI_calc)^2 + |P[r]|^2
                          */
                         for(int p=0; p < totalP; p++){
                             double sum = 0;
@@ -982,19 +1117,45 @@ public class LegendreTransform extends IndirectFT {
                             currentDistribution[r] = value;
                         }
 
-
                         final double tweight = 2*weight;
+                        /*
+                         * gradient of |P[r]|^2
+                         */
+
+//                        for(int index=0; index<totalP; index++){ // for a given coefficient, must sum over each difference
+//
+//                            double diff = 0;
+//                            for (int r=0; r<totalRvalues; r++){
+//                                //diff += (currentDistribution[r])*(functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
+//                                diff += (currentDistribution[r])*legendreTable[totalRvalues*r+index];
+//                            }
+//                            // add first and last term
+//                            del_p[index] += tweight*diff;
+//                        }
+
+                        /*
+                         * gradient of |P[r_i+1] - P[r]|^2
+                         * no background term
+                         */
+//                        double val;
+//                        for(int index=1; index<totalP; index++){ // for a given coefficient, must sum over each difference
+//                            val = 0;
+//                            for(int r=0; r<(totalRvalues-1); r++){
+////                                val += (currentDistribution[r+1] - currentDistribution[r])*(legendreTable[totalRvalues*(r+1)+index] - legendreTable[totalRvalues*r+index]);
+//                                val += (currentDistribution[r+1] - currentDistribution[r])*(legendreTable[totalP*(r+1)+index] - legendreTable[totalP*r+index]);
+//                            }
+//                            del_p[index] += tweight*val;
+//                        }
+
+
+                        double val;
                         for(int index=0; index<totalP; index++){ // for a given coefficient, must sum over each difference
-
-                            double diff = 0;
-                            for (int r=0; r<totalRvalues; r++){
-                                //diff += (currentDistribution[r])*(functions[index].value((2*rvalues[r]-dmax)*invDmax)) ;
-                                diff += (currentDistribution[r])*legendreTable[totalRvalues*r+index];
+                            val = 0;
+                            for(int r=1; r<(totalRvalues-1); r++){
+                                val += (currentDistribution[r] - 0.5*(currentDistribution[r+1] + currentDistribution[r-1]))*(legendreTable[totalP*r+index] - 0.5*(legendreTable[totalP*(r+1)+index] + legendreTable[totalP*(r-1)+index]));
                             }
-                            // add first and last term
-                            del_p[index] += tweight*diff;
+                            del_p[index] += weight*(2*val + currentDistribution[0]*legendreTable[index] + currentDistribution[totalRvalues-1]*(legendreTable[totalP*(totalRvalues-1)+index]));
                         }
-
 
                     }
 
