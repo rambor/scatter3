@@ -1238,7 +1238,7 @@ public class Scatter {
         pc.setCellEditor(new PrButtonEditorRenderer("2File"));
         pc.setCellRenderer(new PrButtonEditorRenderer("2File"));
 
-        prTable.getColumnModel().getColumn(4).setPreferredWidth(80);
+        prTable.getColumnModel().getColumn(4).setPreferredWidth(70);
         prTable.getColumnModel().getColumn(5).setPreferredWidth(100);
         prTable.getColumnModel().getColumn(6).setPreferredWidth(170); // I(0)
         prTable.getColumnModel().getColumn(7).setPreferredWidth(160); // Rg
@@ -3728,11 +3728,18 @@ public class Scatter {
                     l2norm.setSelected(false);
                     SVDCheckBox.setSelected(false);
 //                    mooreCheckBox.setSelected(false);
-
                     excludeBackgroundInFitCheckBox.setSelected(true);
 
                     methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
-                    lambdaBox.setSelectedIndex(2);
+
+                    double[] arrayvalues = new double[]{0, 0.001, 0.1, 0.7, 3, 11, 31, 70, 93, 100, 331, 557, 637, 759, 931, 1017, 3011};
+                    Double[] finalArray = new Double[arrayvalues.length];
+                    for(int i=0; i<arrayvalues.length; i++){
+                        finalArray[i] = new Double(arrayvalues[i]);
+                    }
+
+                    lambdaBox.setModel(new DefaultComboBoxModel(finalArray));
+                    lambdaBox.setSelectedIndex(4);
 
                 } else {
 
@@ -3858,20 +3865,23 @@ public class Scatter {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                    if (excludeBackgroundInFitCheckBox.isSelected()){
+                if (!excludeBackgroundInFitCheckBox.isSelected() && mooreCheckBox.isSelected()){
+                    methodInUseLabel.setText("Constant Background always in use with Moore Method");
+                    excludeBackgroundInFitCheckBox.setSelected(true);
+                } else if (excludeBackgroundInFitCheckBox.isSelected()){
 
-                        additionalInfoPrPanel.removeAll();
+                    additionalInfoPrPanel.removeAll();
 
-                        if(SVDCheckBox.isSelected()){
-                            SVDCheckBox.setSelected(false);
-                            checkBoxDirect.setSelected(true);
-                            methodInUseLabel.setText("bkgrnd not available with SVD");
-                        } else {
-                            methodInUseLabel.setText("Constant Background added");
-                        }
-                    } else { // no background only available on DirectFT and moore coefficient L1
-                        methodInUseLabel.setText("No Constant Background");
+                    if(SVDCheckBox.isSelected()){
+                        SVDCheckBox.setSelected(false);
+                        checkBoxDirect.setSelected(true);
+                        methodInUseLabel.setText("bkgrnd not available with SVD");
+                    } else {
+                        methodInUseLabel.setText("Constant Background added");
                     }
+                } else { // no background only available on DirectFT and moore coefficient L1
+                    methodInUseLabel.setText("No Constant Background");
+                }
 
                 prStatusLabel.setText(methodInUseLabel.getText());
             }
@@ -4401,12 +4411,15 @@ public class Scatter {
                     prStatusLabel.setText("Legendre Distribution Estimation");
 
                     lambdaBox.removeAllItems();
-                    Double[] finalArray = new Double[defaultLambdaValues.length];
-                    for(int i=0; i<defaultLambdaValues.length; i++){
-                        finalArray[i] = new Double(defaultLambdaValues[i]);
+
+                    double[] arrayvalues = new double[]{0, 0.0001, 0.1, 0.7, 1, 3, 7, 11, 31, 70, 93, 100, 130, 157, 231, 337, 431, 557, 637, 759, 931, 1017, 3011};
+                    Double[] finalArray = new Double[arrayvalues.length];
+                    for(int i=0; i<arrayvalues.length; i++){
+                        finalArray[i] = new Double(arrayvalues[i]);
                     }
+
                     lambdaBox.setModel(new DefaultComboBoxModel(finalArray));
-                    lambdaBox.setSelectedIndex(2);
+                    lambdaBox.setSelectedIndex(8);
 
                 } else {
 
@@ -5873,7 +5886,6 @@ public class Scatter {
             this.button.addActionListener(this);
             //button.setMaximumSize(new Dimension(10,10));
             //button.setPreferredSize(new Dimension(10,10));
-
             if (name == "Norm"){
                 this.button.setText("N");
                 this.button.setToolTipText("Normalize");
@@ -5919,14 +5931,15 @@ public class Scatter {
                 //normalize - divide P(r) by I-Zero
                 //double invIzero = 1.0/prModel.getDataset(rowID).getIzero();
                 double invIzero = 1.0/prModel.getDataset(rowID).integrateDistribution();
-                System.out.println("IZERO " + prModel.getDataset(rowID).getIzero());
+                //System.out.println("IZERO " + prModel.getDataset(rowID).getIzero());
                 //
                 // normalize to volume?
                 // integrated area should be volume of particle
                 //
                 if (prModel.getDataset(rowID).getVolume() > 1){
                     invIzero *= prModel.getDataset(rowID).getVolume();
-                    prStatusLabel.setText("Normalized to Volume");
+                    String ff = String.format("Normalized to Volume : %.0f", prModel.getDataset(rowID).getVolume());
+                    prStatusLabel.setText(ff);
                 } else {
                     invIzero = 1;
                     prStatusLabel.setText("Please determine Volume first to normalize");
