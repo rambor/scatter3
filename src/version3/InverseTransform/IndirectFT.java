@@ -272,7 +272,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
             616850.2750680848
     };
 
-    public double[] coefficients;
+    public double[] coefficients, prior_coefficients; // 1 size larger than am_vector, holds the background term at [0]
 
     public final double qmax, dmax, lambda;
     public final double inv2PI2 = 1.0/(2*Math.PI*Math.PI);
@@ -319,12 +319,12 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public final double PI_INV_DMAX;
     public String status;
     public int ns, coeffs_size;
-    public SimpleMatrix a_matrix, prior_am;
+    public SimpleMatrix a_matrix;
     public SimpleMatrix y_vector;
     public SimpleMatrix am_vector;
     private String modelUsed;
     public double area;
-    public boolean amVectorExists=false;
+    public boolean priorExists=false;
 //    public double finalScore;
 
     public IndirectFT(XYSeries nonStandardizedData, XYSeries errors, double dmax, double qmax, double lambda, boolean includeBackground){
@@ -1754,5 +1754,14 @@ double topB = 1000;
     }
 
     public double getPrScore() { return prScore;}
- //   public double getFinalScore(){ return finalScore;}
+    /*
+     * use in refining since dmax is fixed
+     *
+     */
+    public void setPrior(double[] coefficients){
+        prior_coefficients = coefficients.clone();
+        priorExists = true;
+    }
+
+
 }
