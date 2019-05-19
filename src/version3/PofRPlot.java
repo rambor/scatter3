@@ -147,7 +147,10 @@ public class PofRPlot {
                     }
                 }
 
-                super.getChart().getXYPlot().getRangeAxis().setRange(-0.1*min, max+0.1*max);
+
+                min = (min < 0) ? (min + 0.1*min) : (-0.1*min);
+
+                super.getChart().getXYPlot().getRangeAxis().setRange(min, max+0.1*max);
                 super.getChart().getXYPlot().getDomainAxis().setRange(0, dmax+2);
             }
         };
