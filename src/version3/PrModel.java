@@ -39,7 +39,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
     private DecimalFormat scientific = new DecimalFormat("0.00E0");
     private DecimalFormat twoOneFormat = new DecimalFormat("0.0");
 
-    private String[] columnNames = new String[]{"","", "", "", "start", "end", "<html>I(0)<font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html>", "<html>R<sub>g</sub><font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html> ", "<html>r<sub>ave</sub></html>", "<html>d<sub>max</sub></html>", "<html>Chi<sup>2</sup>(S<sub>k2</sub>)</html>", "<html>scale</html>", "", "", "",""};
+    private String[] columnNames = new String[]{"","", "", "", "start", "end", "<html>I(0)<font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html>", "<html>R<sub>g</sub><font color=\"#ffA500\"> Real</font> (<font color=\"#808080\">Reci</font>)</html> ", "<html>r<sub>ave</sub></html>", "<html>d<sub>max</sub></html>", "<html>Score</html>", "<html>scale</html>", "", "", "",""};
     private JLabel mainStatus, prStatus;
 
     public PrModel(JLabel status,
@@ -193,8 +193,9 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
             case 9:
                 return twoOneFormat.format(dataset.getDmax());
             case 10:
-               // return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
-                 return twoDecPlac.format(dataset.getChi2()) + " ("+threeDecPlac.format(dataset.max_kurtosis_shannon_sampled())+")";
+                // return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
+                return threeDecPlac.format(dataset.getTotalScore(dataset.getStop() - dataset.getStart()));
+                // return twoDecPlac.format(dataset.getChi2()) + " ("+threeDecPlac.format(dataset.max_kurtosis_shannon_sampled())+")";
                 //return twoDecPlac.format(dataset.getChi2()) ;
             case 11:
                 return scientific.format(dataset.getScale());
