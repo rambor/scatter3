@@ -147,7 +147,6 @@ public class PofRPlot {
                     }
                 }
 
-
                 min = (min < 0) ? (min + 0.1*min) : (-0.1*min);
 
                 super.getChart().getXYPlot().getRangeAxis().setRange(min, max+0.1*max);

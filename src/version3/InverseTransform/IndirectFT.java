@@ -301,7 +301,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
      * LINE SEARCH PARAMETERS
      */
     public double alpha = 0.01;            // minimum fraction of decrease in the objective
-    public double beta  = 0.2;             // stepsize decrease factor
+    public double beta  = 0.17;             // stepsize decrease factor
     public int max_ls_iter = 400;          // maximum backtracking line search iteration
     /*
      * Interior Point Parameters
@@ -951,14 +951,15 @@ double topB = 1000;
     }
 
 
-
+    /**
+     * calculate residuals from current model and data
+     */
     public void makeResiduals(){
         SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         residuals = new XYSeries("residuals");
         for(int i=0; i < rows; i++){
-            XYDataItem item = data.getDataItem(i);
-            double diff = tempResiduals.get(i,0);
-            residuals.add(item.getX(), diff);
+            //double diff = tempResiduals.get(i,0);
+            residuals.add(data.getDataItem(i).getX(), tempResiduals.get(i,0));
         }
     }
 
@@ -1269,10 +1270,7 @@ double topB = 1000;
             numerator += diff*diff;
             denominator += value*value; // sum of (x_t)^2
         }
-
         return Math.abs(2-numerator/denominator);
-//        return Math.abs(2-kurtosises[(rounds-1)/2]); // subtract 2, should be zero for ideal value
-        //return kurtosis_sum/(double)rounds;
     }
 
 
@@ -1652,104 +1650,204 @@ double topB = 1000;
      */
     public double scoreDistribution(double del_r){
         totalInDistribution = prDistribution.getItemCount();
-
+        double delta = prDistribution.getX(2).doubleValue() - prDistribution.getX(1).doubleValue();
         /*
          * assess smoothness
          */
-        double diff, diff_sum=0;
+        double diff, diff_sum=0, diff_abs_sum = 0;
         int negativity = 0;
         double max = 0;
         int indexOfMax = 0;
 
-        for(int r=1; r<(totalInDistribution-1); r++){
-            double value = prDistribution.getY(r).doubleValue();
+        double value = prDistribution.getY(1).doubleValue();
+        double normalizationSum = Math.abs(value);
+        for(int r=2; r<(totalInDistribution-2); r++){
+            value = prDistribution.getY(r).doubleValue();
+            normalizationSum += Math.abs(value);
             if (value > max){
                 max = value;
                 indexOfMax=r;
             }
             if (value < 0){
-                diff_sum = 314.159265358979;
+                //diff_sum = 1000;
                 negativity += 1;
-                break;
+                //break;
             }
             diff = (prDistribution.getY(r+1).doubleValue() - 2.0*value + prDistribution.getY(r-1).doubleValue());
+            diff_abs_sum += Math.abs(diff);
             diff_sum += diff*diff;
         }
 
-        diff_sum *= 1.0/(double)(totalInDistribution-2)/(del_r*del_r*del_r*del_r)*1100;
+        value = prDistribution.getY(totalInDistribution-1).doubleValue();
+        normalizationSum += Math.abs(value);
 
+        double delta2 = delta*delta;
+        diff_sum *= 1.0/(delta2*delta2); // squared value from above
+        diff_abs_sum *= 1.0/delta2;
+        /*
+         * spacing between r_0 and r_1 and r_(n-2) and dmax are not event
+         */
+        double p1 = 2*(-(1.5*delta)*prDistribution.getY(1).doubleValue() + 0.5*delta*prDistribution.getY(2).doubleValue())/(0.5*delta*delta*(0.5*delta+delta));
+        double p2 = 2*(-(1.5*delta)*prDistribution.getY(totalInDistribution-2).doubleValue() + 0.5*delta*prDistribution.getY(totalInDistribution-3).doubleValue())/(0.5*delta*delta*(0.5*delta+delta));
+        double p3 = (prDistribution.getY(totalInDistribution-2).doubleValue() - 2.0*prDistribution.getY(totalInDistribution-3).doubleValue() + prDistribution.getY(totalInDistribution-4).doubleValue());
 
+        negativity += (prDistribution.getY(totalInDistribution-2).doubleValue() < 0) ? 1 : 0;
+
+        diff_sum += p1*p1;
+        diff_sum += p2*p2;
+        diff_abs_sum += (Math.abs(p1) + Math.abs(p2));
+
+        normalizationSum = 1.0/(normalizationSum*delta);
+
+        p3 *= normalizationSum/(delta*delta);
+        p2 *= normalizationSum;
+        p1 *= normalizationSum;
+
+        diff_abs_sum *= normalizationSum;
+
+        //diff_sum *= 1.0/(double)(totalInDistribution-2)*normalizationSum*normalizationSum;
+        diff_sum = 1.0/(double)(totalInDistribution-2)*diff_abs_sum;
         /*
          * assess finish (slope area near dmax)
+         * calcualte slope at last 3 points
          */
-        // calcualte slope at last 3 points
-        double slope1 = (prDistribution.getY(totalInDistribution-3).doubleValue()-prDistribution.getY(totalInDistribution-4).doubleValue())/del_r;
-        double slope2 = (prDistribution.getY(totalInDistribution-2).doubleValue()-prDistribution.getY(totalInDistribution-3).doubleValue())/del_r;
-        double slope3 = (prDistribution.getY(totalInDistribution-1).doubleValue()-prDistribution.getY(totalInDistribution-2).doubleValue())/del_r;
-
-        double finishPenalty = 0;
-
-        if (slope2 < slope1 && slope3 < slope2){ // very abrupt finish
-                finishPenalty = 10000*diff_sum;
-        }
-
-        if (slope3 < slope2){ // abrupt finish
-            finishPenalty = (finishPenalty == 0) ? 100*diff_sum : finishPenalty + 21*diff_sum;
-        }
-
-        if (slope1 > 0 || slope2 > 0 || slope3 > 0){ // penalize for positive slopes
-            finishPenalty = (finishPenalty == 0) ? 100*diff_sum : finishPenalty + 2*diff_sum;
-        }
-
-
-        distribution_score = finishPenalty;
-        // check for undulations in the last 3 points?
         double pointn2 = prDistribution.getY(totalInDistribution-2).doubleValue();
         double pointn3 = prDistribution.getY(totalInDistribution-3).doubleValue();
         double pointn4 = prDistribution.getY(totalInDistribution-4).doubleValue();
 
-        int totalAfterPeak = totalInDistribution - indexOfMax -1;
-        if (totalAfterPeak == 4){ // check for undulations
+    /*
+         * assess the finish near dmax
+         */
+        double slopeScore = 1; // default value
+        double slope5diff = 0;
+        int totalAfterPeak = totalInDistribution - indexOfMax - 2;
+        XYDataItem item = prDistribution.getDataItem(totalInDistribution-3);
+        double x3 = dmax - item.getXValue();
+        double y3 = Math.abs(item.getYValue()*normalizationSum);
+        double a31 = Math.atan(y3/x3);
+        // point 2
+        item = prDistribution.getDataItem(totalInDistribution-2);
+        double x2 = dmax - item.getXValue();
+        double y2 = Math.abs(item.getYValue()*normalizationSum);
+        // point -3 to -2
+        double diffy3y2 = Math.abs(y3-y2);
+        double a32 = Math.atan(diffy3y2/(x3-x2));
 
-            double pointn5 = prDistribution.getY(totalInDistribution-5).doubleValue();
-            if (pointn5 < pointn4){
-                double angle = Math.atan((pointn4-pointn5)/del_r);
-                if (angle > 20){
-                    distribution_score += 20.0*distribution_score;
-                } else {
-                    distribution_score += 2.0*distribution_score;
-                }
+        double a21 = Math.atan(y2/x2);
+
+        slopeScore = (Math.toDegrees(a31) + Math.toDegrees(a32) + Math.toDegrees(a21));
+
+        XYDataItem item4 = prDistribution.getDataItem(totalInDistribution-4);
+        double x4 = dmax - item4.getXValue(); // translate coordinates to origin
+        double y4 = Math.abs(item4.getYValue()*normalizationSum);
+
+        distribution_score = 0;
+
+
+        if (totalAfterPeak > 4 ){
+            // point -4 to -2
+            double diffy4y2 = Math.abs(y2-y4);
+            double a42 = Math.atan(diffy4y2/(x4-x2));
+            // point -4 to -3
+            double diffy4y3 = Math.abs(y4-y3);
+            double a34 = Math.atan(diffy4y3/(x4-x3));
+
+            //System.out.println("Angles " + Math.toDegrees(a31) + " " + Math.toDegrees(a32) + " " + Math.toDegrees(a21) + " " + Math.toDegrees(Math.atan(y4/x4)));
+            slopeScore += Math.toDegrees(Math.atan(y4/x4));//Math.toDegrees(a42) + Math.toDegrees(a34));
+
+            double areaT = (x4-x3)*(y4+y3);
+            areaT += (x3-x2)*(y3+y2);
+            areaT += x2*y2;
+
+                item = prDistribution.getDataItem(totalInDistribution-5);
+                double x5 = dmax - item.getXValue(); // translate coordinates to origin
+                double y5 = Math.abs(item.getYValue())*normalizationSum;
+
+                double slope5 = -y5/x5;
+                double intercept = -dmax*slope5;
+                double tempy4 = item4.getXValue()*slope5 + intercept;
+
+
+                double aread5 = x5*y5;
+                areaT += (x5-x4)*(y5+y4);
+                double diff1 = Math.abs(areaT-aread5)/aread5;
+                //System.out.println("5 diff1 " + diff1 + " " + ((x5-x4)*(y5+y4)) + " " + ((x4-x3)*(y4+y3)) + " " +((x3-x2)*(y3+y2)) + " " + x2*y2);
+                slope5diff = 1.0/diff1;
+
+            if (tempy4 < y4){
+                slope5diff += 10*(1-tempy4/y4);
             }
-        } else if  (totalAfterPeak > 4) {
-            double pointn5 = prDistribution.getY(totalInDistribution-5).doubleValue();
-            if (pointn5 < pointn4 && pointn5 < prDistribution.getY(totalInDistribution-6).doubleValue()){
-                double angle = Math.atan((pointn4-pointn5)/del_r);
-                if (angle > 20){
-                    distribution_score += 20.0*distribution_score;
-                } else {
-                    distribution_score += 2.0*distribution_score;
-                }
+
+
+        } else {
+
+            if (totalAfterPeak == 4){
+                double aread4 = x3*y3;
+                double areaT = (x3-x2)*(y2+y3);
+                areaT += x2*y2;
+                double diff1 = Math.abs(areaT-aread4)/aread4;
+
+                slope5diff = 1.0/diff1;
+
+            } else {
+                double aread4 = x3*y3;
+                double areaT = (x3-x2)*(y2+y3);
+                areaT += x2*y2;
+                double diff1 = Math.abs(areaT-aread4)/aread4;
+
+                slope5diff = 1.0/diff1;
             }
         }
 
 
+        // check for oscillations
         if (pointn2 > pointn3){
-            distribution_score += 2.0*distribution_score;
+            double diffit = pointn2 - pointn3;
+            distribution_score += Math.abs(diffit/pointn3);
         }
 
         if (pointn2 > pointn4){
-                distribution_score += 1.5*distribution_score;
+            double diffit = pointn2 - pointn4;
+            distribution_score += Math.abs(diffit/pointn4);
         }
 
         if (pointn3 > pointn4){
-                distribution_score += 1.5*distribution_score;
+            double diffit = pointn3 - pointn4;
+            distribution_score += Math.abs(diffit/(pointn4-pointn2));
         }
 
-       // distribution_score = finishPenalty;
-        distribution_score += 10*negativity*distribution_score;
+        if (pointn2 > pointn3 && pointn3 < pointn4){
+            double diffIt = Math.max((pointn2-pointn3), (pointn4-pointn3));
+            distribution_score += Math.abs(diffIt/pointn3);
+        }
 
-        prScore = (distribution_score + diff_sum);
+        //System.out.println("DISTRIBUTION " + distribution_score);
 
+        /*
+         * for samples with few shannon points, like 4 it may not be possible to evaluate the above accurately)
+         */
+        //distribution_score = (distribution_score == 0 && (pointn2 < 0 || pointn3 < 0 )) ? 1 : distribution_score;
+        diff_sum = 1.0/Math.abs(Math.log10(diff_sum));
+
+        // negativity penality
+        distribution_score += (negativity > 0) ? Math.pow(7,negativity)*1.933 : 0;
+
+        if (p2 < 0){ // convex/concave
+            diff_sum += 13.1*Math.abs(p2/p3);
+        } else { // concave with small value
+            diff_sum -= diff_sum*(p2/diff_abs_sum);
+        }
+
+        //System.out.println("slope5diff " +slope5diff);
+//        if (prDistribution.getDataItem(totalInDistribution-2).getYValue() < 0){
+//            slope5diff = 1.0/0.1;
+//        }
+
+        //slope5diff=0;
+        //slopeScore = (slopeScore==1) ? 0 : slopeScore;// inverse because the angle is obtuse
+        //prScore = (distribution_score + diff_sum) + 500*slopeScore + 50*slope5diff;
+        prScore = distribution_score + (10*diff_sum) + 2*slope5diff;
+        //System.out.println(dmax + " " + prScore + " " + distribution_score + " " + diff_sum + " " + slopeScore + " 5diff " + slope5diff + "  " + diff_abs_sum);
         return prScore;
     }
 
@@ -1761,6 +1859,11 @@ double topB = 1000;
     public void setPrior(double[] coefficients){
         prior_coefficients = coefficients.clone();
         priorExists = true;
+    }
+
+
+    public double getShannonNumber(){
+        return ns;
     }
 
 

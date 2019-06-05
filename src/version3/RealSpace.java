@@ -57,6 +57,7 @@ public class RealSpace {
     private double kurtosis = 0;
     private double l1_norm = 0;
     private double kurt_l1_sum;
+    private double totalScore=0;
     private Dataset dataset;
     private int lowerQIndexLimit=0;
     private final int maxCount;
@@ -284,6 +285,35 @@ public class RealSpace {
 
     public double getChi2(){
         return chi2;
+    }
+
+
+    /**
+     * Returns total Score of the Pr distribution
+     * Chi2 and Kurtosis (DW) must be calculated first
+     *
+     * @param totalPointsInUse
+     * @return
+     */
+    public double setTotalScore(int totalPointsInUse){
+
+        try{
+            double ns = this.getIndirectFTModel().getShannonNumber();
+            double kvalue = ns + 1 + 1 + 1; // lambda, dmax and noise
+            double aic = 2.0*kvalue + ns*Math.log(chi2) + (2.0*kvalue*kvalue + 2*kvalue)/(totalPointsInUse - kvalue -1);
+            double scoreIt = this.getIndirectFTModel().getPrScore();
+            //System.out.println(dmax + " AIC: " + aic + " DW " + kurtosis + " PSI " + scoreIt + " " +(0.1*aic + 993.1*kurtosis + 3*this.getIndirectFTModel().getPrScore()));
+            //double sum = (0.1*aic + 993.1*kurtosis + 3*scoreIt);
+            //System.out.println(dmax + " AIC " + aic + " " + kurtosis + " " +  scoreIt);
+//        totalScore = (Math.log10((0.93*aic + 39.1d*kurtosis + 37.0d*scoreIt)));
+            totalScore = (Math.log10(0.1*aic + (4.0d*kurtosis + scoreIt)));
+        } catch (java.lang.NullPointerException exception){
+            System.out.println("PR NULL Exception :: possible pdb :: " + exception.getMessage());
+            totalScore = 1;
+        }
+
+        //System.out.println(dmax + " " + String.format("%.7f",totalScore) + " " + (aic) + " " + (kurtosis) + " " + scoreIt);
+        return totalScore;
     }
 
     public float getScale(){

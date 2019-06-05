@@ -165,7 +165,7 @@
                       <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
                     </constraints>
                     <properties>
-                      <text value="lambda [lower,upper]"/>
+                      <text value="alpha [lower,upper]"/>
                     </properties>
                   </component>
                   <component id="4a2d0" class="javax.swing.JTextField" binding="lambdaLowerField">
@@ -175,7 +175,7 @@
                       </grid>
                     </constraints>
                     <properties>
-                      <text value="0.00001"/>
+                      <text value="3"/>
                     </properties>
                   </component>
                   <component id="5ee0d" class="javax.swing.JTextField" binding="lambdaUpperField">
@@ -185,7 +185,7 @@
                       </grid>
                     </constraints>
                     <properties>
-                      <text value="0.1"/>
+                      <text value="73"/>
                     </properties>
                   </component>
                 </children>
@@ -252,7 +252,7 @@
         <properties/>
         <border type="none"/>
         <children>
-          <grid id="7fd3f" layout-manager="FormLayout">
+          <grid id="7fd3f" binding="optionsPanel" layout-manager="FormLayout">
             <rowspec value="center:d:grow"/>
             <colspec value="fill:max(d;4px):noGrow"/>
             <colspec value="left:4dlu:noGrow"/>
@@ -261,6 +261,10 @@
             <colspec value="fill:max(d;4px):noGrow"/>
             <colspec value="left:4dlu:noGrow"/>
             <colspec value="fill:d:grow"/>
+            <colspec value="left:4dlu:noGrow"/>
+            <colspec value="fill:max(d;4px):noGrow"/>
+            <colspec value="left:4dlu:noGrow"/>
+            <colspec value="fill:max(d;4px):noGrow"/>
             <constraints>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
             </constraints>
@@ -301,6 +305,24 @@
                 </constraints>
                 <properties>
                   <text value="Method :"/>
+                </properties>
+              </component>
+              <component id="2a0e5" class="javax.swing.JButton" binding="colorButton" default-binding="true">
+                <constraints>
+                  <grid row="0" column="8" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="4" fill="0" indent="0" use-parent-layout="false"/>
+                  <forms defaultalign-horz="false"/>
+                </constraints>
+                <properties>
+                  <text value="Color"/>
+                </properties>
+              </component>
+              <component id="e12d5" class="javax.swing.JLabel">
+                <constraints>
+                  <grid row="0" column="10" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                  <forms/>
+                </constraints>
+                <properties>
+                  <text value="Tips"/>
                 </properties>
               </component>
             </children>

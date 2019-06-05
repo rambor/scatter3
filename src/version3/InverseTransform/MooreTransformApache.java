@@ -182,7 +182,6 @@ public class MooreTransformApache extends IndirectFT {
         r_vector_size = ns*divisor-1; // no background implies coeffs_size == ns
         del_r = dmax/(double)(ns*divisor);
 
-
 //        double totalPrPoints = (Math.ceil(qmax*dmax/Math.PI)*3); // divide dmax in ns*3 bins
         //System.out.println("total pts in interpolation " + totalPrPoints);
 //        totalInDistribution = (int)totalPrPoints;
@@ -249,7 +248,7 @@ public class MooreTransformApache extends IndirectFT {
 //        }
 
         scoreDistribution(del_r);
-        prScore *= 1000000;
+        prScore *= 10;
         setHeaderDetails();
     }
 

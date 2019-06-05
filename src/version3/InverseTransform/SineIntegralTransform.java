@@ -106,6 +106,71 @@ public class SineIntegralTransform extends IndirectFT {
         }
     }
 
+
+    /**
+     * Dataset and errors are already standardized
+     *
+     * @param scaledqIqdataset standardized data
+     * @param scaledqIqErrors
+     * @param dmax
+     * @param qmax
+     * @param lambda
+     * @param cBoxValue
+     * @param includeBackground
+     * @param stdmin
+     * @param stdscale
+     */
+    public SineIntegralTransform(
+            XYSeries scaledqIqdataset,
+            XYSeries scaledqIqErrors,
+            double[] priors,
+            double dmax,
+            double qmax,
+            double lambda,
+            boolean includeBackground,
+            boolean positiveOnly,
+            double stdmin,
+            double stdscale){
+
+        super(scaledqIqdataset, scaledqIqErrors, dmax, qmax, lambda, includeBackground, stdmin, stdscale);
+
+        //this.standardizeErrors(); // extract variances from errors
+        XYDataItem tempData;
+        standardVariance = new XYSeries("standardized error");
+        int totalItems = scaledqIqdataset.getItemCount();
+        double temperrorvalue;
+
+        for(int r=0; r<totalItems; r++){
+            tempData = scaledqIqdataset.getDataItem(r);
+            temperrorvalue = scaledqIqErrors.getY(r).doubleValue(); // already in form of q*I(q)/scale
+            standardVariance.add(tempData.getX(), temperrorvalue*temperrorvalue); // q_times_Iq_scaled
+        }
+
+        this.createDesignMatrix(scaledqIqdataset);
+
+        this.prior_coefficients = priors.clone();
+        priorExists = false;
+
+        this.positiveOnly = positiveOnly;
+        if (positiveOnly){
+            rambo_coeffs_L1_positive_only();
+            if (includeBackground){
+                this.setModelUsed("DIRECT L1-NORM POSITIVE ONLY + BKGRND");
+            } else {
+                this.setModelUsed("DIRECT L1-NORM POSITIVE ONLY");
+            }
+        } else {
+            this.rambo_coeffs_L1();
+
+            if (includeBackground){
+                this.setModelUsed("DIRECT L1-NORM + BKGRND");
+            } else {
+                this.setModelUsed("DIRECT L1-NORM ONLY");
+            }
+        }
+    }
+
+
     /**
      * Dataset and errors are already standardized
      *
@@ -141,6 +206,7 @@ public class SineIntegralTransform extends IndirectFT {
         }
 
         this.createDesignMatrix(dataset);
+
         this.positiveOnly = true;
         if (positiveOnly){
             rambo_coeffs_L1_positive_only();
@@ -188,7 +254,7 @@ public class SineIntegralTransform extends IndirectFT {
         for(int i=0; i < r_vector_size; i++){ // last bin should be dmax
             r_vector[i] = (0.5 + i)*del_r; // dmax is not represented in this set
         }
-        // what happens if the last bin is midpoint is less than dmax?
+
         /*
          * create A matrix (design Matrix)
          */
@@ -223,13 +289,11 @@ public class SineIntegralTransform extends IndirectFT {
 //                    }
 //                }
 
-
                 a_matrix.set(row, 0, 1);
                 for(int col=1; col < coeffs_size; col++){
                     double r_value = r_vector[col-1];
                     a_matrix.set(row, col, FastMath.sin(r_value*tempData.getXValue()) / r_value);
                 }
-
 
                 y_vector.set(row,0,tempData.getYValue()); //set data vector
             }
@@ -244,11 +308,13 @@ public class SineIntegralTransform extends IndirectFT {
     private void initializeCoefficientVector(){
         am_vector = new SimpleMatrix(coeffs_size,1);  // am is 0 column
         //Gaussian guess = new Gaussian(dmax*0.5, 0.2*dmax);
+        double bk  = (y_vector.get(rows-1,0) + y_vector.get(rows-2,0) + y_vector.get(rows-3,0) + y_vector.get(rows-4,0) + y_vector.get(rows-5,0))/5.0;
+        double initialValue = 0.3;
 
-        double initialValue = 0.0000000000001;
         if (positiveOnly){
-            initialValue=1;
+            initialValue=0.1;
         }
+
 
         if (!includeBackground) { // no constant background
             for (int i=0; i < coeffs_size; i++){
@@ -257,12 +323,19 @@ public class SineIntegralTransform extends IndirectFT {
             }
         } else {
             //am_vector.set(0,0,0.000000001); // set background constant, initial guess could be Gaussian
-            am_vector.set(0,0,0.1); // set background constant, initial guess could be Gaussian
-            for (int i=1; i < coeffs_size; i++){
-                //am_vector.set(i, 0, guess.value(r_vector[i-1]));
-                am_vector.set(i, 0, initialValue);
+            if (priorExists){
+                for(int i=0; i < coeffs_size; i++){
+                    am_vector.set(i, 0, prior_coefficients[i]);
+                }
+            } else {
+                am_vector.set(0,0, bk); // set background constant, initial guess could be Gaussian
+                for (int i=1; i < coeffs_size; i++){
+                    //am_vector.set(i, 0, guess.value(r_vector[i-1]));
+                    am_vector.set(i, 0, initialValue);
+                }
             }
         }
+
     }
 
 
@@ -488,7 +561,7 @@ public class SineIntegralTransform extends IndirectFT {
                     new_phi = (new_z.transpose().mult(new_z)).get(0,0) + lambda*new_u.elementSum()-logfSum*inv_t;
 
                     if (new_phi-phi <= alpha*s*gdx){
-//                        System.out.println("Breaking BackTrackLoop");
+                       // System.out.println("Breaking BackTrackLoop " + lsiter + " " + max_ls_iter);
                         break backtrackLoop;
                     }
                 }
@@ -496,7 +569,7 @@ public class SineIntegralTransform extends IndirectFT {
             } // end backtrack loop
 
             if (lsiter == max_ls_iter){
-//                System.out.println("Max LS iteration: Failed");
+               //System.out.println("Max LS iteration: Failed");
                 break calculationLoop;
             }
 
@@ -522,6 +595,7 @@ public class SineIntegralTransform extends IndirectFT {
             }
         }
 
+
         // totalCoefficients = coefficients.length;
         // this.setPrDistribution();
         // I_calc based standardized data
@@ -534,24 +608,16 @@ public class SineIntegralTransform extends IndirectFT {
 //        SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         coeffs_size = coefficients.length; // this resets the coefficients to possibly include background term as first element
 
-
-//        finalScore = 0;
-//        for(int i=0; i < rows; i++){
-//            double diff = tempResiduals.get(i,0);
-//            finalScore += diff*diff;
-//        }
-
-
-//        finalScore *= 1.0/(double)rows;
-//        finalScore = pobj;
-//        System.out.println("FINAL SCORE " + finalScore + " pobj " + pobj);
-
         // calculate residuals
-//        residuals = new XYSeries("residuals");
+        //residuals = new XYSeries("residuals");
+//        double sum =0;
 //        for(int i=0; i < rows; i++){
 //            XYDataItem item = data.getDataItem(i); // isn't quite correct, using data to get q-values, should be based on input for making design matrix
-//            residuals.add(item.getX(), tempResiduals.get(i,0));
+//            //residuals.add(item.getX(), tempResiduals.get(i,0));
+//            double dif = tempResiduals.get(i,0);
+//            sum +=  dif*dif;
 //        }
+        //System.out.println(dmax + " lambda : " + lambda +" => FINAL SUM " + sum);
     }
 
     /**
@@ -1073,14 +1139,6 @@ public class SineIntegralTransform extends IndirectFT {
         //SimpleMatrix tempResiduals = a_matrix.mult(am_vector).minus(y_vector);
         coeffs_size = coefficients.length; // this resets the coefficients to possibly include background term as first element
 
-        // calculate residuals MLE (maximum likelihood estimator)
-//        finalScore = 0;
-//        for(int i=0; i < rows; i++){
-//            double diff = tempResiduals.get(i,0);
-//            finalScore += diff*diff;
-//        }
-//        finalScore *= 1.0/(double)rows;
-//        System.out.println("FINAL SCORE " + finalScore);
         // calculate residuals
 //        residuals = new XYSeries("residuals");
 //        for(int i=0; i < rows; i++){

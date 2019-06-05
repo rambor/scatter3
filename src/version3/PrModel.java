@@ -194,7 +194,7 @@ public class PrModel extends AbstractTableModel implements ChangeListener, Prope
                 return twoOneFormat.format(dataset.getDmax());
             case 10:
                 // return twoDecPlac.format(dataset.getChi2()) + " ("+twoDecPlac.format(dataset.getKurt_l1_sum())+")";
-                return threeDecPlac.format(dataset.getTotalScore(dataset.getStop() - dataset.getStart()));
+                return threeDecPlac.format(dataset.setTotalScore(dataset.getStop() - dataset.getStart()));
                 // return twoDecPlac.format(dataset.getChi2()) + " ("+threeDecPlac.format(dataset.max_kurtosis_shannon_sampled())+")";
                 //return twoDecPlac.format(dataset.getChi2()) ;
             case 11:

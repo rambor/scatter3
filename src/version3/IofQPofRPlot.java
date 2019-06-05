@@ -33,6 +33,8 @@ public class IofQPofRPlot {
     private Collection collectionInUse;
     private WorkingDirectory workingDirectory;
 
+    private BasicStroke axisStroke = new BasicStroke(1.5f);
+    private Color axisColor = Color.black;
 
     private XYSplineRenderer splineRend = new XYSplineRenderer();
     private XYLineAndShapeRenderer renderer1;
@@ -104,6 +106,13 @@ public class IofQPofRPlot {
 
         rangeAxis.setAutoRange(true);
         rangeAxis.setAutoRangeStickyZero(false);
+
+        rangeAxis.setAxisLineStroke(axisStroke);
+        domainAxis.setAxisLineStroke(axisStroke);
+
+        rangeAxis.setTickMarkStroke(axisStroke);
+        domainAxis.setTickMarkStroke(axisStroke);
+
 
         plot.setDomainAxis(domainAxis);
         plot.setRangeAxis(rangeAxis);

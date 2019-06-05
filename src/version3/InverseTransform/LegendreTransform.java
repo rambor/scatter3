@@ -435,6 +435,7 @@ public class LegendreTransform extends IndirectFT {
 //        cosum *= 2/dmax;
 
         izero = tempRgSum*standardizedScale/del_r + standardizedMin;
+        izero = (tempRgSum + coefficients[0])*standardizedScale/del_r + standardizedMin;
 //        System.out.println(" IZERO A " + izero + " " + coefficients[1] + " scale " + standardizedScale + " min " + standardizedMin);
 //        System.out.println(" IZERO B " + cosum + " " + (cosum*standardizedScale + standardizedMin));
 

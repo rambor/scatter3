@@ -106,7 +106,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
 
         //dataset.setStandardizationMean(this.standardizedMin, this.standardizedScale);
         this.median = dataset.getIndirectFTModel().calculateMedianResidual(standardizedSeries);
-        //System.out.println("med " + this.median);
+        System.out.println("start med " + this.median);
     }
 
 
@@ -129,15 +129,15 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
         double del_r = Math.PI/upperq;
 
         double initialScore = dataset.getIndirectFTModel().scoreDistribution(del_r);
-
+        //System.out.println("PRIOR [0] " + priorCoefficients[0]);
         while (startLamba < upperLambda){
             IndirectFT tempIFT;
 
             if (useMoore){
                 //tempIFT = new MooreTransform(this.standardizedSeries, scaled_q_times_Iq_Errors, priorCoefficients, dmax, upperq, startLamba, true, useBackgroundInFit, standardizedMin, standardizedScale);
-                tempIFT = new MooreTransformApache(this.standardizedSeries, scaled_q_times_Iq_Errors, this.priorCoefficients, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
+                tempIFT = new MooreTransformApache(this.standardizedSeries, scaled_q_times_Iq_Errors, this.priorCoefficients, dmax, upperq, startLamba, standardizedMin, standardizedScale, useBackgroundInFit);
             } else if (useL1 && !useLegendre && !useL2 && !useSVD){
-                tempIFT = new SineIntegralTransform(this.standardizedSeries, scaled_q_times_Iq_Errors, dmax, upperq, startLamba, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+                tempIFT = new SineIntegralTransform(this.standardizedSeries, scaled_q_times_Iq_Errors, this.priorCoefficients, dmax, upperq, startLamba, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
             } else if (useLegendre && !useL2 && !useSVD) {
                 tempIFT = new LegendreTransform(this.standardizedSeries, scaled_q_times_Iq_Errors, priorCoefficients, dmax, upperq, startLamba, standardizedMin, standardizedScale, useBackgroundInFit);
             } else if (useL2 && !useSVD) {  // use Moore Method
@@ -147,7 +147,6 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
             } else {
                 tempIFT = new SVD(this.standardizedSeries, scaled_q_times_Iq_Errors, dmax, upperq, startLamba, useBackgroundInFit, standardizedMin, standardizedScale);
             }
-
             double prscore = tempIFT.scoreDistribution(del_r);
             if (prscore < initialScore){
                 keptlamba = startLamba;
@@ -402,7 +401,7 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                     //tempIFT = new MooreTransform(randomSeries, randomErrorSeries, priors, dmax, upperq, lambda, true, useBackgroundInFit, standardizedMin, standardizedScale);
                     tempIFT = new MooreTransformApache(randomSeries, randomErrorSeries, priors, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
                 } else if (useL1 && !useLegendre && !useL2 && !useSVD){
-                    tempIFT = new SineIntegralTransform(randomSeries, randomErrorSeries, dmax, upperq, lambda, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+                    tempIFT = new SineIntegralTransform(randomSeries, randomErrorSeries, priors, dmax, upperq, lambda, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
                 } else if (useLegendre && !useL2 && !useSVD) {
                     tempIFT = new LegendreTransform(randomSeries, randomErrorSeries, priors, dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
                 } else if (useL2 && !useSVD) {  // use Moore Method
@@ -578,7 +577,8 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                 //tempIFT = new MooreTransform(keptqIq, keptErrorSeries, keptIFTModel.getCoefficients(), dmax, upperq, lambda, false,useBackgroundInFit, standardizedMin, standardizedScale);
                 tempIFT = new MooreTransformApache(keptqIq, keptErrorSeries, keptIFTModel.getCoefficients(), dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
             } else if (useL1 && !useLegendre && !useL2 && !useSVD){ // SVD with regularization
-                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+                //tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, dmax, upperq, lambda, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
+                tempIFT = new SineIntegralTransform(keptqIq, keptErrorSeries, keptIFTModel.getCoefficients(), dmax, upperq, lambda, useBackgroundInFit, positiveOnly, standardizedMin, standardizedScale);
             } else if (useLegendre && !useL2 && !useSVD) {
                 tempIFT = new LegendreTransform(keptqIq, keptErrorSeries, keptIFTModel.getCoefficients(), dmax, upperq, lambda, standardizedMin, standardizedScale, useBackgroundInFit);
             } else if (useL2 && !useSVD) {  // use Glatter like regularization

@@ -273,7 +273,7 @@ public class SVD extends IndirectFT {
             SimpleMatrix m = a_matrix.pseudoInverse();
 
             SimpleMatrix diag =  a_matrix.svd().getW().extractDiag();
-            diag.transpose().print();
+            //diag.transpose().print();
 
             double max = diag.get(0,0);
 //            int totaltogo = diag.getNumElements();

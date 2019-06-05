@@ -1,5 +1,6 @@
 package version3;
 
+import com.sun.beans.editors.ColorEditor;
 import org.apache.commons.math3.analysis.interpolation.LoessInterpolator;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
@@ -17,6 +18,7 @@ import version3.InverseTransform.*;
 import version3.RealSpace;
 
 import javax.swing.*;
+import javax.swing.table.TableCellEditor;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
@@ -35,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FindDmax extends JDialog {
     private JPanel contentPane;
     private JButton buttonOK;
+
     private JButton buttonCancel;
     private JPanel leftPanel;
     private JPanel rightPanel;
@@ -53,22 +56,31 @@ public class FindDmax extends JDialog {
     private JCheckBox useBkgrndCheckBox;
     private JCheckBox l1NormCheckBox;
     private JCheckBox mooreCheckBox;
+    private JButton colorButton;
+    private JPanel optionsPanel;
     private JLabel statusLabel;
     private JFreeChart chart;
     private  ChartPanel outPanel;
     private  boolean crosshair = true, useLegendre = false, useMoore = true, useL1Norm = false;
     private  WorkingDirectory workingDirectory;
     private double maximumMaximumLikelihood=0;
+    private XYSplineRenderer rendereriVc;
+    private XYSplineRenderer splineRend;
+    private XYSplineRenderer splineRendLikelihood;
+    private NumberAxis vcRangeAxis;
+    private int lastLocale=0;
 
     private AtomicInteger counter = new AtomicInteger(0);
     RealSpace dataset;
+
+    Color currentColor;
 
     double lowerDmax, upperDmax;
     double lowerQmax, upperQmax;
     double lowerLambda, upperLambda;
     double standardizedMin, standardizedScale, suggestqmax;
 
-    int totalTrialsCE = 17, qbins;
+    int totalTrialsCE = 7, qbins;
     double stepSize = 0.5;
 
     ArrayList<XYSeries> dmaxVsChi;
@@ -91,7 +103,6 @@ public class FindDmax extends JDialog {
 
        // dmaxVsChi = new XYSeries("Chi2");
         dmaxVsDW = new XYSeries("DW");
-
 
         this.standardizeData();
 
@@ -219,7 +230,7 @@ public class FindDmax extends JDialog {
                 try {
                     double value = Double.parseDouble(dmaxUpperBoundField.getText());
                     if (value < 0){
-                        dmaxUpperBoundField.setText("50");
+                        dmaxUpperBoundField.setText("200");
                         upperDmax = 200;
                     } else if (value < (Double.parseDouble(dmaxLowerBoundField.getText()))) {
                         dmaxLowerBoundField.setText("50");
@@ -260,27 +271,6 @@ public class FindDmax extends JDialog {
             }
         });
 
-        qmaxField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusLost(FocusEvent e) {
-                super.focusLost(e);
-                try {
-                    double value = Double.parseDouble(qmaxField.getText());
-                    if (value < 0){
-                        qmaxField.setText(Double.toString(upperQmax));
-                    } else if (value > 3) {
-                        qmaxField.setText(Double.toString(upperQmax));
-                    } else {
-                        upperQmax = value;
-                    }
-                    updateInfo();
-                }
-                catch (NumberFormatException ee) {
-                    //Not an integer
-                    jInfoLabel.setText("Not a proper number, should be positive and only numbers.");
-                }
-            }
-        });
 
         dmaxUpperBoundField.addFocusListener(new FocusAdapter() {
             @Override
@@ -342,13 +332,13 @@ public class FindDmax extends JDialog {
                 try {
                     double value = Double.parseDouble(lambdaLowerField.getText());
                     if (value < 0){
-                        lambdaLowerField.setText("0.0001");
-                        lowerLambda = 0.0001;
+                        lambdaLowerField.setText("0.1");
+                        lowerLambda = 0.1;
                     } else if (value > (Double.parseDouble(lambdaUpperField.getText()))) {
-                        lambdaLowerField.setText("0.0001");
-                        lowerLambda = 0.0001;
-                        lambdaUpperField.setText("50");
-                        upperLambda = 50;
+                        lambdaLowerField.setText("0.1");
+                        lowerLambda = 0.1;
+                        lambdaUpperField.setText("73");
+                        upperLambda = 73;
                     } else {
                         lowerLambda = value;
                     }
@@ -393,14 +383,15 @@ public class FindDmax extends JDialog {
             public void actionPerformed(ActionEvent e) {
                 int value = Integer.parseInt(trailsTextField.getText());
                 if (value < 0){
-                    trailsTextField.setText("17");
-                    totalTrialsCE = 17;
+                    trailsTextField.setText("7");
+                    totalTrialsCE = 7;
                 } else {
                     totalTrialsCE = value;
                 }
             }
         });
 
+        currentColor = dataset.getColor();
         makeVcPlot();
         qmaxField.setText(Double.toString(suggestqmax));
         updateInfo();
@@ -437,8 +428,8 @@ public class FindDmax extends JDialog {
                 useLegendre = true;
                 useMoore = false;
                 useL1Norm = true;
-                lambdaLowerField.setText("0.01");
-                lambdaUpperField.setText("10");
+                lambdaLowerField.setText("0.0001");
+                lambdaUpperField.setText("0.001");
             }
         });
 
@@ -446,24 +437,57 @@ public class FindDmax extends JDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (mooreCheckBox.isSelected()){
+                    legendreCheckBox.setSelected(false);
+                    l1NormCheckBox.setSelected(false);
+                    useLegendre = false;
+                    useMoore = true;
+                    useL1Norm = false;
+                    lambdaLowerField.setText("30");
+                    lambdaUpperField.setText("100");
 
+                    if (!useBkgrndCheckBox.isSelected()){
+                        useBkgrndCheckBox.doClick();
+                    }
                 } else {
-                    mooreCheckBox.setSelected(true);
+                    //mooreCheckBox.setSelected(true);
+                    mooreCheckBox.doClick();
                 }
-                legendreCheckBox.setSelected(false);
-                l1NormCheckBox.setSelected(false);
-                useBkgrndCheckBox.setSelected(true);
-                useLegendre = false;
-                useMoore = true;
-                useL1Norm = false;
-                lambdaLowerField.setText("1");
-                lambdaUpperField.setText("100");
+
             }
         });
+
+        useBkgrndCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (useBkgrndCheckBox.isSelected()){
+                    useBkgrndCheckBox.setForeground(Color.red);
+                } else {
+                    useBkgrndCheckBox.setForeground(Color.black);
+                    if (mooreCheckBox.isSelected()){
+                        useBkgrndCheckBox.doClick();
+                    }
+                }
+
+            }
+        });
+
 
         l1NormCheckBox.setSelected(false);
         legendreCheckBox.setSelected(false);
         mooreCheckBox.setSelected(true);
+        useBkgrndCheckBox.doClick();
+
+        colorButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ColorEditor test = new ColorEditor();
+                test.dialog.setVisible(true);
+                rendereriVc.setSeriesPaint(0, currentColor);
+                vcRangeAxis.setLabelPaint(currentColor.darker());
+                splineRend.setSeriesPaint(lastLocale, currentColor); // make color slight darker
+                splineRendLikelihood.setSeriesPaint(0, currentColor.darker()); // make color slight darker
+            }
+        });
     }
 
     private void onOK() {
@@ -473,6 +497,13 @@ public class FindDmax extends JDialog {
 
         int startQmaxIndex = 0;
         lowerQmax = 0.17;
+
+        totalTrialsCE = Integer.parseInt(trailsTextField.getText());
+        lowerLambda = Double.parseDouble(lambdaLowerField.getText());
+        upperLambda = Double.parseDouble(lambdaUpperField.getText());
+        upperDmax=Double.parseDouble(dmaxUpperBoundField.getText());
+        lowerDmax=Double.parseDouble(dmaxLowerBoundField.getText());
+        upperQmax = Double.parseDouble(qmaxField.getText());
 
         XYSeries allData = dataset.getfittedqIq();
         for(int i=0; i<allData.getItemCount(); i++){
@@ -559,16 +590,48 @@ public class FindDmax extends JDialog {
         public double getCount(){ return this.count;}
     }
 
+    private class Triplet implements Comparable {
+        private double score;
+        private double dw;
+        private double aic;
+        private double psi;
+
+        public Triplet(double sc, double dw, double aic, double psi){
+            this.score = sc;
+            this.dw = dw;
+            this.aic = aic;
+            this.psi = psi;
+        }
+
+        public double getDW(){ return dw;}
+        public double getAIC(){ return aic;}
+        public double getPsi(){ return psi;}
+
+        public double getScore(){ return score;}
+
+        public String printValues(double dmax, double lambda){
+            return String.format("%.1f %.1E %.2E %.3f %.2E %.2E %.2E", dmax, lambda, score, Math.log10(score), this.dw, this.aic, this.psi);
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            return this.getScore() <  ((Triplet) o).getScore() ? -1 : (this.getScore() == ((Triplet) o).getScore() ? 0 : 1) ;
+        }
+
+    }
+
 
     private class DmaxLambda implements Comparable {
         private final double dmax, lambda;
         private final Number number;
         private double probability;
-        private double score, averagingBinWidth;
+        private double score, averagingBinWidth, medianScore, averageScore;
         private double dw, chi, prscore;
         private double score_sum;
-        private int index, increment, disIncrement;
+        private int index, increment;
         private int binCount;
+        //private ArrayList<Double> scores;
+        private ArrayList<Triplet> scores;
         private XYSeries tempDistribution, averagedDistribution;
 
         public DmaxLambda(double dmax, double lambda, int index){
@@ -579,6 +642,7 @@ public class FindDmax extends JDialog {
             this.index = index;
             this.score = 0;
             this.increment = 0;
+            scores = new ArrayList<>();
         }
 
         public DmaxLambda(double dmax, double lambda, double score, int index){
@@ -588,6 +652,7 @@ public class FindDmax extends JDialog {
             this.score = score;
             this.index = index;
             this.increment = 1;
+            scores = new ArrayList<>();
         }
 
         public int getIndex() { return index;}
@@ -599,9 +664,14 @@ public class FindDmax extends JDialog {
         public void setProbability(double value){ this.probability = value;}
 
         public double getScore(){ return score;}
-        public void setDWChi(double dw, double chi, double prs){ this.dw = dw; this.chi=chi; this.prscore = prs;}
+
+        public void setDWChi(double score, double dw, double aic, double prs){
+            scores.add(new Triplet(score, dw, aic, prs));
+            //this.dw = dw; this.chi=chi; this.prscore = prs;
+
+        }
         public void printDWChi(){
-            System.out.println(dmax + " " + dw + " " + chi + " " + prscore);
+            System.out.println(dmax + " DW " + dw + " CHI " + chi + " " + prscore);
         }
         public String getStatString(){
             return String.format("dmax %.1f DW %.1E AIC %.2f quality %.3f lambda %.2E", (double)dmax, dw, chi, prscore, lambda); }
@@ -619,7 +689,6 @@ public class FindDmax extends JDialog {
                 tempDistribution.add(item);
             }
 
-            disIncrement = 1;
         }
 
         /*
@@ -715,12 +784,39 @@ public class FindDmax extends JDialog {
                 tempDistribution.add(item2);
             }
 
+//            scores.add(value);
             score_sum += value;
             increment += 1;
-            disIncrement += 1;
         }
 
-        public void averageScore(){ score = score_sum/(double)increment;}
+
+        public void averageScore(){
+            averageScore = score_sum/(double)increment;
+            Collections.sort(scores);
+            int total = scores.size();
+            int div = (int)Math.floor(total/2.0);
+            medianScore = ((total & 1) == 0) ? 0.5*(scores.get(div).getScore() + scores.get(div-1).getScore()) : scores.get(div).getScore() ;
+            score = medianScore;
+
+            if ((total & 1) == 0){
+                Triplet upper = scores.get(div);
+                Triplet lower = scores.get(div-1);
+                double tempscore = 0.5*(lower.getScore()+upper.getScore());
+                dw = 0.5*(upper.getDW() + lower.getDW());
+                chi = 0.5*(upper.getAIC() + lower.getAIC());
+                prscore = 0.5*(upper.getPsi() + lower.getPsi());
+                String value = String.format("%.1f %.1E %.2E %.3f %.2E %.2E %.2E", dmax, lambda, tempscore, Math.log10(tempscore), 0.5*(lower.getDW()+upper.getDW()), 0.5*(lower.getAIC()+upper.getAIC()), 0.5*(lower.getPsi()+upper.getPsi()));
+                System.out.println(value);
+            } else {
+                System.out.println(scores.get(div).printValues(dmax, lambda));
+                dw = scores.get(div).dw;
+                chi = scores.get(div).aic;
+                prscore = scores.get(div).psi;
+            }
+
+        }
+
+        public double getScore_sum(){ return score_sum;}
 
         public XYSeries getPrDistribution(){ return averagedDistribution; }
 
@@ -801,7 +897,6 @@ public class FindDmax extends JDialog {
 
             HashMap<Number, DMax> dmaxes = new HashMap<>();
 
-            ArrayList<Integer>  paramIndices = new ArrayList<Integer>();
             int indexTracker = 0;
 
             double startDmax = lowerDmax;
@@ -812,8 +907,7 @@ public class FindDmax extends JDialog {
 
                 while(lambda < upperLambda){
                     parameters.add(new DmaxLambda(startDmax, lambda, indexTracker));
-                    lambda *= 1.7;
-                    paramIndices.add(indexTracker);
+                    lambda *= 1.3;
                     indexTracker++;
                 }
             }
@@ -857,25 +951,21 @@ public class FindDmax extends JDialog {
             double slopeN = (2 + 0.55*maxElementsInLastBins)/(double)qbins;
             double interceptN = 2.0;
 
-
-
             /*
              * perform CE optimization
              */
             XYSeries randomSeries = new XYSeries("Random-");
             XYSeries randomSeriesError = new XYSeries("Random-Error");
-            double current_score, tempDmax=100, tempLambda=0.01;
+            double current_score, tempDmax, tempLambda;
 
-            for(int trial=0; trial<totalTrialsCE; trial++){
+            for(int trial=0; trial<totalTrials; trial++){
 
                 randomSeries.clear();
                 randomSeriesError.clear();
-
                 for(int i=0; i<qbins; i++){ // grab random indices from each q-bin
                     ArrayList<Integer> arrayList = new ArrayList<>(binIndices.get(i));
                     samplingNumber = arrayList.size();
                     // use increasing number of points as we go to higher q
-
                     if (samplingNumber > 0){
 
                         Collections.shuffle(arrayList);
@@ -892,6 +982,7 @@ public class FindDmax extends JDialog {
 //                            samplingLimit = (1 + randomGenerator.nextInt(10));
 //                        }
 
+                        //System.out.println(i + " => " + samplingLimit);
                         int swapTo = samplingNumber-1;
                         for(int h=0; h < samplingLimit; h++){
 //                            int getIndex = randomGenerator.nextInt(samplingNumber);
@@ -920,7 +1011,6 @@ public class FindDmax extends JDialog {
                                 randomSeries,
                                 randomSeriesError,
                                 tempDmax,
-                                //randomSeries.getMaxX(),
                                 activeSet.getMaxX(),
                                 tempLambda,
                                 standardizedMin,
@@ -932,7 +1022,6 @@ public class FindDmax extends JDialog {
                                 randomSeries,
                                 randomSeriesError,
                                 tempDmax,
-                                //randomSeries.getMaxX(),
                                 activeSet.getMaxX(),
                                 tempLambda,
                                 standardizedMin,
@@ -943,7 +1032,6 @@ public class FindDmax extends JDialog {
                                 randomSeries,
                                 randomSeriesError,
                                 tempDmax,
-                                //randomSeries.getMaxX(),
                                 activeSet.getMaxX(),
                                 tempLambda,
                                 standardizedMin,
@@ -952,20 +1040,19 @@ public class FindDmax extends JDialog {
                     }
 
                     double kvalue = tempIFT.ns + 1 + 1 + 1; // lambda, dmax and noise
-//                    double chi = tempIFT.getChiEstimate();
-                    tempIFT.makeResiduals();
+                    tempIFT.makeResiduals(); // calculate residuals of existing model
 
-//                    double aic = tempIFT.calculateChiFromDataset(activeSet, errorActiveSet);
-                    double aic = 2.0*kvalue + tempIFT.ns*tempIFT.calculateChiFromDataset(activeSet, errorActiveSet) + (2.0*kvalue*kvalue + 2*kvalue)/(randomSeries.getItemCount() - kvalue -1);
-                    double kt = tempIFT.getKurtosisEstimate(0);
+                    double aic = 2.0*kvalue + tempIFT.ns*Math.log(tempIFT.calculateChiFromDataset(activeSet, errorActiveSet)) + (2.0*kvalue*kvalue + 2*kvalue)/(randomSeries.getItemCount() - kvalue -1);
 
-                    current_score = 0.1*aic + 1000*kt + 3*tempIFT.getPrScore();
+                    double kt = tempIFT.getKurtosisEstimate(0); // return as 2-DW
+
+                    current_score = 0.1*aic + (4*kt + tempIFT.getPrScore());
+
                     /*
                      * aic is a large number, in the 10s to 100s.  KT will be small like less than 1, and PrScore is also around 1
-                     *
                      */
 
-                    param.setDWChi(kt, aic, tempIFT.getPrScore());
+                    param.setDWChi(current_score, kt, aic, tempIFT.getPrScore());
 
                     if (trial == 0){ // variations in qmax will lead to variaions in shannon point, so we use Pi/qmax to define binwith
                         param.updateScore(current_score);
@@ -973,9 +1060,25 @@ public class FindDmax extends JDialog {
                     } else {
                         param.update(current_score, tempIFT.getPrDistribution());
                     }
-
                     this.increment();
                 }
+
+//                int bestIndex=0;
+//                double best=Double.POSITIVE_INFINITY;
+//                for(int i=0; i<totalParameters; i++){
+//                    DmaxLambda temp = parameters.get(i);
+//                    double tempbest = temp.getScore_sum()/(double)temp.increment;
+//                    if (tempbest < best){
+//                        best = tempbest;
+//                        bestIndex=i;
+//                    }
+//                    if (temp.getDmax() > 80 && temp.getDmax() < 100){
+//                        temp.printDWChi();
+//                    }
+//                }
+
+                //System.out.println("BEST " + parameters.get(bestIndex).getDmax() + " score sum " + parameters.get(bestIndex).getScore_sum() ) ;
+                //parameters.get(bestIndex).printDWChi();
             }
 
             /*
@@ -1000,6 +1103,11 @@ public class FindDmax extends JDialog {
 
             dmaxes.get(parameters.get(0).getDmax()).update(1.0d);
 
+
+            /*
+             * assign probabilities to other models using the difference between model_i score and model_best
+             * exp(
+             */
             for(int i=1; i<totalParameters; i++){
                 DmaxLambda temp = parameters.get(i);
                 temp.setProbability(Math.exp((best-temp.getScore())*0.5));
@@ -1088,32 +1196,6 @@ public class FindDmax extends JDialog {
                 }
             }
 
-            // do final fit with all data
-//            IndirectFT tempIFT;
-//            if (!useLegendreFunction){
-//                tempIFT = new SineIntegralTransform(
-//                        activeSet,
-//                        errorActiveSet,
-//                        parameters.get(0).getDmax(),
-//                        activeSet.getMaxX(),
-//                        parameters.get(0).getLambda(),
-//                        standardizedMin,
-//                        standardizedScale,
-//                        useBkgrndCheckBox.isSelected());
-//
-//            } else {
-//                tempIFT = new LegendreTransform(
-//                        activeSet,
-//                        errorActiveSet,
-//                        parameters.get(0).getDmax(),
-//                        activeSet.getMaxX(),
-//                        parameters.get(0).getLambda(),
-//                        standardizedMin,
-//                        standardizedScale,
-//                        useBkgrndCheckBox.isSelected());
-//            }
-
-
             totalBest.addSeries(finalModel);
 //            totalBest.addSeries(tempIFT.getPrDistribution());
             //System.out.println("FINAL MODEL " + finalModel.getItemCount());
@@ -1180,21 +1262,22 @@ public class FindDmax extends JDialog {
             plot.setDomainCrosshairVisible(true);
             plot.setRangeCrosshairVisible(true);
 
-            XYSplineRenderer splineRend = new XYSplineRenderer();
+            splineRendLikelihood = new XYSplineRenderer();
             XYLineAndShapeRenderer renderer1 = new XYSplineRenderer();
 
-            splineRend.setBaseShapesVisible(false);
+            splineRendLikelihood.setBaseShapesVisible(false);
             renderer1.setBaseShapesVisible(true);
 
-            renderer1.setBaseStroke(new BasicStroke(2.0f));
+            renderer1.setBaseStroke(new BasicStroke(4.0f));
 
             // renderer1.setBaseLinesVisible(false);
             int locale = 0;
-            splineRend.setSeriesStroke(0, dataset.getStroke());
-            splineRend.setSeriesPaint(0, dataset.getColor().darker()); // make color slight darker
+            splineRendLikelihood.setSeriesStroke(0, dataset.getStroke());
+
+            splineRendLikelihood.setSeriesPaint(0, currentColor); // make color slight darker
 
             //plot.setDataset(0, splineCollection);  //Moore Function
-            plot.setRenderer(0, splineRend);       //render as a line
+            plot.setRenderer(0, splineRendLikelihood);       //render as a line
 
             chartX.getXYPlot().setDomainCrosshairVisible(false);
             chartX.getXYPlot().setRangeCrosshairVisible(false);
@@ -1233,6 +1316,13 @@ public class FindDmax extends JDialog {
 
             rangeAxis.setTickLabelsVisible(false);
 
+            BasicStroke axisStroke = new BasicStroke(1.75f);
+            rangeAxis.setAxisLineStroke(axisStroke);
+            domainAxis.setAxisLineStroke(axisStroke);
+
+            rangeAxis.setTickMarkStroke(axisStroke);
+            domainAxis.setTickMarkStroke(axisStroke);
+
             //org.jfree.data.Range domainBounds = dataset.getDomainBounds(true);
             //org.jfree.data.Range rangeBounds = dataset.getRangeBounds(true);
 
@@ -1244,8 +1334,8 @@ public class FindDmax extends JDialog {
                     super.getChart().getXYPlot().getRangeAxis().setAutoRange(false);
 
                     int seriesCount = super.getChart().getXYPlot().getDataset(0).getSeriesCount();
-                    super.getChart().getXYPlot().getRangeAxis().setRange(-0.01, plottedCollection.getSeries(0).getMaxY() + 0.15*plottedCollection.getSeries(0).getMaxY());
-                    super.getChart().getXYPlot().getDomainAxis().setRange(0, upperDmax);
+                    super.getChart().getXYPlot().getRangeAxis().setRange(0, plottedCollection.getSeries(0).getMaxY() + 0.15*plottedCollection.getSeries(0).getMaxY());
+                    super.getChart().getXYPlot().getDomainAxis().setRange(0, plottedCollection.getSeries(0).getMaxX());
                 }
             };
 
@@ -1265,7 +1355,7 @@ public class FindDmax extends JDialog {
 
             plot.setOutlineVisible(false);
 
-            XYSplineRenderer splineRend = new XYSplineRenderer();
+            splineRend = new XYSplineRenderer();
             splineRend.setBaseShapesVisible(false);
 
             for(int i=0; i<colors.size(); i++){
@@ -1273,21 +1363,13 @@ public class FindDmax extends JDialog {
                 splineRend.setSeriesPaint(i, colors.get(i));
             }
 
-            int lastLocale = plottedCollection.getSeriesCount()-1; // color all the data
+            lastLocale = plottedCollection.getSeriesCount()-1; // color all the data
             splineRend.setSeriesOutlineStroke(lastLocale, dataset.getStroke());
-            splineRend.setSeriesPaint(lastLocale, dataset.getColor().darker()); // make color slight darker
+            splineRend.setSeriesPaint(lastLocale, currentColor); // make color slight darker
             splineRend.setSeriesShapesVisible(lastLocale, true);
             splineRend.setSeriesStroke(lastLocale, new BasicStroke(5.0f));
             splineRend.setSeriesShape(lastLocale,new Ellipse2D.Double(-4.0, -4.0, 8.0, 8.0));
             splineRend.setSeriesShapesFilled(lastLocale, true);
-
-//            lastLocale -= 1; // color the compositive "averaged" dataset
-//            splineRend.setSeriesOutlineStroke(lastLocale, dataset.getStroke());
-//            splineRend.setSeriesPaint(lastLocale, Color.cyan); // make color slight darker
-//            splineRend.setSeriesShapesVisible(lastLocale, true);
-//            splineRend.setSeriesStroke(lastLocale, new BasicStroke(5.0f));
-//            splineRend.setSeriesShape(lastLocale,new Ellipse2D.Double(-4.0, -4.0, 8.0, 8.0));
-//            splineRend.setSeriesShapesFilled(lastLocale, true);
 
 
             plot.setRenderer(0, splineRend);       //render as a line
@@ -1589,7 +1671,7 @@ public class FindDmax extends JDialog {
         plot.addDomainMarker(yMarker);
 
         final NumberAxis domainAxis = new NumberAxis("q (\u212B \u207B\u00B9)");
-        final NumberAxis rangeAxis = new NumberAxis("Integral q\u00D7I(q)");
+        vcRangeAxis = new NumberAxis("Integral q\u00D7I(q)");
 
         final NumberAxis axis2 = new NumberAxis("Slopes");
         axis2.setAutoRangeIncludesZero(true);
@@ -1602,13 +1684,15 @@ public class FindDmax extends JDialog {
 
         domainAxis.setAutoRangeIncludesZero(false);
         domainAxis.setAutoRange(true);
-        rangeAxis.setAutoRange(true);
-        rangeAxis.setAxisLineVisible(true);
-        rangeAxis.setLabelPaint(dataset.getColor().darker());
-        rangeAxis.setTickLabelsVisible(false);
+        vcRangeAxis.setAutoRange(true);
+        vcRangeAxis.setAxisLineVisible(true);
+
+        vcRangeAxis.setLabelPaint(currentColor.darker());
+
+        vcRangeAxis.setTickLabelsVisible(false);
 
         plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
+        plot.setRangeAxis(vcRangeAxis);
         plot.configureDomainAxes();
         plot.configureRangeAxes();
         plot.setBackgroundAlpha(0.0f);
@@ -1619,9 +1703,9 @@ public class FindDmax extends JDialog {
 //        rangeAxis.setRange(0, vcData.getMaxY() + 0.1*vcData.getMaxY());
 
         plot.setDomainAxis(domainAxis);
-        plot.setRangeAxis(rangeAxis);
+        plot.setRangeAxis(vcRangeAxis);
         plot.setBackgroundPaint(null);
-        XYSplineRenderer rendereriVc = new XYSplineRenderer();
+        rendereriVc = new XYSplineRenderer();
         plot.setRenderer(0, rendereriVc);
 
         rendereriVc.setBaseLinesVisible(true);
@@ -1633,7 +1717,7 @@ public class FindDmax extends JDialog {
         //rendereriVc.setSeriesShape(count, new Ellipse2D.Double(-3.0, -3.0, 3.0, 3.0));
         rendereriVc.setSeriesShapesFilled(0, false);
         rendereriVc.setSeriesVisible(0, true);
-        rendereriVc.setSeriesPaint(0, dataset.getColor());
+        rendereriVc.setSeriesPaint(0, currentColor);
         rendereriVc.setSeriesStroke(0, new BasicStroke(2.0f));
 
 
@@ -1665,6 +1749,53 @@ public class FindDmax extends JDialog {
         vcPanel.add(outPanelX);
     }
 
+
+    class ColorEditor implements ActionListener {
+        //Color currentColor;
+        JButton button;
+        JColorChooser colorChooser;
+        JDialog dialog;
+        protected static final String EDIT = "edit";
+
+        public ColorEditor() {
+            //Set up the editor (from the table's point of view),
+            //which is a button.
+            //This button brings up the color chooser dialog,
+            //which is the editor from the user's point of view.
+            button = new JButton();
+            button.setActionCommand(EDIT);
+            button.addActionListener(this);
+            button.setBorderPainted(false);
+            //currentColor = colorInUse;
+            //Set up the dialog that the button brings up.
+            colorChooser = new JColorChooser();
+            System.out.println("color: before " + currentColor.toString());
+            dialog = JColorChooser.createDialog(button,
+                    "Pick a Color",
+                    true,  //modal
+                    colorChooser,
+                    this,  //OK button handler
+                    null); //no CANCEL button handler
+        }
+
+        /**
+         * Handles events from the editor button and from
+         * the dialog's OK button.
+         */
+        public void actionPerformed(ActionEvent e) {
+            if (EDIT.equals(e.getActionCommand())) {
+                //The user has clicked the cell, so
+                //bring up the dialog.
+                button.setBackground(currentColor);
+                colorChooser.setColor(currentColor);
+                dialog.setVisible(true);
+            } else { //User pressed dialog's "OK" button.
+                currentColor = colorChooser.getColor();
+                System.out.println("color: after " + currentColor.toString());
+            }
+        }
+
+    }
 
 }
 

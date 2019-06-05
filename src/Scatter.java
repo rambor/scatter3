@@ -344,7 +344,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.2d";
+    private String version = "3.2f";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -425,7 +425,7 @@ public class Scatter {
     public Scatter() { // constructor
 
         versionLabel.setText("Version : "+ version);
-        prLambdaLabel.setText("  \u03bb");
+        prLambdaLabel.setText("  \u03b1");
         MessageConsole mc = new MessageConsole(stdOutText);
         //mc.redirectOut();
         //mc.redirectErr(Color.RED, null);
@@ -3729,7 +3729,7 @@ public class Scatter {
                     SVDCheckBox.setSelected(false);
 //                    mooreCheckBox.setSelected(false);
                     excludeBackgroundInFitCheckBox.setSelected(true);
-
+                    excludeBackgroundInFitCheckBox.setForeground(Color.red);
                     methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
 
                     double[] arrayvalues = new double[]{0, 0.001, 0.1, 0.7, 3, 11, 31, 70, 93, 100, 331, 557, 637, 759, 931, 1017, 3011};
@@ -3868,9 +3868,11 @@ public class Scatter {
                 if (!excludeBackgroundInFitCheckBox.isSelected() && mooreCheckBox.isSelected()){
                     methodInUseLabel.setText("Constant Background always in use with Moore Method");
                     excludeBackgroundInFitCheckBox.setSelected(true);
+                    excludeBackgroundInFitCheckBox.setForeground(Color.red);
                 } else if (excludeBackgroundInFitCheckBox.isSelected()){
 
                     additionalInfoPrPanel.removeAll();
+                    excludeBackgroundInFitCheckBox.setForeground(Color.red);
 
                     if(SVDCheckBox.isSelected()){
                         SVDCheckBox.setSelected(false);
@@ -3881,6 +3883,7 @@ public class Scatter {
                     }
                 } else { // no background only available on DirectFT and moore coefficient L1
                     methodInUseLabel.setText("No Constant Background");
+                    excludeBackgroundInFitCheckBox.setForeground(Color.black);
                 }
 
                 prStatusLabel.setText(methodInUseLabel.getText());
@@ -4393,6 +4396,7 @@ public class Scatter {
             public void actionPerformed(ActionEvent e) {
 
                 excludeBackgroundInFitCheckBox.setSelected(false);
+                excludeBackgroundInFitCheckBox.setForeground(Color.black);
                 mooreCheckBox.setSelected(false);
 
                 positiveOnlyCheckBox.setSelected(false);
