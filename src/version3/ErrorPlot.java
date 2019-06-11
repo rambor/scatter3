@@ -35,6 +35,9 @@ public class ErrorPlot {
     private static XYErrorRenderer renderer;
     private static boolean crosshair = true;
 
+
+    private static BasicStroke axisStroke = new BasicStroke(1.5f);
+
     CustomXYToolTipGenerator cttGen = new CustomXYToolTipGenerator();
     private static double upper;
     private static double dupper;
@@ -192,6 +195,12 @@ public class ErrorPlot {
 
         domainAxis.setRange(dlower, dupper);
         domainAxis.setAutoRangeStickyZero(false);
+
+        rangeAxis.setAxisLineStroke(axisStroke);
+        domainAxis.setAxisLineStroke(axisStroke);
+
+        rangeAxis.setTickMarkStroke(axisStroke);
+        domainAxis.setTickMarkStroke(axisStroke);
 
         plot.setDomainAxis(domainAxis);
         plot.setRangeAxis(rangeAxis);

@@ -36,6 +36,7 @@ public class QIQPlot {
     XYLineAndShapeRenderer renderer1;
     public boolean crosshair = true;
 
+    private BasicStroke axisStroke = new BasicStroke(1.5f);
     private static QIQPlot singleton = new QIQPlot( );
     private static Point locationOfWindow;
     /* A private Constructor prevents any other
@@ -150,6 +151,13 @@ public class QIQPlot {
         rangeAxis.setAutoRangeStickyZero(true);
         rangeAxis.setLabelFont(Constants.BOLD_16);
         rangeAxis.setTickLabelFont(Constants.FONT_12);
+
+        rangeAxis.setAxisLineStroke(axisStroke);
+        domainAxis.setAxisLineStroke(axisStroke);
+
+        rangeAxis.setTickMarkStroke(axisStroke);
+        domainAxis.setTickMarkStroke(axisStroke);
+
 
         final ValueMarker yMarker = new ValueMarker(0.0);
         yMarker.setPaint(Color.black);
