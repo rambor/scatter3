@@ -570,7 +570,6 @@ public class FindDmax extends JDialog {
 
         runnable.execute();
 
-
         dispose();
     }
 
@@ -805,10 +804,10 @@ public class FindDmax extends JDialog {
                 dw = 0.5*(upper.getDW() + lower.getDW());
                 chi = 0.5*(upper.getAIC() + lower.getAIC());
                 prscore = 0.5*(upper.getPsi() + lower.getPsi());
-                String value = String.format("%.1f %.1E %.2E %.3f %.2E %.2E %.2E", dmax, lambda, tempscore, Math.log10(tempscore), 0.5*(lower.getDW()+upper.getDW()), 0.5*(lower.getAIC()+upper.getAIC()), 0.5*(lower.getPsi()+upper.getPsi()));
-                System.out.println(value);
+//                String value = String.format("%.1f %.1E %.2E %.3f %.2E %.2E %.2E", dmax, lambda, tempscore, Math.log10(tempscore), 0.5*(lower.getDW()+upper.getDW()), 0.5*(lower.getAIC()+upper.getAIC()), 0.5*(lower.getPsi()+upper.getPsi()));
+//                System.out.println(value);
             } else {
-                System.out.println(scores.get(div).printValues(dmax, lambda));
+//                System.out.println(scores.get(div).printValues(dmax, lambda));
                 dw = scores.get(div).dw;
                 chi = scores.get(div).aic;
                 prscore = scores.get(div).psi;
@@ -1051,7 +1050,6 @@ public class FindDmax extends JDialog {
                     /*
                      * aic is a large number, in the 10s to 100s.  KT will be small like less than 1, and PrScore is also around 1
                      */
-
                     param.setDWChi(current_score, kt, aic, tempIFT.getPrScore());
 
                     if (trial == 0){ // variations in qmax will lead to variaions in shannon point, so we use Pi/qmax to define binwith
@@ -1147,7 +1145,7 @@ public class FindDmax extends JDialog {
                 double sumKDE = 0.0d;
                 while(iterator.hasNext()) {
                     Map.Entry mentry = (Map.Entry)iterator.next();
-                    ((DMax)mentry.getValue()).getCount();
+                    //((DMax)mentry.getValue()).getCount();
                     double diff = (iDmax-(double)mentry.getKey())*bandwith;
                     sumKDE += ((DMax)mentry.getValue()).getCount()*Math.exp(-0.5*diff*diff);
                 }
