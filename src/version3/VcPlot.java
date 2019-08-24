@@ -99,13 +99,13 @@ public class VcPlot {
                 //int stop = dataset.getOriginalData().indexOf(dataset.getData().getX(0));
 
                 double javerageq, javerageq2;
-                double rg23 = rg*rg/3.0;
+                double slope = rg*rg/3.0;
                 int currentSeriesCount = qIqVcDatasets.getSeriesCount();
 
                 // create extrapolation using Guinier estimates
                 for (int j=0; j*averageq < startq; j++){
                     javerageq = j*averageq;
-                    javerageq2 = (javerageq)*izero*Math.exp(-rg23*javerageq*javerageq);
+                    javerageq2 = (javerageq)*izero*Math.exp(-slope*javerageq*javerageq);
                     qIqVcDatasets.getSeries(currentSeriesCount-1).add(javerageq, javerageq2*scaleFactor);
                     tempqIqData.add(javerageq, javerageq2);
                 }
@@ -117,7 +117,7 @@ public class VcPlot {
                 area3Label.add(new JLabel("-"));
                 int label_index = area2Label.size() - 1;
 
-                dataset.clearPlottedQIQData();
+                //dataset.clearPlottedQIQData();
                 dataset.scalePlottedQIQData();
 
                 allLoop:
@@ -324,7 +324,7 @@ public class VcPlot {
         */
         jframe.setResizable(false);
         jframe.setVisible(true);
-
+        jframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
     private ChartFrame plotIntegratedVc(XYSeriesCollection dataset){
