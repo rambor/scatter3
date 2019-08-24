@@ -610,13 +610,13 @@ public class RefinePrManager extends SwingWorker<Void, Void> {
                 }
                 //this.dataset.calculateIntensityFromModel(true);
                 //this.dataset.calculateQIQ();
-
             } catch (Exception e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
             }
 
             int totalrejected =  size - keptSeries.getItemCount();
             double percentRejected = (double)totalrejected/(double)size*100;
+            System.out.println(String.format("IZERO :: %.5f", tempIFT.getIZero()));
             notifyUser(String.format("Rejected %d points (%.1f %%) using cutoff: %.4f => files written to working directory", totalrejected, percentRejected, rejectionCutOff));
 
             RefinedPlot refinedPlot = new RefinedPlot(dataset);

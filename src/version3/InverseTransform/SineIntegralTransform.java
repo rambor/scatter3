@@ -233,6 +233,10 @@ public class SineIntegralTransform extends IndirectFT {
         }
         //any no defensive copies to be created here?
         //what are the mutable object fields?
+        this.del_r = toCopy.del_r;
+        this.r_vector = toCopy.r_vector.clone();
+        this.positiveOnly = toCopy.positiveOnly;
+        this.r_vector_size = toCopy.r_vector_size;
     }
 
 

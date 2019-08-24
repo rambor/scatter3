@@ -118,6 +118,28 @@ public class DirectSineIntegralTransform extends IndirectFT {
     }
 
 
+    /*
+     *
+     * copy constructor
+     */
+    public DirectSineIntegralTransform (DirectSineIntegralTransform original){
+        super(original);
+
+        this.del_r = original.del_r;
+        this.r_vector = original.r_vector.clone();
+        this.target = original.target.clone();
+        this.invVariance = original.invVariance;
+        this.qvalues = original.qvalues;
+        this.r_vector_size = original.r_vector_size;
+        this.designMatrix = original.designMatrix.copy();
+        this.qvalues = original.qvalues.clone();
+        this.target = original.target.clone();
+        this.invVariance = original.invVariance.clone();
+
+    }
+
+
+
     void solve(){
 
         LinearProblem problem = new LinearProblem(
@@ -340,6 +362,7 @@ public class DirectSineIntegralTransform extends IndirectFT {
     public double calculateIQ(double qvalue) {
         return (this.calculateQIQ(qvalue))/qvalue;
     }
+
 
     @Override
     public double calculatePofRAtR(double r_value, double scale) {

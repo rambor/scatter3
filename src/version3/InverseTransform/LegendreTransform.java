@@ -145,6 +145,32 @@ public class LegendreTransform extends IndirectFT {
     }
 
 
+    public LegendreTransform(LegendreTransform original){
+        super(original);
+
+        this.del_r = original.del_r;
+        this.r_vector = original.r_vector.clone();
+        this.target = original.target.clone();
+        this.invVariance = original.invVariance;
+        this.qvalues = original.qvalues;
+        this.r_vector_size = original.r_vector_size;
+        this.designMatrix = original.designMatrix.copy();
+        this.qvalues = original.qvalues.clone();
+        this.target = original.target.clone();
+        this.invVariance = original.invVariance.clone();
+
+        this.invDmax = original.invDmax;
+
+         /*
+         * set the Legendre Polynomials
+         */
+        functions = new PolynomialFunction[coeffs_size + 1];
+        functions[0] = PolynomialsUtils.createLegendrePolynomial(0);;
+        for(int i=1; i < (coeffs_size+1); i++){ // calculate at midpoints
+            functions[i] = PolynomialsUtils.createLegendrePolynomial(i); // try odd numbered
+        }
+    }
+
 
     /*
      * datasetInUse does not have to be standardized
@@ -413,32 +439,31 @@ public class LegendreTransform extends IndirectFT {
 
     @Override
     void calculateIzeroRg() {
-        double tempRgSum = 0, tempRg2Sum=0, xaverage=0, izeroSum=0;
+        double tempRgSum = 0, tempRg2Sum=0, xaverage=0;
 
         XYDataItem item;
         for(int i=1; i<totalInDistribution-1; i++){ // exclude last point
             item = prDistribution.getDataItem(i);
             double rvalue = item.getXValue();
-            izeroSum += item.getYValue();
             tempRg2Sum += rvalue*rvalue*item.getYValue();
             tempRgSum += item.getYValue(); // width x height => area
             xaverage += rvalue*item.getYValue();
         }
 
-        tempRg2Sum *= del_r;
-        tempRgSum *= del_r; // width x height => area
-        xaverage *= del_r;
+//        tempRg2Sum *= del_r;
+//        tempRgSum *= del_r; // width x height => area
+//        xaverage *= del_r;
 
         rg = Math.sqrt(0.5*tempRg2Sum/tempRgSum);
 
 //        double cosum = 2*coefficients[1] + coefficients[2] + 5/4*coefficients[4] + 3/2*coefficients[4];
 //        cosum *= 2/dmax;
 
-        izero = tempRgSum*standardizedScale/del_r + standardizedMin;
-        izero = (tempRgSum + coefficients[0])*standardizedScale/del_r + standardizedMin;
-//        System.out.println(" IZERO A " + izero + " " + coefficients[1] + " scale " + standardizedScale + " min " + standardizedMin);
+//        izero = tempRgSum*standardizedScale + standardizedMin;
+        izero = (tempRgSum + coefficients[0])*standardizedScale + standardizedMin;
+//        System.out.println(" IZERO A " + ((tempRgSum + coefficients[0])*standardizedScale + standardizedMin) + " " + izero);
 //        System.out.println(" IZERO B " + cosum + " " + (cosum*standardizedScale + standardizedMin));
-
+//        System.out.println("IZERO :: " + (coefficients[1]*2*standardizedScale + standardizedMin) + " " + (coefficients[1]*2));
         rAverage = xaverage/tempRgSum;
         area = tempRgSum;
     }
@@ -482,6 +507,7 @@ public class LegendreTransform extends IndirectFT {
  //               prDistributionForFitting.add(temp_r_vector[index], pr);
             }
         }
+
 
         totalInDistribution = prDistribution.getItemCount();
 
@@ -550,6 +576,7 @@ public class LegendreTransform extends IndirectFT {
 
     /**
      * returns unscaled Intensity data where scaled refers to standardized data
+     * Using the trapezoid rule, should actually integrate the function and determine the recursion relation - expect errors in extrapolation?
      * @param qvalue
      * @return
      */
@@ -563,14 +590,11 @@ public class LegendreTransform extends IndirectFT {
             double r_value = r_vector[i]; // dmax is not represented in this set
             sinc[i] = FastMath.sin(r_value*qvalue) / r_value;
         }
-
         double sumSinc=0;
         for(int i=0; i < r_vector_size; i++){ // Legendre at k=0 is 1 (so sum th
             sumSinc += sinc[i];
         }
 
-
-        //sum += am_vector.get(0)*sumSinc;
         sum += coefficients[1]*sumSinc;
         for (int a=2; a<totalCoefficients; a++){
 
@@ -580,12 +604,31 @@ public class LegendreTransform extends IndirectFT {
                 //sumSinc += sinc[i]*functions[a].value((2*r_value-dmax)*invDmax);
                 sumSinc += sinc[i]*functions[a-1].value((2*r_value-dmax)*invDmax);
             }
-
-            //sum += am_vector.get(a)*sumSinc;
             sum += coefficients[a]*sumSinc;
         }
 
+//
+//        for(int i=0; i < r_vector_size; i++){ // calculate at midpoints
+//            r_vector[i] = (0.5 + i)*del_r; // dmax is not represented in this set
+//        }
 
+//        double temp_del_r = 0.5*del_r;
+//        double startr = temp_del_r*0.5;
+//        while(startr < dmax){
+//            double p_at_r = coefficients[1];
+//            for (int a=2; a<totalCoefficients; a++){
+//                p_at_r += coefficients[a]*functions[a-1].value((2*startr-dmax)*invDmax);
+//            }
+//            sum += FastMath.sin(startr*qvalue) / startr * p_at_r;
+//            System.out.println(startr + " " + p_at_r);
+//            startr+= temp_del_r;
+//        }
+
+//        System.out.println("ratio " + del_r/temp_del_r);
+        // perform the integration
+        //System.out.println((coefficients[1]) + " " + (coefficients[1]*standardizedScale+ standardizedMin) + " -- " + (coefficients[1]*standardizedScale));
+
+//        System.out.println(" Izero :: " + (coefficients[1]*dmax*standardizedScale + standardizedMin));
         return sum*standardizedScale + standardizedMin;
     }
 
@@ -593,6 +636,9 @@ public class LegendreTransform extends IndirectFT {
     public double calculateIQ(double qvalue) {
         return (this.calculateQIQ(qvalue))/qvalue;
     }
+
+
+
 
     @Override
     public void estimateErrors(XYSeries fittedqIq){

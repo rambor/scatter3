@@ -4,6 +4,7 @@ import com.sun.xml.internal.bind.v2.util.FatalAdapter;
 import net.jafama.FastMath;
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.apache.commons.math3.analysis.MultivariateVectorFunction;
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;
 import org.apache.commons.math3.exception.TooManyEvaluationsException;
 import org.apache.commons.math3.linear.BlockRealMatrix;
@@ -20,7 +21,7 @@ import org.ejml.simple.SimpleMatrix;
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
 
-public class MooreTransformApache extends IndirectFT {
+public class MooreTransformApache extends IndirectFT implements Cloneable {
 
     private int cols;
     private double del_r;
@@ -30,7 +31,7 @@ public class MooreTransformApache extends IndirectFT {
     double[] invVariance; // data
     double[] qvalues; // data
 
-    public final double invDmax;
+    public double invDmax;
 
     private RealMatrix designMatrix; // assume this is the design matrix
     int r_vector_size;
@@ -123,6 +124,36 @@ public class MooreTransformApache extends IndirectFT {
     }
 
 
+
+    /*
+     *
+     * copy constructor of Moore
+     */
+    public MooreTransformApache (MooreTransformApache original){
+                super(original);
+
+        this.cols = original.cols;
+        this.del_r = original.del_r;
+        this.r_vector = original.r_vector.clone();
+
+        if (original.regularization_r_vector != null){
+            this.regularization_r_vector = original.regularization_r_vector.clone();
+        }
+
+        this.target = original.target.clone();
+        this.invVariance = original.invVariance;
+        this.qvalues = original.qvalues;
+        this.invDmax = original.invDmax;
+        this.r_vector_size = original.r_vector_size;
+        this.designMatrix = original.designMatrix.copy();
+
+    }
+
+    public Object clone(){
+        return new MooreTransformApache(this);
+    }
+
+
     /*
      * precalculate standardVariance
      * used in the Apache Solver
@@ -182,6 +213,7 @@ public class MooreTransformApache extends IndirectFT {
         r_vector_size = ns*divisor-1; // no background implies coeffs_size == ns
         del_r = dmax/(double)(ns*divisor);
 
+        double nsdel_r = dmax/(double)(ns);
 //        double totalPrPoints = (Math.ceil(qmax*dmax/Math.PI)*3); // divide dmax in ns*3 bins
         //System.out.println("total pts in interpolation " + totalPrPoints);
 //        totalInDistribution = (int)totalPrPoints;
@@ -214,6 +246,8 @@ public class MooreTransformApache extends IndirectFT {
 
         prDistribution.add(dmax,0);
 
+
+        // do Shannon point distribution calculations
         // set distribution for fitting
         int size = r_vector.length;
         prDistributionForFitting = new XYSeries("output");
@@ -221,7 +255,6 @@ public class MooreTransformApache extends IndirectFT {
         double temp_del_r = dmax/(double)ns;
         double startAt = temp_del_r*0.5;
         while (startAt < dmax){
-
             r_value = startAt;
             pi_dmax_r = PI_INV_DMAX*r_value;
             resultM = 0;
@@ -234,18 +267,6 @@ public class MooreTransformApache extends IndirectFT {
             startAt += temp_del_r;
         }
 
-//        for(int i=0; i < size; i++){ // last bin should be dmax
-//
-//            r_value = r_vector[i];
-//            pi_dmax_r = PI_INV_DMAX*r_value;
-//            resultM = 0;
-//
-//            for(int k=1; k < totalCoefficients; k++){
-//                resultM += coefficients[k]*FastMath.sin(pi_dmax_r*k);
-//            }
-//
-//            prDistributionForFitting.add(r_value, invtwopi2 * r_value * resultM);
-//        }
 
         scoreDistribution(del_r);
         prScore *= 10;
@@ -276,11 +297,12 @@ public class MooreTransformApache extends IndirectFT {
     @Override
     public double calculateQIQ(double qvalue) {
         double dmaxq = dmax * qvalue;
+        double dmaxq2 = dmaxq*dmaxq;
         double resultM = coefficients[0]; // if coefficients is 0, means no background
 
         for(int i=1; i < totalCoefficients; i++){
             //resultM = resultM + coefficients[i]*dmaxPi*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(Constants.PI_2*i*i - dmaxq*dmaxq);
-            resultM = resultM + coefficients[i]*dmax_PI_TWO_INV_PI*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(n_pi_squared[i] - dmaxq*dmaxq);
+            resultM = resultM + coefficients[i]*dmax_PI_TWO_INV_PI*i*FastMath.pow(-1,i+1)*FastMath.sin(dmaxq)/(n_pi_squared[i] - dmaxq2);
         }
 
         return resultM*standardizedScale + standardizedMin;
@@ -302,6 +324,7 @@ public class MooreTransformApache extends IndirectFT {
 
         return (inv2PI2*standardizedScale) * r_value * resultM*scale;
     }
+
 
     @Override
     public void estimateErrors(XYSeries fittedData) {
@@ -501,7 +524,6 @@ public class MooreTransformApache extends IndirectFT {
                 for (int j=0; j < coeffs_size; j++){
                     coefficients[j+1] = optimum.getPoint()[j];
                     am_vector.set(j, 0, optimum.getPoint()[j]);
-                    //System.out.println(j + " am " + am_vector.get(j,0));
                 }
             } else { // has background
                 for (int j=0; j < coeffs_size; j++){

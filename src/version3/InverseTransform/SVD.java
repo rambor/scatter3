@@ -71,6 +71,17 @@ public class SVD extends IndirectFT {
         this.setModelUsed("DIRECT SVD");
     }
 
+    /**
+     * copy constructor
+     */
+    public SVD(SVD original){
+        super(original);
+
+        this.del_r = original.del_r;
+        this.r_vector = original.r_vector.clone();
+        this.r_vector_size = original.r_vector_size;
+
+    }
 
     @Override
     void calculateIzeroRg() {
@@ -119,14 +130,7 @@ public class SVD extends IndirectFT {
                 double value = coefficients[index+1];
                 prDistribution.add(r_vector[index], value);
                 prDistributionForFitting.add(r_vector[index], value);
-
-//                if (value<0){
-//                    System.out.println( " WARNING NEGATIVE BIN r: " + r_vector[index] + " => " + value);
-//                }
                 // if using background, add to each term?
-                if (includeBackground){
-
-                }
             }
         }
 
@@ -186,6 +190,7 @@ public class SVD extends IndirectFT {
     public double calculateIQ(double qvalue) {
         return (this.calculateQIQ(qvalue))/qvalue;
     }
+
 
     @Override
     public double calculatePofRAtR(double r_value, double scale) {

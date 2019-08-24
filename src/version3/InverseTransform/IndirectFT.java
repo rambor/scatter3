@@ -1,7 +1,9 @@
 package version3.InverseTransform;
 
 import net.jafama.FastMath;
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
+import org.ejml.equation.Function;
 import org.ejml.simple.SimpleMatrix;
 import org.jfree.data.statistics.Statistics;
 import org.jfree.data.xy.XYDataItem;
@@ -16,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-public abstract class IndirectFT implements RealSpacePrObjectInterface {
+public abstract class IndirectFT implements RealSpacePrObjectInterface, Cloneable {
 
     final double[] n_pi_squared = {
             0.000,
@@ -289,7 +291,7 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
     public XYSeries prDistribution;
     public XYSeries sphericalDistribution;
     public XYSeries sphericalDistributionFine;
-    public XYSeries prDistributionForFitting;
+    public XYSeries prDistributionForFitting; //used by IkeTama for Modeling, this is the Shannon Limited PrDistribution
     public boolean negativeValuesInModel;
     public PolynomialSplineFunction splineFunction;
     public String description="";
@@ -376,6 +378,115 @@ public abstract class IndirectFT implements RealSpacePrObjectInterface {
         standardizedScale = standardizationStDev;
         this.createNonStandardizedData();
     }
+
+
+    /**
+     * copy constructor
+     * @param original
+     */
+    public IndirectFT(IndirectFT original){
+
+        try {
+            this.data = original.data.createCopy(0, original.data.getItemCount()-1);
+            this.errors = original.errors.createCopy(0, original.errors.getItemCount()-1);
+            this.nonData = original.nonData.createCopy(0, original.nonData.getItemCount()-1);
+
+            if (original.residuals instanceof XYSeries){
+                this.residuals = original.residuals.createCopy(0, original.residuals.getItemCount()-1);
+            }
+
+            this.standardVariance = original.standardVariance.createCopy(0, original.standardVariance.getItemCount()-1);
+            this.prDistribution = original.prDistribution.createCopy(0, original.prDistribution.getItemCount()-1);
+
+
+
+            if (original.sphericalDistribution instanceof XYSeries){
+                this.sphericalDistribution = original.sphericalDistribution.createCopy(0, original.sphericalDistribution.getItemCount()-1);
+            }
+
+            if (original.sphericalDistributionFine instanceof XYSeries){
+                this.sphericalDistributionFine = original.sphericalDistributionFine.createCopy(0, original.sphericalDistributionFine.getItemCount()-1);
+            }
+
+            this.prDistributionForFitting = original.prDistributionForFitting.createCopy(0, original.prDistributionForFitting.getItemCount()-1);        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+
+
+
+        coefficients = original.coefficients.clone();
+
+        if (original.prior_coefficients instanceof double[] ){ // when switching IFT models, priors may not exist
+            prior_coefficients = original.prior_coefficients.clone();
+        }
+
+
+
+        this.qmax = original.qmax;
+        this.dmax = original.dmax;
+        this.lambda = original.lambda;
+        this.includeBackground = includeBackground;
+        this.dmax_PI_TWO_INV_PI = dmax * Math.PI * TWO_INV_PI;
+        this.PI_INV_DMAX = Math.PI/dmax;
+        standardizedMin = original.standardizedMin;
+        standardizedScale = original.standardizedScale;
+        includeBackground = original.includeBackground;
+        this.rg = original.rg;
+        this.izero = original.izero;
+        this.rAverage =  original.rAverage;
+        this.sphericalRg = original.sphericalRg;
+        this.rgError = original.rgError;
+        this.iZeroError = original.iZeroError;
+        this.rAverageError = original.rAverageError;
+        this.totalInDistribution = original.totalInDistribution;
+        this.totalCoefficients = original.totalCoefficients;
+        this.rows = original.rows;
+        this.negativeValuesInModel = original.negativeValuesInModel;
+        this.description = original.description;
+        this.sphericalVolume = original.sphericalVolume;
+        this.degreesOfFreedom = original.degreesOfFreedom;
+        this.distribution_score = original.distribution_score;
+        this.n_chipoints = original.n_chipoints;
+        this.aic = original.aic;
+        this.prScore = original.prScore;
+
+        if (totalInDistribution > 0){
+            double[] totalrvalues = new double[totalInDistribution];
+            double[] totalPrvalues = new double[totalInDistribution];
+
+            // coefficients start at r_1 > 0 and ends at midpoint of last bin which is less dmax
+            for(int i=0; i < totalInDistribution; i++){
+                XYDataItem item = this.prDistribution.getDataItem(i);
+                totalPrvalues[i] = item.getYValue();
+                totalrvalues[i] = item.getXValue();
+            }
+
+            SplineInterpolator spline = new SplineInterpolator();
+            this.splineFunction = spline.interpolate(totalrvalues, totalPrvalues);
+        }
+
+
+        this.alpha = original.alpha;
+        this.beta = original.beta;
+        this.max_ls_iter = original.max_ls_iter;
+
+
+
+        this.bin_width = original.bin_width;
+        this.status = original.status;
+
+        this.coeffs_size = original.coeffs_size; // Shannon_number + 1 (if background included)
+        this.ns = original.ns;
+
+        this.a_matrix = original.a_matrix.copy();
+        this.y_vector = original.y_vector.copy();
+        this.am_vector = original.am_vector.copy();
+        this.modelUsed = original.modelUsed;
+        this.area = original.area;
+        this.priorExists = original.priorExists;
+    }
+
+
 
 
 
@@ -1661,6 +1772,7 @@ double topB = 1000;
 
         double value = prDistribution.getY(1).doubleValue();
         double normalizationSum = Math.abs(value);
+        int mid = totalInDistribution/2-1;
         for(int r=2; r<(totalInDistribution-2); r++){
             value = prDistribution.getY(r).doubleValue();
             normalizationSum += Math.abs(value);
@@ -1668,7 +1780,7 @@ double topB = 1000;
                 max = value;
                 indexOfMax=r;
             }
-            if (value < 0){
+            if (value < 0 && r > mid){
                 //diff_sum = 1000;
                 negativity += 1;
                 //break;
@@ -1707,15 +1819,9 @@ double topB = 1000;
 
         //diff_sum *= 1.0/(double)(totalInDistribution-2)*normalizationSum*normalizationSum;
         diff_sum = 1.0/(double)(totalInDistribution-2)*diff_abs_sum;
-        /*
-         * assess finish (slope area near dmax)
-         * calcualte slope at last 3 points
-         */
-        double pointn2 = prDistribution.getY(totalInDistribution-2).doubleValue();
-        double pointn3 = prDistribution.getY(totalInDistribution-3).doubleValue();
-        double pointn4 = prDistribution.getY(totalInDistribution-4).doubleValue();
+        //System.out.println("DIFF SUM " + diff_sum);
 
-    /*
+        /*
          * assess the finish near dmax
          */
         double slopeScore = 1; // default value
@@ -1742,7 +1848,6 @@ double topB = 1000;
         double y4 = Math.abs(item4.getYValue()*normalizationSum);
 
         distribution_score = 0;
-
 
         if (totalAfterPeak > 4 ){
             // point -4 to -2
@@ -1778,7 +1883,6 @@ double topB = 1000;
                 slope5diff += 10*(1-tempy4/y4);
             }
 
-
         } else {
 
             if (totalAfterPeak == 4){
@@ -1800,28 +1904,102 @@ double topB = 1000;
         }
 
 
-        // check for oscillations
-        if (pointn2 > pointn3){
-            double diffit = pointn2 - pointn3;
-            distribution_score += Math.abs(diffit/pointn3);
+        /*
+         * check for oscillations at the Ns nodes
+         * prDistributionForFitting does not include r=0 or r=dmax
+         */
+        indexOfMax = 0;
+        int totalInNsDistribution = prDistributionForFitting.getItemCount();
+        max = prDistributionForFitting.getY(0).doubleValue();
+        for(int r=1; r < totalInNsDistribution; r++){
+            value = prDistributionForFitting.getY(r).doubleValue();
+            if (value > max){
+                max = value;
+                indexOfMax=r;
+            }
         }
 
-        if (pointn2 > pointn4){
-            double diffit = pointn2 - pointn4;
-            distribution_score += Math.abs(diffit/pointn4);
+        /*
+         * penalize bulge
+         */
+        double pointns2 = prDistributionForFitting.getY(totalInNsDistribution-1).doubleValue();
+        double pointns3 = prDistributionForFitting.getY(totalInNsDistribution-2).doubleValue();
+        double pointns4 = prDistributionForFitting.getY(totalInNsDistribution-3).doubleValue();
+        if (pointns2 > pointns3){
+            double diffit = pointns2 - pointns3;
+            distribution_score += Math.abs(diffit/pointns3);
         }
 
-        if (pointn3 > pointn4){
-            double diffit = pointn3 - pointn4;
-            distribution_score += Math.abs(diffit/(pointn4-pointn2));
+        if (pointns2 > pointns4){
+            double diffit = pointns2 - pointns4;
+            distribution_score += Math.abs(diffit/pointns4);
         }
 
-        if (pointn2 > pointn3 && pointn3 < pointn4){
-            double diffIt = Math.max((pointn2-pointn3), (pointn4-pointn3));
-            distribution_score += Math.abs(diffIt/pointn3);
+        if (pointns3 > pointns4){
+            double diffit = pointns3 - pointns4;
+            distribution_score += Math.abs(diffit/(pointns4-pointns2));
         }
 
-        //System.out.println("DISTRIBUTION " + distribution_score);
+        /*
+         * in the paper we index with P(last) => dmax
+         * in prDistributinoForFitting, dmax is not included
+         * Oscillations only looks at the even points, see paper
+         */
+        int even = 2;
+        final int totalAfter = (totalInNsDistribution - indexOfMax - 1);
+        double factor = 1.0d;
+        boolean continueOn = true;
+        int oscCount = 0;
+        // super penalty if oscillation is reversed
+        double ns2 = prDistributionForFitting.getY((totalInNsDistribution-even)+1).doubleValue();
+        if (ns2 < 0){
+            even = 1;
+            ns2 = prDistributionForFitting.getY((totalInNsDistribution-even)).doubleValue();
+            double ns3 = prDistributionForFitting.getY((totalInNsDistribution-even)-1).doubleValue();
+
+            if (ns2 < ns3){ // check for a valley at ns2
+                double diffIt = ns3-ns2;
+                distribution_score += 100*Math.abs(diffIt/ns3)*factor;
+                factor *= 3;
+                oscCount += 1;
+            } else {
+                continueOn = false;
+            }
+            even += 2;
+
+            while (even < totalAfter && continueOn){ // -1, -3 are valleys
+
+                ns2 = prDistributionForFitting.getY((totalInNsDistribution-even)+1).doubleValue();
+                ns3 = prDistributionForFitting.getY(totalInNsDistribution-even).doubleValue();
+                double ns4 = prDistributionForFitting.getY((totalInNsDistribution-even)-1).doubleValue();
+
+                if (ns2 > ns3 && ns4 > ns3){
+                    double diffIt = Math.min((ns2-ns3), (ns4-ns3));
+                    distribution_score += 100*Math.abs(diffIt/ns3)*factor;
+                    factor *= 3;
+                    oscCount += 1;
+                } else {
+                    continueOn = false;
+                }
+                even += 2;
+            }
+        } else {
+            while (even < totalAfter && continueOn){
+                ns2 = prDistributionForFitting.getY((totalInNsDistribution-even)+1).doubleValue();
+                double ns3 = prDistributionForFitting.getY(totalInNsDistribution-even).doubleValue();
+                double ns4 = prDistributionForFitting.getY((totalInNsDistribution-even)-1).doubleValue();
+
+                if (ns2 > ns3 && ns3 < ns4){
+                    double diffIt = Math.max((ns2-ns3), (ns4-ns3));
+                    distribution_score += Math.abs(diffIt/ns3)*factor;
+                    factor *= 3;
+                    oscCount += 1;
+                } else {
+                    continueOn = false;
+                }
+                even += 2;
+            }
+        }
 
         /*
          * for samples with few shannon points, like 4 it may not be possible to evaluate the above accurately)
@@ -1830,7 +2008,18 @@ double topB = 1000;
         diff_sum = 1.0/Math.abs(Math.log10(diff_sum));
 
         // negativity penality
-        distribution_score += (negativity > 0) ? Math.pow(7,negativity)*1.933 : 0;
+        //System.out.println("Negativity " + negativity + " " + Math.pow(7,negativity)*1.933 + " OSC " + oscCount + " " + distribution_score);
+        if (negativity > 0 && prDistributionForFitting.getY(totalInNsDistribution-1).doubleValue() < 0){
+            distribution_score += Math.pow(7,negativity)*19.33;
+        } else if (negativity > 0) {
+            distribution_score += Math.pow(7,negativity)*1.933;
+        }
+
+        // if background is not necessary, first value gets depressed
+        if (prDistribution.getX(1).doubleValue() < 0){
+            distribution_score += Math.pow(7,negativity)*19.33;
+        }
+
 
         if (p2 < 0){ // convex/concave
             diff_sum += 13.1*Math.abs(p2/p3);
@@ -1867,4 +2056,47 @@ double topB = 1000;
     }
 
 
+    @Override
+    public double extrapolateToIofQ(double q) {
+
+        //double intensity = Math.log(this.izero) - (this.rg*this.rg)/3.0*q*q;
+        double slope = rg*rg/3.0;
+        int total = nonData.getItemCount();
+
+        XYDataItem startItem = nonData.getDataItem(0);
+        double limit = 1.05/this.rg;
+        int nnextItem = 0;
+        while(startItem.getXValue() < limit){
+            nnextItem+=1;
+            startItem = nonData.getDataItem(nnextItem);
+        }
+        // use all points up to limit for Guinier extrapolation
+
+        if (nnextItem > 1){
+            double xvals;
+            double yvals = 0;
+
+
+            for(int i=0; i<nnextItem; i++){
+                startItem = nonData.getDataItem(i);
+
+                xvals = startItem.getXValue()*startItem.getXValue();
+
+                yvals += Math.log(startItem.getYValue()/startItem.getXValue()) + slope*xvals;
+                //System.out.println(i + " "+startItem.getX() + " " + (Math.log(startItem.getYValue()/startItem.getXValue()) + slope*xvals) + " :: " + this.rg);
+            }
+
+            double tizero = Math.exp(yvals/(double)nnextItem);
+            double weight = Math.exp(-(izero-tizero)/izero);
+
+            double lnintensity = (izero+weight*tizero)/(1.0d+weight)*Math.exp(-slope*q*q);
+            return lnintensity;
+
+        } else {
+
+            return izero*Math.exp(-slope*q*q);
+            //return (Math.exp(lnintensity)+ coefficients[0])*standardizedScale + standardizedMin;
+        }
+
+    }
 }

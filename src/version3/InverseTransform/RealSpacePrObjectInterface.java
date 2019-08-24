@@ -16,6 +16,7 @@ interface RealSpacePrObjectInterface {
     double getStandardizedLocation();
     double getStandardizedScale();
     double calculateQIQ(double qvalue);
+
     double calculateIQ(double qvalue);
     double[] getCoefficients();
     double calculatePofRAtR(double r_value, double scale);
@@ -27,6 +28,7 @@ interface RealSpacePrObjectInterface {
     double calculateMedianResidual(XYSeries series);
     double calculateChiFromDataset(XYSeries series, XYSeries error);
 
+    double extrapolateToIofQ(double qvalue);
 
     void normalizeDistribution();
 

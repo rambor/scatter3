@@ -423,6 +423,7 @@ public class LaguerreTransform extends IndirectFT {
         return (this.calculateQIQ(qvalue))/qvalue;
     }
 
+
     @Override
     public void estimateErrors(XYSeries fittedqIq){
 
