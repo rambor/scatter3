@@ -249,7 +249,8 @@ public class RealSpace {
     }
 
     public double getIzero(){
-        return izero;
+
+        return indirectFTModel.getIZero();
     }
 
 
@@ -569,6 +570,7 @@ public class RealSpace {
 
     public double getICalcAtQ(double q){
         return this.indirectFTModel.calculateIQ(q);
+        //return this.indirectFTModel.calculateIQDirect(q);
     }
 
     public double extrapolateToLowQ(double q){
@@ -910,7 +912,21 @@ public class RealSpace {
     }
 
     public void setIndirectFTModel(IndirectFT model){
-        this.indirectFTModel = model;
+
+        //this.indirectFTModel = new IndirectFT(model);
+
+        if (model instanceof MooreTransformApache){
+            this.indirectFTModel = new MooreTransformApache((MooreTransformApache)model);
+        } else if(model instanceof DirectSineIntegralTransform){
+            this.indirectFTModel = new DirectSineIntegralTransform((DirectSineIntegralTransform) model);
+        } else if (model instanceof LegendreTransform){
+            this.indirectFTModel = new LegendreTransform((LegendreTransform)model);
+        } else if(model instanceof SVD){
+            this.indirectFTModel = new SVD((SVD)model);
+        } else if(model instanceof SineIntegralTransform){
+            this.indirectFTModel = new SineIntegralTransform((SineIntegralTransform)model);
+        }
+
         this.rg = (model.getRg() > 0) ? model.getRg() : this.rg ;
         this.izero = model.getIZero();
         this.raverage = (model.rAverage > 0) ? model.rAverage : this.raverage ;
