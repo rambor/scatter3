@@ -344,7 +344,7 @@ public class Scatter {
     private JButton diffButton;
     private JPanel plotPanel3Body;
 
-    private String version = "3.2f";
+    private String version = "3.2g";
     private static WorkingDirectory WORKING_DIRECTORY;
     private static WorkingDirectory PIPELINE_DATA_DIRECTORY;
     private static WorkingDirectory PIPELINE_OUTPUT_DIRECTORY;
@@ -3727,9 +3727,9 @@ public class Scatter {
                     legendreCheckBox.setSelected(false);
                     l2norm.setSelected(false);
                     SVDCheckBox.setSelected(false);
-//                    mooreCheckBox.setSelected(false);
-                    excludeBackgroundInFitCheckBox.setSelected(true);
-                    excludeBackgroundInFitCheckBox.setForeground(Color.red);
+
+//                    excludeBackgroundInFitCheckBox.setSelected(true);
+//                    excludeBackgroundInFitCheckBox.setForeground(Color.red);
                     methodInUseLabel.setText("Moore Method L1-Norm 2nd Derivative with constant background");
 
                     double[] arrayvalues = new double[]{0, 0.001, 0.1, 0.7, 3, 11, 31, 70, 93, 100, 331, 557, 637, 759, 931, 1017, 3011};
