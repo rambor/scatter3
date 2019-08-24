@@ -3,6 +3,7 @@ package version3;
 
 import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYSeries;
+import version3.InverseTransform.MooreTransformApache;
 import version3.sasCIF.*;
 
 import javax.swing.*;
@@ -10,6 +11,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -238,70 +240,137 @@ public class FileObject {
          * write denss file format
          */
 
-//        try {
-//
-//            String denss_name =  base[0]+"_denns.dat";
-//            FileWriter fstreamd = new FileWriter(workingDirectoryName+ "/" +denss_name);
-//            BufferedWriter out = new BufferedWriter(fstreamd);
-//
-//            if (isRefined){
-//
-//                XYSeries tempXYSeries = realspaceModel.getRefinedqIData();
-//                // estimate delta_q
-//                double delta_q=0;
-//                double counter = 0;
-//                for(int i =1; i < tempXYSeries.getItemCount(); i++){
-//                    tempXY = tempXYSeries.getDataItem(i-1);
-//                    XYDataItem tempXY2 =tempXYSeries.getDataItem(i);
-//                    delta_q += tempXY2.getXValue() - tempXY.getXValue();
-//                    counter += 1.0;
+        try {
+
+            String denss_name =  base[0]+"_denss.dat";
+            FileWriter fstreamd = new FileWriter(workingDirectoryName+ "/" +denss_name);
+            BufferedWriter out = new BufferedWriter(fstreamd);
+
+            if (isRefined){
+
+                XYSeries tempXYSeries = realspaceModel.getRefinedqIData();
+                // estimate delta_q
+                double delta_q=0;
+                double counter = 0;
+                for(int i=1; i < tempXYSeries.getItemCount(); i++){
+                    tempXY = tempXYSeries.getDataItem(i-1);
+                    XYDataItem tempXY2 =tempXYSeries.getDataItem(i);
+                    delta_q += tempXY2.getXValue() - tempXY.getXValue();
+                    counter += 1.0;
+                }
+                delta_q *= 1.0/counter;
+                double startq = 0.0d;
+                double stopq = tempXYSeries.getMinX();
+
+                // estimate errors from first 51 points
+                double errorEstimate=0;
+                for(int i=0; i<51; i++){
+                    errorEstimate += Math.abs(dataset.getAllDataError().getY(i).doubleValue()/dataset.getAllData().getY(i).doubleValue());
+                }
+                errorEstimate *= 1.0/(double)51;
+
+                //out.write("# DENSS server available at https://denss.ccr.buffalo.edu \n");
+//                if(realspaceModel.getIndirectFTModel() instanceof MooreTransformApache){
+//                    out.write("# Extrapolated to I(zero) using the Moore Coefficients \n");
+//                } else {
+//                    out.write("# Extrapolated to I(zero) using Guinier equation and real space I(zero) and Rg \n");
 //                }
-//                delta_q *= 1.0/counter;
-//                double startq = 0.0d;
-//                double stopq = tempXYSeries.getMinX();
-//
-//                // estimate errors from first 51 points
-//                double errorEstimate=0;
-//                for(int i=0; i<51; i++){
-//                    errorEstimate += Math.abs(dataset.getAllDataError().getY(i).doubleValue()/dataset.getAllData().getY(i).doubleValue());
-//                }
-//                errorEstimate *= 1.0/(double)51;
-//
-//                // I(zero)
-//                out.write(Constants.Scientific1dot5e2.format(0.00) + "\t" +
-//                        Constants.Scientific1dot5e2.format(realspaceModel.getIzero()) +"\t" +
-//                        Constants.Scientific1dot5e2.format(realspaceModel.getIzero()*errorEstimate) + "\n");
-//
-//                // extrapolate low-q
-//                while( startq < stopq){
-//                    startq += delta_q;
-//                    double iCalc = realspaceModel.extrapolateToLowQ(startq);
-//                    out.write(Constants.Scientific1dot5e2.format(startq) + "\t" +
-//                            Constants.Scientific1dot5e2.format(iCalc) +"\t" +
-//                            Constants.Scientific1dot5e2.format(iCalc*errorEstimate) + "\n");
-//                }
-//
-//                // add remaining data
-//                for(int i =0; i < tempXYSeries.getItemCount(); i++){
-//                    tempXY = tempXYSeries.getDataItem(i);
-//                    int tempIndex = dataset.getAllData().indexOf(tempXY.getX());   // gets unscale SAXS curve that originated the P(r)
-//                    double iCalc = realspaceModel.getICalcAtQ(tempXY.getXValue());
-//
-//                    if (tempIndex > 0) {
-//                        out.write(Constants.Scientific1dot5e2.format(tempXY.getXValue()) + "\t" +
-//                                Constants.Scientific1dot5e2.format(iCalc)  + "\t" +
-//                                Constants.Scientific1dot5e2.format(dataset.getAllDataError().getY(tempIndex)) + "\n");
-//                    }
-//                }
-//                //Close the output stream
-//                out.close();
-//            }
-//
-//        } catch (Exception e){//Catch exception if any
-//
-//            System.err.println("Error: " + e.getMessage());
-//
-//        }
+
+                double startI = realspaceModel.getICalcAtQ(stopq);
+                startq = stopq - delta_q;
+                double slope = realspaceModel.getRg()*realspaceModel.getRg()/3.0;
+
+                ArrayList<String> outputlines = new ArrayList<>();
+
+                double extrapCount = 0;
+                double izeroSum = 0;
+
+
+                while( startq > 0){
+                    // using realspace Rg as slope, estimate an Izero to extrapolate from last known point
+
+                    // switch nextI from getIcalcAtQ when next value is less than previous
+                    double nextI = realspaceModel.getICalcAtQ(startq); // model based I(q) calculation
+//                    outputlines.add(Constants.Scientific1dot5e2.format(startq) + "\t" +
+//                            Constants.Scientific1dot5e2.format(nextI) + "\t" +
+//                            Constants.Scientific1dot5e2.format(nextI * errorEstimate) + "\n");
+
+                    if(nextI < startI) {
+
+                        double tizero = Math.exp(izeroSum / extrapCount);
+                        double lnintensity = tizero * Math.exp(-slope * startq * startq);
+
+                        outputlines.add(Constants.Scientific1dot5e2.format(startq) + "\t" +
+                                Constants.Scientific1dot5e2.format(lnintensity) + "\t" +
+                                Constants.Scientific1dot5e2.format(lnintensity * errorEstimate) + "\n");
+
+                    } else if (nextI > realspaceModel.getIzero()) { // keep it centered to izero of the data
+
+                        double iCalcG = realspaceModel.getIndirectFTModel().extrapolateToIofQ(startq); // Guinier based I(q)
+
+                        outputlines.add(Constants.Scientific1dot5e2.format(startq) + "\t" +
+                                Constants.Scientific1dot5e2.format(iCalcG) +"\t" +
+                                Constants.Scientific1dot5e2.format(iCalcG*errorEstimate) + "\n");
+
+
+                    } else {
+
+                        double iCalcG = realspaceModel.getIndirectFTModel().extrapolateToIofQ(startq); // Guinier based I(q)
+                        double weight = Math.exp(-Math.abs((iCalcG - nextI)/iCalcG));
+
+                        double extrap = (iCalcG + weight*nextI)/(1.0+weight);
+                        System.out.println(startq + " " + iCalcG + " " + nextI + " " + extrap + " " + weight);
+
+                        izeroSum += Math.log(extrap) + slope*startq*startq;
+                        extrapCount += 1.0d;
+
+                        outputlines.add(Constants.Scientific1dot5e2.format(startq) + "\t" +
+                                Constants.Scientific1dot5e2.format(extrap) +"\t" +
+                                Constants.Scientific1dot5e2.format(extrap*errorEstimate) + "\n");
+
+                    }
+
+                    startI = nextI;
+                    startq -= delta_q;
+                }
+
+
+                /*
+                 * add iZero term
+                 */
+
+                double izeroterm = realspaceModel.getIndirectFTModel().extrapolateToIofQ(0);
+                outputlines.add(Constants.Scientific1dot5e2.format(0.0d) + "\t" +
+                        Constants.Scientific1dot5e2.format(izeroterm) +"\t" +
+                        Constants.Scientific1dot5e2.format(izeroterm*errorEstimate) + "\n");
+
+
+                for (int j = outputlines.size() - 1; j >= 0; j--) {
+                    out.write(outputlines.get(j));
+                }
+
+
+                // add remaining data
+                for(int i =0; i < tempXYSeries.getItemCount(); i++){
+                    tempXY = tempXYSeries.getDataItem(i);
+                    int tempIndex = dataset.getAllData().indexOf(tempXY.getX());   // gets unscale SAXS curve that originated the P(r)
+                    double iCalc = realspaceModel.getICalcAtQ(tempXY.getXValue());
+
+                    if (tempIndex > 0) {
+                        out.write(Constants.Scientific1dot5e2.format(tempXY.getXValue()) + "\t" +
+                                Constants.Scientific1dot5e2.format(iCalc)  + "\t" +
+                                Constants.Scientific1dot5e2.format(dataset.getAllDataError().getY(tempIndex)) + "\n");
+                    }
+                }
+                //Close the output stream
+                out.close();
+            }
+
+        } catch (Exception e){//Catch exception if any
+
+            System.err.println("Error: " + e.getMessage());
+
+        }
 
 
         String sx_filename="";
