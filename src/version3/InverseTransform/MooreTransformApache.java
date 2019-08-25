@@ -267,7 +267,6 @@ public class MooreTransformApache extends IndirectFT implements Cloneable {
             startAt += temp_del_r;
         }
 
-
         scoreDistribution(del_r);
         prScore *= 10;
         setHeaderDetails();

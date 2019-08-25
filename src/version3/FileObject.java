@@ -242,7 +242,9 @@ public class FileObject {
 
         try {
 
-            String denss_name =  base[0]+"_denss.dat";
+            String denssD = Integer.toString((int)Math.ceil(realspaceModel.getDmax()));
+
+            String denss_name =  base[0]+"_denss_dmax_"+denssD+".dat";
             FileWriter fstreamd = new FileWriter(workingDirectoryName+ "/" +denss_name);
             BufferedWriter out = new BufferedWriter(fstreamd);
 
@@ -319,7 +321,6 @@ public class FileObject {
                         double weight = Math.exp(-Math.abs((iCalcG - nextI)/iCalcG));
 
                         double extrap = (iCalcG + weight*nextI)/(1.0+weight);
-                        System.out.println(startq + " " + iCalcG + " " + nextI + " " + extrap + " " + weight);
 
                         izeroSum += Math.log(extrap) + slope*startq*startq;
                         extrapCount += 1.0d;
